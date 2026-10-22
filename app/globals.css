@@ -3,5 +3,8 @@
 
 :root { --sand: #F7F3EE; --wine: #3D1B28; --gold: #C5A56F; --paper: #FFFDFA; --line: #EEE7DF; }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--sand); color: var(--wine); font-family: 'DM Sans', sans-serif; }
+body { margin: 0; background: var(--sand); color: var(--wine); font-family: 'DM Sans', sans-serif; -webkit-font-smoothing: antialiased; }
 .font-serif { font-family: 'Fraunces', serif; }
+.eyebrow { color: var(--gold); font-size: .7rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+.eyebrow em, em { color: var(--gold); font-style: italic; }
+.avatar { display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; border: 2px solid var(--sand); border-radius: 999px; color: white; font-size: .65rem; font-weight: 700; }
