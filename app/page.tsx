@@ -1,7 +1,7 @@
 import Header from "../components/header"
 
 const benefits = [
-  { number: "01", title: "Tudo começa com um sonho", text: "Descreva o evento que você imagina. A Eventeia transforma desejos em um plano possível, bonito e consciente." },
+  { number: "01", title: "Tudo começa com um sonho", text: "Descreva o evento que você imagina. A EventeIA transforma desejos em um plano possível, bonito e consciente." },
   { number: "02", title: "Clareza para escolher melhor", text: "Receba cotações organizadas, compare cenários e entenda onde cada real encontra o seu propósito." },
   { number: "03", title: "Presença para viver o momento", text: "Menos planilhas e preocupações. Mais tempo para celebrar, decidir com calma e estar presente." },
 ]
@@ -15,7 +15,7 @@ export default function Home() {
         <div className="max-w-2xl">
           <span className="eyebrow">• Inteligência para eventos extraordinários</span>
           <h1 className="mt-5 font-serif text-[clamp(2.6rem,6vw,5.8rem)] font-medium leading-[.98] tracking-[-.045em] text-[#3D1B28]">O seu evento merece ser vivido. <em>Não administrado.</em></h1>
-          <p className="mt-7 max-w-xl text-base leading-7 text-[#3D1B28]/70 sm:text-lg sm:leading-8">A Eventeia cuida da clareza financeira para que você possa cuidar do que realmente importa: criar memórias que ficam para sempre.</p>
+          <p className="mt-7 max-w-xl text-base leading-7 text-[#3D1B28]/70 sm:text-lg sm:leading-8">A <span className="font-brand">EventeIA</span> cuida da clareza financeira para que você possa cuidar do que realmente importa: criar memórias que ficam para sempre.</p>
           <div className="mt-9 flex flex-wrap items-center gap-4">
             <a href="#comecar" className="rounded-full bg-[#3D1B28] px-6 py-3.5 text-sm font-medium text-[#F7F3EE] shadow-[0_8px_24px_rgba(61,27,40,.16)] transition-all hover:-translate-y-0.5 hover:bg-[#2A121C]">Criar meu evento <span aria-hidden="true">↗</span></a>
             <a href="#como-funciona" className="text-sm font-medium text-[#3D1B28] underline decoration-[#C5A56F] underline-offset-8 transition-colors hover:text-[#C5A56F]">Descobrir como funciona</a>
@@ -41,7 +41,7 @@ export default function Home() {
       <section className="mx-auto grid max-w-7xl gap-10 px-4 py-20 sm:px-8 lg:grid-cols-[.8fr_1.2fr] lg:items-center lg:py-28"><div className="overflow-hidden rounded-[1.75rem] border border-[#EEE7DF] bg-[#FFFDFA] p-2"><img src="/eventeia-planner.png" alt="Planner organizando o orçamento de um evento" className="aspect-[.9] w-full rounded-[1.35rem] object-cover" /></div><div className="lg:pl-12"><span className="eyebrow">Para noivos, anfitriões e planners</span><blockquote className="mt-6 font-serif text-3xl leading-tight tracking-[-.025em] text-[#3D1B28] sm:text-5xl">“A tranquilidade de saber que está tudo sob controle muda completamente a forma como você vive o seu evento.”</blockquote><div className="mt-8 flex items-center gap-3"><div className="avatar size-10 bg-[#87606A] text-xs">C</div><div><p className="text-sm font-semibold text-[#3D1B28]">Camila Andrade</p><p className="text-xs text-[#3D1B28]/55">Cerimonialista, São Paulo</p></div></div></div></section>
 
       <section id="comecar" className="mx-4 mb-8 overflow-hidden rounded-[2rem] bg-[#3D1B28] px-6 py-16 text-center sm:mx-8 sm:px-12 lg:py-24"><img src="/eventeia-celebration.png" alt="Brinde celebrando um evento inesquecível" className="absolute hidden" /><span className="eyebrow text-[#D9BD85]">O próximo capítulo começa aqui</span><h2 className="mx-auto mt-5 max-w-3xl font-serif text-4xl leading-tight tracking-[-.03em] text-[#F7F3EE] sm:text-6xl">Seu evento pode ser exatamente como você imaginou.</h2><a href="#inicio" className="mt-9 inline-flex rounded-full bg-[#F7F3EE] px-7 py-3.5 text-sm font-medium text-[#3D1B28] transition-transform hover:-translate-y-0.5">Começar agora <span className="ml-2" aria-hidden="true">↗</span></a></section>
-      <footer className="px-8 pb-8 text-center text-xs text-[#3D1B28]/45">Eventeia — inteligência para eventos extraordinários.</footer>
+      <footer className="px-8 pb-8 text-center text-xs text-[#3D1B28]/45"><span className="font-brand">EventeIA</span> — inteligência para eventos extraordinários.</footer>
     </main>
   )
 }
