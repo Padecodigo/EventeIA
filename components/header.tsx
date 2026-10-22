@@ -4,11 +4,11 @@ const Header: FC = () => {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#EEE7DF] bg-[#F7F3EE]/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-8">
-        <a href="#inicio" className="flex cursor-pointer items-center gap-3" aria-label="Eventeia — início">
-          <img src="/logo-e.png" alt="Eventeia Logo" className="h-9 w-auto shrink-0 object-contain" />
+        <a href="#inicio" className="flex cursor-pointer items-center gap-3" aria-label="EventeIA — início">
+          <img src="/logo-e.png" alt="EventeIA Logo" className="h-9 w-auto shrink-0 object-contain" />
           <span className="flex select-none flex-col justify-center">
-            <span className="font-serif text-xl font-bold leading-none tracking-tight text-[#3D1B28] sm:text-2xl">Eventeia</span>
-            <span className="mt-0.5 text-[9px] font-semibold uppercase leading-tight tracking-[0.15em] text-[#C5A56F] sm:text-[10px]">Você imagina. A Eventeia faz acontecer.</span>
+            <span className="font-brand text-xl leading-none text-[#3D1B28] sm:text-2xl">EventeIA</span>
+            <span className="mt-0.5 text-[9px] font-semibold uppercase leading-tight tracking-[0.15em] text-[#C5A56F] sm:text-[10px]">Você imagina. A EventeIA faz acontecer.</span>
           </span>
         </a>
 

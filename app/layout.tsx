@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "Eventeia — Inteligência para eventos extraordinários",
+  title: "EventeIA — Inteligência para eventos extraordinários",
   description: "Clareza financeira e inteligência para o seu evento.",
 }
 
