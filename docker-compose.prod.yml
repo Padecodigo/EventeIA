@@ -199,7 +199,10 @@ services:
       WEBHOOK_EVENTS_MESSAGES_UPSERT: "true"
       WEBHOOK_EVENTS_CONNECTION_UPDATE: "true"
       WEBHOOK_EVENTS_QRCODE_UPDATED: "true"
-      CORS_ORIGIN: https://${APP_DOMAIN:?}
+      # Só chamadas servidor→servidor (app/worker com apikey). Com uma lista de
+      # origens, a Evolution rejeita requisições SEM header Origin ("Not allowed
+      # by CORS" → 500), quebrando app, healthcheck e Traefik. A proteção é a apikey.
+      CORS_ORIGIN: "*"
       LOG_LEVEL: ERROR,WARN,INFO
       LOG_BAILEYS: error
       TELEMETRY_ENABLED: "false"
