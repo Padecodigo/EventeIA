@@ -5,6 +5,7 @@ import {
   TESTIMONIALS,
 } from "@/components/marketing/testimonials";
 import { TrustStrip } from "@/components/marketing/trust-strip";
+import { pageMetadata } from "@/lib/seo/site";
 
 const STEPS = [
   {
@@ -60,7 +61,13 @@ const DELIVERABLES = [
 
 const testimonial = TESTIMONIALS.find((item) => item.id === "camila");
 
-export const metadata = { title: "Como funciona" };
+export const metadata = pageMetadata({
+  title: "Como funciona",
+  description:
+    "Veja como a EventeIA monta o orçamento da sua festa: você conta o que imagina, cotamos fornecedores pelo WhatsApp e entregamos 3 opções comparadas.",
+  path: "/como-funciona",
+  keywords: ["como fazer orçamento de festa", "cotação de fornecedores"],
+});
 
 export default function ComoFuncionaPage() {
   return (

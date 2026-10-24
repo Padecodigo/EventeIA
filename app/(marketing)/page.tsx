@@ -2,11 +2,22 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { TESTIMONIALS, Testimonials } from "@/components/marketing/testimonials";
+import { JsonLd } from "@/components/seo/json-ld";
 import { formatBRL } from "@/lib/money";
 import { PLANS } from "@/lib/plans";
+import { buildFaq } from "@/lib/seo/faq";
+import { faqLd, graph, localBusinessLd, organizationLd, serviceLd, websiteLd } from "@/lib/seo/jsonld";
+import { SITE_DESCRIPTION, pageMetadata } from "@/lib/seo/site";
 import { getPublishedTestimonials } from "@/lib/testimonials";
 
 export const revalidate = 60;
+
+export const metadata = pageMetadata({
+  title: "Orçamento de festa pelo WhatsApp",
+  description: SITE_DESCRIPTION,
+  path: "/",
+  keywords: ["orçamento de festa infantil", "orçamento de casamento", "festa de 15 anos", "formatura"],
+});
 
 const ticketPriceCents = Number(process.env.B2C_TICKET_PRICE_CENTS ?? "9700");
 
@@ -94,28 +105,7 @@ const TRUST = [
   { title: "Dados protegidos", text: "Usamos seus dados só para cotar o seu evento, conforme a LGPD." },
 ] as const;
 
-const FAQ = [
-  {
-    q: "Para quais eventos a EventeIA funciona?",
-    a: "Para todos: festa infantil, aniversário, 15 anos, formatura, casamento, evento corporativo, chá de bebê, batizado e outras celebrações.",
-  },
-  {
-    q: "Como os fornecedores são contatados?",
-    a: "Pelo WhatsApp que você conecta ao iniciar a busca. As mensagens saem com intervalo, o fornecedor pode pedir para não receber mais e, ao final da busca, a conexão é encerrada por segurança.",
-  },
-  {
-    q: "Quanto custa?",
-    a: `Para quem organiza o próprio evento, um ticket avulso de ${formatBRL(ticketPriceCents)} por evento, sem mensalidade. Cerimonialistas e planners têm planos mensais com créditos.`,
-  },
-  {
-    q: "Sou obrigado a fechar com algum fornecedor?",
-    a: "Não. A EventeIA organiza e compara as propostas; quem decide e negocia é você.",
-  },
-  {
-    q: "Como funciona o pagamento?",
-    a: "Pix seguro ou cartão. Você recebe a confirmação na hora em que o pagamento é aprovado.",
-  },
-] as const;
+const FAQ = buildFaq(ticketPriceCents);
 
 const primaryCta =
   "group inline-flex items-center justify-center gap-2 rounded-full bg-primaria px-7 py-3.5 text-[15px] font-semibold text-white shadow-[0_12px_28px_-10px_rgba(163,72,90,0.6)] transition duration-300 hover:-translate-y-0.5 hover:bg-primaria-escura hover:shadow-[0_14px_32px_-8px_rgba(59,36,32,0.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral-escuro focus-visible:ring-offset-2 active:translate-y-0";
@@ -390,10 +380,12 @@ export default async function LandingPage() {
 
       <Testimonials items={realTestimonials.length > 0 ? realTestimonials : undefined} />
 
+      <JsonLd data={graph([organizationLd(), websiteLd(), serviceLd(ticketPriceCents), localBusinessLd(), faqLd(FAQ)])} />
+
       {/* ================= FAQ ================= */}
-      <section className="mx-auto w-full max-w-3xl px-5 py-20 sm:px-8 lg:py-28">
+      <section id="perguntas" aria-labelledby="faq-titulo" className="mx-auto w-full max-w-3xl px-5 py-20 sm:px-8 lg:py-28">
         <p className="eyebrow">Dúvidas frequentes</p>
-        <h2 className={`mt-4 ${sectionTitle}`}>Perguntas que a gente sempre ouve</h2>
+        <h2 id="faq-titulo" className={`mt-4 ${sectionTitle}`}>Perguntas que a gente sempre ouve</h2>
         <div className="mt-10 space-y-3">
           {FAQ.map((item) => (
             <details key={item.q} className="group rounded-2xl border border-champagne-claro bg-white p-5 transition open:shadow-[0_12px_30px_-18px_rgba(59,36,32,0.3)]">

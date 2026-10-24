@@ -2,6 +2,8 @@ import { Figtree, Fraunces } from "next/font/google";
 
 import type { Metadata } from "next";
 
+import { OG_IMAGE, SEO_KEYWORDS, SITE_DESCRIPTION, SITE_NAME, siteUrl } from "@/lib/seo/site";
+
 import "./globals.css";
 
 /** Títulos: Fraunces (serifa suave, calorosa e premium). Corpo/UI: Figtree (clara e amigável). */
@@ -34,29 +36,33 @@ const body = Figtree({
   display: "swap",
 });
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-
 export const metadata: Metadata = {
-  metadataBase: new URL(appUrl),
+  metadataBase: new URL(siteUrl()),
   title: {
-    default: "EventeIA — Você imagina. A EventeIA faz acontecer.",
+    default: "EventeIA — Orçamento de festa pelo WhatsApp no Vale do Paraíba",
     template: "%s · EventeIA",
   },
-  description:
-    "A EventeIA pede e compara orçamentos de fornecedores pelo WhatsApp para o seu evento — festa infantil, aniversário, 15 anos, formatura, casamento ou corporativo — e entrega 3 opções: preço, custo-benefício e comodidade.",
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  keywords: [...SEO_KEYWORDS],
   // Favicons: app/icon.png (64px) e app/apple-icon.png (180px) — antes era o logo de 325 KB.
+  alternates: { canonical: "/" },
   openGraph: {
-    title: "EventeIA",
-    description: "Cotamos fornecedores do seu evento pelo WhatsApp e entregamos 3 opções: preço, custo-benefício e comodidade.",
+    title: "EventeIA — Orçamento de festa pelo WhatsApp",
+    description: SITE_DESCRIPTION,
+    siteName: SITE_NAME,
     type: "website",
     locale: "pt_BR",
-    images: [{ url: "/EventeIA-celebration.png", width: 1376, height: 768 }],
+    images: [OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    title: "EventeIA",
-    description: "Cotamos fornecedores do seu evento pelo WhatsApp e entregamos 3 opções: preço, custo-benefício e comodidade.",
+    title: "EventeIA — Orçamento de festa pelo WhatsApp",
+    description: SITE_DESCRIPTION,
+    images: [OG_IMAGE.url],
   },
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 } },
+  other: { "llms-txt": "/llms.txt" },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+import type { EventStatRow } from "./analytics";
 import { DEFAULT_FX_BRL_PER_USD_MICRO, microUsdToBrlCents } from "./pricing";
 import type { CostRow, RevenueRow } from "./report";
 
@@ -122,5 +123,39 @@ export async function loadFinance(period: { from: string; to: string }): Promise
     revenue,
     eventTitles: Object.fromEntries((events.data ?? []).map((e) => [e.id, e.title])),
     truncated: [llm.data, entries.data, pays.data].some((d) => (d?.length ?? 0) >= MAX_ROWS),
+  };
+}
+
+export interface EventStats {
+  events: EventStatRow[];
+  paidEventIds: Set<string>;
+}
+
+/** Eventos criados no período (funil e distribuição por tipo/cidade). Somente admin. */
+export async function loadEventStats(period: { from: string; to: string }): Promise<EventStats> {
+  await requireAdmin();
+  const admin = getSupabaseAdmin();
+  const start = `${period.from}T00:00:00Z`;
+  const end = `${period.to}T23:59:59.999Z`;
+  const { data } = await admin
+    .from("events")
+    .select("id,event_type,city,status,quotes_delivered_at")
+    .gte("created_at", start)
+    .lte("created_at", end)
+    .limit(MAX_ROWS);
+  const events: EventStatRow[] = (data ?? []).map((e) => ({
+    id: e.id,
+    eventType: e.event_type,
+    city: e.city,
+    status: e.status,
+    quotesDeliveredAt: e.quotes_delivered_at,
+  }));
+  const ids = events.map((e) => e.id).slice(0, 1000);
+  const paid = ids.length > 0
+    ? await admin.from("payments").select("event_id").in("event_id", ids).in("status", ["paid", "confirmed"])
+    : { data: [] as { event_id: string | null }[] };
+  return {
+    events,
+    paidEventIds: new Set((paid.data ?? []).map((p) => p.event_id).filter((v): v is string => v !== null)),
   };
 }

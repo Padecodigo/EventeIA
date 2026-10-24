@@ -11,6 +11,8 @@ import { signOutAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = { robots: { index: false, follow: false } };
+
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const user = await requireUser();
 

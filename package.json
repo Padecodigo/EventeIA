@@ -26,6 +26,7 @@
     "testimonials:publish": "tsx --env-file=.env.local scripts/publish-testimonial.ts",
     "demo:seed": "tsx --env-file=.env.local scripts/seed-demo.ts",
     "e2e:local": "tsx --env-file=.env.local scripts/e2e-local.ts",
+    "seo:indexnow": "tsx --env-file=.env.local scripts/indexnow-ping.ts",
     "build:workers": "esbuild workers/index.ts --bundle --platform=node --target=node20 --format=cjs --tsconfig=tsconfig.workers.json --outfile=dist/workers.cjs"
   },
   "dependencies": {
