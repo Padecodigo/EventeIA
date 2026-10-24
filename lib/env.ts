@@ -25,6 +25,18 @@ const serverSchema = z.object({
   EVOLUTION_API_KEY: z.string().optional(),
   EVOLUTION_INSTANCE: z.string().min(1).optional(),
   EVOLUTION_WEBHOOK_TOKEN: z.string().min(16).optional(),
+  // WhatsApp Cloud API (Meta) — número da EventeIA (canal primário). Vazio = não configurado.
+  WHATSAPP_CLOUD_TOKEN: z.string().optional(),
+  WHATSAPP_CLOUD_PHONE_NUMBER_ID: z.string().optional(),
+  WHATSAPP_CLOUD_VERIFY_TOKEN: z.string().optional(),
+  WHATSAPP_CLOUD_APP_SECRET: z.string().optional(),
+  WHATSAPP_CLOUD_API_VERSION: z
+    .string()
+    .regex(/^v\d+\.\d+$/)
+    .default("v21.0"),
+  WHATSAPP_CLOUD_FIRST_CONTACT_TEMPLATE: z.string().min(1).default("eventeia_primeiro_contato"),
+  WHATSAPP_CLOUD_TEMPLATE_LANGUAGE: z.string().min(2).default("pt_BR"),
+  WHATSAPP_CLOUD_FIRST_CONTACT_PARAM_COUNT: z.coerce.number().int().min(1).max(10).default(3),
   B2C_TICKET_PRICE_CENTS: z.coerce.number().int().positive().default(9700),
   // Agente Orçamentista: intervalo humanizado entre disparos (clamp 45–90s no worker).
   WHATSAPP_MIN_INTERVAL_SECONDS: z.coerce.number().int().default(60),

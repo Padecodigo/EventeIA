@@ -1,9 +1,14 @@
 import "server-only";
 
 import { serverEnv } from "@/lib/env";
-import { sendText } from "@/lib/evolution-api/client";
 import { logger } from "@/lib/logger";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import {
+  lastInboundAt,
+  resolveEventChannel,
+  sendTextVia,
+  WindowClosedError,
+} from "@/lib/whatsapp/provider";
 
 export interface WhatsappOutboundJob {
   messageId: string;
@@ -19,7 +24,7 @@ export async function handleWhatsappOutboundJob(data: WhatsappOutboundJob): Prom
 
   const { data: message, error } = await admin
     .from("whatsapp_messages")
-    .select("id,to_number_e164,body,status")
+    .select("id,event_id,to_number_e164,body,status")
     .eq("id", data.messageId)
     .maybeSingle();
 
@@ -52,12 +57,30 @@ export async function handleWhatsappOutboundJob(data: WhatsappOutboundJob): Prom
     return;
   }
 
-  const result = await sendText(serverEnv().EVOLUTION_INSTANCE ?? "eventeia", message.to_number_e164, message.body);
+  const channel =
+    message.event_id === null ? "evolution" : await resolveEventChannel(message.event_id);
+  let result: { externalMessageId?: string };
+  try {
+    result = await sendTextVia(channel, {
+      instance: serverEnv().EVOLUTION_INSTANCE ?? "eventeia",
+      to: message.to_number_e164,
+      text: message.body,
+      lastInboundAt: channel === "cloud" ? await lastInboundAt(message.to_number_e164) : null,
+    });
+  } catch (error) {
+    if (!(error instanceof WindowClosedError)) throw error;
+    await admin
+      .from("whatsapp_messages")
+      .update({ status: "canceled", error: "window_closed", channel })
+      .eq("id", message.id);
+    return;
+  }
 
   await admin
     .from("whatsapp_messages")
     .update({
       status: "sent",
+      channel,
       sent_at: new Date().toISOString(),
       external_message_id: result.externalMessageId ?? null,
     })

@@ -9,7 +9,6 @@ import {
   archiveChat,
   checkWhatsappNumber,
   EvolutionSessionError,
-  sendFirstContact,
 } from "@/lib/evolution-api/client";
 import { emitFeed } from "@/lib/feeds";
 import { logger } from "@/lib/logger";
@@ -21,6 +20,7 @@ import {
   type ProspectingJob,
 } from "@/lib/schemas/whatsapp";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { resolveEventChannel, sendFirstContactVia } from "@/lib/whatsapp/provider";
 import { canSendFirstContact, toSessionState } from "@/lib/whatsapp/session-lifecycle";
 import { finishCollection, handleSessionLost } from "@/lib/whatsapp/session-manager";
 import { createSessionDeps, eventPausedKey, findEventInstance, isEventPaused } from "@/lib/whatsapp/session-runtime";
@@ -101,19 +101,24 @@ async function processProspectingJob(
     await delay(job, Date.now() + PAUSED_EVENT_RECHECK_MS, token);
   }
 
-  const { data: instanceRow } = await admin
-    .from("whatsapp_instances")
-    .select("status")
-    .eq("instance_name", data.instance)
-    .maybeSingle();
-  const state = toSessionState(instanceRow?.status ?? "connecting");
+  // Canal do evento: cloud (número EventeIA, sem sessão) ou evolution (WhatsApp do cliente).
+  const channel = await resolveEventChannel(data.eventId);
 
-  if (state === "connecting") {
-    await delay(job, Date.now() + SESSION_WAIT_MS, token); // aguardando QR/pareamento
-  }
-  if (!canSendFirstContact(state)) {
-    logger.info({ prospectId: data.prospectId, state }, "sessão fora de 'active' — envio não iniciado");
-    return;
+  if (channel === "evolution") {
+    const { data: instanceRow } = await admin
+      .from("whatsapp_instances")
+      .select("status")
+      .eq("instance_name", data.instance)
+      .maybeSingle();
+    const state = toSessionState(instanceRow?.status ?? "connecting");
+
+    if (state === "connecting") {
+      await delay(job, Date.now() + SESSION_WAIT_MS, token); // aguardando QR/pareamento
+    }
+    if (!canSendFirstContact(state)) {
+      logger.info({ prospectId: data.prospectId, state }, "sessão fora de 'active' — envio não iniciado");
+      return;
+    }
   }
 
   // Anti-ban: teto diário de primeiros contatos por instância.
@@ -139,8 +144,9 @@ async function processProspectingJob(
   }
 
   // Confirma que o número tem WhatsApp antes de gastar o envio.
+  // (Cloud API: a própria Meta reporta número inválido via status "failed".)
   try {
-    if (!(await checkWhatsappNumber(data.instance, data.phoneE164))) {
+    if (channel === "evolution" && !(await checkWhatsappNumber(data.instance, data.phoneE164))) {
       await admin.from("vendor_prospects").update({ status: "failed" }).eq("id", data.prospectId);
       if (prospect.supplier_id !== null) {
         await admin.from("suppliers").update({ whatsapp_verified: false }).eq("id", prospect.supplier_id);
@@ -166,8 +172,9 @@ async function processProspectingJob(
 
   let externalMessageId: string | undefined;
   try {
-    ({ externalMessageId } = await sendFirstContact(data.instance, {
-      number: data.phoneE164,
+    ({ externalMessageId } = await sendFirstContactVia(channel, {
+      instance: data.instance,
+      to: data.phoneE164,
       text: message,
     }));
   } catch (error) {
@@ -184,6 +191,7 @@ async function processProspectingJob(
       event_id: data.eventId,
       direction: "outbound",
       template: "vendor_first_contact",
+      channel,
       to_number_e164: data.phoneE164,
       body: message,
       status: "sent",
@@ -215,7 +223,7 @@ async function processProspectingJob(
     .select("number_mode")
     .eq("instance_name", data.instance)
     .maybeSingle();
-  if (modeRow?.number_mode === "personal") {
+  if (channel === "evolution" && modeRow?.number_mode === "personal") {
     try {
       await archiveChat(data.instance, data.phoneE164);
     } catch {
