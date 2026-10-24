@@ -1,0 +1,9 @@
+# pnpm >= 10 bloqueia scripts de build por padrão; libera só os necessários.
+allowBuilds:
+  esbuild: true
+  msgpackr-extract: true
+  unrs-resolver: true
+onlyBuiltDependencies:
+  - esbuild
+  - msgpackr-extract
+  - unrs-resolver
