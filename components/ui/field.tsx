@@ -15,7 +15,7 @@ export function Field({ label, hint, className = "", id, ...props }: FieldProps)
       </label>
       <input
         id={inputId}
-        className={`h-12 rounded-xl border border-line-subtle bg-off-white px-4 text-sm text-vinho placeholder:text-vinho/70 focus:border-champagne ${className}`}
+        className={`h-12 rounded-xl border border-line-subtle bg-off-white px-4 text-sm text-vinho placeholder:text-vinho/70 focus:border-primaria focus:ring-2 focus:ring-primaria/15 ${className}`}
         {...props}
       />
       {hint !== undefined ? <p className="text-caption text-vinho/70">{hint}</p> : null}

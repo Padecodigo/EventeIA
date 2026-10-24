@@ -48,7 +48,7 @@ export default async function CreditsPage() {
           <form action={createWorkspaceAction}>
             <button
               type="submit"
-              className="rounded-full bg-vinho px-6 py-3 text-sm font-medium text-off-white transition hover:bg-vinho/90"
+              className="rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-white transition hover:bg-primaria-escura"
             >
               Criar meu workspace
             </button>
@@ -132,7 +132,7 @@ export default async function CreditsPage() {
                 key={plan.code}
                 className={
                   plan.featured
-                    ? "flex flex-col rounded-card border border-champagne/50 bg-vinho p-6 text-off-white shadow-raised"
+                    ? "flex flex-col rounded-card bg-white p-6 shadow-raised ring-2 ring-primaria"
                     : "flex flex-col rounded-card border border-line-subtle bg-off-white p-6 shadow-soft"
                 }
               >

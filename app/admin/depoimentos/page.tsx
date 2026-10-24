@@ -119,7 +119,7 @@ export default async function AdminTestimonialsPage() {
                     <input type="hidden" name="testimonialId" value={item.id} />
                     <button
                       type="submit"
-                      className="rounded-full bg-vinho px-4 py-2 text-sm font-medium text-off-white transition hover:bg-vinho/90"
+                      className="rounded-full bg-primaria px-4 py-2 text-sm font-semibold text-white transition hover:bg-primaria-escura"
                     >
                       Aprovar e publicar
                     </button>

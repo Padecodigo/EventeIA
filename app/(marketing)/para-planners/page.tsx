@@ -54,7 +54,7 @@ export default async function ParaPlannersPage() {
           <div className="mt-9 flex flex-wrap items-center gap-4">
             <Link
               href="/registrar"
-              className="rounded-full bg-vinho px-6 py-3.5 text-sm font-medium text-off-white transition hover:bg-vinho/90"
+              className="rounded-full bg-primaria px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-primaria-escura"
             >
               Quero conhecer <span aria-hidden="true">↗</span>
             </Link>
@@ -153,7 +153,7 @@ export default async function ParaPlannersPage() {
                   href="/registrar"
                   className={
                     plan.featured
-                      ? "mt-8 inline-flex rounded-full bg-champagne px-5 py-3 text-sm font-medium text-vinho transition hover:bg-champagne-claro"
+                      ? "mt-8 inline-flex rounded-full bg-[#FF9466] px-5 py-3 text-sm font-semibold text-vinho transition hover:bg-champagne-claro"
                       : "mt-8 inline-flex rounded-full border border-champagne px-5 py-3 text-sm font-medium text-vinho transition hover:bg-champagne-claro/40"
                   }
                 >
@@ -183,7 +183,7 @@ export default async function ParaPlannersPage() {
               </p>
               <Link
                 href="/registrar"
-                className="mt-8 inline-flex rounded-full bg-vinho px-6 py-3 text-sm font-medium text-off-white transition hover:bg-vinho/90"
+                className="mt-8 inline-flex rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-white transition hover:bg-primaria-escura"
               >
                 Quero experimentar
               </Link>

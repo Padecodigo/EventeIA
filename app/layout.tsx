@@ -1,26 +1,19 @@
-import { Caveat, Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Figtree, Fraunces } from "next/font/google";
 
 import type { Metadata } from "next";
 
 import "./globals.css";
 
-/** Display: Plus Jakarta Sans (geométrica, moderna). Corpo/UI: Inter (limpa, confiável). */
-const display = Plus_Jakarta_Sans({
+/** Títulos: Fraunces (serifa suave, calorosa e premium). Corpo/UI: Figtree (clara e amigável). */
+const display = Fraunces({
   subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
+  weight: ["500", "600", "700"],
+  style: ["normal", "italic"],
   variable: "--font-display",
   display: "swap",
 });
 
-/** Acento manuscrito: Caveat — só em palavras de destaque (calor humano). */
-const script = Caveat({
-  subsets: ["latin"],
-  weight: ["600", "700"],
-  variable: "--font-script",
-  display: "swap",
-});
-
-const body = Inter({
+const body = Figtree({
   subsets: ["latin"],
   variable: "--font-body",
   display: "swap",
@@ -53,7 +46,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt-BR" className={`${display.variable} ${body.variable} ${script.variable}`}>
+    <html lang="pt-BR" className={`${display.variable} ${body.variable}`}>
       <body>{children}</body>
     </html>
   );

@@ -2,16 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design System "Festa Clara" (v2) — nomes históricos, valores novos. Ver tailwind.config.ts */
+/* Design System "Jardim" (v3) — nomes históricos, valores novos. Ver tailwind.config.ts */
 :root {
-  --color-vinho: #2B1E1A;
-  --color-areia-quente: #FFF8F1;
-  --color-areia-secundaria: #FDEEE3;
+  --color-vinho: #13302B;
+  --color-areia-quente: #F6FAF7;
+  --color-areia-secundaria: #E3F1EA;
   --color-off-white: #ffffff;
-  --color-champagne: #ff7a45;
-  --color-champagne-claro: #ffe1d1;
+  --color-champagne: #ff9466;
+  --color-champagne-claro: #ffe7dc;
+  --color-primaria: #0f766e;
 
-  --color-primary: var(--color-vinho);
+  --color-primary: var(--color-primaria);
   --color-accent: var(--color-champagne);
   --color-surface: var(--color-off-white);
   --color-surface-warm: var(--color-areia-quente);
@@ -19,30 +20,45 @@
   --color-text: var(--color-vinho);
   --color-text-inverse: var(--color-off-white);
   --color-text-accent: var(--color-champagne);
-  --color-border-subtle: rgba(30, 42, 74, 0.12);
-  --color-border-strong: rgba(30, 42, 74, 0.28);
-  --color-ring: #c2410c; /* coral-escuro: 3:1+ sobre fundos claros */
+  --color-border-subtle: rgba(19, 48, 43, 0.12);
+  --color-border-strong: rgba(19, 48, 43, 0.28);
+  --color-ring: #0f766e; /* esmeralda: 3:1+ sobre fundos claros */
 
-  --font-serif: var(--font-display), "Plus Jakarta Sans", system-ui, sans-serif;
-  --font-sans: var(--font-body), "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: var(--font-display), "Fraunces", Georgia, serif;
+  --font-sans: var(--font-body), "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
 
   --radius-card: 1rem;
-  --shadow-soft: 0 1px 2px rgba(30, 42, 74, 0.06), 0 8px 24px rgba(30, 42, 74, 0.06);
-  --shadow-raised: 0 2px 4px rgba(30, 42, 74, 0.08), 0 16px 40px rgba(30, 42, 74, 0.1);
+  --shadow-soft: 0 1px 2px rgba(19, 48, 43, 0.06), 0 8px 24px rgba(19, 48, 43, 0.06);
+  --shadow-raised: 0 2px 4px rgba(19, 48, 43, 0.08), 0 16px 40px rgba(19, 48, 43, 0.1);
   --ease-editorial: cubic-bezier(0.2, 0, 0, 1);
 }
 
 @layer components {
+  /* Botões e cartões unificados (landing, auth, painel) */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_-12px_rgba(15,118,110,0.7)] transition hover:-translate-y-0.5 hover:bg-primaria-escura disabled:translate-y-0;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-vinho/15 bg-white px-6 py-3 text-sm font-semibold text-vinho transition hover:border-primaria/40 hover:bg-verde-claro/50;
+  }
+  .card {
+    @apply rounded-card border border-line-subtle bg-white shadow-soft;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-display), "Fraunces", Georgia, serif;
+    letter-spacing: -0.015em;
+  }
+
   /* Eyebrow em chip acessível: champagne como fundo (nunca como texto sobre claro) */
   .eyebrow {
     @apply inline-flex w-fit items-center gap-2 rounded-full border border-vinho/10 bg-white/70 px-3 py-1 text-xs font-semibold text-vinho/80 shadow-sm backdrop-blur;
   }
 
-  /* Wordmark: Plus Jakarta Sans 800 (var fornecida por next/font) */
+  /* Wordmark: Fraunces 600 (var fornecida por next/font) */
   .font-brand {
-    font-family: var(--font-display), "Plus Jakarta Sans", system-ui, sans-serif;
-    font-weight: 800;
-    letter-spacing: -0.02em;
+    font-family: var(--font-display), "Fraunces", Georgia, serif;
+    font-weight: 600;
+    letter-spacing: -0.015em;
   }
 }
 

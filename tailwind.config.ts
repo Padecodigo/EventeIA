@@ -1,18 +1,15 @@
 import type { Config } from "tailwindcss";
 
 /**
- * EventeIA — Design System "Festa Clara" (v2, out/2026)
- * Fonte da verdade: .context/DESIGN_SYSTEM.md.
- *
- * Os NOMES históricos dos tokens (vinho, champagne, areia…) foram mantidos para
- * não quebrar o painel e as demais páginas; os VALORES mudaram:
- *   vinho          → azul-noite profundo #2B1E1A (texto/primária — confiança, AA em todo fundo claro)
- *   champagne      → coral #FF7A45 (CTA e destaques; texto azul-noite sobre coral = 5,6:1)
- *   champagne-claro→ pêssego #FFE1D1
- *   areia-quente   → creme #FFF8F1 · areia-secundaria → #FDEEE3 · off-white → #FFFFFF
- * Novos acentos decorativos: sol #FFC94D, menta #2BB59A, lilas #8B7CF6 (nunca como texto pequeno).
- * - Tipografia: Plus Jakarta Sans (display) · Inter (corpo/UI).
- * - O produto é light-first; dark mode não faz parte do DS v1.
+ * EventeIA — Design System "Jardim" (v3, out/2026)
+ * Nomes históricos dos tokens mantidos; valores novos:
+ *   vinho/noite/ink → verde-tinta #13302B (texto; AA em todo fundo claro)
+ *   primaria        → esmeralda #0F766E (CTA; texto branco = 5,5:1)
+ *   champagne/coral → pêssego #FF9466 (acento; só com texto verde-tinta, 7:1)
+ *   champagne-claro → pêssego suave #FFE7DC
+ *   coral-escuro    → esmeralda #0F766E (texto de destaque sobre claro, AA)
+ *   areia-quente    → #F6FAF7 (fundo) · areia-secundaria → #E3F1EA (faixas)
+ * Tipografia: Fraunces (títulos) · Figtree (corpo/UI).
  */
 const config: Config = {
   content: [
@@ -31,40 +28,43 @@ const config: Config = {
        * ====================================================== */
       colors: {
         /* ---- Paleta canônica (hex oficial) ---- */
-        vinho: "#2B1E1A", // azul-noite (nome histórico mantido)
-        "areia-quente": "#FFF8F1",
-        "areia-secundaria": "#FDEEE3",
+        vinho: "#13302B", // azul-noite (nome histórico mantido)
+        "areia-quente": "#F6FAF7",
+        "areia-secundaria": "#E3F1EA",
         "off-white": "#FFFFFF",
-        champagne: "#FF7A45", // coral
-        coral: "#FF7A45",
-        "coral-escuro": "#C2410C", // texto coral sobre claro (AA)
-        noite: "#2B1E1A",
+        champagne: "#FF9466", // coral
+        coral: "#FF9466",
+        "coral-escuro": "#0F766E", // texto coral sobre claro (AA)
+        noite: "#13302B",
         sol: "#FFC94D",
         menta: "#2BB59A",
         lilas: "#8B7CF6",
-        "champagne-claro": "#FFE1D1",
+        "champagne-claro": "#FFE7DC",
+        primaria: "#0F766E",
+        "primaria-escura": "#0B5E58",
+        "verde-claro": "#E3F1EA",
 
         /* ---- Tokens semânticos (preferidos nos componentes) ---- */
         brand: {
-          primary: "#2B1E1A",
-          accent: "#FF7A45",
-          accentSoft: "#FFE1D1",
+          primary: "#0F766E",
+          accent: "#FF9466",
+          accentSoft: "#FFE7DC",
         },
         surface: {
           canvas: "#FFFFFF",   // cards, campos
-          warm: "#FFF8F1",     // fundo padrão de página
-          muted: "#FDEEE3",    // faixas alternadas, linhas de tabela
-          dark: "#2B1E1A",     // seções editoriais escuras
+          warm: "#F6FAF7",     // fundo padrão de página
+          muted: "#E3F1EA",    // faixas alternadas, linhas de tabela
+          dark: "#13302B",     // seções editoriais escuras
         },
         ink: {
-          primary: "#2B1E1A",
+          primary: "#13302B",
           inverse: "#FFFFFF",
-          accent: "#FF7A45",   // apenas sobre azul-noite (contraste AA)
-          soft: "#FFE1D1",
+          accent: "#FF9466",   // apenas sobre azul-noite (contraste AA)
+          soft: "#FFE7DC",
         },
         line: {
-          subtle: "rgba(30, 42, 74, 0.12)",
-          strong: "rgba(30, 42, 74, 0.28)",
+          subtle: "rgba(19, 48, 43, 0.12)",
+          strong: "rgba(19, 48, 43, 0.28)",
         },
         /** Estados semânticos — uso restrito a validação (ícones/labels) */
         semantic: {
@@ -78,15 +78,15 @@ const config: Config = {
        * ====================================================== */
       fontFamily: {
         /* Wordmark da marca: Bodoni Moda (exceção editorial — ver DESIGN_SYSTEM.md §4.1) */
-        brand: ["var(--font-display)", "Plus Jakarta Sans", "system-ui", "sans-serif"],
+        brand: ["var(--font-display)", "Fraunces", "Georgia", "serif"],
         /* "serif" mantido como nome do token de títulos; agora é a display arredondada */
-        serif: ["var(--font-display)", "Plus Jakarta Sans", "system-ui", "sans-serif"],
-        display: ["var(--font-display)", "Plus Jakarta Sans", "system-ui", "sans-serif"],
+        serif: ["var(--font-display)", "Fraunces", "Georgia", "serif"],
+        display: ["var(--font-display)", "Fraunces", "Georgia", "serif"],
         /* acento manuscrito (uma ou duas palavras por seção, nunca texto corrido) */
-        script: ["var(--font-script)", "cursive"],
+        script: ["var(--font-display)", "Georgia", "serif"],
         sans: [
           "var(--font-body)",
-          "Inter",
+          "Figtree",
           "system-ui",
           "-apple-system",
           "Segoe UI",
@@ -114,27 +114,27 @@ const config: Config = {
       },
 
       fontWeight: {
-        /* Plus Jakarta Sans 800 = títulos; Inter 400/500 = corpo/UI */
-        display: "800",
+        /* Fraunces 600 = títulos; Figtree 400/500 = corpo/UI */
+        display: "600",
       },
 
       /* ======================================================
        * RITMO VISUAL
        * ====================================================== */
       borderRadius: {
-        card: "1rem",
+        card: "1.25rem",
         pill: "999px",
       },
 
       boxShadow: {
-        soft: "0 1px 2px rgba(30, 42, 74, 0.06), 0 8px 24px rgba(30, 42, 74, 0.06)",
-        raised: "0 2px 4px rgba(30, 42, 74, 0.08), 0 16px 40px rgba(30, 42, 74, 0.10)",
-        gold: "0 0 0 1px rgba(255, 122, 69, 0.55), 0 8px 24px rgba(255, 122, 69, 0.25)",
+        soft: "0 1px 2px rgba(19, 48, 43, 0.06), 0 8px 24px rgba(19, 48, 43, 0.06)",
+        raised: "0 2px 4px rgba(19, 48, 43, 0.08), 0 16px 40px rgba(19, 48, 43, 0.10)",
+        gold: "0 0 0 1px rgba(15, 118, 110, 0.55), 0 8px 24px rgba(15, 118, 110, 0.25)",
       },
 
       backgroundImage: {
         "gold-sheen":
-          "linear-gradient(135deg, #FFE1D1 0%, #FF7A45 50%, #FFC94D 100%)",
+          "linear-gradient(135deg, #FFE7DC 0%, #FF9466 55%, #FFC94D 100%)",
       },
 
       transitionTimingFunction: {

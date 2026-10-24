@@ -65,7 +65,7 @@ const toneClasses: Record<Testimonial["tone"], string> = {
 
 export function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
   return (
-    <article className="flex h-full flex-col rounded-3xl border border-champagne-claro bg-white p-7 shadow-[0_20px_50px_-30px_rgba(194,65,12,0.35)]">
+    <article className="flex h-full flex-col rounded-3xl border border-champagne-claro bg-white p-7 shadow-[0_20px_50px_-30px_rgba(15,118,110,0.35)]">
       <p aria-label="5 de 5 estrelas" className="mb-3 tracking-[0.2em] text-amber-400">★★★★★</p>
       <p className="text-body-lg leading-relaxed text-vinho">
         “{testimonial.quote}”
@@ -101,7 +101,7 @@ export function Testimonials({ items }: { items?: readonly TestimonialCardData[]
   const list = hasRealTestimonials ? items : TESTIMONIALS;
 
   return (
-    <section className="bg-gradient-to-b from-[#FFF4EA] to-[#FFF9F3] py-20 lg:py-28">
+    <section className="bg-gradient-to-b from-[#F6FAF7] to-[#FFF6F1] py-20 lg:py-28">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-8">
         <p className="eyebrow">Histórias que emocionam</p>
         <div className="mt-3 flex flex-wrap items-end justify-between gap-4">

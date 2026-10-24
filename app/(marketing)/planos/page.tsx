@@ -35,7 +35,7 @@ export default function PlansPage() {
           </ul>
           <Link
             href="/registrar"
-            className="mt-8 rounded-full bg-vinho px-5 py-3 text-center text-sm font-medium text-off-white transition hover:bg-vinho/90"
+            className="mt-8 rounded-full bg-primaria px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-primaria-escura"
           >
             Começar
           </Link>
@@ -73,7 +73,7 @@ export default function PlansPage() {
                 href="/registrar"
                 className={
                   plan.featured
-                    ? "mt-8 rounded-full bg-champagne px-5 py-3 text-center text-sm font-medium text-vinho transition hover:bg-champagne-claro"
+                    ? "mt-8 rounded-full bg-[#FF9466] px-5 py-3 text-center text-sm font-semibold text-vinho transition hover:bg-champagne-claro"
                     : "mt-8 rounded-full border border-champagne px-5 py-3 text-center text-sm font-medium text-vinho transition hover:bg-champagne-claro/40"
                 }
               >

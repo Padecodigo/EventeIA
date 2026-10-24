@@ -60,10 +60,10 @@ export function NotificationsPoller() {
   return (
     <div className="fixed bottom-6 right-6 z-50 flex max-w-sm flex-col gap-3" aria-live="polite" role="status">
       {toasts.map((item) => (
-        <div key={item.id} className="rounded-2xl border border-line-subtle bg-off-white p-4 text-sm text-vinho shadow-lg">
+        <div key={item.id} className="rounded-card border border-line-subtle border-l-4 border-l-primaria bg-white p-4 text-sm text-vinho shadow-raised">
           <p>{toastMessageFor(item)}</p>
           <div className="mt-3 flex gap-4">
-            <Link href={eventHref(item)} className="font-semibold underline" onClick={() => dismiss(item.id)}>
+            <Link href={eventHref(item)} className="font-semibold text-primaria underline underline-offset-4" onClick={() => dismiss(item.id)}>
               Ver orçamentos
             </Link>
             <button type="button" className="text-vinho/70" onClick={() => dismiss(item.id)}>

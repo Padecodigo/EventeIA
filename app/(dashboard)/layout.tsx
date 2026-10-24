@@ -21,17 +21,17 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const user = await requireUser();
 
   return (
-    <div className="min-h-screen bg-areia-quente text-vinho">
-      <header className="border-b border-line-subtle bg-off-white">
+    <div className="min-h-screen bg-[radial-gradient(60%_40%_at_100%_0%,#E3F1EA,transparent)] bg-areia-quente text-vinho">
+      <header className="sticky top-0 z-40 border-b border-line-subtle bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
           <Link href="/painel" className="flex items-center gap-3">
-            <Image src="/logo-e.png" alt="EventeIA" width={32} height={32} priority />
-            <span className="font-serif text-lg font-semibold tracking-editorial">EventeIA</span>
+            <Image src="/logo-e.png" alt="EventeIA" width={120} height={67} priority className="h-9 w-auto object-contain" />
+            <span className="font-brand text-xl leading-none text-vinho sm:text-2xl">EventeIA</span>
           </Link>
 
-          <nav className="flex items-center gap-6 text-sm text-vinho/75">
+          <nav aria-label="Navegação do painel" className="flex items-center gap-1 text-sm font-medium text-vinho/75">
             {navItems.map((item) => (
-              <Link key={item.href} href={item.href} className="transition hover:text-vinho">
+              <Link key={item.href} href={item.href} className="rounded-full px-4 py-2 transition hover:bg-verde-claro hover:text-vinho">
                 {item.label}
               </Link>
             ))}
@@ -42,7 +42,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
             <form action={signOutAction}>
               <button
                 type="submit"
-                className="rounded-xl border border-line-subtle px-4 py-2 text-sm text-vinho/80 transition hover:bg-areia-quente"
+                className="rounded-full border border-vinho/15 bg-white px-4 py-2 text-sm font-semibold text-vinho transition hover:border-primaria/40 hover:bg-verde-claro/50"
               >
                 Sair
               </button>
@@ -52,6 +52,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       </header>
 
       <main className="mx-auto w-full max-w-6xl px-6 py-10">{children}</main>
+      <footer className="border-t border-line-subtle py-6 text-center text-[11px] text-vinho/60">
+        © {new Date().getFullYear()} EventeIA · Pagamentos via Pix e cartão · Dados protegidos (LGPD)
+      </footer>
       <NotificationsPoller />
     </div>
   );

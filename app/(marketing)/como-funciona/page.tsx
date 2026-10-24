@@ -130,7 +130,7 @@ export default function ComoFuncionaPage() {
             </p>
             <Link
               href="/registrar"
-              className="mt-8 inline-flex rounded-full bg-vinho px-6 py-3 text-sm font-medium text-off-white transition hover:bg-vinho/90"
+              className="mt-8 inline-flex rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-white transition hover:bg-primaria-escura"
             >
               Começar o meu evento
             </Link>

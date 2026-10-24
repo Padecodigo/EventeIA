@@ -98,7 +98,7 @@ export default async function DashboardPage() {
             </p>
             <Link
               href="/eventos"
-              className="mt-6 inline-flex rounded-xl bg-vinho px-6 py-3 text-sm font-medium text-off-white transition hover:bg-vinho/90"
+              className="mt-6 inline-flex rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-white transition hover:bg-primaria-escura"
             >
               Criar primeiro evento
             </Link>
