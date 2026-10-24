@@ -37,6 +37,8 @@ export interface LlmCompletion {
   content: string;
   inputTokens?: number;
   outputTokens?: number;
+  /** DeepSeek: prompt_cache_hit_tokens (parte de inputTokens). */
+  cacheHitTokens?: number;
 }
 
 export interface LlmClient {
@@ -80,6 +82,10 @@ export interface UsageLedger {
     outputTokens: number;
     costMicroUsd: number;
     outcome: "ok" | "invalid" | "low_confidence" | "error";
+    cacheHitTokens?: number;
+    peak?: boolean;
+    eventId?: string;
+    reason?: string;
   }): Promise<void>;
 }
 
@@ -124,6 +130,8 @@ export interface Router {
     confidence?: (value: T) => number;
     contingency: () => T;
     maxTokens?: number;
+    /** Contexto de cobrança para o painel financeiro. */
+    meta?: { eventId?: string; reason?: string };
   }): Promise<RouteResult<T>>;
   /** Pergunta ao teto se o Grok pode gastar `estimatedMicroUsd` (usado pela descoberta). */
   grokAllowed(estimatedMicroUsd: number): Promise<boolean>;
@@ -146,6 +154,9 @@ export function createRouter(options: {
   prices: PriceTable;
   cap: GrokCapConfig;
   onCapAlert?: (info: { task: LlmTask; estimatedMicroUsd: number }) => void;
+  /** Custo real por chamada (ex.: DeepSeek pico/fora de pico + cache). Padrão: tabela simples. */
+  cost?: (provider: LlmProviderName, usage: { inputTokens: number; outputTokens: number; cacheHitTokens: number }, at: Date) => { costMicroUsd: number; peak?: boolean } | null;
+  now?: () => Date;
 }): Router {
   const byName = new Map(options.clients.map((c) => [c.name, c]));
   const grokAllowed = async (est: number) => grokWithinCap(await options.ledger.totals(), est, options.cap);
@@ -153,7 +164,7 @@ export function createRouter(options: {
   return {
     grokAllowed,
     record: (e) => options.ledger.record(e),
-    async run({ task, messages, schema, confidence, contingency, maxTokens = 1200 }) {
+    async run({ task, messages, schema, confidence, contingency, maxTokens = 1200, meta }) {
       const attempts: RouteResult<unknown>["attempts"] = [];
       const inEst = estimateTokens(messages.map((m) => m.content).join("\n"));
       for (const name of providerOrder(task, [...byName.keys()])) {
@@ -171,23 +182,33 @@ export function createRouter(options: {
         let outcome: "ok" | "invalid" | "low_confidence" | "error" = "error";
         let inTok = inEst;
         let outTok = 0;
+        let hitTok = 0;
+        const entry = (o: "ok" | "invalid" | "low_confidence" | "error") => {
+          const usage = { inputTokens: inTok, outputTokens: outTok, cacheHitTokens: hitTok };
+          const c = options.cost?.(name, usage, (options.now ?? (() => new Date()))()) ?? { costMicroUsd: costMicroUsd(price, inTok, outTok) };
+          return {
+            provider: name, task, inputTokens: inTok, outputTokens: outTok, costMicroUsd: c.costMicroUsd, outcome: o,
+            cacheHitTokens: hitTok, peak: c.peak, eventId: meta?.eventId, reason: meta?.reason ?? task,
+          };
+        };
         try {
           const res = await client.complete({ messages, maxTokens, json: true, task });
           inTok = res.inputTokens ?? inEst;
           outTok = res.outputTokens ?? estimateTokens(res.content);
+          hitTok = Math.min(res.cacheHitTokens ?? 0, inTok);
           const parsed = schema.safeParse(parseJson(res.content));
           if (!parsed.success) outcome = "invalid";
           else if (confidence !== undefined && confidence(parsed.data) < MIN_CONFIDENCE) outcome = "low_confidence";
           else {
             outcome = "ok";
-            await options.ledger.record({ provider: name, task, inputTokens: inTok, outputTokens: outTok, costMicroUsd: costMicroUsd(price, inTok, outTok), outcome });
+            await options.ledger.record(entry(outcome));
             attempts.push({ provider: name, outcome });
             return { value: parsed.data, provider: name, attempts };
           }
         } catch {
           outcome = "error";
         }
-        await options.ledger.record({ provider: name, task, inputTokens: inTok, outputTokens: outTok, costMicroUsd: costMicroUsd(price, inTok, outTok), outcome });
+        await options.ledger.record(entry(outcome));
         attempts.push({ provider: name, outcome });
       }
       return { value: contingency(), provider: "contingency", attempts };

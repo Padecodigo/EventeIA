@@ -142,6 +142,8 @@ export interface Database {
           | "refunded"
           | "risk_review"
           | "chargeback";
+        asaas_fee_cents: number | null;
+        net_cents: number | null;
         credits_granted: number | null;
         workspace_id: string | null;
         coupon_code: string | null;
@@ -316,6 +318,45 @@ export interface Database {
         output_tokens: number;
         cost_micro_usd: number;
         outcome: "ok" | "invalid" | "low_confidence" | "error";
+        event_id: string | null;
+        profile_id: string | null;
+        reason: string | null;
+        model: string | null;
+        cache_hit_tokens: number;
+        peak: boolean | null;
+        fx_brl_per_usd_micro: number | null;
+        cost_brl_cents: number | null;
+        created_at: string;
+      }>;
+      cost_entries: Table<{
+        id: string;
+        occurred_at: string;
+        provider: "deepseek" | "xai" | "nim" | "search" | "fetch" | "whatsapp" | "asaas" | "vps" | "supabase" | "domain" | "other";
+        kind: "variable" | "fixed";
+        reason: string;
+        event_id: string | null;
+        workspace_id: string | null;
+        profile_id: string | null;
+        quantity: number;
+        unit_price_micro_usd: number;
+        cost_micro_usd: number;
+        fx_brl_per_usd_micro: number;
+        cost_brl_cents: number;
+        note: string | null;
+        created_by: string | null;
+        created_at: string;
+      }>;
+      pricing_rates: Table<{
+        key: string;
+        micro_usd: number;
+        unit: "per_1m_tokens" | "per_1k_requests" | "per_unit";
+        updated_by: string | null;
+        updated_at: string;
+      }>;
+      fx_rates: Table<{
+        rate_date: string;
+        brl_per_usd_micro: number;
+        source: string;
         created_at: string;
       }>;
       consents: Table<{

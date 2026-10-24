@@ -9,7 +9,14 @@ export const DEFAULT_DEEPSEEK_MODEL = "deepseek-flash";
 /** Cliente OpenAI-compatível (/chat/completions) — NIM, xAI e DeepSeek. Sem SDK. */
 const completionSchema = z.object({
   choices: z.array(z.object({ message: z.object({ content: z.string().nullable().optional() }) })).min(1),
-  usage: z.object({ prompt_tokens: z.number().int().min(0), completion_tokens: z.number().int().min(0) }).optional(),
+  usage: z
+    .object({
+      prompt_tokens: z.number().int().min(0),
+      completion_tokens: z.number().int().min(0),
+      // DeepSeek: tokens de entrada servidos do cache de contexto.
+      prompt_cache_hit_tokens: z.number().int().min(0).optional(),
+    })
+    .optional(),
 });
 
 export const LLM_ENDPOINTS: Record<LlmProviderName, { baseUrl: string; model: string }> = {
@@ -51,7 +58,12 @@ export function createOpenAiCompatibleClient(options: {
       const parsed = completionSchema.parse(await res.json());
       const content = parsed.choices[0]?.message.content ?? "";
       if (content.length === 0) throw new Error(`${options.name}: resposta vazia`);
-      return { content, inputTokens: parsed.usage?.prompt_tokens, outputTokens: parsed.usage?.completion_tokens };
+      return {
+        content,
+        inputTokens: parsed.usage?.prompt_tokens,
+        outputTokens: parsed.usage?.completion_tokens,
+        cacheHitTokens: parsed.usage?.prompt_cache_hit_tokens,
+      };
     },
   };
 }
