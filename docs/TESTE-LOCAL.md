@@ -83,3 +83,10 @@ docker compose -f docker-compose.dev.yml down     # mantém volumes (dados)
 ```
 
 Não use `down -v` se quiser preservar as instâncias do WhatsApp e o Redis.
+
+## Notas
+
+- **Porta 6379 ocupada?** Se já houver um Redis no host, não suba o serviço `redis` (`docker compose ... up -d evolution-db evolution-api`) e mantenha `REDIS_URL` apontando para o existente — ou troque o mapeamento para `127.0.0.1:6380:6379` e use `REDIS_URL=redis://localhost:6380`.
+- `EVOLUTION_API_KEY` precisa estar preenchida no `.env.local` (gere com `openssl rand -hex 24`).
+- Sem plugin compose via dnf/sudo: baixe o binário em `~/.docker/cli-plugins/docker-compose` (releases do docker/compose).
+- Consumo aproximado: Redis ~10 MB, Evolution ~250–400 MB, Postgres da Evolution ~50 MB.
