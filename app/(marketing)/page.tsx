@@ -158,7 +158,7 @@ export default async function LandingPage() {
         </div>
 
         <div className="mx-auto grid w-full max-w-7xl gap-6 px-5 pb-14 pt-4 sm:px-8 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:gap-12 lg:pb-20 lg:pt-10">
-          <div className="ev-fade-up">
+          <div className="ev-rise">
             <p className="eyebrow hidden sm:inline-flex">
               <span aria-hidden="true" className="text-coral-escuro">♥</span>
               Festa infantil · 15 anos · Formatura · Casamento · Corporativo
@@ -219,7 +219,7 @@ export default async function LandingPage() {
               {MOSAIC.map((photo, index) => (
                 <figure
                   key={photo.src}
-                  className={`ev-photo group absolute ${photo.pos} rounded-[18px] bg-white p-1.5 pb-6 shadow-[0_18px_40px_-14px_rgba(59,36,32,0.45)] ring-1 ring-black/5 transition duration-500 ease-out hover:z-50 hover:-translate-y-2 hover:rotate-0 hover:scale-[1.06] hover:shadow-[0_34px_70px_-20px_rgba(59,36,32,0.6)] sm:p-2.5 sm:pb-9`}
+                  className={`ev-photo group absolute ${photo.pos} rounded-[18px] bg-white p-1.5 pb-6 shadow-[0_18px_40px_-14px_rgba(59,36,32,0.45)] ring-1 ring-black/5 transition-[transform,box-shadow] duration-500 ease-out hover:z-50 hover:-translate-y-2 hover:rotate-0 hover:scale-[1.06] hover:shadow-[0_34px_70px_-20px_rgba(59,36,32,0.6)] sm:p-2.5 sm:pb-9`}
                 >
                   <div className={`relative overflow-hidden rounded-[12px] ${photo.ratio}`}>
                     <Image
@@ -227,12 +227,13 @@ export default async function LandingPage() {
                       alt={photo.alt}
                       fill
                       priority={index === 0}
-                      sizes={index === 0 ? "(max-width: 1024px) 46vw, 300px" : "(max-width: 1024px) 40vw, 260px"}
-                      className="object-cover transition duration-700 ease-out group-hover:scale-110"
+                      quality={70}
+                      sizes={index === 0 ? "(max-width: 640px) 42vw, 270px" : "(max-width: 640px) 38vw, 245px"}
+                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                     />
-                    <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-primaria/25 to-transparent opacity-0 transition duration-500 group-hover:opacity-100" />
+                    <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-primaria/25 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
                   </div>
-                  <figcaption className="absolute inset-x-0 bottom-0.5 text-center font-display text-sm italic font-medium leading-6 text-vinho/80 transition duration-500 group-hover:-translate-y-0.5 group-hover:text-coral-escuro sm:bottom-1.5 sm:text-2xl sm:leading-7">
+                  <figcaption className="absolute inset-x-0 bottom-0.5 text-center font-display text-sm italic font-medium leading-6 text-vinho/80 transition-[transform,color] duration-500 group-hover:-translate-y-0.5 group-hover:text-coral-escuro sm:bottom-1.5 sm:text-2xl sm:leading-7">
                     {photo.label}
                   </figcaption>
                 </figure>
