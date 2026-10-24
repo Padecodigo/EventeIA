@@ -10,7 +10,14 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { defaultStageForTask } from "@/lib/usage/stages";
 
 import { createMockLlmClient, createOpenAiCompatibleClient } from "./clients";
-import { createRouter, type LlmClient, type LlmProviderName, type PriceTable, type Router, type UsageLedger } from "./router";
+import {
+  createRouter,
+  type LlmClient,
+  type LlmProviderName,
+  type PriceTable,
+  type Router,
+  type UsageLedger,
+} from "./router";
 
 const PROVIDERS: LlmProviderName[] = ["nim", "grok", "deepseek"];
 const costKey = (p: LlmProviderName) => `eventeia:llm-cost:${p}`;
@@ -28,23 +35,25 @@ export function createRedisLedger(): UsageLedger {
     async record(e) {
       await redis.incrby(costKey(e.provider), e.costMicroUsd);
       const fx = await currentFxMicro().catch(() => null);
-      const { error } = await getSupabaseAdmin().from("llm_usage_events").insert({
-        provider: e.provider,
-        task: e.task,
-        input_tokens: e.inputTokens,
-        output_tokens: e.outputTokens,
-        cost_micro_usd: e.costMicroUsd,
-        outcome: e.outcome,
-        cache_hit_tokens: e.cacheHitTokens ?? 0,
-        peak: e.peak ?? null,
-        event_id: e.eventId ?? null,
-        reason: e.reason ?? null,
-        profile_id: e.profileId ?? null,
-        stage: e.stage ?? defaultStageForTask(e.task),
-        whatsapp_channel: e.channel ?? null,
-        fx_brl_per_usd_micro: fx,
-        cost_brl_cents: fx === null ? null : microUsdToBrlCents(e.costMicroUsd, fx),
-      });
+      const { error } = await getSupabaseAdmin()
+        .from("llm_usage_events")
+        .insert({
+          provider: e.provider,
+          task: e.task,
+          input_tokens: e.inputTokens,
+          output_tokens: e.outputTokens,
+          cost_micro_usd: e.costMicroUsd,
+          outcome: e.outcome,
+          cache_hit_tokens: e.cacheHitTokens ?? 0,
+          peak: e.peak ?? null,
+          event_id: e.eventId ?? null,
+          reason: e.reason ?? null,
+          profile_id: e.profileId ?? null,
+          stage: e.stage ?? defaultStageForTask(e.task),
+          whatsapp_channel: e.channel ?? null,
+          fx_brl_per_usd_micro: fx,
+          cost_brl_cents: fx === null ? null : microUsdToBrlCents(e.costMicroUsd, fx),
+        });
       if (error !== null) logger.warn({ code: error.code }, "falha ao auditar uso de LLM");
     },
   };
@@ -54,7 +63,10 @@ export function priceTableFromEnv(env = serverEnv()): PriceTable {
   return {
     nim: { inPer1M: env.AI_PRICE_NIM_IN_PER_1M, outPer1M: env.AI_PRICE_NIM_OUT_PER_1M },
     grok: { inPer1M: env.AI_PRICE_GROK_IN_PER_1M, outPer1M: env.AI_PRICE_GROK_OUT_PER_1M },
-    deepseek: { inPer1M: env.AI_PRICE_DEEPSEEK_IN_PER_1M, outPer1M: env.AI_PRICE_DEEPSEEK_OUT_PER_1M },
+    deepseek: {
+      inPer1M: env.AI_PRICE_DEEPSEEK_IN_PER_1M,
+      outPer1M: env.AI_PRICE_DEEPSEEK_OUT_PER_1M,
+    },
   };
 }
 
@@ -78,14 +90,23 @@ export function getRouter(): Router | null {
         apiKey: deepseekKey,
         baseUrl: process.env.DEEPSEEK_BASE_URL,
         model: process.env.DEEPSEEK_MODEL,
+        onWarn: (info, msg) => logger.warn(info, msg),
       }),
     );
   }
   if (env.NVIDIA_NIM_API_KEY !== undefined && env.NVIDIA_NIM_API_KEY !== "") {
-    clients.push(createOpenAiCompatibleClient({ name: "nim", apiKey: env.NVIDIA_NIM_API_KEY, model: env.NIM_MODEL }));
+    clients.push(
+      createOpenAiCompatibleClient({
+        name: "nim",
+        apiKey: env.NVIDIA_NIM_API_KEY,
+        model: env.NIM_MODEL,
+      }),
+    );
   }
   if (env.XAI_API_KEY !== undefined && env.XAI_API_KEY !== "") {
-    clients.push(createOpenAiCompatibleClient({ name: "grok", apiKey: env.XAI_API_KEY, model: env.XAI_MODEL }));
+    clients.push(
+      createOpenAiCompatibleClient({ name: "grok", apiKey: env.XAI_API_KEY, model: env.XAI_MODEL }),
+    );
   }
   if (clients.length === 0) return null;
   cached = createRouter({
@@ -96,13 +117,20 @@ export function getRouter(): Router | null {
     cost: (provider, usage, at) => {
       if (provider !== "deepseek") return null;
       return deepseekCost(
-        { cacheHitTokens: usage.cacheHitTokens, cacheMissTokens: Math.max(0, usage.inputTokens - usage.cacheHitTokens), outputTokens: usage.outputTokens },
+        {
+          cacheHitTokens: usage.cacheHitTokens,
+          cacheMissTokens: Math.max(0, usage.inputTokens - usage.cacheHitTokens),
+          outputTokens: usage.outputTokens,
+        },
         at,
         cachedPricesSync(),
       );
     },
     cap: { switchPct: env.XAI_USAGE_SWITCH_PCT, bootstrapMicroUsd: env.AI_GROK_BOOTSTRAP_MICROUSD },
-    onCapAlert: (info) => logger.warn(info, "ALERTA: Grok no teto de custo — forçando DeepSeek/NIM/contingência"),
+    onAttemptFailure: (info) =>
+      logger.warn(info, "LLM: tentativa falhou — tentando próximo provedor"),
+    onCapAlert: (info) =>
+      logger.warn(info, "ALERTA: Grok no teto de custo — forçando DeepSeek/NIM/contingência"),
   });
   return cached;
 }
@@ -116,7 +144,15 @@ export function createRouterUsageStore(router: Router, perCallMicroUsd: number):
   return {
     callsToday: () => Promise.resolve(0),
     async recordCall() {
-      await router.record({ provider: "grok", task: "discovery_search", inputTokens: 0, outputTokens: 0, costMicroUsd: perCallMicroUsd, outcome: "ok", stage: "discovery" });
+      await router.record({
+        provider: "grok",
+        task: "discovery_search",
+        inputTokens: 0,
+        outputTokens: 0,
+        costMicroUsd: perCallMicroUsd,
+        outcome: "ok",
+        stage: "discovery",
+      });
     },
     async isExhausted() {
       return exhausted || !(await router.grokAllowed(perCallMicroUsd));
