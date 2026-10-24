@@ -24,7 +24,7 @@ export function WelcomeOffer() {
         id="ev-welcome-banner"
         hidden
         aria-label="Oferta de boas-vindas"
-        className="fixed inset-x-0 top-0 z-50 bg-vinho text-off-white shadow-raised"
+        className="fixed inset-x-0 top-0 z-[60] bg-vinho text-off-white shadow-raised"
       >
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 py-2 text-sm">
           <span>
