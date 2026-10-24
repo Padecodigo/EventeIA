@@ -437,9 +437,37 @@ export interface Database {
         published_at: string | null;
         created_at: string;
       }>;
+      support_tickets: Table<{
+        id: string;
+        user_id: string | null;
+        email: string | null;
+        type: "sugestao" | "reclamacao" | "elogio" | "problema";
+        subject: string;
+        message: string;
+        event_id: string | null;
+        page_url: string | null;
+        user_agent: string | null;
+        attachment_path: string | null;
+        status: "aberto" | "em_andamento" | "resolvido" | "fechado";
+        priority: "baixa" | "normal" | "alta" | "urgente";
+        created_at: string;
+        updated_at: string;
+      }>;
+      support_ticket_messages: Table<{
+        id: string;
+        ticket_id: string;
+        author_role: "user" | "admin";
+        author_id: string | null;
+        body: string;
+        created_at: string;
+      }>;
     };
     Views: { [_ in never]: never };
     Functions: {
+      support_rate_hit: {
+        Args: { p_key_hash: string; p_limit: number };
+        Returns: number;
+      };
       welcome_offer_lookup: {
         Args: {
           p_ip_hash: string;

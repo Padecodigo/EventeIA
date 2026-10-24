@@ -9,7 +9,7 @@ describe("navegação do painel", () => {
     expect(isActivePath("/eventos", "/painel")).toBe(false);
     expect(isActivePath("/perfilx", "/perfil")).toBe(false);
   });
-  it("lista as 4 seções", () => {
-    expect(DASHBOARD_NAV.map((i) => i.href)).toEqual(["/painel", "/eventos", "/creditos", "/perfil"]);
+  it("lista as 5 seções", () => {
+    expect(DASHBOARD_NAV.map((i) => i.href)).toEqual(["/painel", "/eventos", "/creditos", "/chamados", "/perfil"]);
   });
 });
