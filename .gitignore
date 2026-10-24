@@ -37,3 +37,4 @@ supabase/.temp/
 # Sistema / editor
 .DS_Store
 *.pem
+.shots/

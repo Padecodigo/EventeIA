@@ -3,20 +3,54 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-/** Garante a hierarquia visual: festa infantil primeiro, casamento secundário. */
+/** Checagens de conteúdo da landing (fonte estática; sem renderizar). */
 const source = readFileSync(join(process.cwd(), "app/(marketing)/page.tsx"), "utf8");
+const testimonials = readFileSync(join(process.cwd(), "components/marketing/testimonials.tsx"), "utf8");
 
-describe("landing — ordem das fotos", () => {
-  it("festa infantil é a primeira imagem (priority) e casamento vem depois", () => {
-    const infantil = source.indexOf('src="/festa-infantil.jpg"');
-    const casamento = source.indexOf('src="/EventeIA-wedding.png"');
-    expect(infantil).toBeGreaterThan(-1);
-    expect(casamento).toBeGreaterThan(infantil);
-    expect(source.indexOf("<Image")).toBe(source.lastIndexOf("<Image", infantil));
-    expect(source.slice(infantil, infantil + 300)).toContain("priority");
+function mosaicSources(): string[] {
+  const block = source.slice(source.indexOf("const MOSAIC"), source.indexOf("] as const;"));
+  return [...block.matchAll(/src: "([^"]+)"/g)].map((m) => m[1] ?? "");
+}
+
+describe("landing — hero", () => {
+  it("festa infantil abre o mosaico, mas há vários tipos de evento", () => {
+    const srcs = mosaicSources();
+    expect(srcs[0]).toBe("/festa-infantil.jpg");
+    expect(srcs.length).toBeGreaterThanOrEqual(5);
+    expect(srcs).toEqual(expect.arrayContaining(["/EventeIA-wedding.png", "/img/eventos/formatura.jpg", "/img/eventos/corporativo.jpg", "/img/eventos/15-anos.jpg"]));
+    expect(source).toContain("priority={index === 0}");
   });
-  it("nenhuma imagem anterior à festa infantil", () => {
-    const firstSrc = /src="([^"]+)"/.exec(source)?.[1];
-    expect(firstSrc).toBe("/festa-infantil.jpg");
+
+  it("proposta de valor clara: WhatsApp + 3 opções (preço, custo-benefício, comodidade)", () => {
+    const h1End = source.indexOf("</h1>");
+    const hero = source.slice(source.indexOf("<h1"), source.indexOf("</p>", h1End));
+    expect(hero).toMatch(/WhatsApp/);
+    expect(hero).toMatch(/3 opções/);
+    for (const word of ["preço", "custo-benefício", "comodidade"]) expect(hero).toContain(word);
+  });
+
+  it("CTA principal e planos (ticket avulso) visíveis", () => {
+    expect(source).toContain("Começar agora");
+    expect(source).toContain('href="#planos"');
+    expect(source).toContain('id="planos"');
+    expect(source).toContain("Ticket avulso");
+    expect(source).toContain("PLANS.map");
+  });
+
+  it("não é focada só em festa infantil", () => {
+    for (const type of ["Aniversário", "15 anos", "Formatura", "Casamento", "Corporativo"]) {
+      expect(source).toContain(type);
+    }
+  });
+});
+
+describe("landing — depoimentos de exemplo", () => {
+  it("fallback é marcado como exemplo e não traz números inventados", () => {
+    expect(testimonials).toMatch(/CONTEÚDO DE EXEMPLO/);
+    expect(testimonials).toContain("EXAMPLE_TESTIMONIALS_NOTE");
+    expect(testimonials).not.toMatch(/outcome: "[^"]*\d/);
+  });
+  it("cidades da região do Vale do Paraíba", () => {
+    for (const city of ["São José dos Campos", "Taubaté", "Jacareí"]) expect(testimonials).toContain(city);
   });
 });

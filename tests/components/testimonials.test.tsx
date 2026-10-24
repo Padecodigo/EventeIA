@@ -25,15 +25,15 @@ describe("Testimonials", () => {
   it("sem casos reais, exibe as personas do conceito", () => {
     render(<Testimonials />);
 
-    expect(screen.getByText("Camila Rezende")).toBeInTheDocument();
-    expect(screen.getByText("Débora Nunes")).toBeInTheDocument();
+    expect(screen.getByText("Camila R.")).toBeInTheDocument();
+    expect(screen.getByText("Débora N.")).toBeInTheDocument();
   });
 
   it("com casos reais, substitui as personas", () => {
     render(<Testimonials items={[realItem]} />);
 
     expect(screen.getByText("Ana Souza")).toBeInTheDocument();
-    expect(screen.queryByText("Camila Rezende")).not.toBeInTheDocument();
+    expect(screen.queryByText("Camila R.")).not.toBeInTheDocument();
   });
 
   it("exibe o resultado concreto do depoimento real", () => {

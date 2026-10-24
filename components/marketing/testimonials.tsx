@@ -1,58 +1,61 @@
 import type { TestimonialCardData } from "@/lib/testimonials/pure";
 
 /**
- * Depoimentos do conceito editorial.
+ * ⚠️ CONTEÚDO DE EXEMPLO — substituir por depoimentos reais.
  *
- * Personas abaixo são o FALLBACK ilustrativo. Quando houver depoimentos reais
- * publicados (fluxo /depoimento + moderação), a página passa os dados reais e a
- * nota de rodapé desaparece automaticamente. Regras: .context/DESIGN_SYSTEM.md §10.
+ * As personas abaixo são ILUSTRATIVAS (nomes fictícios, sem números inventados).
+ * Quando houver depoimentos reais publicados (fluxo /depoimento + moderação), a
+ * página passa os dados reais e o aviso "exemplos ilustrativos" some sozinho.
  */
 export type Testimonial = TestimonialCardData;
+
+export const EXAMPLE_TESTIMONIALS_NOTE =
+  "Exemplos ilustrativos de como o serviço funciona — depoimentos reais de clientes da região em breve.";
 
 export const TESTIMONIALS: readonly Testimonial[] = [
   {
     id: "camila",
     initials: "CR",
-    name: "Camila Rezende",
-    context: "Mãe da Lia · Festa de 5 anos · 60 convidados",
+    name: "Camila R.",
+    context: "Mãe da Lia · Festa de 5 anos",
     city: "São José dos Campos, SP",
     quote:
-      "Queria a festa da Lia do jeito que ela sonhou — e que coubesse no nosso orçamento. Em dois dias, três propostas comparáveis na tela; escolhi com calma e sem susto.",
-    outcome: "R$ 2.800 abaixo do primeiro orçamento",
+      "Eu não tinha tempo de ligar pra ninguém. Recebi as opções organizadas no celular e escolhi com calma, sabendo exatamente o que estava pagando.",
+    outcome: "",
     tone: "champagne",
   },
   {
     id: "marina",
     initials: "MA",
-    name: "Marina Alves",
-    context: "Mãe do Theo · Festa de 1 aninho",
+    name: "Marina A.",
+    context: "15 anos da Sofia",
     city: "Taubaté, SP",
     quote:
-      "Trabalho fora e não tinha tempo de ligar para fornecedor. A EventeIA falou com eles por mim e devolveu tudo organizado: buffet, decoração e fotografia.",
-    outcome: "4 propostas em 48 horas",
+      "Buffet, decoração e foto lado a lado, com as taxas à vista. Pela primeira vez entendi a diferença entre o mais barato e o que valia mais a pena.",
+    outcome: "",
     tone: "vinho",
+  },
+  {
+    id: "rafael",
+    initials: "RS",
+    name: "Rafael S.",
+    context: "Confraternização da empresa",
+    city: "Jacareí, SP",
+    quote:
+      "Precisava de espaço e buffet para a equipe sem perder uma semana nisso. Chegaram propostas comparáveis e a decisão ficou fácil de justificar.",
+    outcome: "",
+    tone: "areia",
   },
   {
     id: "debora",
     initials: "DN",
-    name: "Débora Nunes",
-    context: "Cerimonialista de festas infantis · franquia de créditos",
-    city: "São Paulo, SP",
+    name: "Débora N.",
+    context: "Cerimonialista · franquia de créditos",
+    city: "Caçapava, SP",
     quote:
-      "Com a franquia de créditos eu atendo mais famílias sem perder a curadoria. O orçamento chega pronto; eu ajusto o que é meu e cuido da experiência.",
-    outcome: "+6 festas por mês",
+      "Com os créditos eu atendo mais famílias sem perder a curadoria. O orçamento chega pronto; eu ajusto o que é meu e cuido da experiência.",
+    outcome: "",
     tone: "champagne",
-  },
-  {
-    id: "patricia",
-    initials: "PG",
-    name: "Patrícia Gomes",
-    context: "Mãe de gêmeos · Festa de 7 anos",
-    city: "Jacareí, SP",
-    quote:
-      "Comparar buffet e decoração no mesmo lugar mudou tudo. Consegui negociar com calma e ainda sobrou orçamento para a recreação.",
-    outcome: "R$ 1.900 economizados",
-    tone: "areia",
   },
 ];
 
@@ -65,7 +68,7 @@ const toneClasses: Record<Testimonial["tone"], string> = {
 export function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
   return (
     <article className="flex h-full flex-col rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
-      <p className="font-serif text-[1.35rem] leading-snug text-vinho">
+      <p className="text-body-lg leading-relaxed text-vinho">
         “{testimonial.quote}”
       </p>
 
@@ -107,7 +110,7 @@ export function Testimonials({ items }: { items?: readonly TestimonialCardData[]
             Quem viveu, conta como foi.
           </h2>
           <p className="max-w-sm text-sm leading-6 text-vinho/75">
-            Festas de tamanhos e orçamentos diferentes. A mesma clareza para decidir.
+            Festa infantil, 15 anos, empresa ou casamento: a mesma clareza para decidir.
           </p>
         </div>
 
@@ -116,6 +119,10 @@ export function Testimonials({ items }: { items?: readonly TestimonialCardData[]
             <TestimonialCard key={testimonial.id} testimonial={testimonial} />
           ))}
         </div>
+
+        {hasRealTestimonials ? null : (
+          <p className="mt-6 text-caption text-vinho/70">{EXAMPLE_TESTIMONIALS_NOTE}</p>
+        )}
 
       </div>
     </section>

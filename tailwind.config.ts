@@ -1,11 +1,17 @@
 import type { Config } from "tailwindcss";
 
 /**
- * EventeIA — Design System "Atelier"
- * Fonte da verdade: .context/DESIGN_SYSTEM.md (não invente tons fora desta paleta).
+ * EventeIA — Design System "Festa Clara" (v2, out/2026)
+ * Fonte da verdade: .context/DESIGN_SYSTEM.md.
  *
- * - Cores canônicas + tokens semânticos (use os semânticos nos componentes).
- * - Tipografia: Fraunces (serif/títulos) · DM Sans (sans/UI).
+ * Os NOMES históricos dos tokens (vinho, champagne, areia…) foram mantidos para
+ * não quebrar o painel e as demais páginas; os VALORES mudaram:
+ *   vinho          → azul-noite #1E2A4A (texto/primária — confiança, AA em todo fundo claro)
+ *   champagne      → coral #FF7A45 (CTA e destaques; texto azul-noite sobre coral = 5,6:1)
+ *   champagne-claro→ pêssego #FFE1D1
+ *   areia-quente   → creme #FFF8F1 · areia-secundaria → #FDEDE1 · off-white → #FFFFFF
+ * Novos acentos decorativos: sol #FFC94D, menta #2BB59A, lilas #8B7CF6 (nunca como texto pequeno).
+ * - Tipografia: Nunito (display arredondada) · Inter (corpo/UI).
  * - O produto é light-first; dark mode não faz parte do DS v1.
  */
 const config: Config = {
@@ -25,34 +31,40 @@ const config: Config = {
        * ====================================================== */
       colors: {
         /* ---- Paleta canônica (hex oficial) ---- */
-        vinho: "#4A2031", // "Vinho Leve" — cor primária oficial
-        "areia-quente": "#F7F3EE",
-        "areia-secundaria": "#EEE7DF",
-        "off-white": "#FFFDFA",
-        champagne: "#D4AF37",
-        "champagne-claro": "#EADBBD",
+        vinho: "#1E2A4A", // azul-noite (nome histórico mantido)
+        "areia-quente": "#FFF8F1",
+        "areia-secundaria": "#FDEDE1",
+        "off-white": "#FFFFFF",
+        champagne: "#FF7A45", // coral
+        coral: "#FF7A45",
+        "coral-escuro": "#C2410C", // texto coral sobre claro (AA)
+        noite: "#1E2A4A",
+        sol: "#FFC94D",
+        menta: "#2BB59A",
+        lilas: "#8B7CF6",
+        "champagne-claro": "#FFE1D1",
 
         /* ---- Tokens semânticos (preferidos nos componentes) ---- */
         brand: {
-          primary: "#4A2031",
-          accent: "#D4AF37",
-          accentSoft: "#EADBBD",
+          primary: "#1E2A4A",
+          accent: "#FF7A45",
+          accentSoft: "#FFE1D1",
         },
         surface: {
-          canvas: "#FFFDFA",   // cards, campos
-          warm: "#F7F3EE",     // fundo padrão de página
-          muted: "#EEE7DF",    // faixas alternadas, linhas de tabela
-          dark: "#4A2031",     // seções editoriais escuras
+          canvas: "#FFFFFF",   // cards, campos
+          warm: "#FFF8F1",     // fundo padrão de página
+          muted: "#FDEDE1",    // faixas alternadas, linhas de tabela
+          dark: "#1E2A4A",     // seções editoriais escuras
         },
         ink: {
-          primary: "#4A2031",
-          inverse: "#FFFDFA",
-          accent: "#D4AF37",   // apenas sobre vinho (contraste AA)
-          soft: "#EADBBD",
+          primary: "#1E2A4A",
+          inverse: "#FFFFFF",
+          accent: "#FF7A45",   // apenas sobre azul-noite (contraste AA)
+          soft: "#FFE1D1",
         },
         line: {
-          subtle: "rgba(74, 32, 49, 0.12)",
-          strong: "rgba(74, 32, 49, 0.28)",
+          subtle: "rgba(30, 42, 74, 0.12)",
+          strong: "rgba(30, 42, 74, 0.28)",
         },
         /** Estados semânticos — uso restrito a validação (ícones/labels) */
         semantic: {
@@ -66,10 +78,13 @@ const config: Config = {
        * ====================================================== */
       fontFamily: {
         /* Wordmark da marca: Bodoni Moda (exceção editorial — ver DESIGN_SYSTEM.md §4.1) */
-        brand: ["var(--font-bodoni)", "Bodoni Moda", "Didot", "Times New Roman", "serif"],
-        serif: ["Fraunces", "Georgia", "Times New Roman", "serif"],
+        brand: ["var(--font-display)", "Nunito", "system-ui", "sans-serif"],
+        /* "serif" mantido como nome do token de títulos; agora é a display arredondada */
+        serif: ["var(--font-display)", "Nunito", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "Nunito", "system-ui", "sans-serif"],
         sans: [
-          "DM Sans",
+          "var(--font-body)",
+          "Inter",
           "system-ui",
           "-apple-system",
           "Segoe UI",
@@ -97,8 +112,8 @@ const config: Config = {
       },
 
       fontWeight: {
-        /* Fraunces 600 = títulos; DM Sans 400/500 = corpo/UI */
-        display: "600",
+        /* Nunito 800 = títulos; Inter 400/500 = corpo/UI */
+        display: "800",
       },
 
       /* ======================================================
@@ -110,14 +125,14 @@ const config: Config = {
       },
 
       boxShadow: {
-        soft: "0 1px 2px rgba(74, 32, 49, 0.06), 0 8px 24px rgba(74, 32, 49, 0.06)",
-        raised: "0 2px 4px rgba(74, 32, 49, 0.08), 0 16px 40px rgba(74, 32, 49, 0.10)",
-        gold: "0 0 0 1px rgba(197, 165, 111, 0.55), 0 8px 24px rgba(197, 165, 111, 0.25)",
+        soft: "0 1px 2px rgba(30, 42, 74, 0.06), 0 8px 24px rgba(30, 42, 74, 0.06)",
+        raised: "0 2px 4px rgba(30, 42, 74, 0.08), 0 16px 40px rgba(30, 42, 74, 0.10)",
+        gold: "0 0 0 1px rgba(255, 122, 69, 0.55), 0 8px 24px rgba(255, 122, 69, 0.25)",
       },
 
       backgroundImage: {
         "gold-sheen":
-          "linear-gradient(135deg, #EADBBD 0%, #D4AF37 50%, #EADBBD 100%)",
+          "linear-gradient(135deg, #FFE1D1 0%, #FF7A45 50%, #FFC94D 100%)",
       },
 
       transitionTimingFunction: {

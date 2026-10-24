@@ -257,3 +257,12 @@ Os tokens acima estão implementados em [`tailwind.config.ts`](../tailwind.confi
 - [ ] Nenhum texto champagne sobre fundo claro; eyebrows como chip champagne-claro + vinho.
 - [ ] Texto secundário com opacidade ≥ 70% sobre areia.
 - [ ] Teste de contraste passa (CI Lighthouse `color-contrast`).
+
+## v2 "Festa Clara" (out/2026) — substitui a paleta vinho/champagne
+
+Motivo: o visual vinho + serifada lia como "casamento"; o público é amplo (festa infantil é o maior volume, mas também 15 anos, formatura, corporativo, casamento).
+
+- Nomes de tokens mantidos (compatibilidade); valores novos: `vinho` = azul-noite `#1E2A4A` (texto/primária), `champagne`/`coral` = `#FF7A45` (CTA, sempre com texto azul-noite — 5,5:1), `champagne-claro` = pêssego `#FFE1D1`, `areia-quente` = creme `#FFF8F1`, `areia-secundaria` = `#FDEDE1`, `off-white` = `#FFFFFF`, `coral-escuro` = `#C2410C` (texto coral sobre claro / foco, 5,2:1).
+- Acentos decorativos: `sol` `#FFC94D`, `menta` `#2BB59A`, `lilas` `#8B7CF6` — não usar como cor de texto pequeno.
+- Tipografia: Nunito 600–800 (`font-serif`/`font-display`/`font-brand`, títulos) e Inter (`font-sans`, corpo).
+- Coral nunca como texto sobre fundo claro (2,6:1); use `coral-escuro`.

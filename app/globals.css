@@ -2,14 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design System "Atelier" — fonte da verdade: .context/DESIGN_SYSTEM.md */
+/* Design System "Festa Clara" (v2) — nomes históricos, valores novos. Ver tailwind.config.ts */
 :root {
-  --color-vinho: #4a2031;
-  --color-areia-quente: #f7f3ee;
-  --color-areia-secundaria: #eee7df;
-  --color-off-white: #fffdfa;
-  --color-champagne: #d4af37;
-  --color-champagne-claro: #eadbbd;
+  --color-vinho: #1e2a4a;
+  --color-areia-quente: #fff8f1;
+  --color-areia-secundaria: #fdede1;
+  --color-off-white: #ffffff;
+  --color-champagne: #ff7a45;
+  --color-champagne-claro: #ffe1d1;
 
   --color-primary: var(--color-vinho);
   --color-accent: var(--color-champagne);
@@ -19,30 +19,30 @@
   --color-text: var(--color-vinho);
   --color-text-inverse: var(--color-off-white);
   --color-text-accent: var(--color-champagne);
-  --color-border-subtle: rgba(74, 32, 49, 0.12);
-  --color-border-strong: rgba(74, 32, 49, 0.28);
-  --color-ring: var(--color-champagne);
+  --color-border-subtle: rgba(30, 42, 74, 0.12);
+  --color-border-strong: rgba(30, 42, 74, 0.28);
+  --color-ring: #c2410c; /* coral-escuro: 3:1+ sobre fundos claros */
 
-  --font-serif: "Fraunces", Georgia, "Times New Roman", serif;
-  --font-sans: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: var(--font-display), "Nunito", system-ui, sans-serif;
+  --font-sans: var(--font-body), "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 
   --radius-card: 1rem;
-  --shadow-soft: 0 1px 2px rgba(74, 32, 49, 0.06), 0 8px 24px rgba(74, 32, 49, 0.06);
-  --shadow-raised: 0 2px 4px rgba(74, 32, 49, 0.08), 0 16px 40px rgba(74, 32, 49, 0.1);
+  --shadow-soft: 0 1px 2px rgba(30, 42, 74, 0.06), 0 8px 24px rgba(30, 42, 74, 0.06);
+  --shadow-raised: 0 2px 4px rgba(30, 42, 74, 0.08), 0 16px 40px rgba(30, 42, 74, 0.1);
   --ease-editorial: cubic-bezier(0.2, 0, 0, 1);
 }
 
 @layer components {
   /* Eyebrow em chip acessível: champagne como fundo (nunca como texto sobre claro) */
   .eyebrow {
-    @apply inline-flex w-fit items-center gap-2 rounded-full bg-champagne-claro/60 px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-vinho;
+    @apply inline-flex w-fit items-center gap-2 rounded-full bg-champagne-claro px-3 py-1 text-[0.7rem] font-bold uppercase tracking-[0.12em] text-vinho;
   }
 
-  /* Wordmark: Bodoni Moda com tracking negativo (var fornecida por next/font) */
+  /* Wordmark: Nunito 800 (var fornecida por next/font) */
   .font-brand {
-    font-family: var(--font-bodoni), "Bodoni Moda", Didot, "Times New Roman", serif;
-    font-weight: 500;
-    letter-spacing: -0.04em;
+    font-family: var(--font-display), "Nunito", system-ui, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.02em;
   }
 }
 

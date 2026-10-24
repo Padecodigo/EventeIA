@@ -1,24 +1,20 @@
-import { Bodoni_Moda, DM_Sans, Fraunces } from "next/font/google";
+import { Inter, Nunito } from "next/font/google";
 
 import type { Metadata } from "next";
 
 import "./globals.css";
 
-const fraunces = Fraunces({
+/** Display: Nunito (arredondada, acolhedora). Corpo/UI: Inter (limpa, confiável). */
+const display = Nunito({
   subsets: ["latin"],
-  variable: "--font-fraunces",
+  weight: ["600", "700", "800"],
+  variable: "--font-display",
   display: "swap",
 });
 
-const bodoni = Bodoni_Moda({
+const body = Inter({
   subsets: ["latin"],
-  variable: "--font-bodoni",
-  display: "swap",
-});
-
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  variable: "--font-dm-sans",
+  variable: "--font-body",
   display: "swap",
 });
 
@@ -31,11 +27,11 @@ export const metadata: Metadata = {
     template: "%s · EventeIA",
   },
   description:
-    "Você imagina a festa. A EventeIA faz acontecer. Inteligência de custos e cotações para festas infantis e todos os eventos — com clareza financeira.",
+    "A EventeIA pede e compara orçamentos de fornecedores pelo WhatsApp para o seu evento — festa infantil, aniversário, 15 anos, formatura, casamento ou corporativo — e entrega 3 opções: preço, custo-benefício e comodidade.",
   icons: { icon: "/logo-e.png" },
   openGraph: {
     title: "EventeIA",
-    description: "A clareza financeira e a inteligência que o seu evento merece.",
+    description: "Cotamos fornecedores do seu evento pelo WhatsApp e entregamos 3 opções: preço, custo-benefício e comodidade.",
     type: "website",
     locale: "pt_BR",
     images: [{ url: "/EventeIA-celebration.png", width: 1376, height: 768 }],
@@ -43,13 +39,13 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "EventeIA",
-    description: "A clareza financeira e a inteligência que o seu evento merece.",
+    description: "Cotamos fornecedores do seu evento pelo WhatsApp e entregamos 3 opções: preço, custo-benefício e comodidade.",
   },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt-BR" className={`${fraunces.variable} ${dmSans.variable} ${bodoni.variable}`}>
+    <html lang="pt-BR" className={`${display.variable} ${body.variable}`}>
       <body>{children}</body>
     </html>
   );

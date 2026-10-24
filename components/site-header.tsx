@@ -46,7 +46,7 @@ export function SiteHeader() {
           </Link>
           <Link
             href="/registrar"
-            className="rounded-full bg-vinho px-5 py-2 text-xs font-medium tracking-wide text-off-white shadow-sm transition-all hover:bg-vinho/90 active:scale-95 sm:text-sm"
+            className="rounded-full bg-champagne px-5 py-2 text-xs font-bold text-vinho shadow-sm transition-all hover:bg-[#FF8B5C] active:scale-95 sm:text-sm"
           >
             Começar agora
           </Link>

@@ -1,427 +1,331 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { KidsPartyIllustration } from "@/components/marketing/kids-party-illustration";
-import { Testimonials } from "@/components/marketing/testimonials";
-import { TrustStrip } from "@/components/marketing/trust-strip";
+import { TESTIMONIALS, EXAMPLE_TESTIMONIALS_NOTE, Testimonials } from "@/components/marketing/testimonials";
 import { formatBRL } from "@/lib/money";
+import { PLANS } from "@/lib/plans";
 import { getPublishedTestimonials } from "@/lib/testimonials";
-
-const EVENT_TYPES = ["Festa infantil", "Aniversário", "Casamento", "Formatura", "Batizado", "Corporativo"];
-
-const STEPS = [
-  {
-    number: "01",
-    title: "Conte o que você imagina",
-    text: "Tema, idade, data, convidados e o que não pode faltar. Sem planilha, sem burocracia.",
-  },
-  {
-    number: "02",
-    title: "A EventeIA prospecta",
-    text: "Encontramos fornecedores relevantes, entramos em contato e organizamos as propostas por categoria.",
-  },
-  {
-    number: "03",
-    title: "Escolha com clareza",
-    text: "Você compara faixas de valor, aprova cada fornecedor e segue para a festa com o orçamento explicado.",
-  },
-];
-
-const ticketPriceCents = Number(process.env.B2C_TICKET_PRICE_CENTS ?? "9700");
 
 export const revalidate = 60;
 
-const hoverCard =
-  "group relative shrink-0 snap-center rounded-[1.4rem] border p-2 shadow-raised transition-[transform,box-shadow] duration-500 ease-editorial hover:z-40 hover:-translate-y-2 hover:rotate-0 hover:shadow-[0_24px_60px_rgba(74,32,49,0.18)] focus-visible:z-40 focus-visible:-translate-y-2 focus-visible:rotate-0 focus-visible:shadow-[0_24px_60px_rgba(74,32,49,0.18)]";
+const ticketPriceCents = Number(process.env.B2C_TICKET_PRICE_CENTS ?? "9700");
 
-function PhotoChip({ label }: { label: string }) {
-  return (
-    <span className="absolute bottom-3 left-3 rounded-full bg-off-white/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-vinho backdrop-blur">
-      {label}
-    </span>
-  );
-}
+/** Mosaico do hero — festa infantil em destaque, mas todos os tipos de evento presentes. */
+const MOSAIC = [
+  { src: "/festa-infantil.jpg", alt: "Mesa de festa infantil com arco de balões, bolo e doces", label: "Festa infantil", w: 1280, h: 1075, big: true },
+  { src: "/img/eventos/15-anos.jpg", alt: "Debutante com vestido bordado segurando um buquê", label: "15 anos", w: 1000, h: 1250 },
+  { src: "/img/eventos/formatura.jpg", alt: "Formandos jogando os capelos para o alto", label: "Formatura", w: 1000, h: 1250 },
+  { src: "/festa-aniversario.jpg", alt: "Mesa de aniversário decorada com balões e doces", label: "Aniversário", w: 1280, h: 960 },
+  { src: "/EventeIA-wedding.png", alt: "Recepção de casamento à luz de velas", label: "Casamento", w: 1376, h: 768 },
+  { src: "/img/eventos/corporativo.jpg", alt: "Auditório cheio em um evento corporativo", label: "Corporativo", w: 1000, h: 1250 },
+] as const;
+
+const EVENT_TYPES = [
+  { label: "Festa infantil", hint: "Buffet, decoração, bolo, recreação" },
+  { label: "Aniversário", hint: "Do bolo ao DJ" },
+  { label: "15 anos", hint: "Salão, vestido, fotografia, valsa" },
+  { label: "Formatura", hint: "Espaço, buffet, banda, foto" },
+  { label: "Casamento", hint: "Cerimônia, recepção, flores" },
+  { label: "Corporativo", hint: "Confraternização, convenção, coffee break" },
+  { label: "Batizado e chá", hint: "Chá de bebê, revelação, batizado" },
+  { label: "Celebrações", hint: "Bodas, despedidas, encontros" },
+] as const;
+
+const OPTIONS = [
+  { title: "Preço", text: "A combinação mais barata entre as propostas que chegaram, já com taxas incluídas.", dot: "bg-menta" },
+  { title: "Custo-benefício", text: "O melhor equilíbrio entre valor e qualidade — o que mais vale a pena.", dot: "bg-champagne" },
+  { title: "Comodidade", text: "Menos fornecedores, menos dor de cabeça: pacotes que resolvem mais coisas juntos.", dot: "bg-lilas" },
+] as const;
+
+const STEPS = [
+  { n: "1", title: "Conte sobre o evento", text: "Tipo de festa, data, cidade, convidados e o que não pode faltar. Leva poucos minutos." },
+  { n: "2", title: "A gente pede os orçamentos", text: "Falamos com fornecedores da sua região pelo WhatsApp, com calma e sem spam." },
+  { n: "3", title: "Comparamos tudo", text: "Lemos cada resposta, achamos taxas escondidas e colocamos tudo na mesma régua." },
+  { n: "4", title: "Você escolhe", text: "Receba 3 opções — preço, custo-benefício e comodidade — e decida com tranquilidade." },
+] as const;
+
+const TRUST = [
+  { title: "Pagamento seguro", text: "Pix ou cartão processados pelo Asaas, instituição de pagamento regulada." },
+  { title: "Sem spam", text: "Mensagens com intervalo; qualquer fornecedor pode pedir para sair e é respeitado na hora." },
+  { title: "Seu WhatsApp protegido", text: "A conexão é usada só durante a busca e encerrada automaticamente no final." },
+  { title: "Dados protegidos", text: "Usamos seus dados só para cotar o seu evento, conforme a LGPD." },
+] as const;
+
+const FAQ = [
+  {
+    q: "Para quais eventos a EventeIA funciona?",
+    a: "Para todos: festa infantil, aniversário, 15 anos, formatura, casamento, evento corporativo, chá de bebê, batizado e outras celebrações.",
+  },
+  {
+    q: "Como os fornecedores são contatados?",
+    a: "Pelo WhatsApp que você conecta ao iniciar a busca. As mensagens saem com intervalo, o fornecedor pode pedir para não receber mais e, ao final da busca, a conexão é encerrada por segurança.",
+  },
+  {
+    q: "Quanto custa?",
+    a: `Para quem organiza o próprio evento, um ticket avulso de ${formatBRL(ticketPriceCents)} por evento, sem mensalidade. Cerimonialistas e planners têm planos mensais com créditos.`,
+  },
+  {
+    q: "Sou obrigado a fechar com algum fornecedor?",
+    a: "Não. A EventeIA organiza e compara as propostas; quem decide e negocia é você.",
+  },
+  {
+    q: "Como funciona o pagamento?",
+    a: "Pix ou cartão, processados com segurança pelo Asaas. Você recebe a confirmação na hora em que o pagamento é aprovado.",
+  },
+] as const;
+
+const primaryCta =
+  "inline-flex items-center justify-center gap-2 rounded-full bg-champagne px-7 py-4 text-base font-bold text-vinho shadow-[0_10px_28px_rgba(255,122,69,0.35)] transition hover:-translate-y-0.5 hover:bg-[#FF8B5C] active:translate-y-0";
 
 export default async function LandingPage() {
   const realTestimonials = await getPublishedTestimonials();
+  const heroTestimonials = (realTestimonials.length > 0 ? realTestimonials : TESTIMONIALS).slice(0, 2);
+  const heroIsExample = realTestimonials.length === 0;
+
   return (
     <>
-      {/* 1) Fotos — a primeira coisa que se vê ao acessar */}
-      <section
-        aria-label="Festas que a EventeIA organiza"
-        className="mx-auto w-full max-w-7xl px-4 pt-6 sm:px-8"
-      >
-        <div className="flex snap-x snap-mandatory items-start gap-5 overflow-x-auto pb-4 [scrollbar-width:none] sm:justify-center sm:overflow-visible sm:pb-0">
-          <article
-            tabIndex={0}
-            aria-label="Festa infantil"
-            className={`${hoverCard} z-30 w-[250px] -rotate-[2deg] border-line-subtle bg-off-white sm:w-[350px] sm:scale-[1.05]`}
-          >
-            <div className="relative overflow-hidden rounded-[1rem]">
-              <Image
-                src="/festa-infantil.jpg"
-                alt="Mesa de festa de 1 aninho com arco de balões, bolo e doces"
-                width={1280}
-                height={1075}
-                priority
-                sizes="(max-width: 640px) 70vw, 350px"
-                className="aspect-[4/5] w-full object-cover"
-              />
-              <PhotoChip label="Festa infantil" />
-            </div>
-          </article>
-
-          <article
-            tabIndex={0}
-            aria-label="Aniversário infantil"
-            className={`${hoverCard} z-20 w-[240px] rotate-[3deg] border-line-subtle bg-off-white sm:mt-10 sm:w-[320px]`}
-          >
-            <div className="relative overflow-hidden rounded-[1rem]">
-              <Image
-                src="/festa-aniversario.jpg"
-                alt="Mesa de aniversário infantil decorada com balões e doces"
-                width={1280}
-                height={960}
-                sizes="(max-width: 640px) 70vw, 320px"
-                className="aspect-[4/5] w-full object-cover"
-              />
-              <PhotoChip label="Aniversário" />
-            </div>
-          </article>
-
-          <article
-            tabIndex={0}
-            aria-label="Casamento"
-            className={`${hoverCard} z-10 w-[240px] rotate-[2deg] border-line-subtle bg-off-white sm:-ml-8 sm:mt-14 sm:w-[320px]`}
-          >
-            <div className="relative overflow-hidden rounded-[1rem]">
-              <Image
-                src="/EventeIA-wedding.png"
-                alt="Recepção de casamento à luz de velas, com mesa posta e convidados"
-                width={1376}
-                height={768}
-                sizes="(max-width: 640px) 70vw, 320px"
-                className="aspect-[4/5] w-full object-cover"
-              />
-              <PhotoChip label="Casamento" />
-            </div>
-          </article>
-
-          <article
-            tabIndex={0}
-            aria-label="Festa em casa"
-            className={`${hoverCard} z-20 w-[210px] -rotate-[3deg] border-champagne/50 bg-champagne-claro sm:-ml-12 sm:mt-24 sm:w-[230px]`}
-          >
-            <div className="relative overflow-hidden rounded-[1rem] bg-champagne-claro">
-              <KidsPartyIllustration className="aspect-[4/5] w-full" />
-              <PhotoChip label="Festa em casa" />
-            </div>
-          </article>
-        </div>
-      </section>
-
-      {/* 2) Título — logo abaixo das fotos */}
-      <section className="mx-auto w-full max-w-4xl px-4 pb-16 pt-10 text-center sm:px-8">
-        <p className="eyebrow mx-auto">• Inteligência para festas infantis e todos os momentos</p>
-        <h1 className="mt-5 font-serif text-[clamp(2.6rem,5.6vw,4.6rem)] font-display leading-[1.0] tracking-[-0.03em] text-vinho">
-          O seu evento merece ser vivido.{" "}
-          <em className="italic">Não administrado.</em>
-        </h1>
-        <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-vinho/70">
-          Você imagina a festa da sua filha. A EventeIA encontra fornecedores, organiza as
-          propostas e explica cada número — para você escolher com clareza, no seu tempo e no seu
-          orçamento. Vale para festa infantil, aniversário, casamento e qualquer evento.
-        </p>
-
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-          <Link
-            href="/registrar"
-            className="rounded-full bg-vinho px-7 py-3.5 text-sm font-medium text-off-white shadow-[0_8px_24px_rgba(74,32,49,0.16)] transition hover:-translate-y-0.5 hover:bg-vinho/90"
-          >
-            Começar agora <span aria-hidden="true">↗</span>
-          </Link>
-          <Link
-            href="/como-funciona"
-            className="text-sm font-medium text-vinho underline decoration-champagne underline-offset-8 transition-colors hover:decoration-champagne-claro"
-          >
-            Ver como funciona
-          </Link>
-        </div>
-
-        <ul className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-caption text-vinho/75">
-          <li className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-champagne" aria-hidden="true" />
-            Sem mensalidade para anfitriões
-          </li>
-          <li className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-champagne" aria-hidden="true" />
-            Pagamento único por evento
-          </li>
-          <li className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-champagne" aria-hidden="true" />
-            Você aprova cada fornecedor
-          </li>
-        </ul>
-      </section>
-
-      <TrustStrip />
-
-      {/* Prova de produto — orçamento explicado */}
-      <section className="mx-auto grid w-full max-w-7xl items-center gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[1fr_1.05fr] lg:gap-16">
-        <div>
-          <p className="eyebrow">Clareza que se vê</p>
-          <h2 className="mt-3 max-w-xl font-serif text-display-2 font-display leading-tight">
-            Cada linha do orçamento, explicada.
-          </h2>
-          <p className="mt-4 max-w-lg text-sm leading-6 text-vinho/75">
-            O motor financeiro calcula faixas por categoria e mostra de onde vem cada valor. As
-            propostas chegam organizadas para você comparar com calma — e aprovar só o que fizer
-            sentido.
-          </p>
-          <ul className="mt-6 space-y-2 text-sm text-vinho/75">
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-champagne" aria-hidden="true" />
-              Orçamento explicado item a item
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-champagne" aria-hidden="true" />
-              Propostas comparáveis lado a lado
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-champagne" aria-hidden="true" />
-              Você aprova cada passo — nada é fechado sem o seu “sim”
-            </li>
-          </ul>
-        </div>
-
-        <div className="relative mx-auto w-full max-w-md">
-          <div className="rounded-[2rem] border border-line-subtle bg-off-white p-6 shadow-raised">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-vinho/70">
-                Orçamento do evento
-              </p>
-              <span className="rounded-full bg-areia-secundaria px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-vinho/75">
-                exemplo
-              </span>
-            </div>
-            <p className="mt-2 font-serif text-title-1">Festa de 5 anos da Lia</p>
-            <p className="text-caption text-vinho/70">60 convidados · São José dos Campos, SP</p>
-
-            <ul className="mt-5 space-y-3 text-sm">
-              <li className="flex items-center justify-between gap-4">
-                <span className="flex items-center gap-2 text-vinho/80">
-                  <span className="h-1.5 w-1.5 rounded-full bg-champagne" aria-hidden="true" />
-                  Buffet
-                </span>
-                <span className="tabular-nums text-vinho">R$ 4.480,00</span>
-              </li>
-              <li className="flex items-center justify-between gap-4">
-                <span className="flex items-center gap-2 text-vinho/80">
-                  <span className="h-1.5 w-1.5 rounded-full bg-champagne" aria-hidden="true" />
-                  Decoração
-                </span>
-                <span className="tabular-nums text-vinho">R$ 2.150,00</span>
-              </li>
-              <li className="flex items-center justify-between gap-4">
-                <span className="flex items-center gap-2 text-vinho/80">
-                  <span className="h-1.5 w-1.5 rounded-full bg-champagne" aria-hidden="true" />
-                  Música
-                </span>
-                <span className="tabular-nums text-vinho">R$ 1.280,00</span>
-              </li>
-              <li className="flex items-center justify-between gap-4">
-                <span className="flex items-center gap-2 text-vinho/80">
-                  <span className="h-1.5 w-1.5 rounded-full bg-champagne" aria-hidden="true" />
-                  Fotografia
-                </span>
-                <span className="tabular-nums text-vinho">R$ 1.900,00</span>
-              </li>
-            </ul>
-
-            <div className="mt-5 flex items-center justify-between border-t border-champagne/50 pt-4">
-              <span className="font-serif text-lg">Total estimado</span>
-              <span className="font-serif text-2xl tabular-nums">R$ 9.810,00</span>
-            </div>
-            <p className="mt-3 text-caption text-vinho/70">
-              Cada linha é explicada — você sabe de onde vem o valor.
-            </p>
-          </div>
-
-          <div className="ml-auto mt-4 w-[88%] rounded-2xl border border-champagne/40 bg-vinho p-5 text-off-white shadow-raised">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-champagne-claro">
-              WhatsApp · proposta recebida
-            </p>
-            <p className="mt-2 text-sm leading-6 text-off-white/90">
-              “Olá, Camila. Chegaram três propostas de buffet para a festa da Lia. A melhor faixa
-              ficou em R$ 4.200.”
-            </p>
-            <p className="mt-3 text-[10px] text-off-white/70">Enviado com o seu consentimento</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Para todos os tipos de festa */}
-      <section className="mx-auto w-full max-w-7xl px-4 pb-16 sm:px-8">
-        <div className="flex flex-wrap items-end justify-between gap-6">
+      {/* ================= HERO (acima da dobra) ================= */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-champagne-claro/60 via-areia-quente to-areia-quente">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-sol/30 blur-3xl"
+        />
+        <div className="relative mx-auto grid w-full max-w-7xl gap-10 px-4 pb-14 pt-8 sm:px-8 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-14 lg:pb-20 lg:pt-14">
           <div>
-            <p className="eyebrow">Para festas de todos os tamanhos</p>
-            <h2 className="mt-3 max-w-2xl font-serif text-display-2 font-display leading-tight">
-              Do salão do bairro ao espaço mais bonito da cidade.
-            </h2>
-          </div>
-          <p className="max-w-sm text-sm leading-6 text-vinho/75">
-            A clareza é a mesma. O que muda é o sonho — e ele é seu.
-          </p>
-        </div>
+            <p className="eyebrow">Festa infantil · 15 anos · Formatura · Casamento · Empresa</p>
+            <h1 className="mt-4 font-serif text-[clamp(2.2rem,5.2vw,3.9rem)] font-display leading-[1.05] tracking-[-0.02em] text-vinho">
+              Orçamentos do seu evento,{" "}
+              <span className="relative whitespace-nowrap">
+                sem ligar pra ninguém
+                <span aria-hidden="true" className="absolute -bottom-1 left-0 h-2 w-full rounded-full bg-sol/70" />
+              </span>
+              .
+            </h1>
+            <p className="mt-5 max-w-xl text-lg leading-8 text-vinho/80">
+              A EventeIA pede orçamentos aos fornecedores da sua região <strong>pelo WhatsApp</strong>,
+              compara tudo e te entrega <strong>3 opções prontas</strong>: a de melhor{" "}
+              <strong>preço</strong>, a de melhor <strong>custo-benefício</strong> e a de mais{" "}
+              <strong>comodidade</strong>.
+            </p>
 
-        <ul className="mt-8 flex flex-wrap gap-2">
-          {EVENT_TYPES.map((type) => (
-            <li
-              key={type}
-              className="rounded-full border border-line-subtle bg-off-white px-4 py-2 text-sm text-vinho/75"
-            >
-              {type}
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link href="/registrar" className={primaryCta}>
+                Começar agora <span aria-hidden="true">→</span>
+              </Link>
+              <Link
+                href="#planos"
+                className="inline-flex items-center justify-center rounded-full border-2 border-vinho/15 bg-off-white px-6 py-3.5 text-base font-semibold text-vinho transition hover:border-vinho/30"
+              >
+                Ver planos e preços
+              </Link>
+            </div>
+            <p className="mt-3 text-sm text-vinho/75">
+              Ticket avulso: <strong className="text-vinho">{formatBRL(ticketPriceCents)} por evento</strong> ·
+              sem mensalidade · Pix ou cartão via Asaas
+            </p>
+
+            {/* Depoimentos curtos — prova social logo de cara */}
+            <div className="mt-8 grid gap-3 sm:grid-cols-2">
+              {heroTestimonials.map((t) => (
+                <figure key={t.id} className="rounded-2xl border border-line-subtle bg-off-white p-4 shadow-soft">
+                  <p aria-hidden="true" className="text-sol">★★★★★</p>
+                  <blockquote className="mt-1 text-sm leading-6 text-vinho/85">“{t.quote}”</blockquote>
+                  <figcaption className="mt-3 text-caption text-vinho/70">
+                    <strong className="text-vinho">{t.name}</strong> · {t.context}
+                    {t.city.length > 0 ? ` · ${t.city}` : ""}
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+            {heroIsExample ? <p className="mt-2 text-[11px] text-vinho/60">{EXAMPLE_TESTIMONIALS_NOTE}</p> : null}
+          </div>
+
+          {/* Mosaico de fotos */}
+          <div
+            className="order-first grid auto-rows-[92px] grid-cols-3 gap-2 sm:auto-rows-[150px] sm:gap-3 lg:order-none lg:h-[560px] lg:auto-rows-auto lg:grid-rows-3"
+            aria-label="Tipos de evento"
+          >
+            {MOSAIC.map((photo, index) => (
+              <figure
+                key={photo.src}
+                className={`relative overflow-hidden rounded-2xl bg-areia-secundaria shadow-soft ${
+                  "big" in photo ? "col-span-2 row-span-2" : ""
+                }`}
+              >
+                <Image
+                  src={photo.src}
+                  alt={photo.alt}
+                  width={photo.w}
+                  height={photo.h}
+                  priority={index === 0}
+                  sizes={index === 0 ? "(max-width: 1024px) 66vw, 380px" : "(max-width: 1024px) 33vw, 190px"}
+                  className="h-full w-full object-cover"
+                />
+                <figcaption className="absolute bottom-2 left-2 rounded-full bg-off-white/95 px-2.5 py-0.5 text-[11px] font-bold text-vinho">
+                  {photo.label}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ================= Selos de confiança ================= */}
+      <section aria-label="Por que confiar" className="border-y border-line-subtle bg-off-white">
+        <ul className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-8 sm:grid-cols-2 sm:px-8 lg:grid-cols-4">
+          {TRUST.map((item) => (
+            <li key={item.title} className="flex gap-3">
+              <span aria-hidden="true" className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-menta/15 text-sm font-bold text-[#17735F]">
+                ✓
+              </span>
+              <div>
+                <p className="text-sm font-bold text-vinho">{item.title}</p>
+                <p className="mt-0.5 text-caption leading-5 text-vinho/75">{item.text}</p>
+              </div>
             </li>
           ))}
         </ul>
       </section>
 
-      {/* Como funciona (resumo) */}
-      <section className="border-y border-line-subtle bg-off-white py-20">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-8">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="eyebrow">Como a EventeIA faz acontecer</p>
-              <h2 className="mt-3 max-w-2xl font-serif text-display-2 font-display leading-tight">
-                Três passos. Nenhuma dúvida no caminho.
-              </h2>
-            </div>
-            <Link
-              href="/como-funciona"
-              className="text-sm font-medium text-vinho underline decoration-champagne underline-offset-8"
-            >
-              Ver o passo a passo completo
-            </Link>
-          </div>
+      {/* ================= As 3 opções ================= */}
+      <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-8">
+        <p className="eyebrow">O que você recebe</p>
+        <h2 className="mt-3 max-w-2xl font-serif text-[clamp(1.8rem,3.6vw,2.6rem)] font-display leading-tight">
+          Três caminhos claros. Você só escolhe.
+        </h2>
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          {OPTIONS.map((o) => (
+            <article key={o.title} className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
+              <span aria-hidden="true" className={`block h-2 w-10 rounded-full ${o.dot}`} />
+              <h3 className="mt-4 font-serif text-title-2 font-display">{o.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-vinho/75">{o.text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
 
-          <div className="mt-12 grid gap-8 md:grid-cols-3">
-            {STEPS.map((step) => (
-              <article key={step.number} className="border-t border-champagne/60 pt-5">
-                <span className="text-xs font-semibold tracking-[0.16em] text-vinho/70">
-                  {step.number}
+      {/* ================= Como funciona ================= */}
+      <section className="bg-off-white py-16">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-8">
+          <p className="eyebrow">Como funciona</p>
+          <h2 className="mt-3 max-w-2xl font-serif text-[clamp(1.8rem,3.6vw,2.6rem)] font-display leading-tight">
+            Do “preciso organizar” ao “já escolhi” em 4 passos.
+          </h2>
+          <ol className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {STEPS.map((s) => (
+              <li key={s.n} className="rounded-card bg-areia-quente p-6">
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-vinho font-serif text-lg font-display text-off-white">
+                  {s.n}
                 </span>
-                <h3 className="mt-6 font-serif text-title-2 leading-tight">{step.title}</h3>
-                <p className="mt-3 text-sm leading-6 text-vinho/75">{step.text}</p>
+                <h3 className="mt-4 font-serif text-title-3 font-display">{s.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-vinho/75">{s.text}</p>
+              </li>
+            ))}
+          </ol>
+          <Link href="/como-funciona" className="mt-8 inline-block text-sm font-semibold text-vinho underline decoration-champagne decoration-2 underline-offset-8">
+            Ver o passo a passo completo
+          </Link>
+        </div>
+      </section>
+
+      {/* ================= Tipos de evento ================= */}
+      <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-8">
+        <p className="eyebrow">Para todo tipo de evento</p>
+        <h2 className="mt-3 max-w-2xl font-serif text-[clamp(1.8rem,3.6vw,2.6rem)] font-display leading-tight">
+          Da festinha em casa à convenção da empresa.
+        </h2>
+        <ul className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
+          {EVENT_TYPES.map((e) => (
+            <li key={e.label} className="rounded-2xl border border-line-subtle bg-off-white p-4">
+              <p className="font-serif text-base font-display text-vinho">{e.label}</p>
+              <p className="mt-1 text-caption text-vinho/70">{e.hint}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* ================= Planos ================= */}
+      <section id="planos" className="scroll-mt-24 bg-vinho py-16 text-off-white">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-8">
+          <p className="text-overline font-bold uppercase text-champagne">Planos</p>
+          <h2 className="mt-3 max-w-2xl font-serif text-[clamp(1.8rem,3.6vw,2.6rem)] font-display leading-tight">
+            Pague só pelo seu evento. Ou assine, se você organiza vários.
+          </h2>
+          <div className="mt-10 grid gap-5 lg:grid-cols-4">
+            <article className="flex flex-col rounded-card bg-off-white p-6 text-vinho shadow-raised ring-4 ring-champagne lg:col-span-1">
+              <p className="text-overline font-bold uppercase text-coral-escuro">Ticket avulso</p>
+              <h3 className="mt-2 font-serif text-title-2 font-display">Para o seu evento</h3>
+              <p className="mt-4 font-serif text-[2.4rem] font-display leading-none">{formatBRL(ticketPriceCents)}</p>
+              <p className="mt-1 text-caption text-vinho/70">pagamento único por evento</p>
+              <ul className="mt-5 flex-1 space-y-2 text-sm text-vinho/80">
+                <li>✓ Sem mensalidade</li>
+                <li>✓ Cotações pelo WhatsApp</li>
+                <li>✓ 3 opções comparadas</li>
+                <li>✓ Pix ou cartão</li>
+              </ul>
+              <Link href="/registrar" className={`${primaryCta} mt-6 w-full py-3 text-sm`}>
+                Começar agora
+              </Link>
+            </article>
+
+            {PLANS.map((plan) => (
+              <article
+                key={plan.code}
+                className={`flex flex-col rounded-card p-6 ${
+                  plan.featured ? "bg-off-white/10 ring-2 ring-champagne-claro/60" : "bg-off-white/5 ring-1 ring-off-white/15"
+                }`}
+              >
+                <p className="text-overline font-bold uppercase text-champagne-claro">
+                  {plan.featured ? "Planners · mais escolhido" : "Planners"}
+                </p>
+                <h3 className="mt-2 font-serif text-title-2 font-display">{plan.name}</h3>
+                <p className="mt-4 font-serif text-[2rem] font-display leading-none">{formatBRL(plan.priceCents)}</p>
+                <p className="mt-1 text-caption text-off-white/70">por mês · {plan.credits} eventos</p>
+                <p className="mt-4 flex-1 text-sm text-off-white/80">{plan.description}</p>
+                <Link
+                  href="/planos"
+                  className="mt-6 inline-flex justify-center rounded-full border-2 border-off-white/30 px-5 py-3 text-sm font-semibold transition hover:border-off-white/60"
+                >
+                  Ver detalhes
+                </Link>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Dois públicos */}
-      <section className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-8">
-        <p className="eyebrow">Feita para dois jeitos de criar</p>
-        <h2 className="mt-3 max-w-2xl font-serif text-display-2 font-display leading-tight">
-          Simples para quem sonha. Poderosa para quem organiza.
-        </h2>
-
-        <div className="mt-12 grid gap-8 md:grid-cols-2">
-          <article className="flex flex-col rounded-card border border-line-subtle bg-off-white p-8 shadow-soft sm:p-10">
-            <p className="eyebrow">Anfitriões</p>
-            <h3 className="mt-3 font-serif text-title-1">Um tíquete. Um evento. Tudo claro.</h3>
-            <p className="mt-4 text-sm leading-6 text-vinho/70">
-              Pague uma única vez pela sua festa — {formatBRL(ticketPriceCents)} — e receba o
-              orçamento completo, as propostas organizadas e o envio pelo WhatsApp. Festa infantil,
-              aniversário ou casamento.
-            </p>
-            <ul className="mt-5 space-y-2 text-sm text-vinho/70">
-              <li className="flex gap-2">
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-champagne" aria-hidden="true" />
-                Sem assinatura e sem renovação automática
-              </li>
-              <li className="flex gap-2">
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-champagne" aria-hidden="true" />
-                Orçamento explicado item a item
-              </li>
-              <li className="flex gap-2">
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-champagne" aria-hidden="true" />
-                Cotações ilimitadas do seu evento
-              </li>
-            </ul>
-            <Link
-              href="/registrar"
-              className="mt-8 inline-flex w-fit rounded-full bg-vinho px-6 py-3 text-sm font-medium text-off-white transition hover:bg-vinho/90"
-            >
-              Criar meu evento
-            </Link>
-          </article>
-
-          <article className="flex flex-col rounded-card border border-champagne/40 bg-vinho p-8 text-off-white shadow-raised sm:p-10">
-            <p className="eyebrow">Planners e cerimonialistas</p>
-            <h3 className="mt-3 font-serif text-title-1 text-off-white">
-              Créditos que acompanham o seu ritmo.
-            </h3>
-            <p className="mt-4 text-sm leading-6 text-off-white/80">
-              Assine uma franquia mensal de créditos e gerencie os eventos dos seus clientes em um só
-              lugar — com histórico, controle e curadoria preservada.
-            </p>
-            <ul className="mt-5 space-y-2 text-sm text-off-white/75">
-              <li className="flex gap-2">
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-champagne" aria-hidden="true" />
-                1 crédito por evento ativado
-              </li>
-              <li className="flex gap-2">
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-champagne" aria-hidden="true" />
-                Franquia que acompanha o seu ciclo
-              </li>
-              <li className="flex gap-2">
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-champagne" aria-hidden="true" />
-                Pacotes avulsos sem validade
-              </li>
-            </ul>
-            <Link
-              href="/para-planners"
-              className="mt-8 inline-flex w-fit rounded-full bg-champagne px-6 py-3 text-sm font-medium text-vinho transition hover:bg-champagne-claro"
-            >
-              Conhecer o plano de planners
-            </Link>
-          </article>
-        </div>
-      </section>
-
       <Testimonials items={realTestimonials.length > 0 ? realTestimonials : undefined} />
 
-      {/* Manifesto — conceito emocional preservado */}
-      <section className="bg-vinho py-24 text-off-white">
-        <div className="mx-auto w-full max-w-4xl px-4 text-center sm:px-8">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-champagne">
-            O nosso jeito
-          </p>
-          <p className="mt-6 font-serif text-display-2 leading-tight">
-            “Você imagina.
-            <br />
-            A EventeIA faz acontecer.”
-          </p>
-          <p className="mx-auto mt-6 max-w-prose text-base leading-8 text-off-white/75">
-            A clareza financeira e a inteligência que o seu evento merece. Sem planilhas soltas, sem
-            surpresas no cartão, sem perder o que importa: as pessoas e o momento.
-          </p>
+      {/* ================= FAQ ================= */}
+      <section className="mx-auto w-full max-w-3xl px-4 py-16 sm:px-8">
+        <p className="eyebrow">Dúvidas frequentes</p>
+        <h2 className="mt-3 font-serif text-[clamp(1.8rem,3.6vw,2.6rem)] font-display leading-tight">Perguntas que a gente sempre ouve</h2>
+        <div className="mt-8 divide-y divide-line-subtle rounded-card border border-line-subtle bg-off-white">
+          {FAQ.map((item) => (
+            <details key={item.q} className="group p-5">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-vinho">
+                {item.q}
+                <span aria-hidden="true" className="text-xl text-coral-escuro transition group-open:rotate-45">+</span>
+              </summary>
+              <p className="mt-3 text-sm leading-6 text-vinho/75">{item.a}</p>
+            </details>
+          ))}
         </div>
       </section>
 
-      {/* CTA final */}
-      <section className="mx-auto w-full max-w-7xl px-4 py-20 text-center sm:px-8">
-        <h2 className="font-serif text-display-2 font-display">O seu evento começa com uma decisão clara.</h2>
-        <p className="mx-auto mt-4 max-w-prose text-vinho/70">
-          Crie sua conta, descreva o que imagina e veja o orçamento ganhar forma — sem planilhas, sem
-          achismo, no seu tempo.
-        </p>
-        <Link
-          href="/registrar"
-          className="mt-8 inline-flex rounded-full bg-vinho px-8 py-4 text-sm font-medium text-off-white transition hover:bg-vinho/90"
-        >
-          Criar meu evento agora
-        </Link>
+      {/* ================= CTA final ================= */}
+      <section className="px-4 pb-20 sm:px-8">
+        <div className="mx-auto w-full max-w-5xl rounded-[2rem] bg-gradient-to-br from-champagne-claro via-areia-secundaria to-sol/40 px-6 py-14 text-center">
+          <h2 className="font-serif text-[clamp(1.8rem,3.6vw,2.6rem)] font-display leading-tight">
+            Seu evento merece ser curtido, não administrado.
+          </h2>
+          <p className="mx-auto mt-4 max-w-prose text-vinho/80">
+            Conte o que você imagina. A EventeIA corre atrás dos orçamentos e te mostra as melhores opções.
+          </p>
+          <Link href="/registrar" className={`${primaryCta} mt-8`}>
+            Testar agora <span aria-hidden="true">→</span>
+          </Link>
+        </div>
       </section>
     </>
   );
