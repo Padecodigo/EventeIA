@@ -16,13 +16,22 @@ describe("fluxo de primeiro contato (descoberta → job → payload Evolution)",
       eventDateIso: "2026-12-12",
       city: "Campinas",
       guestCount: 120,
-      items: [{ label: "Buffet completo", quantity: 120, unit: "por_pessoa" }],
+      items: [
+        {
+          label: "Buffet de jantar completo",
+          quantity: 120,
+          unit: "por_pessoa",
+          notes: "opção vegetariana",
+        },
+      ],
       sourceProvider: "grok",
       now: new Date("2026-10-24T19:00:00Z"), // 16h SP
     });
     expect(messageText).toMatch(/^Boa tarde, tudo bem\? Aqui é da EventeIA\./);
     expect(messageText).toContain("Estamos fazendo um levantamento de orçamentos.");
     expect(messageText).toContain("SAIR");
+    expect(messageText).toContain("o cardápio, o valor por pessoa e a equipe");
+    expect(messageText).toContain("opção vegetariana");
     const job = prospectingJobSchema.parse({
       prospectId: "00000000-0000-4000-8000-000000000001",
       eventId: "00000000-0000-4000-8000-000000000002",
@@ -48,10 +57,11 @@ describe("fluxo de primeiro contato (descoberta → job → payload Evolution)",
       eventDateIso: "2026-12-05",
       city: "Taubaté",
       guestCount: 40,
-      category: "dj",
+      category: "som_dj",
       now: new Date("2026-10-24T23:00:00Z"),
     });
-    expect(text).toMatch(/^Boa noite, tudo bem\? Aqui é da EventeIA\. .*orçamento de dj\./);
+    expect(text).toMatch(/^Boa noite, tudo bem\? Aqui é da EventeIA\. .*orçamento de som e dj\./);
+    expect(text).toContain("o repertório, a duração da apresentação e o equipamento de som");
     expect(text).toContain("uma festa infantil para 40 convidados em Taubaté");
     expect(text.endsWith("Estamos fazendo um levantamento de orçamentos.")).toBe(true);
   });

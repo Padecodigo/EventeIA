@@ -136,7 +136,7 @@ export interface FirstContactInput {
   eventDateIso: string;
   city: string;
   guestCount: number;
-  items: { label: string; quantity: number; unit: Unit }[];
+  items: { label: string; quantity: number; unit: Unit; notes?: string | null }[];
   specialRequest?: string;
   sourceProvider: string;
   /** Momento do envio (saudação pelo horário de SP). */
@@ -155,10 +155,19 @@ export function renderDiscoveryFirstContact(input: FirstContactInput): string {
     .slice(0, 4)
     .map((i) => `${i.label.toLowerCase()} (${String(i.quantity)} ${UNIT_LABELS[i.unit]})`)
     .join(", ");
-  const special =
+  // Respostas da entrevista refletidas nos itens (observações) + demanda específica.
+  const notes = input.items
+    .map((i) => i.notes?.trim() ?? "")
+    .filter((n) => n.length > 0)
+    .slice(0, 2)
+    .join("; ");
+  const parts = [
+    notes.length > 0 ? `Detalhes: ${notes.slice(0, 160)}` : "",
     input.specialRequest !== undefined && input.specialRequest.length > 0
       ? `Também procuramos: ${input.specialRequest.replace(/(https?:\/\/|www\.)\S*/gi, "").slice(0, 160)}`
-      : undefined;
+      : "",
+  ].filter((p) => p.length > 0);
+  const special = parts.length > 0 ? parts.join(". ") : undefined;
   const source = SOURCE_LABELS[input.sourceProvider] ?? "uma busca pública";
   const body = buildFirstContactText({
     now: input.now ?? new Date(),
@@ -168,6 +177,7 @@ export function renderDiscoveryFirstContact(input: FirstContactInput): string {
     city: input.city,
     guestCount: input.guestCount,
     details: special,
+    category: input.category,
     seed: input.vendorName,
   });
   const text = `${body} Encontramos seu contato em ${source}. Se não quiser receber mensagens, responda SAIR.`;

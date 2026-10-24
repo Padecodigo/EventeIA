@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
 
+import { CATEGORY_LABELS, type CategoryCode } from "@/lib/catalog/v1";
 import { firstContactMessageSchema } from "@/lib/schemas/whatsapp";
-import { SURVEY_SENTENCE, buildFirstContactText, greetingFor } from "@/lib/whatsapp/first-contact";
+import {
+  CATEGORY_ASKS,
+  CATEGORY_SCOPE,
+  SURVEY_SENTENCE,
+  buildFirstContactText,
+  categoryAsk,
+  categoryScope,
+  greetingFor,
+} from "@/lib/whatsapp/first-contact";
 
 // SP = UTC-3
 const at = (hhSp: number, mm = 0) => new Date(Date.UTC(2026, 9, 24, hhSp + 3, mm));
@@ -89,5 +98,61 @@ describe("buildFirstContactText", () => {
     const text = buildFirstContactText({ ...base, city: "", now: at(14), seed: "s" });
     expect(text).not.toMatch(/ {2}| em  /);
     expect(text).toContain("120 convidados no dia");
+  });
+});
+
+describe("perguntas específicas por categoria", () => {
+  const codes = Object.keys(CATEGORY_LABELS) as CategoryCode[];
+  it("toda categoria do catálogo tem pergunta própria", () => {
+    for (const c of codes) expect(CATEGORY_ASKS[c].length).toBeGreaterThan(10);
+    expect(new Set(codes.map((c) => CATEGORY_ASKS[c])).size).toBe(codes.length);
+  });
+  it.each(codes)("%s: mensagem completa com pergunta da categoria", (code) => {
+    for (const seed of ["a", "b", "c"]) {
+      const text = buildFirstContactText({
+        ...base,
+        quoteSubject: CATEGORY_LABELS[code].toLowerCase(),
+        category: code,
+        now: at(15),
+        seed,
+      });
+      expect(text).toMatch(/^Boa tarde, tudo bem\? Aqui é da EventeIA\. /);
+      expect(text).toContain(CATEGORY_ASKS[code]);
+      expect(text).toContain(CATEGORY_SCOPE[code]);
+      expect(text).toMatch(/o que está incluso e o que (não está|fica à parte)/);
+      expect(text).toMatch(/o que você fornece.*como funciona o serviço.*valores e prazos/);
+      expect(text.endsWith(SURVEY_SENTENCE)).toBe(true);
+      expect(firstContactMessageSchema.safeParse(text).success).toBe(true);
+    }
+  });
+  it.each([
+    ["decoracao", /tema.*montagem e a desmontagem/],
+    ["mobiliario", /quantidades e os modelos.*entrega e do recolhimento/],
+    ["espaco", /capacidade.*horários.*incluso/],
+    ["som_dj", /repertório.*duração.*equipamento de som/],
+    ["musica_ao_vivo", /repertório.*duração.*equipamento de som/],
+    ["buffet", /cardápio.*valor por pessoa.*equipe/],
+  ])("%s pede os pontos combinados", (code, re) => {
+    expect(categoryAsk(code)).toMatch(re);
+  });
+  it("categoria desconhecida usa fallback genérico", () => {
+    const text = buildFirstContactText({
+      ...base,
+      quoteSubject: "pula-pula",
+      category: "xyz",
+      now: at(15),
+      seed: "a",
+    });
+    expect(text).toContain("o que está incluso e como é feita a entrega ou a execução");
+    expect(categoryAsk(undefined)).toBe(categoryAsk("xyz"));
+  });
+});
+
+describe("checklist de escopo (inclui / não inclui)", () => {
+  it("buffet pergunta mão de obra, louça e lavagem; espaço pergunta mesas e limpeza", () => {
+    expect(categoryScope("buffet")).toMatch(/mão de obra.*louça.*lavagem/);
+    expect(categoryScope("espaco")).toMatch(/mesas.*limpeza/);
+    expect(categoryScope("mobiliario")).toMatch(/entrega.*recolhimento/);
+    expect(categoryScope("zzz")).toMatch(/entrega e retirada/);
   });
 });

@@ -5,6 +5,7 @@
 
 import { z } from "zod";
 
+import { CATEGORY_LABELS, type CategoryCode } from "@/lib/catalog/v1";
 import { buildFirstContactText } from "@/lib/whatsapp/first-contact";
 
 /* ============================================================
@@ -181,8 +182,12 @@ export function renderFirstContact(input: {
     now: input.now ?? new Date(),
     quoteSubject:
       input.category !== undefined && input.category.length > 0
-        ? input.category.replace(/_/g, " ")
+        ? (Object.hasOwn(CATEGORY_LABELS, input.category)
+            ? CATEGORY_LABELS[input.category as CategoryCode]
+            : input.category.replace(/_/g, " ")
+          ).toLowerCase()
         : "fornecedor para o evento",
+    category: input.category,
     eventTypeLabel: input.eventType.replace(/_/g, " "),
     eventDateIso: input.eventDateIso,
     city: input.city,
