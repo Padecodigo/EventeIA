@@ -1,12 +1,14 @@
 import Link from "next/link";
 
 import { CostDonut, CountBars, FunnelChart, MarginByEvent, RevenueCostLine } from "@/components/admin/charts";
+import { WelcomeStats } from "@/components/admin/welcome-stats";
 import { EVENT_TYPE_LABELS } from "@/lib/catalog/v1";
 import { eventFunnel, eventsByCity, eventsByType, marginByEvent, revenueCostSeries } from "@/lib/finance/analytics";
 import { loadEventStats, loadFinance, PROVIDER_LABELS } from "@/lib/finance/load";
 import { DEFAULT_FINANCE_PRICES, PRICE_KEYS } from "@/lib/finance/pricing";
 import { buildReport, resolvePeriod } from "@/lib/finance/report";
 import { formatBRL } from "@/lib/money";
+import { loadWelcomeAdmin } from "@/lib/welcome/admin";
 
 import { FinanceForms } from "./forms";
 
@@ -68,7 +70,7 @@ function Card({ label, value, hint }: { label: string; value: string; hint?: str
 export default async function FinancePage({ searchParams }: { searchParams: Promise<{ from?: string; to?: string }> }) {
   const sp = await searchParams;
   const period = resolvePeriod(sp.from, sp.to);
-  const [data, stats] = await Promise.all([loadFinance(period), loadEventStats(period)]);
+  const [data, stats, welcome] = await Promise.all([loadFinance(period), loadEventStats(period), loadWelcomeAdmin(period)]);
   const r = buildReport(data.costs, data.revenue);
   const qs = `from=${period.from}&to=${period.to}`;
   const eventLabel = (id: string) => data.eventTitles[id] ?? `evento ${id.slice(0, 8)}`;
@@ -101,6 +103,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
         <Card label="Lucro" value={formatBRL(r.profitCents)} hint={r.marginBps === null ? "Sem receita no período" : `Margem ${(r.marginBps / 100).toFixed(1)}%`} />
         <Card label="Custo médio por evento" value={formatBRL(r.avgCostPerEventCents)} hint={`${String(r.eventsWithCost)} eventos · ${String(r.paymentsCount)} pagamentos · estornos ${formatBRL(r.refundedCents)}`} />
       </section>
+
+      <WelcomeStats data={welcome} title="Cupom de boas-vindas no período" />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <RevenueCostLine points={revenueCostSeries(r.revenueByDay, r.costByDay)} />

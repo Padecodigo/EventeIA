@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { WelcomePlanosNote } from "@/components/marketing/welcome-offer";
 import { formatBRL } from "@/lib/money";
 import { PLANS } from "@/lib/plans";
 import { calculatePlanEconomics } from "@/lib/pricing";
@@ -33,6 +34,7 @@ export default function PlansPage() {
           <h2 className="mt-3 font-serif text-title-1">Tíquete por evento</h2>
           <p className="mt-6 font-serif text-display-2">{formatBRL(ticketPriceCents)}</p>
           <p className="text-caption text-vinho/75">pagamento único, por evento</p>
+          <WelcomePlanosNote />
           <ul className="mt-6 flex-1 space-y-2 text-sm text-vinho/75">
             <li>Sem assinatura e sem renovação automática</li>
             <li>Orçamento completo e explicado</li>

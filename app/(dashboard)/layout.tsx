@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { DashboardNav } from "@/components/dashboard-nav";
 import { NotificationsPoller } from "@/components/notifications/notifications-poller";
 import { requireUser } from "@/lib/auth";
+import { bindWelcomeOfferToUser } from "@/lib/welcome/server";
 
 import { signOutAction } from "./actions";
 
@@ -15,6 +16,9 @@ export const metadata = { robots: { index: false, follow: false } };
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const user = await requireUser();
+  // Vínculo da oferta de boas-vindas no 1º acesso autenticado — cobre cadastro via Google OAuth
+  // (/auth/callback redireciona para cá) sem depender do caminho de criação do perfil.
+  await bindWelcomeOfferToUser(user.id);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(60%_40%_at_100%_0%,#F3E6DD,transparent)] bg-areia-quente text-vinho">

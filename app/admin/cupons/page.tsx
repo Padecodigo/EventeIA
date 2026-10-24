@@ -1,7 +1,9 @@
 import { CreateCouponForm } from "@/components/admin/create-coupon-form";
+import { WelcomeStats } from "@/components/admin/welcome-stats";
 import { requireAdmin } from "@/lib/auth";
 import { formatBRL } from "@/lib/money";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { loadWelcomeAdmin } from "@/lib/welcome/admin";
 
 import { toggleCouponAction } from "./actions";
 
@@ -41,6 +43,7 @@ export default async function AdminCouponsPage() {
     .limit(100);
 
   const coupons = data ?? [];
+  const welcome = await loadWelcomeAdmin();
   const activeCount = coupons.filter((coupon) => coupon.active).length;
 
   return (
@@ -67,6 +70,8 @@ export default async function AdminCouponsPage() {
           Não foi possível carregar os cupons: {error.message}
         </p>
       ) : null}
+
+      <WelcomeStats data={welcome} />
 
       <section className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
         <h2 className="font-serif text-title-2">Novo cupom</h2>

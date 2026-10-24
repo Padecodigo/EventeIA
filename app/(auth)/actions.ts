@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { bindWelcomeOfferToUser } from "@/lib/welcome/server";
 
 export interface AuthActionState {
   error?: string;
@@ -98,6 +99,11 @@ export async function signUpAction(
 
   if (error !== null) {
     return { error: friendlyAuthError(error.message) };
+  }
+
+  if (data.user !== null) {
+    // Vincula a oferta de boas-vindas deste aparelho à nova conta (prazo original mantido).
+    await bindWelcomeOfferToUser(data.user.id);
   }
 
   if (data.session === null) {

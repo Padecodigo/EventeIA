@@ -226,6 +226,20 @@ export interface Database {
         source: "app" | "worker" | "webhook";
         schema_version: number;
       }>;
+      welcome_offers: Table<{
+        id: string;
+        code: string;
+        ip_hash: string;
+        device_hash: string;
+        profile_id: string | null;
+        source: "new_ip" | "convite" | "promo";
+        created_at: string;
+        expires_at: string;
+        bound_at: string | null;
+        reserved_event_id: string | null;
+        redeemed_at: string | null;
+        payment_id: string | null;
+      }>;
       coupons: Table<{
         id: string;
         code: string;
@@ -399,6 +413,30 @@ export interface Database {
     };
     Views: { [_ in never]: never };
     Functions: {
+      welcome_offer_lookup: {
+        Args: {
+          p_ip_hash: string;
+          p_device_hash: string;
+          p_profile_id: string | null;
+          p_source: string;
+          p_claim: boolean;
+        };
+        Returns: {
+          status: "active" | "expired" | "redeemed" | "ineligible" | "none";
+          code: string | null;
+          expires_at: string | null;
+          server_now: string;
+          created: boolean;
+        }[];
+      };
+      welcome_offer_reserve: {
+        Args: { p_profile_id: string; p_event_id: string };
+        Returns: { code: string; expires_at: string }[];
+      };
+      welcome_offer_recent_redemptions: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
       process_payment_webhook: {
         Args: { p_webhook_event_id: string };
         Returns: string;
