@@ -26,6 +26,7 @@ export interface Database {
         id: string;
         role: "b2c" | "b2b" | "admin";
         display_name: string;
+        email: string | null;
         phone_e164: string | null;
         document_type: "cpf" | "cnpj";
         document_number: string | null;

@@ -1,7 +1,13 @@
 import { AuthForm } from "@/components/auth/auth-form";
+import { oauthErrorMessage } from "@/lib/auth/oauth";
 
 export const metadata = { title: "Criar conta", robots: { index: false, follow: true } };
 
-export default function SignUpPage() {
-  return <AuthForm mode="registrar" />;
+export default async function SignUpPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ erro?: string }>;
+}) {
+  const { erro } = await searchParams;
+  return <AuthForm mode="registrar" oauthError={oauthErrorMessage(erro)} />;
 }
