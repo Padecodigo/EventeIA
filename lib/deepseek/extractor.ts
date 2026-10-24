@@ -79,7 +79,7 @@ export async function extractQuotationFromText(
   rawText: string,
   explicitClient?: DeepSeekClient,
 ): Promise<QuotationExtractionResult> {
-  // Produção: roteador NIM → Grok (teto 25%) → contingência. DeepSeek direto só se injetado/sem roteador.
+  // Produção: roteador DeepSeek → NIM → Grok (teto 25%) → contingência. DeepSeek direto só se injetado/sem roteador.
   const router = explicitClient === undefined ? getRouter() : null;
   if (router !== null) {
     const routed = await routeQuotationExtraction(router, buildExtractionMessages(rawText), rawText);
