@@ -59,6 +59,11 @@ export const prospectingJobSchema = z.object({
   eventDateIso: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   city: z.string().trim().max(60),
   guestCount: z.number().int().min(1).max(5000),
+  // Descoberta automática (Fase 2) — opcionais para manter jobs antigos válidos.
+  category: z.string().trim().max(40).optional(),
+  messageText: firstContactMessageSchema.optional(),
+  dryRun: z.boolean().optional(),
+  supplierId: z.string().uuid().optional(),
 });
 
 export type ProspectingJob = z.infer<typeof prospectingJobSchema>;

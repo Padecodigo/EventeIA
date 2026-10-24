@@ -166,6 +166,12 @@ export async function POST(request: Request): Promise<NextResponse> {
             { onConflict: "phone_e164,channel" },
           );
           void renderOptOutConfirmation();
+          // Opt-out GLOBAL: o fornecedor sai do cache de descoberta para sempre.
+          await admin
+            .from("suppliers")
+            .update({ opt_out_at: new Date().toISOString() })
+            .eq("phone_e164", phone)
+            .is("opt_out_at", null);
 
           const { data: optedOut } = await admin
             .from("vendor_prospects")

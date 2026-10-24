@@ -949,3 +949,50 @@ export async function sendQuotationSummaryAction(
     return { error: "Não foi possível enviar agora. Tente novamente." };
   }
 }
+
+export interface NumberModeState {
+  error?: string;
+  saved?: "dedicated" | "personal";
+}
+
+const numberModeSchema = z.object({
+  eventId: z.string().uuid(),
+  mode: z.enum(["dedicated", "personal"]),
+});
+
+/**
+ * Tela de conexão do WhatsApp: número dedicado (recomendado) ou pessoal
+ * (as conversas com fornecedores são arquivadas automaticamente).
+ */
+export async function setWhatsappNumberModeAction(
+  _previous: NumberModeState,
+  formData: FormData,
+): Promise<NumberModeState> {
+  const user = await requireUser();
+  const parsed = numberModeSchema.safeParse({ eventId: formData.get("eventId"), mode: formData.get("mode") });
+  if (!parsed.success) return { error: "Escolha uma das opções." };
+
+  const supabase = await createSupabaseServerClient();
+  const { data: event } = await supabase.from("events").select("id").eq("id", parsed.data.eventId).maybeSingle();
+  if (event === null) return { error: "Evento não encontrado." };
+
+  const admin = getSupabaseAdmin();
+  const instance = `eventeia-${user.id.slice(0, 8)}`;
+  const { data: existing } = await admin.from("whatsapp_instances").select("id").eq("instance_name", instance).maybeSingle();
+  const { error } =
+    existing === null
+      ? await admin.from("whatsapp_instances").insert({
+          profile_id: user.id,
+          instance_name: instance,
+          status: "connecting",
+          event_id: event.id,
+          number_mode: parsed.data.mode,
+        })
+      : await admin.from("whatsapp_instances").update({ number_mode: parsed.data.mode }).eq("id", existing.id);
+  if (error !== null) {
+    logger.error({ code: error.code }, "falha ao salvar modo do número");
+    return { error: "Não foi possível salvar. Tente novamente." };
+  }
+  revalidatePath(`/eventos/${event.id}`);
+  return { saved: parsed.data.mode };
+}

@@ -82,7 +82,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
       .order("created_at", { ascending: false }),
     getSupabaseAdmin()
       .from("whatsapp_instances")
-      .select("status")
+      .select("status,number_mode")
       .eq("profile_id", event.owner_profile_id)
       .limit(1)
       .maybeSingle(),
@@ -184,6 +184,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
             eventId={event.id}
             prospects={prospectsResult.data ?? []}
             instanceStatus={instancesResult.data?.status ?? null}
+            numberMode={instancesResult.data?.number_mode ?? null}
           />
         </>
       ) : null}

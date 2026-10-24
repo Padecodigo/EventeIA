@@ -34,6 +34,25 @@ const serverSchema = z.object({
   // AES-256 (hex 64 chars) p/ credenciais de instância; opcional em dev.
   WHATSAPP_CREDENTIALS_KEY: z.string().optional(),
   ENGINE_TIMEZONE: z.string().default("America/Sao_Paulo"),
+  // Descoberta automática de fornecedores (Fase 2).
+  XAI_API_KEY: z.string().optional(),
+  XAI_MODEL: z.string().optional(),
+  DISCOVERY_PROVIDERS: z.string().optional(),
+  DISCOVERY_INGEST_SECRET: z.string().min(32).optional().or(z.literal("")),
+  // true = nunca envia WhatsApp (testes/homologação): prospects ficam dry_run.
+  DISCOVERY_DRY_RUN: z
+    .enum(["true", "false", "1", "0", ""])
+    .default("false")
+    .transform((v) => v === "true" || v === "1"),
+  DISCOVERY_MAX_CALLS_PER_EVENT: z.coerce.number().int().min(1).max(500).default(40),
+  DISCOVERY_DAILY_CALL_CAP: z.coerce.number().int().min(1).max(10000).default(300),
+  // Fallback LLM: NVIDIA NIM (OpenAI-compatível). Sem busca ao vivo — só estrutura/valida.
+  NVIDIA_NIM_API_KEY: z.string().optional(),
+  NIM_MODEL: z.string().optional(),
+  // Orçamento diário de chamadas Grok e % de uso a partir do qual troca para o NIM.
+  XAI_DAILY_BUDGET: z.coerce.number().int().min(1).max(100000).default(200),
+  XAI_USAGE_SWITCH_PCT: z.coerce.number().min(0).max(100).default(25),
+  WHATSAPP_DAILY_FIRST_CONTACTS: z.coerce.number().int().min(1).max(200).default(50),
 });
 
 /** Chave de API presente e não vazia (vazio = não configurado). Type guard. */

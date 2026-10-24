@@ -29,3 +29,12 @@ export function verifyEvolutionWebhookToken(received: string | null): boolean {
   }
   return timingSafeEqualStrings(received, expected);
 }
+
+/** Segredo do endpoint interno de ingestão de fornecedores. Falha fechada. */
+export function verifyDiscoveryIngestSecret(received: string | null): boolean {
+  const expected = process.env.DISCOVERY_INGEST_SECRET;
+  if (received === null || expected === undefined || expected.length < 32) {
+    return false;
+  }
+  return timingSafeEqualStrings(received, expected);
+}
