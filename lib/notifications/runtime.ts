@@ -20,14 +20,19 @@ export function createNotificationDeps(): NotificationDeps {
 
       const { data: profile } = await admin
         .from("profiles")
-        .select("display_name")
+        .select("display_name,email")
         .eq("id", event.owner_profile_id)
         .maybeSingle();
-      const { data: authUser } = await admin.auth.admin.getUserById(event.owner_profile_id);
+      // E-mail salvo no perfil (Google/senha); fallback no auth.users.
+      let email = profile?.email ?? null;
+      if (email === null) {
+        const { data: authUser } = await admin.auth.admin.getUserById(event.owner_profile_id);
+        email = authUser.user?.email ?? null;
+      }
 
       return {
         profileId: event.owner_profile_id,
-        email: authUser.user?.email ?? null,
+        email,
         displayName: profile?.display_name ?? "",
         eventTitle: event.title,
       };

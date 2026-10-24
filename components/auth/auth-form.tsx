@@ -4,19 +4,29 @@ import Link from "next/link";
 
 import { useActionState, useState } from "react";
 
-import { signInAction, signUpAction, type AuthActionState } from "@/app/(auth)/actions";
+import {
+  signInAction,
+  signInWithGoogleAction,
+  signUpAction,
+  type AuthActionState,
+} from "@/app/(auth)/actions";
 
 type AuthMode = "entrar" | "registrar";
 
 const initialState: AuthActionState = {};
 
-export function AuthForm({ mode }: { mode: AuthMode }) {
+export function AuthForm({ mode, oauthError }: { mode: AuthMode; oauthError?: string }) {
   const isSignUp = mode === "registrar";
   const [state, formAction, pending] = useActionState(
     isSignUp ? signUpAction : signInAction,
     initialState,
   );
+  const [googleState, googleAction, googlePending] = useActionState(
+    signInWithGoogleAction,
+    initialState,
+  );
   const [showPassword, setShowPassword] = useState(false);
+  const googleError = googleState.error ?? oauthError;
 
   return (
     <div>
@@ -32,7 +42,41 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           : "Continue de onde parou e acompanhe os seus eventos."}
       </p>
 
-      <form action={formAction} className="mt-8 flex flex-col gap-4">
+      <form action={googleAction} className="mt-8">
+        <button
+          type="submit"
+          disabled={googlePending}
+          className="flex h-14 w-full items-center justify-center gap-3 rounded-full bg-primaria text-base font-semibold text-white shadow-[0_10px_24px_-12px_rgba(163,72,90,0.7)] transition hover:bg-primaria-escura disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <span className="flex size-8 items-center justify-center rounded-full bg-white">
+            <GoogleIcon />
+          </span>
+          {googlePending
+            ? "Abrindo o Google…"
+            : isSignUp
+              ? "Criar conta com Google"
+              : "Entrar com Google"}
+        </button>
+        <p className="mt-2 text-center text-caption text-vinho/70">
+          Um clique, sem senha. Avisamos no seu e-mail quando o orçamento ficar pronto.
+        </p>
+        {googleError !== undefined ? (
+          <p
+            role="alert"
+            className="mt-3 rounded-xl bg-semantic-error/10 px-4 py-3 text-sm text-semantic-error"
+          >
+            {googleError}
+          </p>
+        ) : null}
+      </form>
+
+      <div className="my-6 flex items-center gap-3 text-caption uppercase tracking-[0.14em] text-vinho/60">
+        <span className="h-px flex-1 bg-line-subtle" />
+        ou com e-mail e senha
+        <span className="h-px flex-1 bg-line-subtle" />
+      </div>
+
+      <form action={formAction} className="flex flex-col gap-4">
         {isSignUp ? (
           <div className="flex flex-col gap-1.5">
             <label htmlFor="full-name" className="text-sm font-medium text-vinho">
@@ -115,27 +159,30 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
               )}
             </button>
           </div>
-          {isSignUp ? (
-            <p className="text-caption text-vinho/70">Mínimo de 8 caracteres.</p>
-          ) : null}
+          {isSignUp ? <p className="text-caption text-vinho/70">Mínimo de 8 caracteres.</p> : null}
         </div>
 
         {state.error !== undefined ? (
-          <p role="alert" className="rounded-xl bg-semantic-error/10 px-4 py-3 text-sm text-semantic-error">
+          <p
+            role="alert"
+            className="rounded-xl bg-semantic-error/10 px-4 py-3 text-sm text-semantic-error"
+          >
             {state.error}
           </p>
         ) : null}
 
         {state.notice !== undefined ? (
-          <p className="rounded-xl bg-champagne-claro/50 px-4 py-3 text-sm text-vinho">{state.notice}</p>
+          <p className="rounded-xl bg-champagne-claro/50 px-4 py-3 text-sm text-vinho">
+            {state.notice}
+          </p>
         ) : null}
 
         <button
           type="submit"
           disabled={pending}
-          className="mt-2 h-12 rounded-full bg-primaria text-sm font-semibold text-white shadow-[0_10px_24px_-12px_rgba(163,72,90,0.7)] transition hover:bg-primaria-escura disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-2 h-12 rounded-full border border-primaria/40 bg-off-white text-sm font-semibold text-primaria transition hover:bg-areia-secundaria/60 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {pending ? "Aguarde…" : isSignUp ? "Criar conta" : "Entrar"}
+          {pending ? "Aguarde…" : isSignUp ? "Criar conta com e-mail" : "Entrar com e-mail"}
         </button>
       </form>
 
@@ -143,19 +190,48 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         {isSignUp ? (
           <>
             Já tem conta?{" "}
-            <Link href="/entrar" className="font-medium text-vinho underline decoration-champagne underline-offset-4">
+            <Link
+              href="/entrar"
+              className="font-medium text-vinho underline decoration-champagne underline-offset-4"
+            >
               Entrar
             </Link>
           </>
         ) : (
           <>
             Ainda não tem conta?{" "}
-            <Link href="/registrar" className="font-medium text-vinho underline decoration-champagne underline-offset-4">
+            <Link
+              href="/registrar"
+              className="font-medium text-vinho underline decoration-champagne underline-offset-4"
+            >
               Criar conta
             </Link>
           </>
         )}
       </p>
     </div>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 48 48" className="size-5" aria-hidden="true">
+      <path
+        fill="#EA4335"
+        d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.2l7.9 6.1C12.5 13.6 17.8 9.5 24 9.5Z"
+      />
+      <path
+        fill="#4285F4"
+        d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.7 6c4.5-4.2 6.9-10.3 6.9-17.7Z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M10.6 28.7A14.6 14.6 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l8-6.1Z"
+      />
+      <path
+        fill="#34A853"
+        d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.7-6c-2.2 1.5-5 2.3-8.2 2.3-6.2 0-11.5-4.2-13.4-9.8l-8 6.1C6.6 42.6 14.6 48 24 48Z"
+      />
+    </svg>
   );
 }

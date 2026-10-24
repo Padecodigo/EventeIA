@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/app/(auth)/actions", () => ({
   signInAction: vi.fn(),
   signUpAction: vi.fn(),
+  signInWithGoogleAction: vi.fn(),
 }));
 
 import { AuthForm } from "@/components/auth/auth-form";
@@ -71,5 +72,25 @@ describe("AuthForm — formulário server-side", () => {
     expect(screen.getByLabelText("Nome completo")).toBeInTheDocument();
     expect(screen.getByLabelText("E-mail")).toBeInTheDocument();
     expect(screen.getByLabelText("Senha")).toBeInTheDocument();
+  });
+});
+
+describe("AuthForm — Entrar com Google", () => {
+  it("botão do Google vem primeiro, antes do formulário de e-mail", () => {
+    render(<AuthForm mode="entrar" />);
+    const google = screen.getByRole("button", { name: /Entrar com Google/ });
+    const email = screen.getByRole("button", { name: "Entrar com e-mail" });
+    expect(google.compareDocumentPosition(email) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("cadastro oferece Criar conta com Google e mantém o e-mail como secundário", () => {
+    render(<AuthForm mode="registrar" />);
+    expect(screen.getByRole("button", { name: /Criar conta com Google/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Criar conta com e-mail" })).toBeInTheDocument();
+  });
+
+  it("mostra erro do callback OAuth", () => {
+    render(<AuthForm mode="entrar" oauthError="Login com Google cancelado." />);
+    expect(screen.getByRole("alert")).toHaveTextContent("Login com Google cancelado.");
   });
 });
