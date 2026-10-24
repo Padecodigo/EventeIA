@@ -8,11 +8,24 @@ import "./globals.css";
 const display = Fraunces({
   subsets: ["latin"],
   weight: ["500", "600", "700"],
-  // Fallback com métricas ajustadas evita salto de layout quando a fonte chega.
-  adjustFontFallback: true,
-  style: ["normal", "italic"],
+  style: ["normal"],
   variable: "--font-display",
   display: "swap",
+  // Fallback com métricas ajustadas evita salto de layout quando a fonte chega.
+  adjustFontFallback: true,
+});
+
+/**
+ * Itálico da Fraunces só aparece em legendas/rodapé (abaixo do LCP): sem preload,
+ * baixa sob demanda quando um trecho itálico é renderizado (ver globals.css).
+ */
+const displayItalic = Fraunces({
+  subsets: ["latin"],
+  weight: ["500", "600"],
+  style: ["italic"],
+  variable: "--font-display-italic",
+  display: "swap",
+  preload: false,
 });
 
 const body = Figtree({
@@ -48,7 +61,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt-BR" className={`${display.variable} ${body.variable}`}>
+    <html lang="pt-BR" className={`${display.variable} ${displayItalic.variable} ${body.variable}`}>
       <body>{children}</body>
     </html>
   );

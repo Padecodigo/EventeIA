@@ -158,7 +158,7 @@ export default async function LandingPage() {
         </div>
 
         <div className="mx-auto grid w-full max-w-7xl gap-6 px-5 pb-14 pt-4 sm:px-8 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:gap-12 lg:pb-20 lg:pt-10">
-          <div className="ev-fade-up">
+          <div className="ev-rise">
             <p className="eyebrow hidden sm:inline-flex">
               <span aria-hidden="true" className="text-coral-escuro">♥</span>
               Festa infantil · 15 anos · Formatura · Casamento · Corporativo
@@ -227,7 +227,8 @@ export default async function LandingPage() {
                       alt={photo.alt}
                       fill
                       priority={index === 0}
-                      sizes={index === 0 ? "(max-width: 1024px) 46vw, 300px" : "(max-width: 1024px) 40vw, 260px"}
+                      quality={70}
+                      sizes={index === 0 ? "(max-width: 640px) 42vw, 270px" : "(max-width: 640px) 38vw, 245px"}
                       className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                     />
                     <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-primaria/25 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
