@@ -38,3 +38,14 @@ supabase/.temp/
 .DS_Store
 *.pem
 .shots/
+
+# Logs, Vercel e testes E2E
+*.log
+npm-debug.log*
+pnpm-debug.log*
+.vercel/
+playwright-report/
+test-results/
+blob-report/
+.env.*.bak
+*.bak
