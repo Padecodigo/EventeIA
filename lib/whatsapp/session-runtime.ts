@@ -4,6 +4,8 @@ import { logoutInstance } from "@/lib/evolution-api/client";
 import { logger } from "@/lib/logger";
 import { notifyQuotationsReady } from "@/lib/notifications/runtime";
 import { enqueue, getRedisConnection, QUEUE_NAMES } from "@/lib/queue";
+import { deliverEventQuotes } from "@/lib/quotes/delivery";
+import { createDeliveryDeps } from "@/lib/quotes/delivery-runtime";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 import type { SessionDeps } from "./session-manager";
@@ -72,13 +74,14 @@ export function createSessionDeps(): SessionDeps {
       );
     },
     async deliverQuotes(eventId) {
-      // Marca o fim da coleta (idempotente). A fase 4 gera os cenários aqui.
+      // Marca o fim da coleta (idempotente) e gera os 3 cenários (fase 4).
       await admin
         .from("events")
         .update({ collection_ended_at: new Date().toISOString(), discovery_status: "completed" })
         .eq("id", eventId)
         .is("collection_ended_at", null);
-      logger.info({ eventId }, "coleta encerrada: entrega de cotações");
+      const result = await deliverEventQuotes(createDeliveryDeps(), eventId);
+      logger.info({ eventId, result }, "coleta encerrada: cotações entregues");
     },
     notifyQuotationsReady,
     warn(message, context) {
