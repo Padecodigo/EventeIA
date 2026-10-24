@@ -27,10 +27,10 @@ const config: Config = {
        * ====================================================== */
       colors: {
         /* ---- Paleta canônica (hex oficial) ---- */
-        vinho: "#3B2420", // azul-noite (nome histórico mantido)
-        "areia-quente": "#FBF6F2",
-        "areia-secundaria": "#F3E6DD",
-        "off-white": "#FFFFFF",
+        vinho: "rgb(var(--tr-vinho) / <alpha-value>)", // azul-noite (nome histórico mantido)
+        "areia-quente": "rgb(var(--tr-areia-quente) / <alpha-value>)",
+        "areia-secundaria": "rgb(var(--tr-areia-secundaria) / <alpha-value>)",
+        "off-white": "rgb(var(--tr-off-white) / <alpha-value>)",
         champagne: "#E8A587", // coral
         coral: "#E8A587",
         "coral-escuro": "#A3485A", // texto coral sobre claro (AA)
@@ -38,9 +38,9 @@ const config: Config = {
         sol: "#FFC94D",
         menta: "#C9734F",
         lilas: "#8B7CF6",
-        "champagne-claro": "#F6E1D8",
-        primaria: "#A3485A",
-        "primaria-escura": "#86374A",
+        "champagne-claro": "rgb(var(--tr-champagne-claro) / <alpha-value>)",
+        primaria: "rgb(var(--tr-primaria) / <alpha-value>)",
+        "primaria-escura": "rgb(var(--tr-primaria-escura) / <alpha-value>)",
         "verde-claro": "#F3E6DD", // nome legado; agora areia-rosé
         terracota: "#C9734F",
         dourado: "#BF986B",
@@ -64,12 +64,12 @@ const config: Config = {
           soft: "#F6E1D8",
         },
         line: {
-          subtle: "rgba(59, 36, 32, 0.12)",
-          strong: "rgba(59, 36, 32, 0.28)",
+          subtle: "rgb(var(--tr-line-rgb) / 0.12)",
+          strong: "rgb(var(--tr-line-rgb) / 0.28)",
         },
         /** Estados semânticos — uso restrito a validação (ícones/labels) */
         semantic: {
-          error: "#B3261E",
+          error: "rgb(var(--tr-semantic-error) / <alpha-value>)",
           success: "#1E6B3A",
         },
       },

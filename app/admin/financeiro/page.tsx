@@ -1,6 +1,9 @@
 import Link from "next/link";
 
-import { loadFinance, PROVIDER_LABELS } from "@/lib/finance/load";
+import { CostDonut, CountBars, FunnelChart, MarginByEvent, RevenueCostLine } from "@/components/admin/charts";
+import { EVENT_TYPE_LABELS } from "@/lib/catalog/v1";
+import { eventFunnel, eventsByCity, eventsByType, marginByEvent, revenueCostSeries } from "@/lib/finance/analytics";
+import { loadEventStats, loadFinance, PROVIDER_LABELS } from "@/lib/finance/load";
 import { DEFAULT_FINANCE_PRICES, PRICE_KEYS } from "@/lib/finance/pricing";
 import { buildReport, resolvePeriod } from "@/lib/finance/report";
 import { formatBRL } from "@/lib/money";
@@ -32,7 +35,7 @@ function Bars({ title, rows, label = (k: string) => k }: { title: string; rows: 
     <section className="rounded-card border border-line-subtle bg-off-white p-5 shadow-soft">
       <h3 className="font-serif text-title-3">{title}</h3>
       {rows.length === 0 ? (
-        <p className="mt-3 text-caption text-vinho/60">Sem dados no período.</p>
+        <p className="mt-3 text-caption text-vinho/70">Sem dados no período.</p>
       ) : (
         <ul className="mt-3 flex flex-col gap-2">
           {rows.slice(0, 12).map(([k, v]) => (
@@ -57,7 +60,7 @@ function Card({ label, value, hint }: { label: string; value: string; hint?: str
     <article className="rounded-card border border-line-subtle bg-off-white p-5 shadow-soft">
       <p className="text-caption text-vinho/70">{label}</p>
       <p className="mt-1 font-serif text-title-1 tabular-nums">{value}</p>
-      {hint ? <p className="text-caption text-vinho/60">{hint}</p> : null}
+      {hint ? <p className="text-caption text-vinho/70">{hint}</p> : null}
     </article>
   );
 }
@@ -65,12 +68,13 @@ function Card({ label, value, hint }: { label: string; value: string; hint?: str
 export default async function FinancePage({ searchParams }: { searchParams: Promise<{ from?: string; to?: string }> }) {
   const sp = await searchParams;
   const period = resolvePeriod(sp.from, sp.to);
-  const data = await loadFinance(period);
+  const [data, stats] = await Promise.all([loadFinance(period), loadEventStats(period)]);
   const r = buildReport(data.costs, data.revenue);
   const qs = `from=${period.from}&to=${period.to}`;
   const eventLabel = (id: string) => data.eventTitles[id] ?? `evento ${id.slice(0, 8)}`;
   const reason = (k: string) => REASON_LABELS[k] ?? k;
   const provider = (k: string) => PROVIDER_LABELS[k] ?? k;
+  const eventType = (k: string) => (EVENT_TYPE_LABELS as Record<string, string>)[k] ?? k;
   const usd = (micro: number) => `US$ ${(micro / 1_000_000).toFixed(4)}`;
 
   return (
@@ -99,6 +103,15 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
       </section>
 
       <div className="grid gap-4 lg:grid-cols-3">
+        <RevenueCostLine points={revenueCostSeries(r.revenueByDay, r.costByDay)} />
+        <CostDonut rows={r.byProvider} label={provider} />
+        <MarginByEvent rows={marginByEvent(data.costs, data.revenue)} label={eventLabel} />
+        <FunnelChart funnel={eventFunnel(stats.events, stats.paidEventIds)} />
+        <CountBars title="Eventos por tipo" rows={eventsByType(stats.events)} label={eventType} />
+        <CountBars title="Eventos por cidade" rows={eventsByCity(stats.events)} />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
         <Bars title="Gasto por provedor" rows={r.byProvider} label={provider} />
         <Bars title="Gasto por motivo" rows={r.byReason} label={reason} />
         <Bars title="Eventos mais caros" rows={r.byEvent} label={eventLabel} />
@@ -111,7 +124,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
       <section>
         <h2 className="font-serif text-title-1">Lançamentos</h2>
         <div className="mt-3"><FinanceForms month={period.to.slice(0, 7)} today={period.to} /></div>
-        <p className="mt-2 text-caption text-vinho/60">
+        <p className="mt-2 text-caption text-vinho/70">
           Preços padrão (US$/1M tokens; Search/Fetch por 1000 req.):{" "}
           {PRICE_KEYS.map((k) => `${k} ${(DEFAULT_FINANCE_PRICES[k] / 1_000_000).toString()}`).join(" · ")}. Pico DeepSeek: seg–sex 01–04 e 06–10 UTC.
         </p>
@@ -144,7 +157,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
             </tbody>
           </table>
         </div>
-        <p className="mt-2 text-caption text-vinho/60">Tabela mostra até 200 linhas de cada tipo; o CSV traz tudo.</p>
+        <p className="mt-2 text-caption text-vinho/70">Tabela mostra até 200 linhas de cada tipo; o CSV traz tudo.</p>
       </section>
     </div>
   );
