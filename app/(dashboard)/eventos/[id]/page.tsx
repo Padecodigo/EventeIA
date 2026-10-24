@@ -8,12 +8,14 @@ import { BudgetTable } from "@/components/domain/budget-table";
 import { BuyTicketForm } from "@/components/domain/buy-ticket-form";
 import { ProspectingPanel } from "@/components/domain/prospecting-panel";
 import { QuotationsPanel } from "@/components/domain/quotations-panel";
+import { ScenariosPanel } from "@/components/domain/scenarios-panel";
 import { TestimonialInvite } from "@/components/domain/testimonial-invite";
 import { CATEGORY_LABELS, type CategoryCode } from "@/lib/catalog/v1";
 import { calculate } from "@/lib/engine";
 import type { EngineItemSelection, EventType, RegionCode } from "@/lib/engine/types";
 import { serverEnv } from "@/lib/env";
 import { formatBRL } from "@/lib/money";
+import { latestScenarios } from "@/lib/quotes/scenarios";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -112,6 +114,14 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     .eq("event_id", event.id)
     .eq("selected", true)
     .order("created_at", { ascending: true });
+  const { data: snapshotRows } = await supabase
+    .from("budget_snapshots")
+    .select("breakdown,created_at")
+    .eq("event_id", event.id)
+    .order("created_at", { ascending: false })
+    .limit(30);
+  const scenarios = latestScenarios(snapshotRows ?? []);
+
   const requirementCategories = [...new Set((requirementRows ?? []).map((r) => r.category))];
   const interviewDone = event.interview_completed_at !== null;
 
@@ -179,6 +189,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
       {unlocked ? (
         <>
+          <ScenariosPanel eventId={event.id} scenarios={scenarios} />
           <QuotationsPanel eventId={event.id} quotations={quotationsResult.data ?? []} />
           <ProspectingPanel
             eventId={event.id}
