@@ -35,7 +35,11 @@ export type LlmTask =
   | "discovery_search";
 
 /** Tarefas em que o Grok vem antes do NIM no fallback (ainda sujeito ao teto). */
-export const GROK_PREFERRED_TASKS: ReadonlySet<LlmTask> = new Set(["negotiation", "optout_intent", "discovery_search"]);
+export const GROK_PREFERRED_TASKS: ReadonlySet<LlmTask> = new Set([
+  "negotiation",
+  "optout_intent",
+  "discovery_search",
+]);
 
 export const MIN_CONFIDENCE = 0.7;
 
@@ -54,7 +58,12 @@ export interface LlmCompletion {
 
 export interface LlmClient {
   readonly name: LlmProviderName;
-  complete(request: { messages: ChatMessage[]; maxTokens: number; json: boolean; task?: LlmTask }): Promise<LlmCompletion>;
+  complete(request: {
+    messages: ChatMessage[];
+    maxTokens: number;
+    json: boolean;
+    task?: LlmTask;
+  }): Promise<LlmCompletion>;
 }
 
 /** Preço por 1M tokens em micro-dólares (US$ 0,20 = 200_000). */
@@ -112,15 +121,23 @@ export interface GrokCapConfig {
 }
 
 /** O Grok cabe no teto se a fatia dele, contando esta chamada estimada, ficar <= switchPct. */
-export function grokWithinCap(totals: UsageTotals, estimatedMicroUsd: number, cfg: GrokCapConfig): boolean {
+export function grokWithinCap(
+  totals: UsageTotals,
+  estimatedMicroUsd: number,
+  cfg: GrokCapConfig,
+): boolean {
   const grok = (totals.costByProvider.grok ?? 0) + estimatedMicroUsd;
   if (grok <= cfg.bootstrapMicroUsd) return true;
-  const all = Object.values(totals.costByProvider).reduce((a, b) => a + (b ?? 0), 0) + estimatedMicroUsd;
+  const all =
+    Object.values(totals.costByProvider).reduce((a, b) => a + (b ?? 0), 0) + estimatedMicroUsd;
   return all > 0 && (grok * 100) / all <= cfg.switchPct;
 }
 
 /** Ordem de provedores para a tarefa (o teto é checado na hora da chamada). */
-export function providerOrder(task: LlmTask, available: readonly LlmProviderName[]): LlmProviderName[] {
+export function providerOrder(
+  task: LlmTask,
+  available: readonly LlmProviderName[],
+): LlmProviderName[] {
   const has = (p: LlmProviderName) => available.includes(p);
   // A busca ao vivo da descoberta só existe no Grok; nas demais tarefas o DeepSeek é o primário.
   if (task === "discovery_search") return (["grok", "nim", "deepseek"] as const).filter(has);
@@ -133,7 +150,10 @@ export function providerOrder(task: LlmTask, available: readonly LlmProviderName
 export interface RouteResult<T> {
   value: T;
   provider: LlmProviderName | "contingency";
-  attempts: { provider: LlmProviderName; outcome: "ok" | "invalid" | "low_confidence" | "error" | "capped" }[];
+  attempts: {
+    provider: LlmProviderName;
+    outcome: "ok" | "invalid" | "low_confidence" | "error" | "capped";
+  }[];
 }
 
 export interface Router {
@@ -169,12 +189,24 @@ export function createRouter(options: {
   prices: PriceTable;
   cap: GrokCapConfig;
   onCapAlert?: (info: { task: LlmTask; estimatedMicroUsd: number }) => void;
+  /** Falha de um provedor (erro/vazio/inválido) — logada, nunca silenciosa. */
+  onAttemptFailure?: (info: {
+    provider: LlmProviderName;
+    task: LlmTask;
+    outcome: string;
+    error?: string;
+  }) => void;
   /** Custo real por chamada (ex.: DeepSeek pico/fora de pico + cache). Padrão: tabela simples. */
-  cost?: (provider: LlmProviderName, usage: { inputTokens: number; outputTokens: number; cacheHitTokens: number }, at: Date) => { costMicroUsd: number; peak?: boolean } | null;
+  cost?: (
+    provider: LlmProviderName,
+    usage: { inputTokens: number; outputTokens: number; cacheHitTokens: number },
+    at: Date,
+  ) => { costMicroUsd: number; peak?: boolean } | null;
   now?: () => Date;
 }): Router {
   const byName = new Map(options.clients.map((c) => [c.name, c]));
-  const grokAllowed = async (est: number) => grokWithinCap(await options.ledger.totals(), est, options.cap);
+  const grokAllowed = async (est: number) =>
+    grokWithinCap(await options.ledger.totals(), est, options.cap);
 
   return {
     grokAllowed,
@@ -198,13 +230,26 @@ export function createRouter(options: {
         let inTok = inEst;
         let outTok = 0;
         let hitTok = 0;
+        let failure: string | undefined;
         const entry = (o: "ok" | "invalid" | "low_confidence" | "error") => {
           const usage = { inputTokens: inTok, outputTokens: outTok, cacheHitTokens: hitTok };
-          const c = options.cost?.(name, usage, (options.now ?? (() => new Date()))()) ?? { costMicroUsd: costMicroUsd(price, inTok, outTok) };
+          const c = options.cost?.(name, usage, (options.now ?? (() => new Date()))()) ?? {
+            costMicroUsd: costMicroUsd(price, inTok, outTok),
+          };
           return {
-            provider: name, task, inputTokens: inTok, outputTokens: outTok, costMicroUsd: c.costMicroUsd, outcome: o,
-            cacheHitTokens: hitTok, peak: c.peak, eventId: meta?.eventId, reason: meta?.reason ?? task,
-            profileId: meta?.profileId, stage: meta?.stage, channel: meta?.channel,
+            provider: name,
+            task,
+            inputTokens: inTok,
+            outputTokens: outTok,
+            costMicroUsd: c.costMicroUsd,
+            outcome: o,
+            cacheHitTokens: hitTok,
+            peak: c.peak,
+            eventId: meta?.eventId,
+            reason: meta?.reason ?? task,
+            profileId: meta?.profileId,
+            stage: meta?.stage,
+            channel: meta?.channel,
           };
         };
         try {
@@ -214,16 +259,24 @@ export function createRouter(options: {
           hitTok = Math.min(res.cacheHitTokens ?? 0, inTok);
           const parsed = schema.safeParse(parseJson(res.content));
           if (!parsed.success) outcome = "invalid";
-          else if (confidence !== undefined && confidence(parsed.data) < MIN_CONFIDENCE) outcome = "low_confidence";
+          else if (confidence !== undefined && confidence(parsed.data) < MIN_CONFIDENCE)
+            outcome = "low_confidence";
           else {
             outcome = "ok";
             await options.ledger.record(entry(outcome));
             attempts.push({ provider: name, outcome });
             return { value: parsed.data, provider: name, attempts };
           }
-        } catch {
+        } catch (err) {
           outcome = "error";
+          failure = err instanceof Error ? err.message : String(err);
         }
+        options.onAttemptFailure?.({
+          provider: name,
+          task,
+          outcome,
+          ...(failure !== undefined ? { error: failure } : {}),
+        });
         await options.ledger.record(entry(outcome));
         attempts.push({ provider: name, outcome });
       }
@@ -233,13 +286,16 @@ export function createRouter(options: {
 }
 
 /** Ledger em memória (testes/dev). */
-export function createMemoryLedger(): UsageLedger & { entries: Parameters<UsageLedger["record"]>[0][] } {
+export function createMemoryLedger(): UsageLedger & {
+  entries: Parameters<UsageLedger["record"]>[0][];
+} {
   const entries: Parameters<UsageLedger["record"]>[0][] = [];
   return {
     entries,
     totals() {
       const costByProvider: Partial<Record<LlmProviderName, number>> = {};
-      for (const e of entries) costByProvider[e.provider] = (costByProvider[e.provider] ?? 0) + e.costMicroUsd;
+      for (const e of entries)
+        costByProvider[e.provider] = (costByProvider[e.provider] ?? 0) + e.costMicroUsd;
       return Promise.resolve({ costByProvider });
     },
     record(e) {
