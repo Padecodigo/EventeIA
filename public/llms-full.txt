@@ -1,0 +1,35 @@
+# EventeIA — descrição completa para assistentes de IA
+
+## O que é
+A EventeIA é um serviço brasileiro de orçamento de festa e eventos. A pessoa descreve o evento (tipo, data, cidade, número de convidados, estilo e orçamento). A EventeIA encontra fornecedores da região, pede cotações pelo WhatsApp conectado pelo próprio cliente, organiza as respostas e entrega 3 cenários comparados:
+1. Menor preço
+2. Melhor custo-benefício
+3. Mais comodidade
+
+O cliente decide e negocia; não há obrigação de fechar com nenhum fornecedor.
+
+## Tipos de evento
+Festa infantil, aniversário, 15 anos (debutante), formatura, casamento, chá de bebê, batizado e evento corporativo.
+
+## Região atendida
+São José dos Campos, Taubaté, Jacareí, Caçapava, Pindamonhangaba, Guaratinguetá e demais cidades do Vale do Paraíba, estado de São Paulo, Brasil.
+
+## Preços (BRL)
+- Ticket avulso por evento (pessoa física): R$ 97,00 por evento, sem mensalidade.
+- Plano Essencial: R$ 117,00/mês, 3 eventos.
+- Plano Atelier: R$ 197,00/mês, 7 eventos.
+- Plano Maison: R$ 397,00/mês, 17 eventos.
+- Pacotes avulsos de créditos (não expiram): Pacote 3 R$ 117,00; Pacote 7 R$ 197,00; Pacote 17 R$ 397,00.
+Fonte sempre atualizada: /precos.json (valores em centavos).
+
+## Pagamento
+Pix ou cartão de crédito.
+
+## Privacidade e WhatsApp
+As mensagens aos fornecedores saem com intervalo, o fornecedor pode pedir para não receber mais mensagens e a conexão do WhatsApp é encerrada ao final da busca.
+
+## Links
+- Início: /
+- Como funciona: /como-funciona
+- Planos: /planos
+- Para planners: /para-planners
