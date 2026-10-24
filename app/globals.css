@@ -2,15 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design System "Jardim" (v3) — nomes históricos, valores novos. Ver tailwind.config.ts */
+/* Design System "Terra Rosé" (v4) — nomes históricos, valores novos. Ver tailwind.config.ts */
 :root {
-  --color-vinho: #13302B;
-  --color-areia-quente: #F6FAF7;
-  --color-areia-secundaria: #E3F1EA;
+  --color-vinho: #3B2420;
+  --color-areia-quente: #FBF6F2;
+  --color-areia-secundaria: #F3E6DD;
   --color-off-white: #ffffff;
-  --color-champagne: #ff9466;
-  --color-champagne-claro: #ffe7dc;
-  --color-primaria: #0f766e;
+  --color-champagne: #E8A587;
+  --color-champagne-claro: #F6E1D8;
+  --color-primaria: #A3485A;
 
   --color-primary: var(--color-primaria);
   --color-accent: var(--color-champagne);
@@ -20,23 +20,23 @@
   --color-text: var(--color-vinho);
   --color-text-inverse: var(--color-off-white);
   --color-text-accent: var(--color-champagne);
-  --color-border-subtle: rgba(19, 48, 43, 0.12);
-  --color-border-strong: rgba(19, 48, 43, 0.28);
-  --color-ring: #0f766e; /* esmeralda: 3:1+ sobre fundos claros */
+  --color-border-subtle: rgba(59, 36, 32, 0.12);
+  --color-border-strong: rgba(59, 36, 32, 0.28);
+  --color-ring: #A3485A; /* esmeralda: 3:1+ sobre fundos claros */
 
   --font-serif: var(--font-display), "Fraunces", Georgia, serif;
   --font-sans: var(--font-body), "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
 
   --radius-card: 1rem;
-  --shadow-soft: 0 1px 2px rgba(19, 48, 43, 0.06), 0 8px 24px rgba(19, 48, 43, 0.06);
-  --shadow-raised: 0 2px 4px rgba(19, 48, 43, 0.08), 0 16px 40px rgba(19, 48, 43, 0.1);
+  --shadow-soft: 0 1px 2px rgba(59, 36, 32, 0.06), 0 8px 24px rgba(59, 36, 32, 0.06);
+  --shadow-raised: 0 2px 4px rgba(59, 36, 32, 0.08), 0 16px 40px rgba(59, 36, 32, 0.1);
   --ease-editorial: cubic-bezier(0.2, 0, 0, 1);
 }
 
 @layer components {
   /* Botões e cartões unificados (landing, auth, painel) */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_-12px_rgba(15,118,110,0.7)] transition hover:-translate-y-0.5 hover:bg-primaria-escura disabled:translate-y-0;
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_-12px_rgba(163,72,90,0.7)] transition hover:-translate-y-0.5 hover:bg-primaria-escura disabled:translate-y-0;
   }
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2 rounded-full border border-vinho/15 bg-white px-6 py-3 text-sm font-semibold text-vinho transition hover:border-primaria/40 hover:bg-verde-claro/50;

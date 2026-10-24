@@ -54,12 +54,12 @@ export default function PlansPage() {
               key={plan.code}
               className={
                 plan.featured
-                  ? "flex flex-col rounded-card border border-champagne/50 bg-vinho p-8 text-off-white shadow-raised"
+                  ? "flex flex-col rounded-card bg-white p-8 shadow-raised ring-2 ring-primaria"
                   : "flex flex-col rounded-card border border-line-subtle bg-off-white p-8 shadow-soft"
               }
             >
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] opacity-70">
-                {plan.featured ? "Mais escolhido" : "Planners"}
+              <p className={plan.featured ? "w-fit rounded-full bg-champagne-claro px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-primaria-escura" : "text-[10px] font-semibold uppercase tracking-[0.16em] opacity-70"}>
+                {plan.featured ? "✦ Mais escolhido" : "Planners"}
               </p>
               <h2 className="mt-3 font-serif text-title-1">{plan.name}</h2>
               <p className="mt-6 font-serif text-display-2">{formatBRL(plan.priceCents)}</p>
@@ -73,7 +73,7 @@ export default function PlansPage() {
                 href="/registrar"
                 className={
                   plan.featured
-                    ? "mt-8 rounded-full bg-[#FF9466] px-5 py-3 text-center text-sm font-semibold text-vinho transition hover:bg-champagne-claro"
+                    ? "mt-8 rounded-full bg-primaria px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-primaria-escura"
                     : "mt-8 rounded-full border border-champagne px-5 py-3 text-center text-sm font-medium text-vinho transition hover:bg-champagne-claro/40"
                 }
               >

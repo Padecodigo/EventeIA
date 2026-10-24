@@ -134,12 +134,12 @@ export default async function ParaPlannersPage() {
                 key={plan.code}
                 className={
                   plan.featured
-                    ? "rounded-card border border-champagne/50 bg-vinho p-8 text-off-white shadow-raised"
+                    ? "rounded-card bg-white p-8 shadow-raised ring-2 ring-primaria"
                     : "rounded-card border border-line-subtle bg-off-white p-8 shadow-soft"
                 }
               >
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] opacity-70">
-                  {plan.featured ? "Mais escolhido" : "Plano"}
+                <p className={plan.featured ? "w-fit rounded-full bg-champagne-claro px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-primaria-escura" : "text-[10px] font-semibold uppercase tracking-[0.16em] opacity-70"}>
+                  {plan.featured ? "✦ Mais escolhido" : "Plano"}
                 </p>
                 <h3 className="mt-3 font-serif text-title-1">{plan.name}</h3>
                 <p className="mt-5 font-serif text-3xl">{formatBRL(plan.priceCents)}</p>
@@ -153,7 +153,7 @@ export default async function ParaPlannersPage() {
                   href="/registrar"
                   className={
                     plan.featured
-                      ? "mt-8 inline-flex rounded-full bg-[#FF9466] px-5 py-3 text-sm font-semibold text-vinho transition hover:bg-champagne-claro"
+                      ? "mt-8 inline-flex rounded-full bg-primaria px-5 py-3 text-sm font-semibold text-white transition hover:bg-primaria-escura"
                       : "mt-8 inline-flex rounded-full border border-champagne px-5 py-3 text-sm font-medium text-vinho transition hover:bg-champagne-claro/40"
                   }
                 >

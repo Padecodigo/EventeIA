@@ -7,7 +7,7 @@ export function SiteFooter() {
     <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-14 sm:px-8 md:grid-cols-[1.2fr_0.8fr]">
       <div>
         <p className="font-brand text-3xl">EventeIA</p>
-        <p className="mt-3 font-serif text-xl italic text-[#FFB089]">
+        <p className="mt-3 font-serif text-xl italic text-[#E8A587]">
           Você imagina. A EventeIA faz acontecer.
         </p>
         <p className="mt-4 max-w-md text-sm leading-7 text-off-white/70">

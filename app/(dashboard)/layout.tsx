@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import type { ReactNode } from "react";
 
+import { DashboardNav } from "@/components/dashboard-nav";
 import { NotificationsPoller } from "@/components/notifications/notifications-poller";
 import { requireUser } from "@/lib/auth";
 
@@ -10,18 +11,11 @@ import { signOutAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
-const navItems = [
-  { href: "/painel", label: "Painel" },
-  { href: "/eventos", label: "Eventos" },
-  { href: "/creditos", label: "Créditos" },
-  { href: "/perfil", label: "Perfil" },
-];
-
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const user = await requireUser();
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(60%_40%_at_100%_0%,#E3F1EA,transparent)] bg-areia-quente text-vinho">
+    <div className="min-h-screen bg-[radial-gradient(60%_40%_at_100%_0%,#F3E6DD,transparent)] bg-areia-quente text-vinho">
       <header className="sticky top-0 z-40 border-b border-line-subtle bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
           <Link href="/painel" className="flex items-center gap-3">
@@ -29,13 +23,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
             <span className="font-brand text-xl leading-none text-vinho sm:text-2xl">EventeIA</span>
           </Link>
 
-          <nav aria-label="Navegação do painel" className="flex items-center gap-1 text-sm font-medium text-vinho/75">
-            {navItems.map((item) => (
-              <Link key={item.href} href={item.href} className="rounded-full px-4 py-2 transition hover:bg-verde-claro hover:text-vinho">
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          <DashboardNav />
 
           <div className="flex items-center gap-4">
             <span className="hidden text-caption text-vinho/70 sm:inline">{user.email ?? ""}</span>

@@ -5,11 +5,11 @@ import { describe, expect, it } from "vitest";
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
 
-describe("tema Jardim", () => {
+describe("tema Terra Rosé (layout Jardim)", () => {
   it("usa a paleta Jardim nos tokens", () => {
     const tw = read("tailwind.config.ts");
-    for (const hex of ["#13302B", "#0F766E", "#FF9466", "#FFE7DC", "#F6FAF7", "#E3F1EA"]) expect(tw).toContain(hex);
-    expect(tw).not.toContain("#2B1E1A");
+    for (const hex of ["#3B2420", "#A3485A", "#E8A587", "#F6E1D8", "#FBF6F2", "#F3E6DD", "#C9734F"]) expect(tw).toContain(hex);
+    for (const old of ["#2B1E1A", "#13302B", "#0F766E"]) expect(tw).not.toContain(old);
   });
   it("carrega Fraunces + Figtree e removeu as fontes antigas", () => {
     const layout = read("app/layout.tsx");

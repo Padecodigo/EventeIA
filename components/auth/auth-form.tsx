@@ -133,7 +133,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         <button
           type="submit"
           disabled={pending}
-          className="mt-2 h-12 rounded-full bg-primaria text-sm font-semibold text-white shadow-[0_10px_24px_-12px_rgba(15,118,110,0.7)] transition hover:bg-primaria-escura disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-2 h-12 rounded-full bg-primaria text-sm font-semibold text-white shadow-[0_10px_24px_-12px_rgba(163,72,90,0.7)] transition hover:bg-primaria-escura disabled:cursor-not-allowed disabled:opacity-50"
         >
           {pending ? "Aguarde…" : isSignUp ? "Criar conta" : "Entrar"}
         </button>

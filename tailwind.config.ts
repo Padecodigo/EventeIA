@@ -1,14 +1,13 @@
 import type { Config } from "tailwindcss";
 
 /**
- * EventeIA — Design System "Jardim" (v3, out/2026)
- * Nomes históricos dos tokens mantidos; valores novos:
- *   vinho/noite/ink → verde-tinta #13302B (texto; AA em todo fundo claro)
- *   primaria        → esmeralda #0F766E (CTA; texto branco = 5,5:1)
- *   champagne/coral → pêssego #FF9466 (acento; só com texto verde-tinta, 7:1)
- *   champagne-claro → pêssego suave #FFE7DC
- *   coral-escuro    → esmeralda #0F766E (texto de destaque sobre claro, AA)
- *   areia-quente    → #F6FAF7 (fundo) · areia-secundaria → #E3F1EA (faixas)
+ * EventeIA — Design System "Terra Rosé" (v4, out/2026) — derivado do monograma dourado/terra do logo.
+ * Nomes históricos dos tokens mantidos; valores:
+ *   vinho/noite/ink → cacau #3B2420 (texto; 13:1 no fundo)
+ *   primaria        → vinho-rosé #A3485A (CTA; texto branco 5,8:1) · primaria-escura #86374A
+ *   champagne/coral → blush-terracota #E8A587 (acento; só com texto cacau, 7:1)
+ *   champagne-claro → blush #F6E1D8 · terracota #C9734F (decorativo) · dourado do logo #BF986B
+ *   areia-quente    → #FBF6F2 (fundo) · areia-secundaria/verde-claro → #F3E6DD (faixas)
  * Tipografia: Fraunces (títulos) · Figtree (corpo/UI).
  */
 const config: Config = {
@@ -28,43 +27,45 @@ const config: Config = {
        * ====================================================== */
       colors: {
         /* ---- Paleta canônica (hex oficial) ---- */
-        vinho: "#13302B", // azul-noite (nome histórico mantido)
-        "areia-quente": "#F6FAF7",
-        "areia-secundaria": "#E3F1EA",
+        vinho: "#3B2420", // azul-noite (nome histórico mantido)
+        "areia-quente": "#FBF6F2",
+        "areia-secundaria": "#F3E6DD",
         "off-white": "#FFFFFF",
-        champagne: "#FF9466", // coral
-        coral: "#FF9466",
-        "coral-escuro": "#0F766E", // texto coral sobre claro (AA)
-        noite: "#13302B",
+        champagne: "#E8A587", // coral
+        coral: "#E8A587",
+        "coral-escuro": "#A3485A", // texto coral sobre claro (AA)
+        noite: "#3B2420",
         sol: "#FFC94D",
-        menta: "#2BB59A",
+        menta: "#C9734F",
         lilas: "#8B7CF6",
-        "champagne-claro": "#FFE7DC",
-        primaria: "#0F766E",
-        "primaria-escura": "#0B5E58",
-        "verde-claro": "#E3F1EA",
+        "champagne-claro": "#F6E1D8",
+        primaria: "#A3485A",
+        "primaria-escura": "#86374A",
+        "verde-claro": "#F3E6DD", // nome legado; agora areia-rosé
+        terracota: "#C9734F",
+        dourado: "#BF986B",
 
         /* ---- Tokens semânticos (preferidos nos componentes) ---- */
         brand: {
-          primary: "#0F766E",
-          accent: "#FF9466",
-          accentSoft: "#FFE7DC",
+          primary: "#A3485A",
+          accent: "#E8A587",
+          accentSoft: "#F6E1D8",
         },
         surface: {
           canvas: "#FFFFFF",   // cards, campos
-          warm: "#F6FAF7",     // fundo padrão de página
-          muted: "#E3F1EA",    // faixas alternadas, linhas de tabela
-          dark: "#13302B",     // seções editoriais escuras
+          warm: "#FBF6F2",     // fundo padrão de página
+          muted: "#F3E6DD",    // faixas alternadas, linhas de tabela
+          dark: "#3B2420",     // seções editoriais escuras
         },
         ink: {
-          primary: "#13302B",
+          primary: "#3B2420",
           inverse: "#FFFFFF",
-          accent: "#FF9466",   // apenas sobre azul-noite (contraste AA)
-          soft: "#FFE7DC",
+          accent: "#E8A587",   // apenas sobre azul-noite (contraste AA)
+          soft: "#F6E1D8",
         },
         line: {
-          subtle: "rgba(19, 48, 43, 0.12)",
-          strong: "rgba(19, 48, 43, 0.28)",
+          subtle: "rgba(59, 36, 32, 0.12)",
+          strong: "rgba(59, 36, 32, 0.28)",
         },
         /** Estados semânticos — uso restrito a validação (ícones/labels) */
         semantic: {
@@ -127,14 +128,14 @@ const config: Config = {
       },
 
       boxShadow: {
-        soft: "0 1px 2px rgba(19, 48, 43, 0.06), 0 8px 24px rgba(19, 48, 43, 0.06)",
-        raised: "0 2px 4px rgba(19, 48, 43, 0.08), 0 16px 40px rgba(19, 48, 43, 0.10)",
-        gold: "0 0 0 1px rgba(15, 118, 110, 0.55), 0 8px 24px rgba(15, 118, 110, 0.25)",
+        soft: "0 1px 2px rgba(59, 36, 32, 0.06), 0 8px 24px rgba(59, 36, 32, 0.06)",
+        raised: "0 2px 4px rgba(59, 36, 32, 0.08), 0 16px 40px rgba(59, 36, 32, 0.10)",
+        gold: "0 0 0 1px rgba(163, 72, 90, 0.55), 0 8px 24px rgba(163, 72, 90, 0.25)",
       },
 
       backgroundImage: {
         "gold-sheen":
-          "linear-gradient(135deg, #FFE7DC 0%, #FF9466 55%, #FFC94D 100%)",
+          "linear-gradient(135deg, #F6E1D8 0%, #E8A587 55%, #FFC94D 100%)",
       },
 
       transitionTimingFunction: {

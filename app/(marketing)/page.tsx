@@ -75,9 +75,9 @@ const EVENT_TYPES = [
 ] as const;
 
 const OPTIONS = [
-  { title: "Preço", text: "A combinação mais barata entre as propostas que chegaram, já com taxas incluídas.", dot: "from-emerald-400 to-teal-500" },
-  { title: "Custo-benefício", text: "O melhor equilíbrio entre valor e qualidade — o que mais vale a pena.", dot: "from-[#FFB089] to-[#FF9466]" },
-  { title: "Comodidade", text: "Menos fornecedores, menos dor de cabeça: pacotes que resolvem mais coisas juntos.", dot: "from-[#2BB59A] to-primaria" },
+  { title: "Preço", text: "A combinação mais barata entre as propostas que chegaram, já com taxas incluídas.", dot: "from-[#D98A9A] to-primaria" },
+  { title: "Custo-benefício", text: "O melhor equilíbrio entre valor e qualidade — o que mais vale a pena.", dot: "from-[#E8A587] to-[#E8A587]" },
+  { title: "Comodidade", text: "Menos fornecedores, menos dor de cabeça: pacotes que resolvem mais coisas juntos.", dot: "from-[#C9734F] to-primaria" },
 ] as const;
 
 const STEPS = [
@@ -118,7 +118,7 @@ const FAQ = [
 ] as const;
 
 const primaryCta =
-  "group inline-flex items-center justify-center gap-2 rounded-full bg-primaria px-7 py-3.5 text-[15px] font-semibold text-white shadow-[0_12px_28px_-10px_rgba(15,118,110,0.6)] transition duration-300 hover:-translate-y-0.5 hover:bg-primaria-escura hover:shadow-[0_14px_32px_-8px_rgba(19,48,43,0.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral-escuro focus-visible:ring-offset-2 active:translate-y-0";
+  "group inline-flex items-center justify-center gap-2 rounded-full bg-primaria px-7 py-3.5 text-[15px] font-semibold text-white shadow-[0_12px_28px_-10px_rgba(163,72,90,0.6)] transition duration-300 hover:-translate-y-0.5 hover:bg-primaria-escura hover:shadow-[0_14px_32px_-8px_rgba(59,36,32,0.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral-escuro focus-visible:ring-offset-2 active:translate-y-0";
 
 const sectionTitle = "font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.02em] text-vinho";
 
@@ -151,10 +151,10 @@ export default async function LandingPage() {
   return (
     <>
       {/* ================= HERO (acima da dobra) ================= */}
-      <section className="relative isolate overflow-hidden bg-gradient-to-b from-[#E9F4EE] via-[#F2F8F4] to-[#F6FAF7]">
+      <section className="relative isolate overflow-hidden bg-gradient-to-b from-[#F7EBE4] via-[#FAF2ED] to-[#FBF6F2]">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute -top-32 right-[-8%] h-[560px] w-[560px] rounded-full bg-[radial-gradient(closest-side,rgba(15,118,110,0.16),transparent)]" />
-          <div className="absolute -left-32 bottom-0 h-[460px] w-[460px] rounded-full bg-[radial-gradient(closest-side,rgba(255,148,102,0.22),transparent)]" />
+          <div className="absolute -top-32 right-[-8%] h-[560px] w-[560px] rounded-full bg-[radial-gradient(closest-side,rgba(163,72,90,0.16),transparent)]" />
+          <div className="absolute -left-32 bottom-0 h-[460px] w-[460px] rounded-full bg-[radial-gradient(closest-side,rgba(201,115,79,0.22),transparent)]" />
         </div>
 
         <div className="mx-auto grid w-full max-w-7xl gap-6 px-5 pb-14 pt-4 sm:px-8 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:gap-12 lg:pb-20 lg:pt-10">
@@ -192,11 +192,11 @@ export default async function LandingPage() {
             </div>
 
             {mainTestimonial ? (
-              <figure className="mt-7 max-w-xl rounded-3xl border border-white bg-white/80 p-5 shadow-[0_24px_50px_-28px_rgba(15,118,110,0.45)] backdrop-blur-xl">
+              <figure className="mt-7 max-w-xl rounded-3xl border border-white bg-white/80 p-5 shadow-[0_24px_50px_-28px_rgba(163,72,90,0.45)] backdrop-blur-xl">
                 <div className="flex items-start gap-4">
                   <span
                     aria-hidden="true"
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#FF9466] to-primaria text-sm font-bold text-white ring-4 ring-verde-claro"
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#E8A587] to-primaria text-sm font-bold text-white ring-4 ring-verde-claro"
                   >
                     {initials(mainTestimonial.name)}
                   </span>
@@ -219,7 +219,7 @@ export default async function LandingPage() {
               {MOSAIC.map((photo, index) => (
                 <figure
                   key={photo.src}
-                  className={`ev-photo group absolute ${photo.pos} rounded-[18px] bg-white p-1.5 pb-6 shadow-[0_18px_40px_-14px_rgba(19,48,43,0.45)] ring-1 ring-black/5 transition duration-500 ease-out hover:z-50 hover:-translate-y-2 hover:rotate-0 hover:scale-[1.06] hover:shadow-[0_34px_70px_-20px_rgba(19,48,43,0.6)] sm:p-2.5 sm:pb-9`}
+                  className={`ev-photo group absolute ${photo.pos} rounded-[18px] bg-white p-1.5 pb-6 shadow-[0_18px_40px_-14px_rgba(59,36,32,0.45)] ring-1 ring-black/5 transition duration-500 ease-out hover:z-50 hover:-translate-y-2 hover:rotate-0 hover:scale-[1.06] hover:shadow-[0_34px_70px_-20px_rgba(59,36,32,0.6)] sm:p-2.5 sm:pb-9`}
                 >
                   <div className={`relative overflow-hidden rounded-[12px] ${photo.ratio}`}>
                     <Image
@@ -238,7 +238,7 @@ export default async function LandingPage() {
                 </figure>
               ))}
             </div>
-            <div className="mx-auto mt-4 hidden w-fit items-center gap-3 rounded-full bg-white/85 px-4 py-2 shadow-[0_14px_30px_-18px_rgba(19,48,43,0.5)] ring-1 ring-champagne-claro backdrop-blur lg:flex">
+            <div className="mx-auto mt-4 hidden w-fit items-center gap-3 rounded-full bg-white/85 px-4 py-2 shadow-[0_14px_30px_-18px_rgba(59,36,32,0.5)] ring-1 ring-champagne-claro backdrop-blur lg:flex">
               <span className="text-sm font-semibold text-vinho">Você recebe 3 opções prontas</span>
               {OPTIONS.map((o) => (
                 <span key={o.title} className={`rounded-full bg-gradient-to-r ${o.dot} px-2.5 py-0.5 text-[11px] font-semibold text-white`}>
@@ -266,8 +266,8 @@ export default async function LandingPage() {
       <section aria-label="Por que confiar" className="bg-white">
         <ul className="mx-auto grid w-full max-w-7xl gap-4 px-5 py-14 sm:grid-cols-2 sm:px-8 lg:grid-cols-4">
           {TRUST.map((item) => (
-            <li key={item.title} className="rounded-2xl border border-champagne-claro bg-areia-quente p-5 transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_30px_-16px_rgba(19,48,43,0.3)]">
-              <span aria-hidden="true" className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-sm font-bold text-emerald-700 shadow-sm ring-1 ring-champagne-claro">
+            <li key={item.title} className="rounded-2xl border border-champagne-claro bg-areia-quente p-5 transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_30px_-16px_rgba(59,36,32,0.3)]">
+              <span aria-hidden="true" className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-sm font-bold text-primaria shadow-sm ring-1 ring-champagne-claro">
                 ✓
               </span>
               <p className="mt-4 text-[15px] font-semibold text-vinho">{item.title}</p>
@@ -286,7 +286,7 @@ export default async function LandingPage() {
             {OPTIONS.map((o, i) => (
               <article
                 key={o.title}
-                className="group relative overflow-hidden rounded-3xl border border-champagne-claro bg-white p-7 shadow-[0_1px_2px_rgba(19,48,43,0.04)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_50px_-24px_rgba(19,48,43,0.3)]"
+                className="group relative overflow-hidden rounded-3xl border border-champagne-claro bg-white p-7 shadow-[0_1px_2px_rgba(59,36,32,0.04)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_50px_-24px_rgba(59,36,32,0.3)]"
               >
                 <div aria-hidden="true" className={`absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br ${o.dot} opacity-10 blur-2xl transition duration-500 group-hover:opacity-25`} />
                 <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${o.dot} text-sm font-bold text-white`}>
@@ -329,7 +329,7 @@ export default async function LandingPage() {
             {EVENT_TYPES.map((e) => (
               <li
                 key={e.label}
-                className="group rounded-2xl border border-champagne-claro bg-white p-5 transition duration-300 hover:-translate-y-0.5 hover:border-coral/40 hover:shadow-[0_16px_40px_-20px_rgba(15,118,110,0.35)]"
+                className="group rounded-2xl border border-champagne-claro bg-white p-5 transition duration-300 hover:-translate-y-0.5 hover:border-coral/40 hover:shadow-[0_16px_40px_-20px_rgba(163,72,90,0.35)]"
               >
                 <p className="font-display text-base font-bold text-vinho">{e.label}</p>
                 <p className="mt-1 text-sm text-vinho/60">{e.hint}</p>
@@ -340,15 +340,15 @@ export default async function LandingPage() {
       </section>
 
       {/* ================= Planos ================= */}
-      <section id="planos" className="relative isolate scroll-mt-24 overflow-hidden bg-gradient-to-b from-[#E3F1EA] to-[#F6FAF7] py-20 text-vinho lg:py-28">
-        <div aria-hidden="true" className="absolute left-1/2 top-0 -z-10 h-[480px] w-[900px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(15,118,110,0.14),transparent)]" />
+      <section id="planos" className="relative isolate scroll-mt-24 overflow-hidden bg-gradient-to-b from-[#F3E6DD] to-[#FBF6F2] py-20 text-vinho lg:py-28">
+        <div aria-hidden="true" className="absolute left-1/2 top-0 -z-10 h-[480px] w-[900px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(163,72,90,0.14),transparent)]" />
         <div className="mx-auto w-full max-w-7xl px-5 sm:px-8">
           <p className="eyebrow">Planos</p>
           <h2 className="mt-4 max-w-2xl font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.02em]">
             Pague só pelo seu evento. Ou assine, se você organiza vários.
           </h2>
           <div className="mt-12 grid gap-5 lg:grid-cols-4">
-            <article className="flex flex-col rounded-3xl bg-white p-7 text-vinho shadow-[0_30px_60px_-20px_rgba(15,118,110,0.35)] ring-2 ring-primaria">
+            <article className="flex flex-col rounded-3xl bg-white p-7 text-vinho shadow-[0_30px_60px_-20px_rgba(163,72,90,0.35)] ring-2 ring-primaria">
               <p className="text-xs font-bold uppercase tracking-wider text-coral-escuro">Ticket avulso</p>
               <h3 className="mt-2 font-display text-xl font-bold">Para o seu evento</h3>
               <p className="mt-5 font-display text-5xl font-semibold tracking-tight">{formatBRL(ticketPriceCents)}</p>
@@ -368,7 +368,7 @@ export default async function LandingPage() {
               <article
                 key={plan.code}
                 className={`flex flex-col rounded-3xl p-7 backdrop-blur transition duration-300 hover:-translate-y-1 ${
-                  plan.featured ? "bg-white/90 ring-1 ring-champagne shadow-[0_24px_50px_-30px_rgba(19,48,43,0.45)]" : "bg-white/70 ring-1 ring-champagne-claro"
+                  plan.featured ? "bg-white/90 ring-1 ring-champagne shadow-[0_24px_50px_-30px_rgba(59,36,32,0.45)]" : "bg-white/70 ring-1 ring-champagne-claro"
                 }`}
               >
                 <p className="text-xs font-bold uppercase tracking-wider text-vinho/55">
@@ -395,7 +395,7 @@ export default async function LandingPage() {
         <h2 className={`mt-4 ${sectionTitle}`}>Perguntas que a gente sempre ouve</h2>
         <div className="mt-10 space-y-3">
           {FAQ.map((item) => (
-            <details key={item.q} className="group rounded-2xl border border-champagne-claro bg-white p-5 transition open:shadow-[0_12px_30px_-18px_rgba(19,48,43,0.3)]">
+            <details key={item.q} className="group rounded-2xl border border-champagne-claro bg-white p-5 transition open:shadow-[0_12px_30px_-18px_rgba(59,36,32,0.3)]">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-vinho">
                 {item.q}
                 <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-areia-secundaria text-lg text-vinho transition group-open:rotate-45">+</span>
@@ -409,14 +409,14 @@ export default async function LandingPage() {
       {/* ================= CTA final ================= */}
       <section className="px-5 pb-24 sm:px-8">
         <div className="relative isolate mx-auto w-full max-w-5xl overflow-hidden rounded-[2.5rem] bg-vinho px-6 py-16 text-center text-white sm:py-20">
-          <div aria-hidden="true" className="absolute -top-24 left-1/2 -z-10 h-80 w-[700px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(15,118,110,0.35),transparent)]" />
+          <div aria-hidden="true" className="absolute -top-24 left-1/2 -z-10 h-80 w-[700px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(163,72,90,0.35),transparent)]" />
           <h2 className="font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.02em]">
             Seu evento merece ser curtido, não administrado.
           </h2>
           <p className="mx-auto mt-4 max-w-prose text-white/75">
             Conte o que você imagina. A EventeIA corre atrás dos orçamentos e te mostra as melhores opções.
           </p>
-          <Link href="/registrar" className="group mt-9 inline-flex items-center gap-2 rounded-full bg-[#FF9466] px-7 py-3.5 font-semibold text-vinho transition hover:-translate-y-0.5 hover:bg-[#FFA882]">
+          <Link href="/registrar" className="group mt-9 inline-flex items-center gap-2 rounded-full bg-[#E8A587] px-7 py-3.5 font-semibold text-vinho transition hover:-translate-y-0.5 hover:bg-[#EDB89F]">
             Testar agora <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">→</span>
           </Link>
         </div>

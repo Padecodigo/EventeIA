@@ -3,7 +3,7 @@ import type { ButtonHTMLAttributes } from "react";
 type ButtonVariant = "primary" | "secondary" | "gold" | "ghost";
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: "bg-primaria text-white shadow-[0_10px_24px_-12px_rgba(15,118,110,0.7)] hover:bg-primaria-escura",
+  primary: "bg-primaria text-white shadow-[0_10px_24px_-12px_rgba(163,72,90,0.7)] hover:bg-primaria-escura",
   secondary: "border border-vinho/15 bg-white text-vinho hover:border-primaria/40 hover:bg-verde-claro/50",
   gold: "bg-champagne text-vinho hover:bg-champagne-claro",
   ghost: "text-primaria underline decoration-primaria/40 underline-offset-4 hover:decoration-champagne-claro",
