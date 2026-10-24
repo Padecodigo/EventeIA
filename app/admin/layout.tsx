@@ -27,6 +27,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <Link href="/admin/financeiro" className="transition hover:text-ink-inverse">
               Financeiro
             </Link>
+            <Link href="/admin/consumo" className="transition hover:text-ink-inverse">
+              Consumo
+            </Link>
             <Link href="/admin/depoimentos" className="transition hover:text-ink-inverse">
               Depoimentos
             </Link>

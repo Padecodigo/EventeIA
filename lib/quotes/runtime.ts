@@ -98,7 +98,7 @@ export function createCollectorDeps(): CollectorDeps {
 
     async firstReply(text, eventId) {
       if (router === null) return { value: contingencyFirstReply(text), provider: "contingency" };
-      const r = await routeFirstReplyParsing(router, text, { eventId, reason: "first_reply" });
+      const r = await routeFirstReplyParsing(router, text, { eventId, reason: "first_reply", stage: "quote_collection" });
       return { value: r.value, provider: r.provider };
     },
     async extract(text, eventId) {
@@ -106,12 +106,13 @@ export function createCollectorDeps(): CollectorDeps {
       const r = await routeQuotationExtraction(router, buildExtractionMessages(text), text, {
         eventId,
         reason: "extraction",
+        stage: "quote_collection",
       });
       return { value: r.value, provider: r.provider };
     },
     async hiddenFees(text, eventId) {
       if (router === null) return { value: contingencyHiddenFees(text), provider: "contingency" };
-      const r = await routeHiddenFeeScan(router, text, { eventId, reason: "hidden_fees" });
+      const r = await routeHiddenFeeScan(router, text, { eventId, reason: "hidden_fees", stage: "quote_collection" });
       return { value: r.value, provider: r.provider };
     },
 

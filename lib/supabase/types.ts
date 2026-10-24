@@ -6,6 +6,8 @@
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
+type ProcessStageDb = "briefing" | "discovery" | "prospecting" | "quote_collection" | "proposal" | "confirmation";
+
 type Table<Row> = {
   Row: Row;
   Insert: Partial<Row>;
@@ -342,7 +344,19 @@ export interface Database {
         peak: boolean | null;
         fx_brl_per_usd_micro: number | null;
         cost_brl_cents: number | null;
+        stage: ProcessStageDb | null;
+        whatsapp_channel: "cloud" | "evolution" | null;
         created_at: string;
+      }>;
+      event_outcomes: Table<{
+        event_id: string;
+        closed_outside: boolean;
+        closed_outside_at: string | null;
+        closed_outside_stage: ProcessStageDb | null;
+        whatsapp_channel: "cloud" | "evolution" | null;
+        source: "admin" | "system";
+        created_at: string;
+        updated_at: string;
       }>;
       cost_entries: Table<{
         id: string;
