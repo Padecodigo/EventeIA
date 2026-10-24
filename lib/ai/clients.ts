@@ -82,8 +82,12 @@ export function createMockLlmClient(name: LlmProviderName, confidence = 0.8): Ll
           value = contingencyClassification(text, allowed.split(",").map((c) => c.trim()).filter(Boolean));
           break;
         }
-        default:
+        case "quotation_extraction":
+        case "negotiation":
+        case "discovery_search":
+        case undefined:
           value = contingencyQuotation(text);
+          break;
       }
       const withConfidence = { ...(value as Record<string, unknown>), confidence_score: confidence };
       const content = JSON.stringify(withConfidence);
