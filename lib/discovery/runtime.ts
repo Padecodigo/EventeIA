@@ -5,6 +5,8 @@ import type { EventType } from "@/lib/engine/types";
 import { serverEnv } from "@/lib/env";
 import { enqueue, getRedisConnection, QUEUE_NAMES } from "@/lib/queue";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { resolveCollectionWindowMinutes } from "@/lib/whatsapp/session-lifecycle";
+import { scheduleCollectionDeadline } from "@/lib/whatsapp/session-runtime";
 
 import type { DiscoveryDeps } from "./engine";
 import type { LlmUsageStore } from "./providers/fallback";
@@ -18,6 +20,8 @@ export function discoveryJobId(eventId: string, round: number): string {
 
 /** Enfileira a 1ª rodada (idempotente por jobId). Chamado após pagamento e após a entrevista. */
 export async function startDiscovery(eventId: string): Promise<boolean> {
+  // Prazo máximo da coleta (48h): independe de sessão WhatsApp (jobId idempotente).
+  await scheduleCollectionDeadline(eventId, resolveCollectionWindowMinutes(serverEnv().WHATSAPP_COLLECTION_WINDOW_MINUTES) * 60_000);
   return enqueue(QUEUE_NAMES.supplierDiscovery, "discover", { eventId, round: 0 }, { jobId: discoveryJobId(eventId, 0) });
 }
 

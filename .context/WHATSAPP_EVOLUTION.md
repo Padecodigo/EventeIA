@@ -205,3 +205,18 @@ Mocks: servidor fake Evolution (MSW) com fixtures de eventos reais anonimizados.
 - Ritmo por instância (Redis `SET NX PX` + jitter) em `lib/queue/prospecting-pacing.ts`; concorrência global via `WHATSAPP_PROSPECTING_CONCURRENCY`.
 - Fim da coleta: meta de 5 cotações por categoria (job `collection-complete-<inst>-<event>`) ou prazo de 48h (`WHATSAPP_COLLECTION_WINDOW_MINUTES`, padrão 2880, job `window-end-<inst>-<event>`). A sessão fica conectada durante toda a coleta; primeiro entrega as cotações (cenários), depois faz logout da instância, notificação `quotations_ready` (idempotente) + e-mail (Resend ou mock).
 - Opt-out unificado em `detectOptOut` (frases + comandos curtos), sempre marca o fornecedor.
+
+## Fase 3 — Coleta de cotações (inbound → rascunho)
+
+1. Webhook `messages.upsert` (não `fromMe`): grava em `whatsapp_messages` com `event_id`/`prospect_id`
+   (fornecedor contatado mais recente com o telefone, status `sent|replied`) e enfileira
+   `quote-extraction-queue` (jobId `quote-<prospect>-<bucket 45s>`: agrupa mensagens picadas).
+2. Worker (`lib/queue/quote-extraction-worker.ts` → `lib/quotes/collector.ts`): junta as mensagens do
+   fornecedor, lê a 1ª resposta (recusa ⇒ ignora), extrai a cotação e varre taxas ocultas pelo roteador
+   (DeepSeek → NIM → Grok ≤25% → contingência) e grava/atualiza 1 rascunho por fornecedor em `quotations`
+   (`confidence`, `extraction`, `fees_cents`, `extraction_provider`, `needs_followup`).
+3. Confiança < 0,7 ou sem total ⇒ pergunta de esclarecimento curta (máx. 2 por fornecedor; nunca após
+   "respondo depois"). Em dry-run/simulação a pergunta só é registrada (`status = canceled`), nunca enviada.
+4. Fim da coleta: 5 cotações aproveitáveis em TODAS as categorias do evento (exceto `outros`) ⇒ job
+   `collection-complete-<evento>`; ou prazo de 48h (`collection-deadline-<evento>`, agendado no início da
+   descoberta). O worker do ciclo de vida entrega as cotações (fase 4) e só então desconecta a sessão.

@@ -26,6 +26,7 @@ import {
 import {
   activateSession,
   completeCollectionIfReady,
+  finishCollection,
   endCollectionWindow,
   handleSessionLost,
   type SessionDeps,
@@ -248,6 +249,21 @@ describe("session-manager", () => {
     expect(isCollectionComplete({ a: 5 }, ["a", "b"])).toBe(false);
     expect(isCollectionComplete({}, [])).toBe(false);
     expect(isCollectionComplete({ a: 2 }, ["a"], 2)).toBe(true);
+  });
+
+  it("finishCollection: sem sessão entrega e notifica direto; com sessão ativa faz logout", async () => {
+    const none = fakeSessionDeps(null);
+    expect(await finishCollection(none, { instance: null, eventId: "e", reason: "collection_complete" })).toBe(
+      "delivered_without_session",
+    );
+    expect(none.calls).toEqual(["deliver:e", "notify:e:collection_complete"]);
+    const lost = fakeSessionDeps("disconnected");
+    expect(await finishCollection(lost, { instance: "i", eventId: "e", reason: "window_closed" })).toBe(
+      "delivered_without_session",
+    );
+    const active = fakeSessionDeps("active");
+    expect(await finishCollection(active, { instance: "i", eventId: "e", reason: "window_closed" })).toBe("closed");
+    expect(active.calls).toContain("logout");
   });
 
   it("logout falho ainda encerra localmente", async () => {

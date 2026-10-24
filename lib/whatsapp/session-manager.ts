@@ -28,7 +28,7 @@ export interface SessionDeps {
   pauseEventJobs(eventId: string): Promise<void>;
   scheduleWindowEnd(instance: string, eventId: string, delayMs: number): Promise<void>;
   /** Encerra a coleta já (meta atingida). Job distinto do agendado para 48h. */
-  triggerCollectionEnd(instance: string, eventId: string): Promise<void>;
+  triggerCollectionEnd(instance: string | null, eventId: string): Promise<void>;
   /**
    * Entrega as cotações (fase 4: cenários/budget_snapshots). Executada ANTES do
    * logout: a sessão só desconecta depois que as cotações foram entregues.
@@ -125,4 +125,25 @@ export async function completeCollectionIfReady(
   if (!isCollectionComplete(input.quotesByCategory, input.categories)) return "pending";
   await deps.triggerCollectionEnd(input.instance, input.eventId);
   return "triggered";
+}
+
+/**
+ * Fim da coleta para o evento, com ou sem sessão ativa (worker do ciclo de vida).
+ * - Sessão ativa/draining ⇒ endCollectionWindow (entrega → logout → notifica).
+ * - Sem sessão (simulação, sessão perdida antes) ⇒ entrega + notifica direto.
+ * Entrega e notificação são idempotentes.
+ */
+export async function finishCollection(
+  deps: SessionDeps,
+  input: { instance: string | null; eventId: string; reason: "window_closed" | "collection_complete" },
+): Promise<"closed" | "delivered_without_session"> {
+  const state =
+    input.instance === null ? "disconnected" : toSessionState((await deps.getStatus(input.instance)) ?? "disconnected");
+  if (input.instance !== null && state !== "disconnected") {
+    await endCollectionWindow(deps, { instance: input.instance, eventId: input.eventId, reason: input.reason });
+    return "closed";
+  }
+  await deps.deliverQuotes(input.eventId);
+  await deps.notifyQuotationsReady(input.eventId, input.reason);
+  return "delivered_without_session";
 }
