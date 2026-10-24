@@ -3,8 +3,9 @@
  */
 import { z } from "zod";
 
-import { CATEGORY_LABELS, UNIT_LABELS, type CategoryCode, type Unit } from "@/lib/catalog/v1";
+import { CATEGORY_LABELS, type CategoryCode, type Unit } from "@/lib/catalog/v1";
 import { firstContactMessageSchema } from "@/lib/schemas/whatsapp";
+import { buildFirstContactText, quoteSubjectWithItems } from "@/lib/whatsapp/first-contact";
 
 /** Meta de coleta: 5 cotações por categoria OU 48h. */
 export const QUOTES_TARGET_PER_CATEGORY = 5;
@@ -39,7 +40,12 @@ export function isCategoryCode(value: string): value is CategoryCode {
 /** Normaliza para dedupe (nome + cidade) quando não há telefone. */
 export function dedupeKey(name: string, city: string): string {
   const norm = (s: string) =>
-    s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    s
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
   return `${norm(name)}|${norm(city)}`;
 }
 
@@ -81,7 +87,8 @@ export function collectionEnded(input: {
   categories: readonly string[];
   quotesByCategory: Readonly<Record<string, number>>;
 }): { ended: boolean; reason?: "time" | "quotes" } {
-  if (input.now.getTime() - input.startedAt.getTime() >= COLLECTION_WINDOW_MS) return { ended: true, reason: "time" };
+  if (input.now.getTime() - input.startedAt.getTime() >= COLLECTION_WINDOW_MS)
+    return { ended: true, reason: "time" };
   if (
     input.categories.length > 0 &&
     input.categories.every((c) => (input.quotesByCategory[c] ?? 0) >= QUOTES_TARGET_PER_CATEGORY)
@@ -109,7 +116,10 @@ export function canRecontact(lastContactedAt: Date | null, now: Date): boolean {
 }
 
 export function shouldAutoPause(stats: { contacted: number; optOuts: number }): boolean {
-  return stats.contacted >= OPT_OUT_PAUSE.minContacted && stats.optOuts / stats.contacted > OPT_OUT_PAUSE.maxRate;
+  return (
+    stats.contacted >= OPT_OUT_PAUSE.minContacted &&
+    stats.optOuts / stats.contacted > OPT_OUT_PAUSE.maxRate
+  );
 }
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -126,9 +136,11 @@ export interface FirstContactInput {
   eventDateIso: string;
   city: string;
   guestCount: number;
-  items: { label: string; quantity: number; unit: Unit }[];
+  items: { label: string; quantity: number; unit: Unit; notes?: string | null }[];
   specialRequest?: string;
   sourceProvider: string;
+  /** Momento do envio (saudação pelo horário de SP). */
+  now?: Date;
 }
 
 /**
@@ -136,24 +148,33 @@ export interface FirstContactInput {
  * Passa pelo schema do primeiro contato (texto puro, sem URLs/emojis, ≤ 900).
  */
 export function renderDiscoveryFirstContact(input: FirstContactInput): string {
-  const date = new Date(`${input.eventDateIso}T12:00:00Z`).toLocaleDateString("pt-BR", { timeZone: "UTC" });
-  const categoryLabel = isCategoryCode(input.category) ? CATEGORY_LABELS[input.category].toLowerCase() : input.category;
-  const items = input.items
-    .slice(0, 4)
-    .map((i) => `${i.label.toLowerCase()} (${String(i.quantity)} ${UNIT_LABELS[i.unit]})`)
-    .join(", ");
-  const special =
+  // Respostas da entrevista refletidas nos itens (observações) + demanda específica.
+  const notes = input.items
+    .map((i) => i.notes?.trim() ?? "")
+    .filter((n) => n.length > 0)
+    .slice(0, 2)
+    .join("; ");
+  const parts = [
+    notes.length > 0 ? `Detalhes: ${notes.slice(0, 160)}` : "",
     input.specialRequest !== undefined && input.specialRequest.length > 0
-      ? ` Também procuro: ${input.specialRequest.replace(/(https?:\/\/|www\.)\S*/gi, "").slice(0, 160)}.`
-      : "";
+      ? `Também procuramos: ${input.specialRequest.replace(/(https?:\/\/|www\.)\S*/gi, "").slice(0, 160)}`
+      : "",
+  ].filter((p) => p.length > 0);
+  const special = parts.length > 0 ? parts.join(". ") : undefined;
   const source = SOURCE_LABELS[input.sourceProvider] ?? "uma busca pública";
-  const text = [
-    `Olá, tudo bem? Falo com ${input.vendorName}?`,
-    `Estou organizando um evento (${input.eventTypeLabel.toLowerCase()}) em ${input.city}, dia ${date}, para cerca de ${String(input.guestCount)} convidados,`,
-    `e procuro ${categoryLabel}${items.length > 0 ? `: ${items}` : ""}.${special}`,
-    `Vocês atendem nessa data? Se puder, me envie valores e o que está incluso.`,
-    `Encontrei seu contato em ${source}. Se não quiser receber mensagens, responda SAIR.`,
-  ].join(" ");
-  const clipped = text.length > 900 ? `${text.slice(0, 880).trimEnd()}… Responda SAIR para não receber.` : text;
+  const body = buildFirstContactText({
+    now: input.now ?? new Date(),
+    quoteSubject: quoteSubjectWithItems(input.category, input.items),
+    eventTypeLabel: input.eventTypeLabel,
+    eventDateIso: input.eventDateIso,
+    city: input.city,
+    guestCount: input.guestCount,
+    details: special,
+    category: input.category,
+    seed: input.vendorName,
+  });
+  const text = `${body} Encontramos seu contato em ${source}. Se não quiser receber mensagens, responda SAIR.`;
+  const clipped =
+    text.length > 900 ? `${text.slice(0, 880).trimEnd()}… Responda SAIR para não receber.` : text;
   return firstContactMessageSchema.parse(clipped);
 }
