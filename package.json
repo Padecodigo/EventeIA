@@ -19,7 +19,7 @@
     "test:watch": "vitest",
     "test:rls": "supabase test db",
     "knip": "knip",
-    "lighthouse": "lhci autorun",
+    "lighthouse": "pnpm dlx @lhci/cli@0.14.x autorun",
     "workers": "tsx --env-file=.env.local --tsconfig tsconfig.workers.json workers/index.ts",
     "gen:types": "supabase gen types typescript --local > lib/supabase/database.types.ts",
     "simulate:webhook": "tsx --env-file=.env.local scripts/simulate-webhook.ts",
@@ -42,7 +42,6 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@lhci/cli": "^0.14.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@types/node": "^22.13.0",
