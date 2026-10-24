@@ -49,3 +49,11 @@ describe("docker-compose.prod.yml", () => {
     expect(compose).not.toMatch(/depends_on:[\s\S]{0,120}evolution-api/);
   });
 });
+
+describe("Dockerfile", () => {
+  it("copia pnpm-workspace.yaml (overrides) antes do install congelado", () => {
+    const dockerfile = readFileSync("Dockerfile", "utf8");
+    expect(dockerfile).toMatch(/^COPY package\.json pnpm-lock\.yaml pnpm-workspace\.yaml \.\/$/m);
+  });
+});
+
