@@ -9,10 +9,10 @@ import {
   contingencyOptOut,
   contingencyQuotation,
 } from "./contingency";
-import type { ChatMessage, RouteResult, Router } from "./router";
+import type { ChatMessage, RouteResult, Router, UsageMeta } from "./router";
 
 /** Contexto de cobrança (painel financeiro). */
-export type CostMeta = { eventId?: string; reason?: string };
+export type CostMeta = UsageMeta;
 
 /** Tarefas de alto nível sobre o roteador (texto do fornecedor = dado NÃO confiável). */
 

@@ -7,6 +7,7 @@ import { cachedPricesSync, currentFxMicro } from "@/lib/finance/runtime";
 import { logger } from "@/lib/logger";
 import { getRedisConnection } from "@/lib/queue";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { defaultStageForTask } from "@/lib/usage/stages";
 
 import { createMockLlmClient, createOpenAiCompatibleClient } from "./clients";
 import { createRouter, type LlmClient, type LlmProviderName, type PriceTable, type Router, type UsageLedger } from "./router";
@@ -38,6 +39,9 @@ export function createRedisLedger(): UsageLedger {
         peak: e.peak ?? null,
         event_id: e.eventId ?? null,
         reason: e.reason ?? null,
+        profile_id: e.profileId ?? null,
+        stage: e.stage ?? defaultStageForTask(e.task),
+        whatsapp_channel: e.channel ?? null,
         fx_brl_per_usd_micro: fx,
         cost_brl_cents: fx === null ? null : microUsdToBrlCents(e.costMicroUsd, fx),
       });
@@ -112,7 +116,7 @@ export function createRouterUsageStore(router: Router, perCallMicroUsd: number):
   return {
     callsToday: () => Promise.resolve(0),
     async recordCall() {
-      await router.record({ provider: "grok", task: "discovery_search", inputTokens: 0, outputTokens: 0, costMicroUsd: perCallMicroUsd, outcome: "ok" });
+      await router.record({ provider: "grok", task: "discovery_search", inputTokens: 0, outputTokens: 0, costMicroUsd: perCallMicroUsd, outcome: "ok", stage: "discovery" });
     },
     async isExhausted() {
       return exhausted || !(await router.grokAllowed(perCallMicroUsd));

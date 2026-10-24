@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { ProcessStage, WhatsAppChannel } from "@/lib/usage/stages";
+
 /**
  * Roteador de LLM provider-agnóstico.
  * - DeepSeek é o CÉREBRO primário (modelo via DEEPSEEK_MODEL): extração de cotação, leitura da
@@ -11,6 +13,15 @@ import { z } from "zod";
  *   Em negociação/opt-out coloquial: DeepSeek → Grok (teto) → NIM → contingência.
  * Custos em micro-dólares inteiros (sem float acumulado).
  */
+
+/** Contexto de cobrança/consumo de uma chamada (todos opcionais). */
+export interface UsageMeta {
+  eventId?: string;
+  reason?: string;
+  profileId?: string;
+  stage?: ProcessStage;
+  channel?: WhatsAppChannel;
+}
 
 export type LlmProviderName = "nim" | "grok" | "deepseek";
 
@@ -86,6 +97,10 @@ export interface UsageLedger {
     peak?: boolean;
     eventId?: string;
     reason?: string;
+    /** Contexto opcional para o painel de consumo (admin/consumo). */
+    profileId?: string;
+    stage?: ProcessStage;
+    channel?: WhatsAppChannel;
   }): Promise<void>;
 }
 
@@ -131,7 +146,7 @@ export interface Router {
     contingency: () => T;
     maxTokens?: number;
     /** Contexto de cobrança para o painel financeiro. */
-    meta?: { eventId?: string; reason?: string };
+    meta?: UsageMeta;
   }): Promise<RouteResult<T>>;
   /** Pergunta ao teto se o Grok pode gastar `estimatedMicroUsd` (usado pela descoberta). */
   grokAllowed(estimatedMicroUsd: number): Promise<boolean>;
@@ -189,6 +204,7 @@ export function createRouter(options: {
           return {
             provider: name, task, inputTokens: inTok, outputTokens: outTok, costMicroUsd: c.costMicroUsd, outcome: o,
             cacheHitTokens: hitTok, peak: c.peak, eventId: meta?.eventId, reason: meta?.reason ?? task,
+            profileId: meta?.profileId, stage: meta?.stage, channel: meta?.channel,
           };
         };
         try {
