@@ -26,6 +26,11 @@ Responda SOMENTE um objeto JSON com exatamente estas chaves:
 - mandatory_fees: lista de { category: "cleaning"|"dishes_and_cutlery"|"delivery_pickup"|"service_staff"|"other",
   description: string, amount_cents: inteiro, included_in_base: boolean }.
 - item_breakdown: lista de { name: string, quantity?: inteiro, notes?: string }.
+- scope: lista de { item: string, status: "inclui"|"nao_inclui", price_cents: inteiro ou null, notes?: string }
+  com o que o preço INCLUI e o que NÃO inclui. Itens: comida, bebidas, mao_de_obra, garcons, louca_talheres,
+  lavagem_louca, toalhas, mesas_cadeiras, limpeza, seguranca, som, iluminacao, decoracao, bolo_doces, gerador,
+  frete_entrega, recolhimento, montagem_desmontagem, transporte_convidados, cozinha, estacionamento, outro.
+  price_cents só quando o fornecedor der um valor separado para aquele item; senão null. Não liste o que não foi dito.
 - validity_days: inteiro ou null.
 - payment_conditions: string ou null.
 - confidence_score: número entre 0 e 1.
@@ -34,12 +39,12 @@ Nunca invente valores: se não estiver explícito, use null.
 
 /** Neutraliza tentativas de fechar o delimitador e limita o tamanho. */
 export function sanitizeSupplierText(raw: string): string {
-  return raw
-    .slice(0, MAX_SUPPLIER_TEXT)
-    .replace(/<\/?\s*supplier_message\s*>/gi, "[tag removida]");
+  return raw.slice(0, MAX_SUPPLIER_TEXT).replace(/<\/?\s*supplier_message\s*>/gi, "[tag removida]");
 }
 
-export function buildExtractionMessages(raw: string): { role: "system" | "user"; content: string }[] {
+export function buildExtractionMessages(
+  raw: string,
+): { role: "system" | "user"; content: string }[] {
   return [
     { role: "system", content: EXTRACTION_SYSTEM_PROMPT },
     {
@@ -56,7 +61,12 @@ function salvagePartial(candidate: unknown): NuancedQuotation {
   }
   const shape = nuancedQuotationSchema.shape;
   const record = candidate as Record<string, unknown>;
-  const result: NuancedQuotation = { ...EMPTY_QUOTATION, mandatory_fees: [], item_breakdown: [] };
+  const result: NuancedQuotation = {
+    ...EMPTY_QUOTATION,
+    mandatory_fees: [],
+    item_breakdown: [],
+    scope: [],
+  };
 
   const total = shape.total_price_cents.safeParse(record.total_price_cents);
   if (total.success) result.total_price_cents = total.data;
@@ -64,6 +74,8 @@ function salvagePartial(candidate: unknown): NuancedQuotation {
   if (base.success) result.base_price_cents = base.data;
   const validity = shape.validity_days.safeParse(record.validity_days);
   if (validity.success) result.validity_days = validity.data;
+  const scope = shape.scope.safeParse(record.scope);
+  if (scope.success) result.scope = scope.data;
   const payment = shape.payment_conditions.safeParse(record.payment_conditions);
   if (payment.success) result.payment_conditions = payment.data;
   // confiança zerada: parcial nunca é tratado como confiável.
@@ -82,7 +94,11 @@ export async function extractQuotationFromText(
   // Produção: roteador DeepSeek → NIM → Grok (teto 25%) → contingência. DeepSeek direto só se injetado/sem roteador.
   const router = explicitClient === undefined ? getRouter() : null;
   if (router !== null) {
-    const routed = await routeQuotationExtraction(router, buildExtractionMessages(rawText), rawText);
+    const routed = await routeQuotationExtraction(
+      router,
+      buildExtractionMessages(rawText),
+      rawText,
+    );
     return routed.provider === "contingency"
       ? { status: "parsing_failed", quotation: routed.value, issues: ["contingency_parser"] }
       : { status: "success", quotation: routed.value, issues: [] };
@@ -104,7 +120,11 @@ export async function extractQuotationFromText(
     json = JSON.parse(content);
   } catch {
     logger.warn({ mode: client.mode }, "extração de cotação: JSON inválido");
-    return { status: "parsing_failed", quotation: { ...EMPTY_QUOTATION }, issues: ["invalid_json"] };
+    return {
+      status: "parsing_failed",
+      quotation: { ...EMPTY_QUOTATION },
+      issues: ["invalid_json"],
+    };
   }
 
   const parsed = nuancedQuotationSchema.safeParse(json);

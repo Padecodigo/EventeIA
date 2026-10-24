@@ -35,7 +35,7 @@ export function contingencyQuotation(text: string): NuancedQuotation {
     }
   }
   const total = amounts.length > 0 ? Math.max(...amounts) : null;
-  return { ...EMPTY_QUOTATION, mandatory_fees: fees.slice(0, 30), item_breakdown: [], total_price_cents: total, base_price_cents: null, confidence_score: total === null ? 0 : 0.3 };
+  return { ...EMPTY_QUOTATION, mandatory_fees: fees.slice(0, 30), item_breakdown: [], scope: [], total_price_cents: total, base_price_cents: null, confidence_score: total === null ? 0 : 0.3 };
 }
 
 /** Contingência de opt-out: regras fixas (sair, parar, não tenho interesse…). */
