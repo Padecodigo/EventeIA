@@ -7,6 +7,8 @@ import { THEME_COOKIE, parseThemePreference, themeClass } from "@/lib/theme/pale
 
 export const dynamic = "force-dynamic";
 
+export const metadata = { robots: { index: false, follow: false } };
+
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await requireAdmin();
   const pref = parseThemePreference((await cookies()).get(THEME_COOKIE)?.value);

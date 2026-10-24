@@ -8,6 +8,7 @@ import {
 import { formatBRL } from "@/lib/money";
 import { PLANS } from "@/lib/plans";
 import { calculatePlanEconomics } from "@/lib/pricing";
+import { pageMetadata } from "@/lib/seo/site";
 import { getPublishedTestimonials } from "@/lib/testimonials";
 
 const BENEFITS = [
@@ -29,7 +30,13 @@ const BENEFITS = [
   },
 ];
 
-export const metadata = { title: "Para planners" };
+export const metadata = pageMetadata({
+  title: "Para planners e cerimonialistas",
+  description:
+    "Cerimonialistas e decoradores do Vale do Paraíba cotam buffet, decoração, som e foto de vários eventos ao mesmo tempo com a EventeIA.",
+  path: "/para-planners",
+  keywords: ["cerimonialista", "assessoria de eventos", "planner de festas"],
+});
 
 export const revalidate = 60;
 

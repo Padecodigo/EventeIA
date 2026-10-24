@@ -3,10 +3,17 @@ import Link from "next/link";
 import { formatBRL } from "@/lib/money";
 import { PLANS } from "@/lib/plans";
 import { calculatePlanEconomics } from "@/lib/pricing";
+import { pageMetadata } from "@/lib/seo/site";
 
 const ticketPriceCents = Number(process.env.B2C_TICKET_PRICE_CENTS ?? "9700");
 
-export const metadata = { title: "Planos" };
+export const metadata = pageMetadata({
+  title: "Planos e preços",
+  description:
+    "Preços da EventeIA: ticket avulso por evento ou planos mensais com créditos para planners. Pix ou cartão, sem fidelidade.",
+  path: "/planos",
+  keywords: ["preço orçamento de festa", "planos para cerimonialistas"],
+});
 
 export default function PlansPage() {
   return (
