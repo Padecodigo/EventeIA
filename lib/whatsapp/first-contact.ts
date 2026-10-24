@@ -12,7 +12,7 @@
 export type Greeting = "Bom dia" | "Boa tarde" | "Boa noite";
 
 /** Hora (0–23) em America/Sao_Paulo. */
-export function saoPauloHour(now: Date): number {
+function saoPauloHour(now: Date): number {
   const h = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/Sao_Paulo",
     hour: "numeric",
