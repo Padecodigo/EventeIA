@@ -1,3 +1,4 @@
+import { WhatsappConnect } from "@/components/domain/whatsapp-connect";
 import { WhatsappModeForm } from "@/components/domain/whatsapp-mode-form";
 
 export interface ProspectRow {
@@ -86,6 +87,11 @@ export function ProspectingPanel({
         <div className="mt-4">
           <WhatsappModeForm eventId={eventId} current={numberMode} />
         </div>
+        {instanceStatus !== "active" && instanceStatus !== "draining" ? (
+          <div className="mt-6">
+            <WhatsappConnect eventId={eventId} />
+          </div>
+        ) : null}
       </div>
     </section>
   );

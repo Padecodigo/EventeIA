@@ -8,6 +8,7 @@ import {
   evolutionSendResponseSchema,
   firstContactPayloadSchema,
 } from "@/lib/schemas/whatsapp";
+import { parseConnectResponse, type ConnectPayload } from "@/lib/whatsapp/pairing";
 
 /** Timeout por requisição: evita sockets pendurados com ~100 sessões. */
 const REQUEST_TIMEOUT_MS = 20_000;
@@ -203,4 +204,43 @@ export async function logoutInstance(instance: string): Promise<void> {
     return;
   }
   await parseResponse(response);
+}
+
+/**
+ * GET /instance/connect/{instance}?number=… — QR code + pairing code (Evolution v2).
+ * Se a instância ainda não existe na Evolution, cria (Baileys) e tenta de novo.
+ * A apikey nunca sai do servidor.
+ */
+export async function connectInstance(instance: string, numberDigits: string): Promise<ConnectPayload> {
+  const { baseUrl, apiKey } = requireEnv();
+  const url = `${baseUrl}/instance/connect/${encodeURIComponent(instance)}?number=${encodeURIComponent(numberDigits)}`;
+  const doConnect = () =>
+    fetch(url, {
+      method: "GET",
+      headers: { apikey: apiKey },
+      cache: "no-store",
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+
+  let response = await doConnect();
+  if (response.status === 404) {
+    const created = await fetch(`${baseUrl}/instance/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: apiKey },
+      body: JSON.stringify({ instanceName: instance, integration: "WHATSAPP-BAILEYS", qrcode: true }),
+      cache: "no-store",
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+    await parseResponse(created);
+    response = await doConnect();
+  }
+  const text = await response.text();
+  if (!response.ok) {
+    throw new EvolutionSendError(`Evolution HTTP ${String(response.status)}: ${text.slice(0, 180)}`);
+  }
+  try {
+    return parseConnectResponse(JSON.parse(text) as unknown);
+  } catch {
+    throw new EvolutionSendError("Resposta da Evolution não é JSON válido.");
+  }
 }
