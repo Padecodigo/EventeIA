@@ -198,3 +198,10 @@ await fetch(`${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE}`, {
 | Template com variável ausente | Falha de render no enqueue (nunca envia corpo quebrado) |
 
 Mocks: servidor fake Evolution (MSW) com fixtures de eventos reais anonimizados.
+
+## Ciclo de sessão efêmera (revisão 2026-10)
+
+- Estados da instância: `pending_qr → active → draining → ended` (ou `lost`). `connection.update open` ativa; `close` marca perdida e pausa só os jobs daquele evento (flag Redis `eventeia:event-paused:<eventId>`), sem `queue.pause()` global.
+- Ritmo por instância (Redis `SET NX PX` + jitter) em `lib/queue/prospecting-pacing.ts`; concorrência global via `WHATSAPP_PROSPECTING_CONCURRENCY`.
+- Fim da janela (`WHATSAPP_COLLECTION_WINDOW_MINUTES`, job `window-end-<inst>-<event>`): logout da instância, notificação `quotations_ready` (idempotente) + e-mail (Resend ou mock).
+- Opt-out unificado em `detectOptOut` (frases + comandos curtos), sempre marca o fornecedor.
