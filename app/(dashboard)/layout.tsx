@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import type { ReactNode } from "react";
 
+import { NotificationsPoller } from "@/components/notifications/notifications-poller";
 import { requireUser } from "@/lib/auth";
 
 import { signOutAction } from "./actions";
@@ -51,6 +52,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       </header>
 
       <main className="mx-auto w-full max-w-6xl px-6 py-10">{children}</main>
+      <NotificationsPoller />
     </div>
   );
 }
