@@ -31,6 +31,8 @@ const cspProduction = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Build enxuto para Docker (server.js + node_modules mínimos).
+  output: "standalone",
   // Raiz explícita: evita o Next inferir /home/fedora (há um package-lock.json lá fora).
   outputFileTracingRoot: fileURLToPath(new URL(".", import.meta.url)),
   async headers() {
