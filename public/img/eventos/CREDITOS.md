@@ -9,6 +9,7 @@ Fotos sob a [Unsplash License](https://unsplash.com/license) ou a [Pexels Licens
 | `corporativo.jpg` | Marwen Larafa (@marwen_larafa) | https://unsplash.com/photos/_96edJ8IVC4 |
 | `festa-infantil-velas.jpg` | Nathan Dumlao (@nate_dumlao) — Unsplash | https://unsplash.com/photos/As8zq82LBpw |
 | `casamento.jpg` | Kari Bjorn Photography (@karibjorn) — Unsplash | https://unsplash.com/photos/G3O5fc5_r4s |
-| `formatura-familia.jpg` | Ulises Peña — Pexels | https://www.pexels.com/photo/17615677/ |
+| `formatura-familia.jpg` | Ulises Peña — Pexels (não usada desde a v3.1) | https://www.pexels.com/photo/17615677/ |
+| `festa-formatura.jpg` | Andrea Prochilo — Pexels | https://www.pexels.com/photo/34311548/ |
 
 As três primeiras foram recortadas para 1000×1250 (4:5); as demais redimensionadas para no máx. 1000 px de largura. Demais imagens em `public/` já faziam parte do projeto.

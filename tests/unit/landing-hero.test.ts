@@ -17,7 +17,7 @@ describe("landing — hero", () => {
     const srcs = mosaicSources();
     expect(srcs[0]).toBe("/img/eventos/festa-infantil-velas.jpg");
     expect(srcs.length).toBeGreaterThanOrEqual(5);
-    expect(srcs).toEqual(expect.arrayContaining(["/img/eventos/casamento.jpg", "/img/eventos/formatura-familia.jpg", "/img/eventos/15-anos.jpg", "/festa-infantil.jpg"]));
+    expect(srcs).toEqual(expect.arrayContaining(["/img/eventos/casamento.jpg", "/img/eventos/festa-formatura.jpg", "/img/eventos/15-anos.jpg", "/festa-infantil.jpg"]));
     for (const src of srcs) expect(src.startsWith("/eventos/")).toBe(false);
     expect(source).toContain("priority={index === 0}");
   });

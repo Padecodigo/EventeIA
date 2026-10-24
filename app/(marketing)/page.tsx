@@ -44,8 +44,8 @@ const MOSAIC = [
     ratio: "aspect-[3/4]",
   },
   {
-    src: "/img/eventos/formatura-familia.jpg",
-    alt: "Pais abraçando o filho formando, todos sorrindo de orgulho",
+    src: "/img/eventos/festa-formatura.jpg",
+    alt: "Formando comemorando com o diploma erguido entre amigos e chuva de confete",
     label: "Formatura",
     w: 1000,
     h: 667,
