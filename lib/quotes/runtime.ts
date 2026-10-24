@@ -69,19 +69,19 @@ export function createCollectorDeps(): CollectorDeps {
       return data?.followup_count ?? 0;
     },
 
-    async firstReply(text) {
+    async firstReply(text, eventId) {
       if (router === null) return { value: contingencyFirstReply(text), provider: "contingency" };
-      const r = await routeFirstReplyParsing(router, text);
+      const r = await routeFirstReplyParsing(router, text, { eventId, reason: "first_reply" });
       return { value: r.value, provider: r.provider };
     },
-    async extract(text) {
+    async extract(text, eventId) {
       if (router === null) return { value: contingencyQuotation(text), provider: "contingency" };
-      const r = await routeQuotationExtraction(router, buildExtractionMessages(text), text);
+      const r = await routeQuotationExtraction(router, buildExtractionMessages(text), text, { eventId, reason: "extraction" });
       return { value: r.value, provider: r.provider };
     },
-    async hiddenFees(text) {
+    async hiddenFees(text, eventId) {
       if (router === null) return { value: contingencyHiddenFees(text), provider: "contingency" };
-      const r = await routeHiddenFeeScan(router, text);
+      const r = await routeHiddenFeeScan(router, text, { eventId, reason: "hidden_fees" });
       return { value: r.value, provider: r.provider };
     },
 

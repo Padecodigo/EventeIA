@@ -61,9 +61,9 @@ export interface DraftRow {
 export interface CollectorDeps {
   loadContext(job: QuoteExtractionJob): Promise<CollectorContext | null>;
   getFollowupCount(eventId: string, prospectId: string): Promise<number>;
-  firstReply(text: string): Promise<Routed<{ intent: FirstReplyIntent; questions: string[] }>>;
-  extract(text: string): Promise<Routed<NuancedQuotation>>;
-  hiddenFees(text: string): Promise<Routed<{ fees: MandatoryFee[] }>>;
+  firstReply(text: string, eventId?: string): Promise<Routed<{ intent: FirstReplyIntent; questions: string[] }>>;
+  extract(text: string, eventId?: string): Promise<Routed<NuancedQuotation>>;
+  hiddenFees(text: string, eventId?: string): Promise<Routed<{ fees: MandatoryFee[] }>>;
   saveDraft(row: DraftRow): Promise<void>;
   sendFollowUp(input: { eventId: string; prospectId: string; phone: string; text: string; n: number }): Promise<
     "sent" | "dry_run" | "skipped"
@@ -124,10 +124,10 @@ export async function processQuoteMessage(deps: CollectorDeps, job: QuoteExtract
   const text = ctx.inboundText.slice(-MAX_RAW_TEXT).trim();
   if (text.length === 0) return { status: "skipped" };
 
-  const first = await deps.firstReply(text);
+  const first = await deps.firstReply(text, ctx.eventId);
   if (first.value.intent === "decline") return { status: "declined" };
 
-  const [quote, scan] = await Promise.all([deps.extract(text), deps.hiddenFees(text)]);
+  const [quote, scan] = await Promise.all([deps.extract(text, ctx.eventId), deps.hiddenFees(text, ctx.eventId)]);
   const fees = mergeFees(quote.value.mandatory_fees, scan.value.fees);
   const resolved = resolveQuote(quote.value, fees, quote.provider);
   const usable = isUsableQuote(resolved.amountCents, resolved.confidence);
