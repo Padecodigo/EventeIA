@@ -137,6 +137,8 @@ services:
 
   evolution-db:
     image: postgres:16-alpine
+    # Opt-in: só sobe com `docker compose --profile whatsapp up` (WhatsApp desligado por padrão).
+    profiles: ["whatsapp"]
     restart: unless-stopped
     environment:
       POSTGRES_USER: evolution
@@ -157,6 +159,8 @@ services:
 
   evolution-api:
     image: evoapicloud/evolution-api:v2.3.7
+    # Opt-in: só sobe com `docker compose --profile whatsapp up` (WhatsApp desligado por padrão).
+    profiles: ["whatsapp"]
     restart: unless-stopped
     depends_on:
       evolution-db: { condition: service_healthy }

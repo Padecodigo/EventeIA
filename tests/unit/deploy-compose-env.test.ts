@@ -37,4 +37,15 @@ describe("docker-compose.prod.yml", () => {
   it("não publica portas de serviços internos", () => {
     expect(compose).not.toMatch(/^\s+ports:/m);
   });
+
+  it("mantém a Evolution (WhatsApp) desligada por padrão via profile", () => {
+    for (const svc of ["evolution-db", "evolution-api"]) {
+      const block = compose.split(new RegExp(`^  ${svc}:$`, "m"))[1]?.split(/^  [a-z-]+:$/m)[0] ?? "";
+      expect(block).toMatch(/profiles: \["whatsapp"\]/);
+    }
+  });
+
+  it("app e worker não dependem da Evolution para subir", () => {
+    expect(compose).not.toMatch(/depends_on:[\s\S]{0,120}evolution-api/);
+  });
 });
