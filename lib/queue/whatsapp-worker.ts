@@ -269,9 +269,9 @@ export function createProspectingWorker(connection: Redis, concurrency: number):
   return worker;
 }
 
-/** Worker do fim da janela de coleta: draining → logout → disconnected → notifica. */
+/** Worker do fim da coleta: draining → entrega → logout → disconnected → notifica. */
 export function createSessionLifecycleWorker(connection: Redis): Worker {
-  return new Worker<{ instance: string; eventId: string }>(
+  return new Worker<{ instance: string; eventId: string; reason?: "window_closed" | "collection_complete" }>(
     QUEUE_NAMES.whatsappSessionLifecycle,
     async (job) => {
       const result = await endCollectionWindow(createSessionDeps(), job.data);

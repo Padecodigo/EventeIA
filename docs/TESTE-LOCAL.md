@@ -169,7 +169,7 @@ $P -c "select instance_name,status from whatsapp_instances order by created_at d
 
 Para simular a sessão ativa sem celular (apenas local): `$P -c "update whatsapp_instances set status='active' where instance_name='eventeia-xxxx'"` e observe o log dos workers.
 
-**Envio real** (precisa de você): conecte o WhatsApp de teste pelo QR Code no painel do evento (ou Evolution Manager em `http://localhost:8080/manager`). Ao ficar `open` a prospecção começa; ao fim da janela (30–60 min) a instância é desconectada por segurança e aparece o toast *"Busca finalizada..."*.
+**Envio real** (precisa de você): conecte o WhatsApp de teste pelo QR Code no painel do evento (ou Evolution Manager em `http://localhost:8080/manager`). Ao ficar `open` a prospecção começa; ao fim da coleta (5 cotações por categoria ou 48h, o que vier primeiro) as cotações são entregues e só então a instância é desconectada por segurança e aparece o toast *"Busca finalizada..."*.
 
 ## 4. Encerrar
 

@@ -203,5 +203,5 @@ Mocks: servidor fake Evolution (MSW) com fixtures de eventos reais anonimizados.
 
 - Estados da instância: `pending_qr → active → draining → ended` (ou `lost`). `connection.update open` ativa; `close` marca perdida e pausa só os jobs daquele evento (flag Redis `eventeia:event-paused:<eventId>`), sem `queue.pause()` global.
 - Ritmo por instância (Redis `SET NX PX` + jitter) em `lib/queue/prospecting-pacing.ts`; concorrência global via `WHATSAPP_PROSPECTING_CONCURRENCY`.
-- Fim da janela (`WHATSAPP_COLLECTION_WINDOW_MINUTES`, job `window-end-<inst>-<event>`): logout da instância, notificação `quotations_ready` (idempotente) + e-mail (Resend ou mock).
+- Fim da coleta: meta de 5 cotações por categoria (job `collection-complete-<inst>-<event>`) ou prazo de 48h (`WHATSAPP_COLLECTION_WINDOW_MINUTES`, padrão 2880, job `window-end-<inst>-<event>`). A sessão fica conectada durante toda a coleta; primeiro entrega as cotações (cenários), depois faz logout da instância, notificação `quotations_ready` (idempotente) + e-mail (Resend ou mock).
 - Opt-out unificado em `detectOptOut` (frases + comandos curtos), sempre marca o fornecedor.
