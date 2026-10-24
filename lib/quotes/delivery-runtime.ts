@@ -24,15 +24,27 @@ export function createDeliveryDeps(): DeliveryDeps {
     },
     async load(eventId) {
       const [{ data: reqs }, { data: quotes }] = await Promise.all([
-        admin.from("event_requirements").select("category").eq("event_id", eventId).eq("selected", true),
+        admin
+          .from("event_requirements")
+          .select("category")
+          .eq("event_id", eventId)
+          .eq("selected", true),
         admin
           .from("quotations")
-          .select("id,category,vendor_name,vendor_contact,amount_cents,fees_cents,confidence,needs_followup,extraction")
+          .select(
+            "id,category,vendor_name,vendor_contact,amount_cents,fees_cents,confidence,needs_followup,extraction",
+          )
           .eq("event_id", eventId)
           .eq("status", "draft")
           .order("id", { ascending: true }),
       ]);
-      return { requirements: reqs ?? [], quotations: (quotes ?? []).map((q) => ({ ...q, confidence: q.confidence === null ? null : Number(q.confidence) })) };
+      return {
+        requirements: reqs ?? [],
+        quotations: (quotes ?? []).map((q) => ({
+          ...q,
+          confidence: q.confidence === null ? null : Number(q.confidence),
+        })),
+      };
     },
     async insertSnapshots(rows) {
       const { error } = await admin
