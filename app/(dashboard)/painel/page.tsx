@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getUserActivity } from "@/lib/activity";
 import { requireUser } from "@/lib/auth";
 import { formatBRL } from "@/lib/money";
+import { categoryLabel } from "@/lib/quotes/export";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -39,7 +40,15 @@ export default async function DashboardPage() {
     .eq("profile_id", user.id)
     .limit(1);
   const disconnectedInstance = instances?.find((item) => item.status === "disconnected") ?? null;
-  const activity = await getUserActivity(user.id, 10);
+  const [activity, quotesResult] = await Promise.all([
+    getUserActivity(user.id, 10),
+    supabase
+      .from("quotations")
+      .select("id,event_id,vendor_name,category,amount_cents,needs_followup,created_at")
+      .order("created_at", { ascending: false })
+      .limit(10),
+  ]);
+  const quotes = quotesResult.data ?? [];
 
   return (
     <div className="flex flex-col gap-10">
@@ -119,6 +128,35 @@ export default async function DashboardPage() {
                     </p>
                   </div>
                   <span className="text-sm text-vinho/70">ver evento →</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section>
+        <h2 className="font-serif text-title-1">Cotações recebidas</h2>
+        {quotes.length === 0 ? (
+          <p className="mt-4 rounded-card border border-dashed border-line-strong bg-off-white p-8 text-sm text-vinho/75">
+            As cotações dos fornecedores aparecem aqui assim que chegarem pelo WhatsApp.
+          </p>
+        ) : (
+          <ul className="mt-5 divide-y divide-line-subtle rounded-card border border-line-subtle bg-off-white">
+            {quotes.map((q) => (
+              <li key={q.id}>
+                <Link href={`/eventos/${q.event_id}`} className="flex flex-wrap items-center justify-between gap-3 px-6 py-3 transition hover:bg-areia-quente/60">
+                  <span className="text-sm">
+                    <span className="font-medium">{q.vendor_name}</span>{" "}
+                    <span className="text-vinho/70">· {categoryLabel(q.category)}</span>
+                    {q.needs_followup ? <span className="ml-2 text-caption text-vinho/60">(aguardando detalhes)</span> : null}
+                  </span>
+                  <span className="flex items-center gap-4 text-sm tabular-nums">
+                    {formatBRL(q.amount_cents)}
+                    <time dateTime={q.created_at} className="text-caption text-vinho/60">
+                      {new Date(q.created_at).toLocaleDateString("pt-BR")}
+                    </time>
+                  </span>
                 </Link>
               </li>
             ))}

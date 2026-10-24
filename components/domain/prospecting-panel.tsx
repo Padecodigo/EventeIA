@@ -1,4 +1,4 @@
-import { VendorProspectForm } from "@/components/domain/vendor-prospect-form";
+import { WhatsappModeForm } from "@/components/domain/whatsapp-mode-form";
 
 export interface ProspectRow {
   id: string;
@@ -29,10 +29,12 @@ export function ProspectingPanel({
   eventId,
   prospects,
   instanceStatus,
+  numberMode = null,
 }: {
   eventId: string;
   prospects: readonly ProspectRow[];
   instanceStatus: string | null;
+  numberMode?: "dedicated" | "personal" | null;
 }) {
   return (
     <section className="rounded-card border border-line-subtle bg-off-white shadow-soft">
@@ -76,9 +78,13 @@ export function ProspectingPanel({
       ) : null}
 
       <div className="border-t border-line-subtle px-6 py-6">
-        <h3 className="font-serif text-title-3">Prospectar fornecedor</h3>
+        <h3 className="font-serif text-title-3">Conectar WhatsApp</h3>
+        <p className="mt-1 max-w-prose text-sm leading-6 text-vinho/75">
+          O agente encontra fornecedores na cidade da festa sozinho — você não precisa cadastrar
+          ninguém. Escolha qual número ele usa para os contatos.
+        </p>
         <div className="mt-4">
-          <VendorProspectForm eventId={eventId} />
+          <WhatsappModeForm eventId={eventId} current={numberMode} />
         </div>
       </div>
     </section>

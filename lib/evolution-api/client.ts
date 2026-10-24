@@ -1,5 +1,7 @@
 import "server-only";
 
+import { z } from "zod";
+
 import { isConfigured, serverEnv } from "@/lib/env";
 import {
   evolutionConnectionStateSchema,
@@ -151,6 +153,41 @@ export async function sendFirstContact(
 ): Promise<{ externalMessageId?: string }> {
   const parsed = firstContactPayloadSchema.parse(payload);
   return sendText(instance, parsed.number, parsed.text);
+}
+
+const whatsappNumbersSchema = z.array(
+  z.object({ exists: z.boolean(), number: z.string().optional(), jid: z.string().optional() }),
+);
+
+/** POST /chat/whatsappNumbers/{instance}: o número tem WhatsApp? (requer sessão aberta) */
+export async function checkWhatsappNumber(instance: string, numberE164: string): Promise<boolean> {
+  const { baseUrl, apiKey } = requireEnv();
+  const response = await fetch(`${baseUrl}/chat/whatsappNumbers/${encodeURIComponent(instance)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: apiKey },
+    body: JSON.stringify({ numbers: [numberE164.replace(/^\+/, "")] }),
+    cache: "no-store",
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  const parsed = whatsappNumbersSchema.safeParse(await parseResponse(response));
+  return parsed.success && parsed.data.some((n) => n.exists);
+}
+
+/**
+ * Número pessoal: arquiva a conversa do fornecedor para não poluir o WhatsApp do usuário.
+ * (A Evolution v2 não expõe "silenciar"; arquivar é o suportado.) Best-effort.
+ */
+export async function archiveChat(instance: string, numberE164: string): Promise<void> {
+  const { baseUrl, apiKey } = requireEnv();
+  const jid = `${numberE164.replace(/^\+/, "")}@s.whatsapp.net`;
+  const response = await fetch(`${baseUrl}/chat/archiveChat/${encodeURIComponent(instance)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: apiKey },
+    body: JSON.stringify({ chat: jid, archive: true, lastMessage: { key: { remoteJid: jid } } }),
+    cache: "no-store",
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  await parseResponse(response);
 }
 
 /** Logout gracioso da sessão (fim da janela de coleta). 404 = já encerrada. */

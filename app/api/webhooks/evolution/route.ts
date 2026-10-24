@@ -5,6 +5,7 @@ import { z } from "zod";
 import { serverEnv } from "@/lib/env";
 import { emitFeed } from "@/lib/feeds";
 import { logger } from "@/lib/logger";
+import { enqueueQuoteExtraction } from "@/lib/quotes/runtime";
 import { detectOptOut } from "@/lib/schemas/whatsapp";
 import { verifyEvolutionWebhookToken } from "@/lib/security";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -140,14 +141,25 @@ export async function POST(request: Request): Promise<NextResponse> {
         data?.message?.conversation ?? data?.message?.extendedTextMessage?.text ?? null;
 
       if (phone !== null && text !== null) {
+        // Fase 3: vincula a resposta ao fornecedor contatado mais recente (evento em coleta).
+        const { data: prospectRow } = await admin
+          .from("vendor_prospects")
+          .select("id,event_id")
+          .eq("phone_e164", phone)
+          .in("status", ["sent", "replied"])
+          .order("last_message_at", { ascending: false, nullsFirst: false })
+          .limit(1)
+          .maybeSingle();
+
         await admin.from("whatsapp_messages").upsert(
           {
             direction: "inbound",
             template: "inbound",
             to_number_e164: phone,
-            body: text,
+            body: text.slice(0, 4000),
             status: "delivered",
             idempotency_key: `inbound:${messageId ?? externalEventId}`,
+            ...(prospectRow !== null ? { event_id: prospectRow.event_id, prospect_id: prospectRow.id } : {}),
           },
           { onConflict: "idempotency_key", ignoreDuplicates: true },
         );
@@ -166,6 +178,12 @@ export async function POST(request: Request): Promise<NextResponse> {
             { onConflict: "phone_e164,channel" },
           );
           void renderOptOutConfirmation();
+          // Opt-out GLOBAL: o fornecedor sai do cache de descoberta para sempre.
+          await admin
+            .from("suppliers")
+            .update({ opt_out_at: new Date().toISOString() })
+            .eq("phone_e164", phone)
+            .is("opt_out_at", null);
 
           const { data: optedOut } = await admin
             .from("vendor_prospects")
@@ -196,6 +214,9 @@ export async function POST(request: Request): Promise<NextResponse> {
             .update({ status: "replied", last_message_at: new Date().toISOString() })
             .eq("phone_e164", phone)
             .eq("status", "sent");
+          if (prospectRow !== null) {
+            await enqueueQuoteExtraction(prospectRow.event_id, prospectRow.id);
+          }
         }
       }
     }

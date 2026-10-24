@@ -29,11 +29,41 @@ const serverSchema = z.object({
   // Agente Orçamentista: intervalo humanizado entre disparos (clamp 45–90s no worker).
   WHATSAPP_MIN_INTERVAL_SECONDS: z.coerce.number().int().default(60),
   // Janela de coleta da sessão efêmera (clamp 30–60 min) e concorrência do worker.
-  WHATSAPP_COLLECTION_WINDOW_MINUTES: z.coerce.number().int().default(45),
+  WHATSAPP_COLLECTION_WINDOW_MINUTES: z.coerce.number().int().default(2880),
   WHATSAPP_PROSPECTING_CONCURRENCY: z.coerce.number().int().min(1).max(200).default(25),
   // AES-256 (hex 64 chars) p/ credenciais de instância; opcional em dev.
   WHATSAPP_CREDENTIALS_KEY: z.string().optional(),
   ENGINE_TIMEZONE: z.string().default("America/Sao_Paulo"),
+  // Descoberta automática de fornecedores (Fase 2).
+  XAI_API_KEY: z.string().optional(),
+  XAI_MODEL: z.string().optional(),
+  DISCOVERY_PROVIDERS: z.string().optional(),
+  DISCOVERY_INGEST_SECRET: z.string().min(32).optional().or(z.literal("")),
+  // true = nunca envia WhatsApp (testes/homologação): prospects ficam dry_run.
+  DISCOVERY_DRY_RUN: z
+    .enum(["true", "false", "1", "0", ""])
+    .default("false")
+    .transform((v) => v === "true" || v === "1"),
+  DISCOVERY_MAX_CALLS_PER_EVENT: z.coerce.number().int().min(1).max(500).default(40),
+  DISCOVERY_DAILY_CALL_CAP: z.coerce.number().int().min(1).max(10000).default(300),
+  // Fallback LLM: NVIDIA NIM (OpenAI-compatível). Sem busca ao vivo — só estrutura/valida.
+  NVIDIA_NIM_API_KEY: z.string().optional(),
+  NIM_MODEL: z.string().optional(),
+  // Orçamento diário de chamadas Grok e % de uso a partir do qual troca para o NIM.
+  XAI_DAILY_BUDGET: z.coerce.number().int().min(1).max(100000).default(200),
+  XAI_USAGE_SWITCH_PCT: z.coerce.number().min(0).max(100).default(25),
+  // Roteador de LLM (lib/ai/router.ts): preços por 1M tokens em micro-USD (US$ 1 = 1_000_000).
+  AI_PRICE_NIM_IN_PER_1M: z.coerce.number().int().min(0).default(100_000),
+  AI_PRICE_NIM_OUT_PER_1M: z.coerce.number().int().min(0).default(400_000),
+  AI_PRICE_GROK_IN_PER_1M: z.coerce.number().int().min(0).default(3_000_000),
+  AI_PRICE_GROK_OUT_PER_1M: z.coerce.number().int().min(0).default(15_000_000),
+  AI_PRICE_DEEPSEEK_IN_PER_1M: z.coerce.number().int().min(0).default(300_000),
+  AI_PRICE_DEEPSEEK_OUT_PER_1M: z.coerce.number().int().min(0).default(1_200_000),
+  // Folga inicial do Grok (sem histórico qualquer chamada passaria de 25%) e custo estimado por busca ao vivo.
+  AI_GROK_BOOTSTRAP_MICROUSD: z.coerce.number().int().min(0).default(200_000),
+  AI_GROK_SEARCH_CALL_MICROUSD: z.coerce.number().int().min(0).default(30_000),
+  AI_USE_DEEPSEEK: z.enum(["true", "false", ""]).default("true").transform((v) => v !== "false"),
+  WHATSAPP_DAILY_FIRST_CONTACTS: z.coerce.number().int().min(1).max(200).default(50),
 });
 
 /** Chave de API presente e não vazia (vazio = não configurado). Type guard. */

@@ -5,7 +5,7 @@
 
 import type { EmailAdapter } from "./email";
 
-export type QuotationsReadyReason = "window_closed" | "session_lost";
+export type QuotationsReadyReason = "window_closed" | "collection_complete" | "session_lost";
 
 export interface OwnerContact {
   profileId: string;
@@ -39,8 +39,10 @@ export function renderQuotationsReadyEmail(input: {
 }): { subject: string; text: string } {
   const why =
     input.reason === "window_closed"
-      ? "A janela de coleta terminou"
-      : "A conexão com o seu WhatsApp caiu";
+      ? "O prazo de 48h de coleta terminou"
+      : input.reason === "collection_complete"
+        ? "Recebemos as cotações necessárias"
+        : "A conexão com o seu WhatsApp caiu";
   return {
     subject: `Suas cotações de "${input.eventTitle}" estão prontas`,
     text: [

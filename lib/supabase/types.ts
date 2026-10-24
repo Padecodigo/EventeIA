@@ -67,6 +67,11 @@ export interface Database {
         city: string | null;
         interview_answers: Json | null;
         interview_completed_at: string | null;
+        discovery_started_at: string | null;
+        discovery_ends_at: string | null;
+        discovery_status: "running" | "completed" | "paused" | null;
+        collection_ended_at: string | null;
+        quotes_delivered_at: string | null;
         created_at: string;
       }>;
       event_requirements: Table<{
@@ -101,6 +106,16 @@ export interface Database {
         amount_cents: number;
         status: "draft" | "sent" | "confirmed" | "declined" | "expired";
         engine_version: string;
+        prospect_id: string | null;
+        supplier_id: string | null;
+        raw_text: string | null;
+        extraction: Json | null;
+        confidence: number | null;
+        extraction_provider: "deepseek" | "nim" | "grok" | "contingency" | null;
+        fees_cents: number;
+        needs_followup: boolean;
+        followup_count: number;
+        updated_at: string;
         created_at: string;
       }>;
       budget_snapshots: Table<{
@@ -127,6 +142,8 @@ export interface Database {
           | "refunded"
           | "risk_review"
           | "chargeback";
+        asaas_fee_cents: number | null;
+        net_cents: number | null;
         credits_granted: number | null;
         workspace_id: string | null;
         coupon_code: string | null;
@@ -193,6 +210,7 @@ export interface Database {
         read_at: string | null;
         failed_at: string | null;
         error: string | null;
+        prospect_id: string | null;
         created_at: string;
       }>;
       system_events: Table<{
@@ -232,6 +250,7 @@ export interface Database {
         activated_at: string | null;
         drain_at: string | null;
         disconnected_at: string | null;
+        number_mode: "dedicated" | "personal" | null;
         created_at: string;
       }>;
       notifications: Table<{
@@ -255,6 +274,89 @@ export interface Database {
         status: "pending" | "sent" | "replied" | "opt_out" | "failed";
         last_message_at: string | null;
         opt_out_at: string | null;
+        supplier_id: string | null;
+        source: "manual" | "auto" | "ingest";
+        source_url: string | null;
+        dry_run: boolean;
+        created_at: string;
+      }>;
+      suppliers: Table<{
+        id: string;
+        name: string;
+        category: string;
+        phone_e164: string | null;
+        whatsapp_verified: boolean | null;
+        website_url: string | null;
+        source_url: string;
+        source_provider: string;
+        external_id: string | null;
+        city: string | null;
+        region_code: string | null;
+        opt_out_at: string | null;
+        last_contacted_at: string | null;
+        first_seen_at: string;
+        last_seen_at: string;
+      }>;
+      supplier_discovery_runs: Table<{
+        id: string;
+        event_id: string;
+        provider: string;
+        category: string;
+        round: number;
+        found: number;
+        inserted: number;
+        enqueued: number;
+        status: "ok" | "error" | "skipped";
+        error: string | null;
+        created_at: string;
+      }>;
+      llm_usage_events: Table<{
+        id: string;
+        provider: "nim" | "grok" | "deepseek";
+        task: string;
+        input_tokens: number;
+        output_tokens: number;
+        cost_micro_usd: number;
+        outcome: "ok" | "invalid" | "low_confidence" | "error";
+        event_id: string | null;
+        profile_id: string | null;
+        reason: string | null;
+        model: string | null;
+        cache_hit_tokens: number;
+        peak: boolean | null;
+        fx_brl_per_usd_micro: number | null;
+        cost_brl_cents: number | null;
+        created_at: string;
+      }>;
+      cost_entries: Table<{
+        id: string;
+        occurred_at: string;
+        provider: "deepseek" | "xai" | "nim" | "search" | "fetch" | "whatsapp" | "asaas" | "vps" | "supabase" | "domain" | "other";
+        kind: "variable" | "fixed";
+        reason: string;
+        event_id: string | null;
+        workspace_id: string | null;
+        profile_id: string | null;
+        quantity: number;
+        unit_price_micro_usd: number;
+        cost_micro_usd: number;
+        fx_brl_per_usd_micro: number;
+        cost_brl_cents: number;
+        note: string | null;
+        created_by: string | null;
+        created_at: string;
+      }>;
+      pricing_rates: Table<{
+        key: string;
+        micro_usd: number;
+        unit: "per_1m_tokens" | "per_1k_requests" | "per_unit";
+        updated_by: string | null;
+        updated_at: string;
+      }>;
+      fx_rates: Table<{
+        rate_date: string;
+        brl_per_usd_micro: number;
+        source: string;
         created_at: string;
       }>;
       consents: Table<{

@@ -7,9 +7,14 @@
 
 export type SessionState = "connecting" | "active" | "draining" | "disconnected";
 
+/**
+ * A sessão fica conectada durante TODA a coleta: até 5 cotações por categoria
+ * ou 48h (o que vier primeiro). Só desconecta depois de entregar as cotações.
+ */
 export const MIN_COLLECTION_WINDOW_MINUTES = 30;
-export const MAX_COLLECTION_WINDOW_MINUTES = 60;
-export const DEFAULT_COLLECTION_WINDOW_MINUTES = 45;
+export const MAX_COLLECTION_WINDOW_MINUTES = 48 * 60;
+export const DEFAULT_COLLECTION_WINDOW_MINUTES = 48 * 60;
+export const QUOTES_PER_CATEGORY_TARGET = 5;
 
 const TRANSITIONS: Record<SessionState, readonly SessionState[]> = {
   connecting: ["active", "disconnected"],
@@ -29,7 +34,7 @@ export function assertTransition(from: SessionState, to: SessionState): void {
   }
 }
 
-/** Janela de coleta configurável, com clamp [30, 60] minutos. */
+/** Janela de coleta configurável, com clamp [30 min, 48 h]. */
 export function resolveCollectionWindowMinutes(raw: number | undefined): number {
   if (raw === undefined || !Number.isFinite(raw)) {
     return DEFAULT_COLLECTION_WINDOW_MINUTES;
@@ -62,4 +67,17 @@ export function toSessionState(status: string): SessionState {
     default:
       return "disconnected";
   }
+}
+
+/**
+ * Coleta completa quando TODAS as categorias do evento têm ao menos `target`
+ * cotações. Sem categorias, nunca completa antecipadamente (vale o prazo de 48h).
+ */
+export function isCollectionComplete(
+  quotesByCategory: Readonly<Record<string, number>>,
+  categories: readonly string[],
+  target: number = QUOTES_PER_CATEGORY_TARGET,
+): boolean {
+  if (categories.length === 0) return false;
+  return categories.every((category) => (quotesByCategory[category] ?? 0) >= target);
 }
