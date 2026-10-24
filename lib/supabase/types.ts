@@ -67,6 +67,9 @@ export interface Database {
         city: string | null;
         interview_answers: Json | null;
         interview_completed_at: string | null;
+        discovery_started_at: string | null;
+        discovery_ends_at: string | null;
+        discovery_status: "running" | "completed" | "paused" | null;
         created_at: string;
       }>;
       event_requirements: Table<{
@@ -232,6 +235,7 @@ export interface Database {
         activated_at: string | null;
         drain_at: string | null;
         disconnected_at: string | null;
+        number_mode: "dedicated" | "personal" | null;
         created_at: string;
       }>;
       notifications: Table<{
@@ -255,6 +259,40 @@ export interface Database {
         status: "pending" | "sent" | "replied" | "opt_out" | "failed";
         last_message_at: string | null;
         opt_out_at: string | null;
+        supplier_id: string | null;
+        source: "manual" | "auto" | "ingest";
+        source_url: string | null;
+        dry_run: boolean;
+        created_at: string;
+      }>;
+      suppliers: Table<{
+        id: string;
+        name: string;
+        category: string;
+        phone_e164: string | null;
+        whatsapp_verified: boolean | null;
+        website_url: string | null;
+        source_url: string;
+        source_provider: string;
+        external_id: string | null;
+        city: string | null;
+        region_code: string | null;
+        opt_out_at: string | null;
+        last_contacted_at: string | null;
+        first_seen_at: string;
+        last_seen_at: string;
+      }>;
+      supplier_discovery_runs: Table<{
+        id: string;
+        event_id: string;
+        provider: string;
+        category: string;
+        round: number;
+        found: number;
+        inserted: number;
+        enqueued: number;
+        status: "ok" | "error" | "skipped";
+        error: string | null;
         created_at: string;
       }>;
       consents: Table<{
