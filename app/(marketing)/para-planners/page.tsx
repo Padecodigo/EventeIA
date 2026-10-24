@@ -52,13 +52,13 @@ export default async function ParaPlannersPage() {
           </p>
 
           <div className="mt-9 flex flex-wrap items-center gap-4">
-            <Link
+            <Link prefetch={false}
               href="/registrar"
               className="rounded-full bg-primaria px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-primaria-escura"
             >
               Quero conhecer <span aria-hidden="true">↗</span>
             </Link>
-            <Link
+            <Link prefetch={false}
               href="/planos"
               className="text-sm font-medium text-vinho underline decoration-champagne underline-offset-8"
             >
@@ -113,7 +113,7 @@ export default async function ParaPlannersPage() {
               Planos para o seu ritmo de ateliê.
             </h2>
           </div>
-          <Link
+          <Link prefetch={false}
             href="/planos"
             className="text-sm font-medium text-vinho underline decoration-champagne underline-offset-8"
           >
@@ -149,7 +149,7 @@ export default async function ParaPlannersPage() {
                   ≈ {formatBRL(perCreditCents)} por evento
                 </p>
                 <p className="mt-2 text-sm opacity-75">{plan.description}</p>
-                <Link
+                <Link prefetch={false}
                   href="/registrar"
                   className={
                     plan.featured
@@ -181,7 +181,7 @@ export default async function ParaPlannersPage() {
                 Planner há 12 anos, Débora transformou a franquia em capacidade de atendimento sem
                 perder a curadoria que é a marca do ateliê dela.
               </p>
-              <Link
+              <Link prefetch={false}
                 href="/registrar"
                 className="mt-8 inline-flex rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-white transition hover:bg-primaria-escura"
               >

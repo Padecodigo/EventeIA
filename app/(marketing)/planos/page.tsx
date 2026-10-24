@@ -33,7 +33,7 @@ export default function PlansPage() {
             <li>Disparos pelo WhatsApp com consentimento</li>
             <li>Acesso permanente ao evento</li>
           </ul>
-          <Link
+          <Link prefetch={false}
             href="/registrar"
             className="mt-8 rounded-full bg-primaria px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-primaria-escura"
           >
@@ -69,7 +69,7 @@ export default function PlansPage() {
                 ≈ {formatBRL(perCreditCents)} por evento
               </p>
               <p className="mt-2 flex-1 text-sm opacity-75">{plan.description}</p>
-              <Link
+              <Link prefetch={false}
                 href="/registrar"
                 className={
                   plan.featured
@@ -93,7 +93,7 @@ export default function PlansPage() {
           </code>
           .
         </p>
-        <Link
+        <Link prefetch={false}
           href="/para-planners"
           className="text-sm font-medium text-vinho underline decoration-champagne underline-offset-8"
         >

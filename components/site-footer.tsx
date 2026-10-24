@@ -21,13 +21,13 @@ export function SiteFooter() {
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-champagne">
             Navegar
           </p>
-          <Link href="/como-funciona" className="text-off-white/70 transition hover:text-off-white">
+          <Link prefetch={false} href="/como-funciona" className="text-off-white/70 transition hover:text-off-white">
             Como funciona
           </Link>
-          <Link href="/para-planners" className="text-off-white/70 transition hover:text-off-white">
+          <Link prefetch={false} href="/para-planners" className="text-off-white/70 transition hover:text-off-white">
             Para planners
           </Link>
-          <Link href="/planos" className="text-off-white/70 transition hover:text-off-white">
+          <Link prefetch={false} href="/planos" className="text-off-white/70 transition hover:text-off-white">
             Planos
           </Link>
         </div>
@@ -35,10 +35,10 @@ export function SiteFooter() {
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-champagne">
             Conta
           </p>
-          <Link href="/entrar" className="text-off-white/70 transition hover:text-off-white">
+          <Link prefetch={false} href="/entrar" className="text-off-white/70 transition hover:text-off-white">
             Entrar
           </Link>
-          <Link href="/registrar" className="text-off-white/70 transition hover:text-off-white">
+          <Link prefetch={false} href="/registrar" className="text-off-white/70 transition hover:text-off-white">
             Criar conta
           </Link>
           <span className="text-off-white/70">Privacidade e LGPD em breve</span>
