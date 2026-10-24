@@ -1,0 +1,35 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "app/**/*.{ts,tsx}",
+    "workers/**/*.ts",
+    "scripts/**/*.ts",
+    "tests/**/*.test.{ts,tsx}"
+  ],
+  "project": [
+    "app/**/*.{ts,tsx}",
+    "components/**/*.{ts,tsx}",
+    "lib/**/*.{ts,tsx}",
+    "workers/**/*.ts",
+    "scripts/**/*.ts",
+    "tests/**/*.{ts,tsx}"
+  ],
+  "ignoreDependencies": [],
+  "ignoreBinaries": [
+    "supabase"
+  ],
+  "rules": {
+    "files": "warn",
+    "dependencies": "error",
+    "devDependencies": "error",
+    "unlisted": "error",
+    "binaries": "warn",
+    "unresolved": "error",
+    "exports": "warn",
+    "nsExports": "warn",
+    "types": "off",
+    "duplicates": "warn",
+    "enumMembers": "off",
+    "classMembers": "off"
+  }
+}

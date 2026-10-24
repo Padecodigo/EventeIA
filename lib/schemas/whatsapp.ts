@@ -1,0 +1,142 @@
+/**
+ * Schemas Zod do fluxo WhatsApp (Agente Orçamentista + mensagens ao cliente).
+ * Fonte da verdade: .context/WHATSAPP_EVOLUTION.md § "Agente Orçamentista".
+ */
+
+import { z } from "zod";
+
+/* ============================================================
+ * Regra 2 — Primeiro contato: APENAS texto puro.
+ * Proibido: URLs, emojis, anexos. Comprimento humano.
+ * ============================================================ */
+
+const URL_PATTERN = /(https?:\/\/|www\.)/i;
+const EMOJI_PATTERN = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{2190}-\u{21FF}]/u;
+const EXCLAMATION_PATTERN = /!!!/;
+
+export const firstContactMessageSchema = z
+  .string()
+  .trim()
+  .min(20, "mensagem muito curta")
+  .max(900, "mensagem muito longa")
+  .refine((text) => !URL_PATTERN.test(text), {
+    message: "primeiro contato não pode conter URLs",
+  })
+  .refine((text) => !EMOJI_PATTERN.test(text), {
+    message: "primeiro contato não pode conter emojis",
+  })
+  .refine((text) => !EXCLAMATION_PATTERN.test(text), {
+    message: "evite pontuação excessiva",
+  });
+
+export type FirstContactMessage = z.infer<typeof firstContactMessageSchema>;
+
+/* ============================================================
+ * Payload do job de prospecção (fila quotation-prospecting-queue).
+ * ============================================================ */
+
+export const prospectingJobSchema = z.object({
+  prospectId: z.string().uuid(),
+  eventId: z.string().uuid(),
+  instance: z.string().min(3).max(64),
+  phoneE164: z.string().regex(/^\+\d{10,15}$/),
+  vendorName: z.string().trim().min(2).max(80),
+  eventTitle: z.string().trim().min(2).max(120),
+  eventType: z.string().trim().min(2).max(40),
+  eventDateIso: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  city: z.string().trim().max(60),
+  guestCount: z.number().int().min(1).max(5000),
+});
+
+export type ProspectingJob = z.infer<typeof prospectingJobSchema>;
+
+/* ============================================================
+ * Respostas da Evolution API.
+ * ============================================================ */
+
+export const evolutionSendResponseSchema = z.object({
+  key: z
+    .object({
+      id: z.string().optional(),
+    })
+    .optional(),
+  status: z.string().optional(),
+});
+
+export type EvolutionSendResponse = z.infer<typeof evolutionSendResponseSchema>;
+
+/** GET /instance/connectionState/{instance} */
+export const evolutionConnectionStateSchema = z.object({
+  instance: z.string().optional(),
+  state: z.enum(["open", "connecting", "close", "closed"]),
+});
+
+export type EvolutionConnectionState = z.infer<typeof evolutionConnectionStateSchema>;
+
+/* ============================================================
+ * Regra 3 — Opt-out imediato do fornecedor.
+ * "não" conta como recusa apenas como mensagem inteira;
+ * frases compostas casam por substring (acentos/case ignorados).
+ * ============================================================ */
+
+const OPT_OUT_PHRASES = [
+  "nao tenho interesse",
+  "nao quero receber",
+  "nao quero mais",
+  "nao desejo receber",
+  "descadastrar",
+  "cancelar",
+  "remover",
+  "unsubscribe",
+  "parar",
+  "pare",
+  "sair",
+  "stop",
+] as const;
+
+const OPT_OUT_EXACT = new Set(["nao", "n", "no"]);
+
+/** Normaliza: minúsculas, sem acentos, espaços colapsados. */
+export function normalizeReplyText(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Detecta recusa/opt-out na resposta do fornecedor. */
+export function detectOptOut(text: string): boolean {
+  const normalized = normalizeReplyText(text);
+
+  if (OPT_OUT_EXACT.has(normalized)) {
+    return true;
+  }
+
+  return OPT_OUT_PHRASES.some((phrase) => normalized.includes(phrase));
+}
+
+/** Monta a mensagem de primeiro contato (Regra 2: texto puro, sem URLs/emojis). */
+export function renderFirstContact(input: {
+  vendorName: string;
+  eventTitle: string;
+  eventType: string;
+  eventDateIso: string;
+  city: string;
+  guestCount: number;
+}): FirstContactMessage {
+  const date = new Date(`${input.eventDateIso}T12:00:00Z`).toLocaleDateString("pt-BR");
+  const where = input.city.length > 0 ? ` em ${input.city}` : "";
+
+  const text = [
+    `Olá, tudo bem? Falo com ${input.vendorName}?`,
+    `Estou organizando o evento "${input.eventTitle}" (${input.eventType})${where},`,
+    `previsto para ${date}, com cerca de ${String(input.guestCount)} convidados.`,
+    `Gostaria de saber se você atende e se podemos combinar um orçamento.`,
+    `Desde já, agradeço a atenção.`,
+  ].join(" ");
+
+  return firstContactMessageSchema.parse(text);
+}

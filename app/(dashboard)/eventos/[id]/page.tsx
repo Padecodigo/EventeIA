@@ -1,0 +1,162 @@
+import { notFound } from "next/navigation";
+
+import { z } from "zod";
+
+import { ActivateWithCredit } from "@/components/domain/activate-with-credit";
+import { BudgetTable } from "@/components/domain/budget-table";
+import { BuyTicketForm } from "@/components/domain/buy-ticket-form";
+import { ProspectingPanel } from "@/components/domain/prospecting-panel";
+import { QuotationsPanel } from "@/components/domain/quotations-panel";
+import { TestimonialInvite } from "@/components/domain/testimonial-invite";
+import { calculate } from "@/lib/engine";
+import type { EngineItemSelection, EventType, RegionCode } from "@/lib/engine/types";
+import { serverEnv } from "@/lib/env";
+import { formatBRL } from "@/lib/money";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+const eventTypeSchema = z.enum([
+  "festa_infantil",
+  "quinze_anos",
+  "casamento",
+  "aniversario",
+  "corporativo",
+  "batizado",
+  "formatura",
+]);
+const regionSchema = z.enum(["sp", "rj", "mg", "outros"]);
+
+const DEFAULT_ITEMS: EngineItemSelection[] = [
+  { category: "buffet" },
+  { category: "decoracao" },
+  { category: "musica" },
+  { category: "fotografia" },
+  { category: "espaco" },
+];
+
+const statusLabels: Record<string, string> = {
+  draft: "Rascunho",
+  awaiting_payment: "Aguardando pagamento",
+  active: "Ativo",
+  completed: "Concluído",
+  canceled: "Cancelado",
+};
+
+export default async function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const idParsed = z.string().uuid().safeParse(id);
+  if (!idParsed.success) {
+    notFound();
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data: event } = await supabase
+    .from("events")
+    .select("*")
+    .eq("id", idParsed.data)
+    .maybeSingle();
+
+  if (event === null) {
+    notFound();
+  }
+
+  const [ticketResult, profileResult, quotationsResult, prospectsResult, instancesResult] =
+    await Promise.all([
+    supabase.from("event_tickets").select("status").eq("event_id", event.id).maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("display_name,document_number")
+      .eq("id", event.owner_profile_id)
+      .maybeSingle(),
+    supabase
+      .from("quotations")
+      .select("id,category,vendor_name,vendor_contact,amount_cents,status,created_at")
+      .eq("event_id", event.id)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("vendor_prospects")
+      .select("id,vendor_name,vendor_category,phone_e164,status,created_at")
+      .eq("event_id", event.id)
+      .order("created_at", { ascending: false }),
+    getSupabaseAdmin()
+      .from("whatsapp_instances")
+      .select("status")
+      .eq("profile_id", event.owner_profile_id)
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  const eventType: EventType = eventTypeSchema.safeParse(event.event_type).data ?? "casamento";
+  const region: RegionCode = regionSchema.safeParse(event.region_code).data ?? "outros";
+  const leadTimeDays = Math.max(
+    0,
+    Math.round((Date.parse(`${event.event_date}T00:00:00Z`) - Date.now()) / 86_400_000),
+  );
+
+  const budget = calculate({
+    eventType,
+    guestCount: event.guest_count,
+    eventDateIso: event.event_date,
+    leadTimeDays,
+    region,
+    items: DEFAULT_ITEMS,
+  });
+
+  const unlocked = ticketResult.data?.status === "active";
+
+  return (
+    <div className="flex flex-col gap-8">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-overline uppercase tracking-[0.14em] text-vinho/75">Evento</p>
+          <h1 className="mt-2 font-serif text-display-2 font-display">{event.title}</h1>
+          <p className="mt-2 text-sm text-vinho/75">
+            {event.event_type} · {event.guest_count} convidados ·{" "}
+            {new Date(`${event.event_date}T12:00:00Z`).toLocaleDateString("pt-BR")} ·{" "}
+            {statusLabels[event.status] ?? event.status}
+          </p>
+        </div>
+        <span className="rounded-pill bg-areia-secundaria px-4 py-1.5 text-caption text-vinho/70">
+          {unlocked ? "Orçamento liberado" : "Aguardando ativação"}
+        </span>
+      </header>
+
+      <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-start">
+        <BudgetTable result={budget} unlocked={unlocked} />
+
+        {unlocked ? (
+          <section className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
+            <h2 className="font-serif text-title-1">Evento ativo.</h2>
+            <p className="mt-2 text-sm text-vinho/70">
+              O orçamento completo está liberado. As cotações e os disparos pelo WhatsApp serão
+              organizados aqui — acompanhe as notificações.
+            </p>
+            <p className="mt-4 text-caption text-vinho/70">
+              Próximo passo: pedir cotações aos fornecedores da sua região.
+            </p>
+            <TestimonialInvite eventId={event.id} />
+          </section>
+        ) : event.workspace_id !== null ? (
+          <ActivateWithCredit eventId={event.id} />
+        ) : (
+          <BuyTicketForm
+            eventId={event.id}
+            priceFormatted={formatBRL(serverEnv().B2C_TICKET_PRICE_CENTS)}
+            defaultCpf={profileResult.data?.document_number ?? ""}
+          />
+        )}
+      </div>
+
+      {unlocked ? (
+        <>
+          <QuotationsPanel eventId={event.id} quotations={quotationsResult.data ?? []} />
+          <ProspectingPanel
+            eventId={event.id}
+            prospects={prospectsResult.data ?? []}
+            instanceStatus={instancesResult.data?.status ?? null}
+          />
+        </>
+      ) : null}
+    </div>
+  );
+}

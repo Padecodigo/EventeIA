@@ -1,0 +1,206 @@
+import { NextResponse } from "next/server";
+
+import { z } from "zod";
+
+import { emitFeed } from "@/lib/feeds";
+import { logger } from "@/lib/logger";
+import { detectOptOut } from "@/lib/schemas/whatsapp";
+import { verifyEvolutionWebhookToken } from "@/lib/security";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import type { Json } from "@/lib/supabase/types";
+import { renderOptOutConfirmation } from "@/lib/whatsapp/templates";
+
+export const runtime = "nodejs";
+
+const dataSchema = z
+  .object({
+    key: z
+      .object({
+        id: z.string().optional(),
+        remoteJid: z.string().optional(),
+        fromMe: z.boolean().optional(),
+      })
+      .optional(),
+    status: z.string().optional(),
+    message: z
+      .object({
+        conversation: z.string().optional(),
+        extendedTextMessage: z.object({ text: z.string().optional() }).optional(),
+      })
+      .optional(),
+  })
+  .passthrough();
+
+const bodySchema = z
+  .object({
+    event: z.string().min(1),
+    instance: z.string().optional(),
+    data: dataSchema.optional(),
+  })
+  .passthrough();
+
+const STATUS_MAP: Record<string, "sent" | "delivered" | "read" | "failed"> = {
+  SENT: "sent",
+  DELIVERED: "delivered",
+  READ: "read",
+  ERROR: "failed",
+  FAILED: "failed",
+};
+
+function digitsToE164(remoteJid: string | undefined): string | null {
+  if (remoteJid === undefined) {
+    return null;
+  }
+  const digits = remoteJid.split("@")[0]?.replace(/\D/g, "") ?? "";
+  return digits.length >= 10 ? `+${digits}` : null;
+}
+
+/**
+ * Webhook da Evolution API: status de entrega, respostas e opt-out ("SAIR").
+ * Ver .context/WHATSAPP_EVOLUTION.md §6.
+ */
+export async function POST(request: Request): Promise<NextResponse> {
+  const url = new URL(request.url);
+  const token = request.headers.get("x-evolution-token") ?? url.searchParams.get("token");
+
+  if (!verifyEvolutionWebhookToken(token)) {
+    logger.warn("webhook evolution rejeitado (token)");
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  let json: unknown;
+  try {
+    json = await request.json();
+  } catch {
+    return NextResponse.json({ error: "invalid_json" }, { status: 400 });
+  }
+
+  const parsed = bodySchema.safeParse(json);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "invalid_payload" }, { status: 400 });
+  }
+
+  const payload = parsed.data;
+  const data = payload.data;
+  const messageId = data?.key?.id;
+  const externalEventId = `${payload.event}:${messageId ?? crypto.randomUUID()}`;
+
+  try {
+    const admin = getSupabaseAdmin();
+
+    const { data: inserted, error } = await admin
+      .from("webhook_events")
+      .upsert(
+        {
+          source: "evolution",
+          external_event_id: externalEventId,
+          payload: payload as unknown as Json,
+          status: "received",
+        },
+        { onConflict: "source,external_event_id", ignoreDuplicates: true },
+      )
+      .select("id")
+      .maybeSingle();
+
+    if (error !== null) {
+      logger.error({ code: error.code }, "falha ao registrar webhook evolution");
+      return NextResponse.json({ error: "persist_failed" }, { status: 500 });
+    }
+
+    if (inserted === null) {
+      return NextResponse.json({ ok: true, duplicated: true });
+    }
+
+    const status = data?.status === undefined ? undefined : STATUS_MAP[data.status.toUpperCase()];
+
+    if (payload.event.startsWith("messages.update") && messageId !== undefined && status !== undefined) {
+      const update =
+        status === "failed"
+          ? { status, failed_at: new Date().toISOString(), error: "falha reportada pela Evolution" }
+          : status === "delivered"
+            ? { status, delivered_at: new Date().toISOString() }
+            : status === "read"
+              ? { status, read_at: new Date().toISOString() }
+              : { status };
+
+      await admin
+        .from("whatsapp_messages")
+        .update(update)
+        .eq("external_message_id", messageId)
+        .in("status", ["sent", "delivered"]);
+    }
+
+    if (payload.event.startsWith("messages.upsert") && data?.key?.fromMe !== true) {
+      const phone = digitsToE164(data?.key?.remoteJid);
+      const text =
+        data?.message?.conversation ?? data?.message?.extendedTextMessage?.text ?? null;
+
+      if (phone !== null && text !== null) {
+        if (text.trim().toUpperCase().includes("SAIR")) {
+          await admin.from("consents").upsert(
+            {
+              phone_e164: phone,
+              channel: "whatsapp",
+              status: "opted_out",
+              source: "whatsapp_inbound",
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "phone_e164,channel" },
+          );
+
+          logger.info({ phoneMasked: `${phone.slice(0, 5)}…` }, "opt-out registrado");
+          void renderOptOutConfirmation();
+        } else {
+          await admin.from("whatsapp_messages").upsert(
+            {
+              direction: "inbound",
+              template: "inbound",
+              to_number_e164: phone,
+              body: text,
+              status: "delivered",
+              idempotency_key: `inbound:${messageId ?? externalEventId}`,
+            },
+            { onConflict: "idempotency_key", ignoreDuplicates: true },
+          );
+
+          // Regra 3 — opt-out imediato do fornecedor (Agente Orçamentista).
+          if (detectOptOut(text)) {
+            const { data: optedOut } = await admin
+              .from("vendor_prospects")
+              .update({ status: "opt_out", opt_out_at: new Date().toISOString() })
+              .eq("phone_e164", phone)
+              .in("status", ["pending", "sent", "replied", "failed"])
+              .select("id,event_id");
+
+            if (optedOut !== null && optedOut.length > 0) {
+              for (const row of optedOut) {
+                try {
+                  await emitFeed(admin, {
+                    type: "vendor.opt_out",
+                    actorType: "system",
+                    aggregateType: "event",
+                    aggregateId: row.event_id,
+                    payload: { prospect_id: row.id },
+                    correlationId: externalEventId,
+                    source: "webhook",
+                  });
+                } catch {
+                  // feed não bloqueia o opt-out
+                }
+              }
+              logger.info({ phoneMasked: `${phone.slice(0, 7)}…` }, "fornecedor opt-out");
+            }
+          }
+        }
+      }
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (caught) {
+    logger.error(
+      { reason: caught instanceof Error ? caught.message : "desconhecido" },
+      "erro inesperado no webhook evolution",
+    );
+    return NextResponse.json({ error: "internal_error" }, { status: 500 });
+  }
+}
