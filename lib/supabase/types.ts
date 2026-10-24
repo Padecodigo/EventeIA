@@ -70,6 +70,8 @@ export interface Database {
         discovery_started_at: string | null;
         discovery_ends_at: string | null;
         discovery_status: "running" | "completed" | "paused" | null;
+        collection_ended_at: string | null;
+        quotes_delivered_at: string | null;
         created_at: string;
       }>;
       event_requirements: Table<{
@@ -104,6 +106,16 @@ export interface Database {
         amount_cents: number;
         status: "draft" | "sent" | "confirmed" | "declined" | "expired";
         engine_version: string;
+        prospect_id: string | null;
+        supplier_id: string | null;
+        raw_text: string | null;
+        extraction: Json | null;
+        confidence: number | null;
+        extraction_provider: "deepseek" | "nim" | "grok" | "contingency" | null;
+        fees_cents: number;
+        needs_followup: boolean;
+        followup_count: number;
+        updated_at: string;
         created_at: string;
       }>;
       budget_snapshots: Table<{
@@ -196,6 +208,7 @@ export interface Database {
         read_at: string | null;
         failed_at: string | null;
         error: string | null;
+        prospect_id: string | null;
         created_at: string;
       }>;
       system_events: Table<{

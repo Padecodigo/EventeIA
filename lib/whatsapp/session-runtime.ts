@@ -63,22 +63,48 @@ export function createSessionDeps(): SessionDeps {
         { jobId: `window-end-${instance}-${eventId}`, delayMs },
       );
     },
-    async triggerCollectionEnd(instance, eventId) {
+    async triggerCollectionEnd(instance: string | null, eventId: string) {
       await enqueue(
         QUEUE_NAMES.whatsappSessionLifecycle,
         "collection-complete",
         { instance, eventId, reason: "collection_complete" },
-        { jobId: `collection-complete-${instance}-${eventId}` },
+        { jobId: `collection-complete-${eventId}` },
       );
     },
     async deliverQuotes(eventId) {
-      // Fase 4 conecta aqui a geração dos cenários; até lá só registra.
+      // Marca o fim da coleta (idempotente). A fase 4 gera os cenários aqui.
+      await admin
+        .from("events")
+        .update({ collection_ended_at: new Date().toISOString(), discovery_status: "completed" })
+        .eq("id", eventId)
+        .is("collection_ended_at", null);
       logger.info({ eventId }, "coleta encerrada: entrega de cotações");
-      return Promise.resolve();
     },
     notifyQuotationsReady,
     warn(message, context) {
       logger.warn(context, message);
     },
   };
+}
+
+/** Instância WhatsApp vinculada ao evento (null = sem sessão, ex.: simulação). */
+export async function findEventInstance(eventId: string): Promise<string | null> {
+  const { data } = await getSupabaseAdmin()
+    .from("whatsapp_instances")
+    .select("instance_name")
+    .eq("event_id", eventId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data?.instance_name ?? null;
+}
+
+/** Prazo máximo da coleta (48h por padrão), agendado ao iniciar a descoberta. */
+export async function scheduleCollectionDeadline(eventId: string, delayMs: number): Promise<boolean> {
+  return enqueue(
+    QUEUE_NAMES.whatsappSessionLifecycle,
+    "collection-deadline",
+    { instance: null, eventId, reason: "window_closed" },
+    { jobId: `collection-deadline-${eventId}`, delayMs },
+  );
 }

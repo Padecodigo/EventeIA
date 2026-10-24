@@ -22,8 +22,8 @@ import {
 } from "@/lib/schemas/whatsapp";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { canSendFirstContact, toSessionState } from "@/lib/whatsapp/session-lifecycle";
-import { endCollectionWindow, handleSessionLost } from "@/lib/whatsapp/session-manager";
-import { createSessionDeps, eventPausedKey, isEventPaused } from "@/lib/whatsapp/session-runtime";
+import { finishCollection, handleSessionLost } from "@/lib/whatsapp/session-manager";
+import { createSessionDeps, eventPausedKey, findEventInstance, isEventPaused } from "@/lib/whatsapp/session-runtime";
 
 /**
  * Agente Orçamentista — worker da fila `quotation-prospecting-queue`.
@@ -269,13 +269,18 @@ export function createProspectingWorker(connection: Redis, concurrency: number):
   return worker;
 }
 
-/** Worker do fim da coleta: draining → entrega → logout → disconnected → notifica. */
+/** Worker do fim da coleta: (sessão ativa) draining → entrega → logout → disconnected → notifica. */
 export function createSessionLifecycleWorker(connection: Redis): Worker {
-  return new Worker<{ instance: string; eventId: string; reason?: "window_closed" | "collection_complete" }>(
+  return new Worker<{ instance?: string | null; eventId: string; reason?: "window_closed" | "collection_complete" }>(
     QUEUE_NAMES.whatsappSessionLifecycle,
     async (job) => {
-      const result = await endCollectionWindow(createSessionDeps(), job.data);
-      logger.info({ instance: job.data.instance, result }, "janela de coleta encerrada");
+      const instance = job.data.instance ?? (await findEventInstance(job.data.eventId));
+      const result = await finishCollection(createSessionDeps(), {
+        instance,
+        eventId: job.data.eventId,
+        reason: job.data.reason ?? "window_closed",
+      });
+      logger.info({ instance, eventId: job.data.eventId, result }, "coleta encerrada");
     },
     { connection, concurrency: 5 },
   );
