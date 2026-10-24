@@ -6,7 +6,9 @@ import type { SupplierQuote, UserAssets } from "@/lib/engine/types";
 
 const noAssets: UserAssets = { alreadyOwned: [], unneededFeeCategories: [] };
 
-function quote(partial: Partial<SupplierQuote> & { supplierId: string; covers: string[] }): SupplierQuote {
+function quote(
+  partial: Partial<SupplierQuote> & { supplierId: string; covers: string[] },
+): SupplierQuote {
   return {
     supplierName: partial.supplierId,
     basePriceCents: 100_000,
@@ -35,9 +37,25 @@ describe("effectiveCost — taxas ocultas e deduções", () => {
         supplierId: "a",
         covers: ["buffet"],
         fees: [
-          { category: "cleaning", description: "limpeza", amountCents: 15_000, includedInBase: false },
-          { category: "service_staff", description: "garçons", amountCents: 20_000, includedInBase: true },
-          { category: "service_staff", description: "10% serviço", amountCents: null, rateBps: 1_000, includedInBase: false },
+          {
+            category: "cleaning",
+            description: "limpeza",
+            amountCents: 15_000,
+            includedInBase: false,
+          },
+          {
+            category: "service_staff",
+            description: "garçons",
+            amountCents: 20_000,
+            includedInBase: true,
+          },
+          {
+            category: "service_staff",
+            description: "10% serviço",
+            amountCents: null,
+            rateBps: 1_000,
+            includedInBase: false,
+          },
         ],
       }),
       noAssets,
@@ -56,7 +74,14 @@ describe("effectiveCost — taxas ocultas e deduções", () => {
       quote({
         supplierId: "a",
         covers: ["buffet"],
-        fees: [{ category: "dishes_and_cutlery", description: "louça", amountCents: 8_000, includedInBase: false }],
+        fees: [
+          {
+            category: "dishes_and_cutlery",
+            description: "louça",
+            amountCents: 8_000,
+            includedInBase: false,
+          },
+        ],
       }),
       { alreadyOwned: [], unneededFeeCategories: ["dishes_and_cutlery"] },
     );
@@ -91,7 +116,14 @@ describe("effectiveCost — taxas ocultas e deduções", () => {
       quote({
         supplierId: "a",
         covers: ["buffet"],
-        fees: [{ category: "delivery_pickup", description: "frete", amountCents: null, includedInBase: false }],
+        fees: [
+          {
+            category: "delivery_pickup",
+            description: "frete",
+            amountCents: null,
+            includedInBase: false,
+          },
+        ],
       }),
       noAssets,
     );
@@ -101,17 +133,40 @@ describe("effectiveCost — taxas ocultas e deduções", () => {
 
 describe("cenários", () => {
   const quotes: SupplierQuote[] = [
-    quote({ supplierId: "buffet-barato", covers: ["buffet"], basePriceCents: 200_000, qualityBps: 5_000 }),
-    quote({ supplierId: "buffet-bom", covers: ["buffet"], basePriceCents: 230_000, qualityBps: 10_000 }),
-    quote({ supplierId: "decor", covers: ["decoracao"], basePriceCents: 80_000, qualityBps: 9_000 }),
-    quote({ supplierId: "pacote", covers: ["buffet", "decoracao"], basePriceCents: 320_000, qualityBps: 9_000 }),
+    quote({
+      supplierId: "buffet-barato",
+      covers: ["buffet"],
+      basePriceCents: 200_000,
+      qualityBps: 5_000,
+    }),
+    quote({
+      supplierId: "buffet-bom",
+      covers: ["buffet"],
+      basePriceCents: 230_000,
+      qualityBps: 10_000,
+    }),
+    quote({
+      supplierId: "decor",
+      covers: ["decoracao"],
+      basePriceCents: 80_000,
+      qualityBps: 9_000,
+    }),
+    quote({
+      supplierId: "pacote",
+      covers: ["buffet", "decoracao"],
+      basePriceCents: 320_000,
+      qualityBps: 9_000,
+    }),
   ];
   const required = ["buffet", "decoracao"];
 
   it("Preço escolhe o menor total", () => {
     const { scenario } = buildScenario("preco", required, quotes, noAssets);
     expect(scenario?.totalCents).toBe(280_000);
-    expect(scenario?.selections.map((s) => s.supplierId).sort()).toEqual(["buffet-barato", "decor"]);
+    expect(scenario?.selections.map((s) => s.supplierId).sort()).toEqual([
+      "buffet-barato",
+      "decor",
+    ]);
   });
 
   it("Custo-Benefício usa score determinístico", () => {
@@ -139,7 +194,11 @@ describe("cenários", () => {
   it("dados insuficientes ⇒ null + faltantes", () => {
     const outcomes = buildAllScenarios(["buffet", "fotografia"], quotes, noAssets);
     expect(outcomes.preco.scenario).toBeNull();
-    expect(outcomes.preco.missing).toContainEqual({ category: "fotografia", supplierId: null, field: "quote" });
+    expect(outcomes.preco.missing).toContainEqual({
+      category: "fotografia",
+      supplierId: null,
+      field: "quote",
+    });
   });
 
   it("custo-benefício sem qualidade ⇒ null, não estima", () => {
@@ -157,5 +216,32 @@ describe("cenários", () => {
     const a = buildAllScenarios(required, quotes, noAssets);
     const b = buildAllScenarios(required, [...quotes].reverse(), noAssets);
     expect(a).toEqual(b);
+  });
+});
+
+describe("cobertura exata (sem sobreposição)", () => {
+  it("exactCover impede pagar a mesma categoria duas vezes", async () => {
+    const { buildScenario } = await import("@/lib/engine/scenarios");
+    const mk = (id: string, covers: string[], price: number) => ({
+      supplierId: id,
+      supplierName: id,
+      covers,
+      basePriceCents: price,
+      totalPriceCents: null,
+      fees: [],
+      qualityBps: 9000,
+    });
+    const quotes = [mk("a", ["x", "y"], 100), mk("b", ["y", "z"], 100), mk("c", ["z"], 150)];
+    const assets = { alreadyOwned: [], unneededFeeCategories: [] };
+    expect(
+      buildScenario("preco", ["x", "y", "z"], quotes, assets).scenario?.selections.map(
+        (s) => s.supplierId,
+      ),
+    ).toEqual(["a", "b"]);
+    expect(
+      buildScenario("preco", ["x", "y", "z"], quotes, assets, {
+        exactCover: true,
+      }).scenario?.selections.map((s) => s.supplierId),
+    ).toEqual(["a", "c"]);
   });
 });

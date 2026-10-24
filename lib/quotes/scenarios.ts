@@ -1,10 +1,11 @@
 import { z } from "zod";
 
-import { buildAllScenarios, MAX_REQUIRED_CATEGORIES } from "@/lib/engine/scenarios";
 import type { QuoteFee, ScenarioKind, ScenarioOutcome, SupplierQuote } from "@/lib/engine/types";
 import { mandatoryFeeSchema } from "@/lib/schemas/quotation-extraction";
 
 import { isUsableQuote, quotableCategories } from "./collector";
+import { composeWithCoverage, type SelectionNote } from "./coverage";
+import { categoryLabel } from "./labels";
 
 /**
  * Fase 4 — adaptador quotations + event_requirements → buildAllScenarios → budget_snapshots.
@@ -49,7 +50,12 @@ export function toSupplierQuote(row: QuotationRowForScenario): SupplierQuote {
   const parsed = extractionFeesSchema.safeParse(row.extraction);
   const fees: QuoteFee[] = (parsed.success ? parsed.data.fees : [])
     .filter((f) => !f.included_in_base)
-    .map((f) => ({ category: f.category, description: f.description, amountCents: f.amount_cents, includedInBase: false }));
+    .map((f) => ({
+      category: f.category,
+      description: f.description,
+      amountCents: f.amount_cents,
+      includedInBase: false,
+    }));
   const feesSum = fees.reduce((s, f) => s + (f.amountCents ?? 0), 0);
   // Coerência: se as taxas do JSON não batem com fees_cents, confia no total gravado.
   const consistent = feesSum === row.fees_cents && feesSum <= row.amount_cents;
@@ -67,23 +73,23 @@ export function toSupplierQuote(row: QuotationRowForScenario): SupplierQuote {
 export interface EventScenarios {
   /** Categorias consideradas (com ao menos 1 cotação aproveitável). */
   required: string[];
-  /** Categorias pedidas sem nenhuma cotação aproveitável (ficam fora dos cenários). */
+  /** Categorias pedidas sem nenhuma cotação aproveitável — "não coberto". */
   uncovered: string[];
   outcomes: Record<ScenarioKind, ScenarioOutcome>;
+  /** O que cada seleção inclui/não inclui e por que adicionais foram dispensados. */
+  details?: Record<ScenarioKind, Record<string, SelectionNote>>;
 }
 
 export function buildEventScenarios(
   requirements: readonly { category: string }[],
   quotations: readonly QuotationRowForScenario[],
 ): EventScenarios {
-  const usable = quotations.filter((q) => !q.needs_followup && isUsableQuote(q.amount_cents, q.confidence ?? 0));
+  const usable = quotations.filter(
+    (q) => !q.needs_followup && isUsableQuote(q.amount_cents, q.confidence ?? 0),
+  );
   const wanted = quotableCategories(requirements);
-  const covered = new Set(usable.map((q) => q.category));
-  const required = wanted.filter((c) => covered.has(c)).slice(0, MAX_REQUIRED_CATEGORIES);
-  const uncovered = wanted.filter((c) => !required.includes(c));
-  const quotes = usable.filter((q) => required.includes(q.category)).map(toSupplierQuote);
-  const outcomes = buildAllScenarios(required, quotes, { alreadyOwned: [], unneededFeeCategories: [] });
-  return { required, uncovered, outcomes };
+  const r = composeWithCoverage(wanted, usable, categoryLabel);
+  return { required: r.required, uncovered: r.uncovered, outcomes: r.outcomes, details: r.details };
 }
 
 export const SNAPSHOT_SOURCE = "quotations_v1";
@@ -97,6 +103,8 @@ export interface ScenarioSnapshotBreakdown {
   outcome: ScenarioOutcome;
   /** Contatos dos fornecedores escolhidos (para impressão/CSV do próprio cliente). */
   contacts: Record<string, { name: string; contact: string | null; category: string }>;
+  /** Inclui / não inclui / observações por seleção (snapshots antigos não têm). */
+  details?: Record<string, { includes: string[]; excludes: string[]; notes: string[] }>;
 }
 
 export function toSnapshotRows(
@@ -104,14 +112,32 @@ export function toSnapshotRows(
   engineVersion: string,
   result: EventScenarios,
   quotations: readonly QuotationRowForScenario[],
-): { event_id: string; engine_version: string; total_cents: number; breakdown: ScenarioSnapshotBreakdown }[] {
+): {
+  event_id: string;
+  engine_version: string;
+  total_cents: number;
+  breakdown: ScenarioSnapshotBreakdown;
+}[] {
   const byId = new Map(quotations.map((q) => [q.id, q]));
   return SCENARIO_KINDS.map((kind) => {
     const outcome = result.outcomes[kind];
     const contacts: ScenarioSnapshotBreakdown["contacts"] = {};
+    const details: NonNullable<ScenarioSnapshotBreakdown["details"]> = {};
     for (const s of outcome.scenario?.selections ?? []) {
-      const q = byId.get(s.supplierId);
-      if (q !== undefined) contacts[s.supplierId] = { name: q.vendor_name, contact: q.vendor_contact, category: q.category };
+      const note = result.details?.[kind]?.[s.supplierId];
+      if (note !== undefined)
+        details[s.supplierId] = {
+          includes: note.includes,
+          excludes: note.excludes,
+          notes: note.notes,
+        };
+      const q = byId.get(note?.offerId ?? s.supplierId);
+      if (q !== undefined)
+        contacts[s.supplierId] = {
+          name: q.vendor_name,
+          contact: q.vendor_contact,
+          category: q.category,
+        };
     }
     return {
       event_id: eventId,
@@ -125,6 +151,7 @@ export function toSnapshotRows(
         uncovered: result.uncovered,
         outcome,
         contacts,
+        details,
       },
     };
   });
@@ -163,7 +190,20 @@ const breakdownSchema = z.object({
       }),
     ),
   }),
-  contacts: z.record(z.string(), z.object({ name: z.string(), contact: z.string().nullable(), category: z.string() })),
+  contacts: z.record(
+    z.string(),
+    z.object({ name: z.string(), contact: z.string().nullable(), category: z.string() }),
+  ),
+  details: z
+    .record(
+      z.string(),
+      z.object({
+        includes: z.array(z.string()),
+        excludes: z.array(z.string()),
+        notes: z.array(z.string()),
+      }),
+    )
+    .optional(),
 });
 
 /** Lê com zod (fronteira com o banco); null se não for um snapshot de cenário. */
@@ -179,7 +219,8 @@ export function latestScenarios(
   const out: Partial<Record<ScenarioKind, ScenarioSnapshotBreakdown & { createdAt: string }>> = {};
   for (const row of rows) {
     const snap = parseScenarioSnapshot(row.breakdown);
-    if (snap !== null && out[snap.kind] === undefined) out[snap.kind] = { ...snap, createdAt: row.created_at };
+    if (snap !== null && out[snap.kind] === undefined)
+      out[snap.kind] = { ...snap, createdAt: row.created_at };
   }
   return out;
 }

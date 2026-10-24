@@ -44,9 +44,17 @@ export function valueScoreCents(effectiveCents: number, qualityBps: number): num
 function better(kind: ScenarioKind, a: DpCell, b: DpCell | undefined): boolean {
   if (b === undefined) return true;
   const keyA =
-    kind === "comodidade" ? [a.count, a.cost] : kind === "preco" ? [a.cost, a.count] : [a.score, a.cost, a.count];
+    kind === "comodidade"
+      ? [a.count, a.cost]
+      : kind === "preco"
+        ? [a.cost, a.count]
+        : [a.score, a.cost, a.count];
   const keyB =
-    kind === "comodidade" ? [b.count, b.cost] : kind === "preco" ? [b.cost, b.count] : [b.score, b.cost, b.count];
+    kind === "comodidade"
+      ? [b.count, b.cost]
+      : kind === "preco"
+        ? [b.cost, b.count]
+        : [b.score, b.cost, b.count];
   for (let i = 0; i < keyA.length; i += 1) {
     const x = keyA[i] ?? 0;
     const y = keyB[i] ?? 0;
@@ -55,7 +63,17 @@ function better(kind: ScenarioKind, a: DpCell, b: DpCell | undefined): boolean {
   return false; // empate: mantém o primeiro (ordem estável por supplierId)
 }
 
-function solve(kind: ScenarioKind, required: string[], candidates: Candidate[]): number[] | null {
+export interface ScenarioOptions {
+  /** Cobertura exata: nenhuma categoria paga duas vezes (sem sobreposição entre escolhidos). */
+  exactCover?: boolean;
+}
+
+function solve(
+  kind: ScenarioKind,
+  required: string[],
+  candidates: Candidate[],
+  exact = false,
+): number[] | null {
   const full = (1 << required.length) - 1;
   const dp: (DpCell | undefined)[] = new Array<DpCell | undefined>(full + 1).fill(undefined);
   dp[0] = { count: 0, cost: 0, score: 0, picks: [] };
@@ -65,6 +83,7 @@ function solve(kind: ScenarioKind, required: string[], candidates: Candidate[]):
     if (cell === undefined) continue;
     candidates.forEach((candidate, index) => {
       if ((candidate.mask & ~mask) === 0) return; // não acrescenta cobertura
+      if (exact && (candidate.mask & mask) !== 0) return; // sobreposição proibida
       if (cell.picks.includes(index)) return;
       const next = mask | candidate.mask;
       const proposal: DpCell = {
@@ -88,7 +107,9 @@ function buildCandidates(
   missing: MissingInfo[],
 ): Candidate[] {
   const candidates: Candidate[] = [];
-  const sorted = [...quotes].sort((a, b) => (a.supplierId < b.supplierId ? -1 : a.supplierId > b.supplierId ? 1 : 0));
+  const sorted = [...quotes].sort((a, b) =>
+    a.supplierId < b.supplierId ? -1 : a.supplierId > b.supplierId ? 1 : 0,
+  );
 
   for (const quote of sorted) {
     const categories = required.filter((category) => quote.covers.includes(category));
@@ -106,7 +127,11 @@ function buildCandidates(
     let scoreCents: number | null = null;
     if (kind === "custo_beneficio") {
       if (quote.qualityBps === null) {
-        missing.push({ category: categories.join("+"), supplierId: quote.supplierId, field: "quality_bps" });
+        missing.push({
+          category: categories.join("+"),
+          supplierId: quote.supplierId,
+          field: "quality_bps",
+        });
         continue;
       }
       scoreCents = valueScoreCents(cost.effectiveCents, quote.qualityBps);
@@ -122,6 +147,7 @@ export function buildScenario(
   requiredCategories: string[],
   quotes: SupplierQuote[],
   assets: UserAssets,
+  options: ScenarioOptions = {},
 ): ScenarioOutcome {
   const owned = new Set(assets.alreadyOwned);
   const unique = [...new Set(requiredCategories)];
@@ -144,12 +170,14 @@ export function buildScenario(
     }
   }
 
-  const picks = solve(kind, required, candidates);
+  const picks = solve(kind, required, candidates, options.exactCover === true);
   if (picks === null) {
     return { kind, scenario: null, missing };
   }
 
-  const chosen = picks.map((index) => candidates[index]).filter((c): c is Candidate => c !== undefined);
+  const chosen = picks
+    .map((index) => candidates[index])
+    .filter((c): c is Candidate => c !== undefined);
   const covered = new Set<string>();
   const selections = chosen.map((candidate) => {
     const categories = candidate.categories.filter((category) => !covered.has(category));
@@ -166,7 +194,8 @@ export function buildScenario(
     kind,
     totalCents: chosen.reduce((sum, candidate) => sum + candidate.effectiveCents, 0),
     supplierCount: chosen.length,
-    scoreCents: kind === "custo_beneficio" ? chosen.reduce((sum, c) => sum + (c.scoreCents ?? 0), 0) : null,
+    scoreCents:
+      kind === "custo_beneficio" ? chosen.reduce((sum, c) => sum + (c.scoreCents ?? 0), 0) : null,
     selections,
     ownedCategories,
   };
@@ -178,10 +207,11 @@ export function buildAllScenarios(
   requiredCategories: string[],
   quotes: SupplierQuote[],
   assets: UserAssets,
+  options: ScenarioOptions = {},
 ): Record<ScenarioKind, ScenarioOutcome> {
   return {
-    preco: buildScenario("preco", requiredCategories, quotes, assets),
-    custo_beneficio: buildScenario("custo_beneficio", requiredCategories, quotes, assets),
-    comodidade: buildScenario("comodidade", requiredCategories, quotes, assets),
+    preco: buildScenario("preco", requiredCategories, quotes, assets, options),
+    custo_beneficio: buildScenario("custo_beneficio", requiredCategories, quotes, assets, options),
+    comodidade: buildScenario("comodidade", requiredCategories, quotes, assets, options),
   };
 }

@@ -1,8 +1,16 @@
 import "server-only";
 
-import { contingencyFirstReply, contingencyHiddenFees, contingencyQuotation } from "@/lib/ai/contingency";
+import {
+  contingencyFirstReply,
+  contingencyHiddenFees,
+  contingencyQuotation,
+} from "@/lib/ai/contingency";
 import { getRouter } from "@/lib/ai/runtime";
-import { routeFirstReplyParsing, routeHiddenFeeScan, routeQuotationExtraction } from "@/lib/ai/tasks";
+import {
+  routeFirstReplyParsing,
+  routeHiddenFeeScan,
+  routeQuotationExtraction,
+} from "@/lib/ai/tasks";
 import { buildExtractionMessages } from "@/lib/deepseek/extractor";
 import { ENGINE_VERSION } from "@/lib/engine";
 import { serverEnv } from "@/lib/env";
@@ -20,7 +28,11 @@ import { countUsableByCategory, quotableCategories, type CollectorDeps } from ".
 /** Agrupa mensagens picadas do fornecedor: 1 extração por fornecedor por janela de 45s. */
 export const QUOTE_DEBOUNCE_MS = 45_000;
 
-export async function enqueueQuoteExtraction(eventId: string, prospectId: string, nowMs = Date.now()): Promise<boolean> {
+export async function enqueueQuoteExtraction(
+  eventId: string,
+  prospectId: string,
+  nowMs = Date.now(),
+): Promise<boolean> {
   const bucket = Math.floor(nowMs / QUOTE_DEBOUNCE_MS);
   return enqueue(
     QUEUE_NAMES.quoteExtraction,
@@ -43,7 +55,11 @@ export function createCollectorDeps(): CollectorDeps {
         .eq("event_id", eventId)
         .maybeSingle();
       if (p === null) return null;
-      const { data: e } = await admin.from("events").select("collection_ended_at").eq("id", eventId).maybeSingle();
+      const { data: e } = await admin
+        .from("events")
+        .select("collection_ended_at")
+        .eq("id", eventId)
+        .maybeSingle();
       const { data: msgs } = await admin
         .from("whatsapp_messages")
         .select("body")
@@ -54,7 +70,13 @@ export function createCollectorDeps(): CollectorDeps {
       return {
         eventId,
         collectionEnded: e === null || e.collection_ended_at !== null,
-        prospect: { id: p.id, name: p.vendor_name, category: p.vendor_category, phone: p.phone_e164, supplierId: p.supplier_id },
+        prospect: {
+          id: p.id,
+          name: p.vendor_name,
+          category: p.vendor_category,
+          phone: p.phone_e164,
+          supplierId: p.supplier_id,
+        },
         inboundText: (msgs ?? []).map((m) => m.body).join("\n"),
       };
     },
@@ -76,7 +98,10 @@ export function createCollectorDeps(): CollectorDeps {
     },
     async extract(text, eventId) {
       if (router === null) return { value: contingencyQuotation(text), provider: "contingency" };
-      const r = await routeQuotationExtraction(router, buildExtractionMessages(text), text, { eventId, reason: "extraction" });
+      const r = await routeQuotationExtraction(router, buildExtractionMessages(text), text, {
+        eventId,
+        reason: "extraction",
+      });
       return { value: r.value, provider: r.provider };
     },
     async hiddenFees(text, eventId) {
@@ -121,31 +146,67 @@ export function createCollectorDeps(): CollectorDeps {
 
     async sendFollowUp({ eventId, prospectId, phone, text, n }) {
       const env = serverEnv();
-      const { data: p } = await admin.from("vendor_prospects").select("dry_run,status").eq("id", prospectId).maybeSingle();
+      const { data: p } = await admin
+        .from("vendor_prospects")
+        .select("dry_run,status")
+        .eq("id", prospectId)
+        .maybeSingle();
       if (p === null || p.status === "opt_out") return "skipped";
       const instance = await findEventInstance(eventId);
       const { data: inst } =
         instance === null
           ? { data: null }
-          : await admin.from("whatsapp_instances").select("status").eq("instance_name", instance).maybeSingle();
-      const live = !env.DISCOVERY_DRY_RUN && !p.dry_run && instance !== null && toSessionState(inst?.status ?? "") === "active";
+          : await admin
+              .from("whatsapp_instances")
+              .select("status")
+              .eq("instance_name", instance)
+              .maybeSingle();
+      const live =
+        !env.DISCOVERY_DRY_RUN &&
+        !p.dry_run &&
+        instance !== null &&
+        toSessionState(inst?.status ?? "") === "active";
       const idempotencyKey = `followup:${prospectId}:${String(n)}`;
-      const base = { event_id: eventId, prospect_id: prospectId, direction: "outbound" as const, template: "quote_followup", to_number_e164: phone, body: text, idempotency_key: idempotencyKey };
+      const base = {
+        event_id: eventId,
+        prospect_id: prospectId,
+        direction: "outbound" as const,
+        template: "quote_followup",
+        to_number_e164: phone,
+        body: text,
+        idempotency_key: idempotencyKey,
+      };
       if (!live) {
         // Dry-run/simulação: NUNCA envia; só registra a pergunta que seria feita.
-        await admin.from("whatsapp_messages").upsert({ ...base, status: "canceled", error: "dry_run" }, { onConflict: "idempotency_key", ignoreDuplicates: true });
+        await admin
+          .from("whatsapp_messages")
+          .upsert(
+            { ...base, status: "canceled", error: "dry_run" },
+            { onConflict: "idempotency_key", ignoreDuplicates: true },
+          );
         return "dry_run";
       }
       const sent = await sendText(instance, phone, text);
-      await admin.from("whatsapp_messages").upsert(
-        { ...base, status: "sent", sent_at: new Date().toISOString(), external_message_id: sent.externalMessageId ?? null },
-        { onConflict: "idempotency_key", ignoreDuplicates: true },
-      );
+      await admin
+        .from("whatsapp_messages")
+        .upsert(
+          {
+            ...base,
+            status: "sent",
+            sent_at: new Date().toISOString(),
+            external_message_id: sent.externalMessageId ?? null,
+          },
+          { onConflict: "idempotency_key", ignoreDuplicates: true },
+        );
       return "sent";
     },
 
     async checkCollectionEnd(eventId) {
-      const { data: reqs } = await admin.from("event_requirements").select("category").eq("event_id", eventId).eq("selected", true);
+      const { data: reqs } = await admin
+        .from("event_requirements")
+        .select("category")
+        .eq("event_id", eventId)
+        .eq("selected", true);
       const { data: rows } = await admin
         .from("quotations")
         .select("category,amount_cents,confidence,needs_followup")
@@ -156,11 +217,17 @@ export function createCollectorDeps(): CollectorDeps {
       const instance = await findEventInstance(eventId);
       const deps = createSessionDeps();
       if (instance !== null) {
-        const r = await completeCollectionIfReady(deps, { instance, eventId, quotesByCategory, categories });
+        const r = await completeCollectionIfReady(deps, {
+          instance,
+          eventId,
+          quotesByCategory,
+          categories,
+        });
         if (r !== "not_active") return r;
       }
       // Sem sessão ativa (simulação/sessão perdida): encerra direto quando a meta for atingida.
-      const done = categories.length > 0 && categories.every((c) => (quotesByCategory[c] ?? 0) >= 5);
+      const done =
+        categories.length > 0 && categories.every((c) => (quotesByCategory[c] ?? 0) >= 5);
       if (!done) return "pending";
       await deps.triggerCollectionEnd(null, eventId);
       logger.info({ eventId }, "meta de cotações atingida — encerrando coleta");
