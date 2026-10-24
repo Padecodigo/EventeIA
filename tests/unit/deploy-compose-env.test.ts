@@ -45,6 +45,16 @@ describe("docker-compose.prod.yml", () => {
     }
   });
 
+  it("não usa hostnames curtos que colidem na rede coolify (regressão: redis → coolify-redis)", () => {
+    expect(compose).not.toMatch(/@(redis|evolution-db|postgres):/);
+    expect(compose).not.toMatch(/http:\/\/(app|evolution-api):/);
+    for (const h of ["eventeia-redis", "eventeia-evolution-db", "eventeia-evolution-api", "eventeia-app"]) {
+      expect(compose).toMatch(new RegExp(`aliases: \\[${h}\\]`));
+    }
+    expect(compose).toMatch(/@eventeia-redis:6379\/0/);
+    expect(compose).toMatch(/EVOLUTION_API_URL: http:\/\/eventeia-evolution-api:8080/);
+  });
+
   it("app e worker não dependem da Evolution para subir", () => {
     expect(compose).not.toMatch(/depends_on:[\s\S]{0,120}evolution-api/);
   });
