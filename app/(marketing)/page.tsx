@@ -54,24 +54,6 @@ export default async function LandingPage() {
         <div className="flex snap-x snap-mandatory items-start gap-5 overflow-x-auto pb-4 [scrollbar-width:none] sm:justify-center sm:overflow-visible sm:pb-0">
           <article
             tabIndex={0}
-            aria-label="Celebração com taças"
-            className={`${hoverCard} z-20 w-[240px] rotate-[3deg] border-line-subtle bg-off-white sm:mt-10 sm:w-[320px]`}
-          >
-            <div className="relative overflow-hidden rounded-[1rem]">
-              <Image
-                src="/EventeIA-celebration.png"
-                alt="Pessoas brindando em uma comemoração com luzes ao fundo"
-                width={1376}
-                height={768}
-                sizes="(max-width: 640px) 70vw, 320px"
-                className="aspect-[4/5] w-full object-cover"
-              />
-              <PhotoChip label="Celebração" />
-            </div>
-          </article>
-
-          <article
-            tabIndex={0}
             aria-label="Festa infantil"
             className={`${hoverCard} z-30 w-[250px] -rotate-[2deg] border-line-subtle bg-off-white sm:w-[350px] sm:scale-[1.05]`}
           >
@@ -86,6 +68,24 @@ export default async function LandingPage() {
                 className="aspect-[4/5] w-full object-cover"
               />
               <PhotoChip label="Festa infantil" />
+            </div>
+          </article>
+
+          <article
+            tabIndex={0}
+            aria-label="Aniversário infantil"
+            className={`${hoverCard} z-20 w-[240px] rotate-[3deg] border-line-subtle bg-off-white sm:mt-10 sm:w-[320px]`}
+          >
+            <div className="relative overflow-hidden rounded-[1rem]">
+              <Image
+                src="/festa-aniversario.jpg"
+                alt="Mesa de aniversário infantil decorada com balões e doces"
+                width={1280}
+                height={960}
+                sizes="(max-width: 640px) 70vw, 320px"
+                className="aspect-[4/5] w-full object-cover"
+              />
+              <PhotoChip label="Aniversário" />
             </div>
           </article>
 
