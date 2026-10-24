@@ -47,10 +47,15 @@ export function NotificationsPoller() {
       }
     }
 
-    void poll();
+    // 1ª checagem só quando o navegador estiver ocioso (não compete com o LCP).
+    const idle = window.requestIdleCallback
+      ? window.requestIdleCallback(() => void poll(), { timeout: 3000 })
+      : window.setTimeout(() => void poll(), 1500);
     const timer = window.setInterval(() => void poll(), POLL_INTERVAL_MS);
     return () => {
       cancelled = true;
+      if (window.cancelIdleCallback) window.cancelIdleCallback(idle);
+      else window.clearTimeout(idle);
       window.clearInterval(timer);
     };
   }, []);

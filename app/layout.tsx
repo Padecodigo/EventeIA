@@ -8,9 +8,24 @@ import "./globals.css";
 const display = Fraunces({
   subsets: ["latin"],
   weight: ["500", "600", "700"],
-  style: ["normal", "italic"],
+  style: ["normal"],
   variable: "--font-display",
   display: "swap",
+  // Fallback com métricas ajustadas evita salto de layout quando a fonte chega.
+  adjustFontFallback: true,
+});
+
+/**
+ * Itálico da Fraunces só aparece em legendas/rodapé (abaixo do LCP): sem preload,
+ * baixa sob demanda quando um trecho itálico é renderizado (ver globals.css).
+ */
+const displayItalic = Fraunces({
+  subsets: ["latin"],
+  weight: ["500", "600"],
+  style: ["italic"],
+  variable: "--font-display-italic",
+  display: "swap",
+  preload: false,
 });
 
 const body = Figtree({
@@ -29,7 +44,7 @@ export const metadata: Metadata = {
   },
   description:
     "A EventeIA pede e compara orçamentos de fornecedores pelo WhatsApp para o seu evento — festa infantil, aniversário, 15 anos, formatura, casamento ou corporativo — e entrega 3 opções: preço, custo-benefício e comodidade.",
-  icons: { icon: "/logo-e.png" },
+  // Favicons: app/icon.png (64px) e app/apple-icon.png (180px) — antes era o logo de 325 KB.
   openGraph: {
     title: "EventeIA",
     description: "Cotamos fornecedores do seu evento pelo WhatsApp e entregamos 3 opções: preço, custo-benefício e comodidade.",
@@ -46,7 +61,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt-BR" className={`${display.variable} ${body.variable}`}>
+    <html lang="pt-BR" className={`${display.variable} ${displayItalic.variable} ${body.variable}`}>
       <body>{children}</body>
     </html>
   );

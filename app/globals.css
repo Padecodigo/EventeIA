@@ -133,11 +133,23 @@
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-6px); }
 }
+/* Hero (elemento LCP): só deslocamento, sem opacity 0 — o texto pinta no 1º frame. */
+@keyframes ev-rise {
+  from { transform: translateY(12px); }
+  to { transform: none; }
+}
+.ev-rise { animation: ev-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .ev-fade-up { animation: ev-fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
-.ev-marquee { animation: ev-marquee 40s linear infinite; }
+.ev-marquee { animation: ev-marquee 40s linear infinite; will-change: transform; }
 .ev-marquee:hover { animation-play-state: paused; }
 .ev-float { animation: ev-float 6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
-  .ev-fade-up, .ev-marquee, .ev-float { animation: none !important; }
+  .ev-fade-up, .ev-rise, .ev-marquee, .ev-float { animation: none !important; }
   .ev-photo, .ev-photo * { transition: none !important; }
+}
+
+/* Itálico da display usa a instância Fraunces italic (carregada sob demanda). */
+:where(.font-display, .font-serif, .font-brand).italic,
+:where(.font-display, .font-serif, .font-brand) :where(.italic, em) {
+  font-family: var(--font-display-italic), var(--font-display), Georgia, serif;
 }
