@@ -61,7 +61,7 @@ describe("custo e teto", () => {
   it("ordem: NIM primeiro em extração; Grok primeiro em negociação/opt-out", () => {
     expect(providerOrder("quotation_extraction", ["grok", "nim"])).toEqual(["nim", "grok"]);
     expect(providerOrder("negotiation", ["grok", "nim"])).toEqual(["grok", "nim"]);
-    expect(providerOrder("classification", ["nim", "deepseek"])).toEqual(["nim", "deepseek"]);
+    expect(providerOrder("classification", ["nim", "deepseek"])).toEqual(["deepseek", "nim"]);
   });
 });
 

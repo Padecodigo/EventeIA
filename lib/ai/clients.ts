@@ -1,6 +1,10 @@
 import { z } from "zod";
 
+import { contingencyClassification, contingencyFirstReply, contingencyHiddenFees, contingencyOptOut, contingencyQuotation } from "./contingency";
 import type { LlmClient, LlmProviderName } from "./router";
+
+/** Nome documentado em api-docs.deepseek.com (serve o DeepSeek-V4.1-Flash-1017). */
+export const DEFAULT_DEEPSEEK_MODEL = "deepseek-flash";
 
 /** Cliente OpenAI-compatível (/chat/completions) — NIM, xAI e DeepSeek. Sem SDK. */
 const completionSchema = z.object({
@@ -11,7 +15,8 @@ const completionSchema = z.object({
 export const LLM_ENDPOINTS: Record<LlmProviderName, { baseUrl: string; model: string }> = {
   nim: { baseUrl: "https://integrate.api.nvidia.com/v1", model: "nvidia/nemotron-3.5-lightning-30b-a3b" },
   grok: { baseUrl: "https://api.x.ai/v1", model: "grok-4.7" },
-  deepseek: { baseUrl: "https://api.deepseek.com", model: "deepseek-chat" },
+    // Modelo documentado atual (DeepSeek-V4.1-Flash-1017). Sobrescreva com DEEPSEEK_MODEL.
+  deepseek: { baseUrl: "https://api.deepseek.com", model: DEFAULT_DEEPSEEK_MODEL },
 };
 
 export function createOpenAiCompatibleClient(options: {
@@ -47,6 +52,42 @@ export function createOpenAiCompatibleClient(options: {
       const content = parsed.choices[0]?.message.content ?? "";
       if (content.length === 0) throw new Error(`${options.name}: resposta vazia`);
       return { content, inputTokens: parsed.usage?.prompt_tokens, outputTokens: parsed.usage?.completion_tokens };
+    },
+  };
+}
+
+/**
+ * Cliente simulado (custo zero, sem rede) para dev/E2E: responde JSON válido por tarefa
+ * a partir dos parsers determinísticos, com confiança configurável.
+ */
+export function createMockLlmClient(name: LlmProviderName, confidence = 0.8): LlmClient {
+  return {
+    name,
+    complete({ messages, task }) {
+      const user = messages.filter((m) => m.role === "user").map((m) => m.content).join("\n");
+      const text = user.replace(/<\/?(?:m|fornecedor|cotacao)>/gi, "");
+      let value: unknown;
+      switch (task) {
+        case "optout_intent":
+          value = contingencyOptOut(text);
+          break;
+        case "first_reply_parsing":
+          value = contingencyFirstReply(text);
+          break;
+        case "hidden_fee_scan":
+          value = contingencyHiddenFees(text);
+          break;
+        case "classification": {
+          const allowed = /categorias:\s*([^\n]+)/i.exec(messages.map((m) => m.content).join("\n"))?.[1] ?? "";
+          value = contingencyClassification(text, allowed.split(",").map((c) => c.trim()).filter(Boolean));
+          break;
+        }
+        default:
+          value = contingencyQuotation(text);
+      }
+      const withConfidence = { ...(value as Record<string, unknown>), confidence_score: confidence };
+      const content = JSON.stringify(withConfidence);
+      return Promise.resolve({ content, inputTokens: Math.ceil(user.length / 4), outputTokens: Math.ceil(content.length / 4) });
     },
   };
 }

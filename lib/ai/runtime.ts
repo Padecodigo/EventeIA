@@ -6,7 +6,7 @@ import { logger } from "@/lib/logger";
 import { getRedisConnection } from "@/lib/queue";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
-import { createOpenAiCompatibleClient } from "./clients";
+import { createMockLlmClient, createOpenAiCompatibleClient } from "./clients";
 import { createRouter, type LlmClient, type LlmProviderName, type PriceTable, type Router, type UsageLedger } from "./router";
 
 const PROVIDERS: LlmProviderName[] = ["nim", "grok", "deepseek"];
@@ -54,15 +54,25 @@ export function getRouter(): Router | null {
   if (process.env.NODE_ENV === "test") return null;
   const env = serverEnv();
   const clients: LlmClient[] = [];
+  // DeepSeek = cérebro primário (ordem dos clientes não importa; providerOrder decide).
+  const deepseekKey = process.env.DEEPSEEK_API_KEY;
+  if (process.env.DEEPSEEK_MOCK === "1") {
+    clients.push(createMockLlmClient("deepseek")); // simulação: zero custo, zero rede
+  } else if (env.AI_USE_DEEPSEEK && deepseekKey !== undefined && deepseekKey !== "") {
+    clients.push(
+      createOpenAiCompatibleClient({
+        name: "deepseek",
+        apiKey: deepseekKey,
+        baseUrl: process.env.DEEPSEEK_BASE_URL,
+        model: process.env.DEEPSEEK_MODEL,
+      }),
+    );
+  }
   if (env.NVIDIA_NIM_API_KEY !== undefined && env.NVIDIA_NIM_API_KEY !== "") {
     clients.push(createOpenAiCompatibleClient({ name: "nim", apiKey: env.NVIDIA_NIM_API_KEY, model: env.NIM_MODEL }));
   }
   if (env.XAI_API_KEY !== undefined && env.XAI_API_KEY !== "") {
     clients.push(createOpenAiCompatibleClient({ name: "grok", apiKey: env.XAI_API_KEY, model: env.XAI_MODEL }));
-  }
-  const deepseekKey = process.env.DEEPSEEK_API_KEY;
-  if (env.AI_USE_DEEPSEEK && deepseekKey !== undefined && deepseekKey !== "") {
-    clients.push(createOpenAiCompatibleClient({ name: "deepseek", apiKey: deepseekKey, baseUrl: process.env.DEEPSEEK_BASE_URL, model: process.env.DEEPSEEK_MODEL }));
   }
   if (clients.length === 0) return null;
   cached = createRouter({
@@ -70,7 +80,7 @@ export function getRouter(): Router | null {
     ledger: createRedisLedger(),
     prices: priceTableFromEnv(env),
     cap: { switchPct: env.XAI_USAGE_SWITCH_PCT, bootstrapMicroUsd: env.AI_GROK_BOOTSTRAP_MICROUSD },
-    onCapAlert: (info) => logger.warn(info, "ALERTA: Grok no teto de custo — forçando NIM/contingência"),
+    onCapAlert: (info) => logger.warn(info, "ALERTA: Grok no teto de custo — forçando DeepSeek/NIM/contingência"),
   });
   return cached;
 }

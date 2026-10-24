@@ -2,12 +2,13 @@ import { z } from "zod";
 
 /**
  * Roteador de LLM provider-agnóstico.
- * - NIM (NVIDIA) é o primário (~75% do volume): extração de cotação, leitura da 1ª resposta,
- *   varredura de taxas ocultas e classificação simples.
+ * - DeepSeek é o CÉREBRO primário (modelo via DEEPSEEK_MODEL): extração de cotação, leitura da
+ *   1ª resposta, varredura de taxas ocultas e classificação. NIM é o 1º fallback.
  * - Grok (xAI) é secundário, com teto rígido de XAI_USAGE_SWITCH_PCT (25%) do CUSTO acumulado:
  *   só quando o NIM falha no zod / confidence_score < 0.7, em negociação complexa e em
  *   intenção de opt-out/recusa coloquial. A descoberta com busca ao vivo conta no MESMO teto.
- * - Cadeia: NIM → Grok (se couber no teto) → parser determinístico de contingência. Nunca trava.
+ * - Cadeia: DeepSeek → NIM → Grok (se couber no teto) → contingência determinística. Nunca trava.
+ *   Em negociação/opt-out coloquial: DeepSeek → Grok (teto) → NIM → contingência.
  * Custos em micro-dólares inteiros (sem float acumulado).
  */
 
@@ -22,7 +23,7 @@ export type LlmTask =
   | "optout_intent"
   | "discovery_search";
 
-/** Tarefas em que o Grok é o preferido (ainda sujeito ao teto). */
+/** Tarefas em que o Grok vem antes do NIM no fallback (ainda sujeito ao teto). */
 export const GROK_PREFERRED_TASKS: ReadonlySet<LlmTask> = new Set(["negotiation", "optout_intent", "discovery_search"]);
 
 export const MIN_CONFIDENCE = 0.7;
@@ -40,7 +41,7 @@ export interface LlmCompletion {
 
 export interface LlmClient {
   readonly name: LlmProviderName;
-  complete(request: { messages: ChatMessage[]; maxTokens: number; json: boolean }): Promise<LlmCompletion>;
+  complete(request: { messages: ChatMessage[]; maxTokens: number; json: boolean; task?: LlmTask }): Promise<LlmCompletion>;
 }
 
 /** Preço por 1M tokens em micro-dólares (US$ 0,20 = 200_000). */
@@ -100,9 +101,12 @@ export function grokWithinCap(totals: UsageTotals, estimatedMicroUsd: number, cf
 /** Ordem de provedores para a tarefa (o teto é checado na hora da chamada). */
 export function providerOrder(task: LlmTask, available: readonly LlmProviderName[]): LlmProviderName[] {
   const has = (p: LlmProviderName) => available.includes(p);
-  const nimFirst: LlmProviderName[] = ["nim", "deepseek", "grok"];
-  const grokFirst: LlmProviderName[] = ["grok", "nim", "deepseek"];
-  return (GROK_PREFERRED_TASKS.has(task) ? grokFirst : nimFirst).filter(has);
+  // A busca ao vivo da descoberta só existe no Grok; nas demais tarefas o DeepSeek é o primário.
+  if (task === "discovery_search") return (["grok", "nim", "deepseek"] as const).filter(has);
+  const order: LlmProviderName[] = GROK_PREFERRED_TASKS.has(task)
+    ? ["deepseek", "grok", "nim"]
+    : ["deepseek", "nim", "grok"];
+  return order.filter(has);
 }
 
 export interface RouteResult<T> {
@@ -168,7 +172,7 @@ export function createRouter(options: {
         let inTok = inEst;
         let outTok = 0;
         try {
-          const res = await client.complete({ messages, maxTokens, json: true });
+          const res = await client.complete({ messages, maxTokens, json: true, task });
           inTok = res.inputTokens ?? inEst;
           outTok = res.outputTokens ?? estimateTokens(res.content);
           const parsed = schema.safeParse(parseJson(res.content));
