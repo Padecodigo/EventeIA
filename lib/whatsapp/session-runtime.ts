@@ -4,6 +4,8 @@ import { logoutInstance } from "@/lib/evolution-api/client";
 import { logger } from "@/lib/logger";
 import { notifyQuotationsReady } from "@/lib/notifications/runtime";
 import { enqueue, getRedisConnection, QUEUE_NAMES } from "@/lib/queue";
+import { deliverEventQuotes } from "@/lib/quotes/delivery";
+import { createDeliveryDeps } from "@/lib/quotes/delivery-runtime";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 import type { SessionDeps } from "./session-manager";
@@ -63,9 +65,49 @@ export function createSessionDeps(): SessionDeps {
         { jobId: `window-end-${instance}-${eventId}`, delayMs },
       );
     },
+    async triggerCollectionEnd(instance: string | null, eventId: string) {
+      await enqueue(
+        QUEUE_NAMES.whatsappSessionLifecycle,
+        "collection-complete",
+        { instance, eventId, reason: "collection_complete" },
+        { jobId: `collection-complete-${eventId}` },
+      );
+    },
+    async deliverQuotes(eventId) {
+      // Marca o fim da coleta (idempotente) e gera os 3 cenários (fase 4).
+      await admin
+        .from("events")
+        .update({ collection_ended_at: new Date().toISOString(), discovery_status: "completed" })
+        .eq("id", eventId)
+        .is("collection_ended_at", null);
+      const result = await deliverEventQuotes(createDeliveryDeps(), eventId);
+      logger.info({ eventId, result }, "coleta encerrada: cotações entregues");
+    },
     notifyQuotationsReady,
     warn(message, context) {
       logger.warn(context, message);
     },
   };
+}
+
+/** Instância WhatsApp vinculada ao evento (null = sem sessão, ex.: simulação). */
+export async function findEventInstance(eventId: string): Promise<string | null> {
+  const { data } = await getSupabaseAdmin()
+    .from("whatsapp_instances")
+    .select("instance_name")
+    .eq("event_id", eventId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data?.instance_name ?? null;
+}
+
+/** Prazo máximo da coleta (48h por padrão), agendado ao iniciar a descoberta. */
+export async function scheduleCollectionDeadline(eventId: string, delayMs: number): Promise<boolean> {
+  return enqueue(
+    QUEUE_NAMES.whatsappSessionLifecycle,
+    "collection-deadline",
+    { instance: null, eventId, reason: "window_closed" },
+    { jobId: `collection-deadline-${eventId}`, delayMs },
+  );
 }

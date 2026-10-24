@@ -36,6 +36,8 @@ vi.mock("@/lib/supabase/admin", () => ({
   }),
 }));
 
+vi.mock("@/lib/discovery/runtime", () => ({ startDiscovery: () => Promise.resolve(true) }));
+
 vi.mock("@/lib/queue", () => ({
   QUEUE_NAMES: { asaasWebhooks: "asaas-webhooks" },
   enqueue: () => {

@@ -62,6 +62,6 @@ export const config = {
      * Aplica-se a todas as rotas exceto assets do Next, imagens do public
      * e webhooks (que têm autenticação própria por token).
      */
-    "/((?!_next/static|_next/image|favicon.ico|logo-e.png|api/webhooks).*)",
+    "/((?!_next/static|_next/image|favicon.ico|logo-e.png|api/webhooks|api/internal).*)",
   ],
 };

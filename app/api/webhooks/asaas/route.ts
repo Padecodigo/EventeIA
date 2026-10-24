@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { z } from "zod";
 
+import { startDiscovery } from "@/lib/discovery/runtime";
+import { asaasFeeFromPayload } from "@/lib/finance/report";
 import { logger } from "@/lib/logger";
 import { enqueue, QUEUE_NAMES } from "@/lib/queue";
 import { verifyAsaasWebhookToken } from "@/lib/security";
@@ -98,6 +100,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json({ ok: true, queued: enqueued });
     }
 
+    await recordAsaasFee(admin, payload.payment);
+    await triggerDiscoveryForWebhook(admin, inserted.id);
     return NextResponse.json({ ok: true, result });
   } catch (caught) {
     logger.error(
@@ -105,5 +109,62 @@ export async function POST(request: Request): Promise<NextResponse> {
       "erro inesperado no webhook asaas",
     );
     return NextResponse.json({ error: "internal_error" }, { status: 500 });
+  }
+}
+
+/** Após o pagamento: evento ativo + entrevista concluída ⇒ inicia a descoberta. Best-effort. */
+async function triggerDiscoveryForWebhook(
+  admin: ReturnType<typeof getSupabaseAdmin>,
+  webhookEventId: string,
+): Promise<void> {
+  try {
+    const { data: hook } = await admin
+      .from("webhook_events")
+      .select("payload")
+      .eq("id", webhookEventId)
+      .maybeSingle();
+    const ref = discoveryRefSchema.safeParse(hook?.payload);
+    if (!ref.success) return;
+    const { data: pay } = await admin
+      .from("payments")
+      .select("event_id")
+      .eq("asaas_payment_id", ref.data.payment.id)
+      .maybeSingle();
+    const eventId = pay?.event_id ?? null;
+    if (eventId === null) return;
+    const { data: ev } = await admin
+      .from("events")
+      .select("status,interview_completed_at")
+      .eq("id", eventId)
+      .maybeSingle();
+    if (ev?.status === "active" && ev.interview_completed_at !== null) {
+      await startDiscovery(eventId);
+    }
+  } catch {
+    logger.warn({ webhookEventId }, "não foi possível iniciar a descoberta após o pagamento");
+  }
+}
+
+const discoveryRefSchema = z.object({
+  payment: z.object({ id: z.string().min(1).max(100) }),
+});
+
+const feeSchema = z.object({ id: z.string(), netValue: z.number().nonnegative().optional() });
+
+/** Painel financeiro: grava taxa e líquido do Asaas (netValue) no pagamento. Best-effort. */
+async function recordAsaasFee(admin: ReturnType<typeof getSupabaseAdmin>, payment: unknown): Promise<void> {
+  const parsed = feeSchema.safeParse(payment);
+  if (!parsed.success || parsed.data.netValue === undefined) return;
+  try {
+    const { data: row } = await admin
+      .from("payments")
+      .select("id,amount_cents")
+      .eq("asaas_payment_id", parsed.data.id)
+      .maybeSingle();
+    if (!row) return;
+    const { feeCents, netCents } = asaasFeeFromPayload(row.amount_cents, parsed.data.netValue);
+    await admin.from("payments").update({ asaas_fee_cents: feeCents, net_cents: netCents }).eq("id", row.id);
+  } catch (caught) {
+    logger.warn({ reason: caught instanceof Error ? caught.message : "?" }, "falha ao gravar taxa asaas");
   }
 }
