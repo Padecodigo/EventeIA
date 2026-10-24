@@ -1,4 +1,4 @@
-import { Figtree, Fraunces } from "next/font/google";
+import localFont from "next/font/local";
 
 import type { Metadata } from "next";
 
@@ -7,31 +7,28 @@ import { OG_IMAGE, SEO_KEYWORDS, SITE_DESCRIPTION, SITE_NAME, siteUrl } from "@/
 import "./globals.css";
 
 /** Títulos: Fraunces (serifa suave, calorosa e premium). Corpo/UI: Figtree (clara e amigável). */
-const display = Fraunces({
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  style: ["normal"],
+const display = localFont({
+  src: [{ path: "./fonts/Fraunces.woff2", weight: "100 900", style: "normal" }],
   variable: "--font-display",
   display: "swap",
   // Fallback com métricas ajustadas evita salto de layout quando a fonte chega.
-  adjustFontFallback: true,
+  adjustFontFallback: "Times New Roman",
 });
 
 /**
  * Itálico da Fraunces só aparece em legendas/rodapé (abaixo do LCP): sem preload,
  * baixa sob demanda quando um trecho itálico é renderizado (ver globals.css).
  */
-const displayItalic = Fraunces({
-  subsets: ["latin"],
-  weight: ["500", "600"],
-  style: ["italic"],
+const displayItalic = localFont({
+  src: [{ path: "./fonts/Fraunces-Italic.woff2", weight: "100 900", style: "italic" }],
   variable: "--font-display-italic",
   display: "swap",
   preload: false,
+  adjustFontFallback: "Times New Roman",
 });
 
-const body = Figtree({
-  subsets: ["latin"],
+const body = localFont({
+  src: [{ path: "./fonts/Figtree.woff2", weight: "300 900", style: "normal" }],
   variable: "--font-body",
   display: "swap",
 });

@@ -1,4 +1,4 @@
-import { Bricolage_Grotesque, DM_Sans, Figtree, Fraunces, Manrope, Outfit } from "next/font/google";
+import localFont from "next/font/local";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
@@ -14,12 +14,12 @@ import { formatBRL } from "@/lib/money";
  */
 export const metadata = { title: "Prévia de estilos (dev)", robots: { index: false, follow: false } };
 
-const outfit = Outfit({ subsets: ["latin"], weight: ["600", "700", "800"], variable: "--f1h", display: "swap" });
-const dmSans = DM_Sans({ subsets: ["latin"], variable: "--f1b", display: "swap" });
-const bricolage = Bricolage_Grotesque({ subsets: ["latin"], weight: ["600", "700", "800"], variable: "--f2h", display: "swap" });
-const manrope = Manrope({ subsets: ["latin"], variable: "--f2b", display: "swap" });
-const fraunces = Fraunces({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--f3h", display: "swap" });
-const figtree = Figtree({ subsets: ["latin"], variable: "--f3b", display: "swap" });
+const outfit = localFont({ src: [{ path: "../../fonts/Outfit.woff2", weight: "100 900", style: "normal" }], variable: "--f1h", display: "swap" });
+const dmSans = localFont({ src: [{ path: "../../fonts/DMSans.woff2", weight: "100 1000", style: "normal" }], variable: "--f1b", display: "swap" });
+const bricolage = localFont({ src: [{ path: "../../fonts/BricolageGrotesque.woff2", weight: "200 800", style: "normal" }], variable: "--f2h", display: "swap" });
+const manrope = localFont({ src: [{ path: "../../fonts/Manrope.woff2", weight: "200 800", style: "normal" }], variable: "--f2b", display: "swap" });
+const fraunces = localFont({ src: [{ path: "../../fonts/Fraunces.woff2", weight: "100 900", style: "normal" }], variable: "--f3h", display: "swap", adjustFontFallback: "Times New Roman" });
+const figtree = localFont({ src: [{ path: "../../fonts/Figtree.woff2", weight: "300 900", style: "normal" }], variable: "--f3b", display: "swap" });
 
 type StyleOption = {
   id: 1 | 2 | 3;

@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-const src = readFileSync(join(process.cwd(), "app/dev/estilos/page.tsx"), "utf8");
+const src = readFileSync(join(process.cwd(), "app/dev/estilos/page.dev.tsx"), "utf8");
 
 describe("prévia de estilos (dev only)", () => {
   it("responde 404 em produção e não é indexada", () => {

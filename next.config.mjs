@@ -29,6 +29,8 @@ const cspProduction = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Páginas *.dev.tsx (ex.: /dev/estilos) só existem fora do build de produção.
+  pageExtensions: process.env.NODE_ENV === "production" ? ["tsx", "ts", "jsx", "js"] : ["dev.tsx", "tsx", "ts", "jsx", "js"],
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
