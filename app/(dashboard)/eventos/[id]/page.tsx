@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { z } from "zod";
@@ -8,6 +9,7 @@ import { BuyTicketForm } from "@/components/domain/buy-ticket-form";
 import { ProspectingPanel } from "@/components/domain/prospecting-panel";
 import { QuotationsPanel } from "@/components/domain/quotations-panel";
 import { TestimonialInvite } from "@/components/domain/testimonial-invite";
+import { CATEGORY_LABELS, type CategoryCode } from "@/lib/catalog/v1";
 import { calculate } from "@/lib/engine";
 import type { EngineItemSelection, EventType, RegionCode } from "@/lib/engine/types";
 import { serverEnv } from "@/lib/env";
@@ -104,6 +106,15 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
   const unlocked = ticketResult.data?.status === "active";
 
+  const { data: requirementRows } = await supabase
+    .from("event_requirements")
+    .select("item_code,category,label")
+    .eq("event_id", event.id)
+    .eq("selected", true)
+    .order("created_at", { ascending: true });
+  const requirementCategories = [...new Set((requirementRows ?? []).map((r) => r.category))];
+  const interviewDone = event.interview_completed_at !== null;
+
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
@@ -120,6 +131,25 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           {unlocked ? "Orçamento liberado" : "Aguardando ativação"}
         </span>
       </header>
+
+      <section className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
+        <div>
+          <h2 className="font-serif text-title-2">Entrevista do evento</h2>
+          <p className="mt-1 text-sm text-vinho/75">
+            {interviewDone
+              ? `${event.city ?? ""} · ${requirementRows?.length ?? 0} itens em ${requirementCategories.length} categorias: ${requirementCategories
+                  .map((c) => CATEGORY_LABELS[c as CategoryCode] ?? c)
+                  .join(", ")}.`
+              : "Responda algumas perguntas para o agente saber o que cotar e em qual cidade."}
+          </p>
+        </div>
+        <Link
+          href={`/eventos/${event.id}/entrevista`}
+          className="rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-white hover:bg-primaria-escura"
+        >
+          {interviewDone ? "Revisar respostas" : "Começar entrevista"}
+        </Link>
+      </section>
 
       <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-start">
         <BudgetTable result={budget} unlocked={unlocked} />

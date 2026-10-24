@@ -64,7 +64,25 @@ export interface Database {
         region_code: string;
         guest_count: number;
         status: "draft" | "awaiting_payment" | "active" | "completed" | "canceled";
+        city: string | null;
+        interview_answers: Json | null;
+        interview_completed_at: string | null;
         created_at: string;
+      }>;
+      event_requirements: Table<{
+        id: string;
+        event_id: string;
+        catalog_version: string;
+        category: string;
+        item_code: string;
+        label: string;
+        unit: "por_pessoa" | "por_hora" | "unidade" | "pacote";
+        quantity: number;
+        mandatory: boolean;
+        notes: string | null;
+        selected: boolean;
+        created_at: string;
+        updated_at: string;
       }>;
       event_tickets: Table<{
         id: string;

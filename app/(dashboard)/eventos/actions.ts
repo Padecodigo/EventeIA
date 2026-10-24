@@ -111,7 +111,7 @@ export async function createEventAction(
   }
 
   revalidatePath("/eventos");
-  redirect(`/eventos/${data.id}`);
+  redirect(`/eventos/${data.id}/entrevista`);
 }
 
 export interface CouponCheckState {
