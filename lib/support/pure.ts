@@ -181,7 +181,7 @@ export function confirmationEmail(t: MailTicket, appUrl: string, loggedIn: boole
   return {
     subject: `Recebemos sua mensagem — #${shortId(t.id)}`,
     text:
-      `Olá! Recebemos sua ${TYPE_LABELS[t.type].toLowerCase()}: "${t.subject}".\n` +
+      `Olá! Recebemos seu chamado (${TYPE_LABELS[t.type]}): "${t.subject}".\n` +
       `Protocolo: #${shortId(t.id)}. Nossa equipe responde por este e-mail.${link}\n\n— Equipe EventeIA`,
   };
 }
@@ -198,6 +198,6 @@ export function adminReplyEmail(t: MailTicket, body: string, appUrl: string, log
 export function adminAlertEmail(t: MailTicket, appUrl: string): Mail {
   return {
     subject: `[${PRIORITY_LABELS[t.priority]}] ${TYPE_LABELS[t.type]} #${shortId(t.id)}`,
-    text: `Novo ${TYPE_LABELS[t.type].toLowerCase()} com prioridade ${PRIORITY_LABELS[t.priority].toLowerCase()}: "${t.subject}".\n\n${appUrl}/admin/chamados/${t.id}`,
+    text: `Novo chamado (${TYPE_LABELS[t.type]}) com prioridade ${PRIORITY_LABELS[t.priority].toLowerCase()}: "${t.subject}".\n\n${appUrl}/admin/chamados/${t.id}`,
   };
 }
