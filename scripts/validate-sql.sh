@@ -50,19 +50,8 @@ do $$ begin create role service_role; exception when duplicate_object then null;
 alter role service_role bypassrls;
 SQL
 
-for migration in \
-  supabase/migrations/0001_init_schema.sql \
-  supabase/migrations/0002_rls_policies.sql \
-  supabase/migrations/0003_functions.sql \
-  supabase/migrations/0004_testimonials.sql \
-  supabase/migrations/0005_plan_pricing.sql \
-  supabase/migrations/0006_plan_pricing_v2.sql \
-  supabase/migrations/0007_testimonial_admin.sql \
-  supabase/migrations/0008_credit_topups.sql \
-  supabase/migrations/0009_subscription_grants.sql \
-  supabase/migrations/0010_coupons.sql \
-  supabase/migrations/0011_whatsapp_prospecting.sql \
-  supabase/migrations/0012_coupons_admin.sql; do
+# Todas as migrations, em ordem (glob ordena lexicograficamente: 0001…0013…).
+for migration in supabase/migrations/*.sql; do
   echo "▸ aplicando ${migration}…"
   docker exec -i "$CONTAINER" psql -v ON_ERROR_STOP=1 -U postgres -d postgres < "$migration"
 done
