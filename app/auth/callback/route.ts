@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { safeNextPath } from "@/lib/auth/oauth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { bindWelcomeOfferToUser } from "@/lib/welcome/server";
 
 /**
  * Callback do OAuth (PKCE): troca o ?code= por sessão em cookies HttpOnly e
@@ -27,5 +28,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // Perfil e e-mail: o trigger handle_new_user (0021) cria/vincula o perfil com
   // nome e e-mail do Google e mantém o e-mail sincronizado — fonte confiável
   // (security definer), sem permitir que o cliente grave o próprio e-mail.
+  // Oferta de boas-vindas deste aparelho → conta Google (nunca lança; o
+  // layout do painel repete o vínculo de forma idempotente).
+  await bindWelcomeOfferToUser(data.user.id);
+
   return NextResponse.redirect(new URL(next, origin));
 }

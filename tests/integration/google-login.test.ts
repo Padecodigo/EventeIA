@@ -7,15 +7,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * sessão → e-mail usado na notificação "orçamento pronto".
  */
 
-const { exchangeCodeForSession, signInWithOAuth, redirect } = vi.hoisted(() => ({
-  exchangeCodeForSession: vi.fn(),
-  signInWithOAuth: vi.fn(),
-  redirect: vi.fn((url: string) => {
-    throw new Error(`REDIRECT:${url}`);
+const { exchangeCodeForSession, signInWithOAuth, redirect, bindWelcomeOfferToUser } = vi.hoisted(
+  () => ({
+    bindWelcomeOfferToUser: vi.fn(() => Promise.resolve()),
+    exchangeCodeForSession: vi.fn(),
+    signInWithOAuth: vi.fn(),
+    redirect: vi.fn((url: string) => {
+      throw new Error(`REDIRECT:${url}`);
+    }),
   }),
-}));
+);
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/lib/welcome/server", () => ({ bindWelcomeOfferToUser }));
 vi.mock("next/navigation", () => ({ redirect }));
 vi.mock("next/headers", () => ({
   headers: () =>
@@ -78,6 +82,7 @@ describe("GET /auth/callback", () => {
     const res = await GET(req("http://localhost:3100/auth/callback?code=abc"));
     expect(exchangeCodeForSession).toHaveBeenCalledWith("abc");
     expect(res.headers.get("location")).toBe("http://localhost:3100/painel");
+    expect(bindWelcomeOfferToUser).toHaveBeenCalledWith("u1");
   });
 
   it("respeita next interno e bloqueia externo", async () => {
@@ -98,6 +103,7 @@ describe("GET /auth/callback", () => {
     });
     const bad = await GET(req("http://localhost:3100/auth/callback?code=x"));
     expect(bad.headers.get("location")).toBe("http://localhost:3100/entrar?erro=oauth");
+    expect(bindWelcomeOfferToUser).not.toHaveBeenCalled();
   });
 });
 
