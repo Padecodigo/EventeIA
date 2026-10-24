@@ -10,6 +10,8 @@ import {
   categoryAsk,
   categoryScope,
   greetingFor,
+  quoteSubjectFor,
+  quoteSubjectWithItems,
 } from "@/lib/whatsapp/first-contact";
 
 // SP = UTC-3
@@ -111,7 +113,7 @@ describe("perguntas específicas por categoria", () => {
     for (const seed of ["a", "b", "c"]) {
       const text = buildFirstContactText({
         ...base,
-        quoteSubject: CATEGORY_LABELS[code].toLowerCase(),
+        quoteSubject: quoteSubjectFor(code),
         category: code,
         now: at(15),
         seed,
@@ -154,5 +156,25 @@ describe("checklist de escopo (inclui / não inclui)", () => {
     expect(categoryScope("espaco")).toMatch(/mesas.*limpeza/);
     expect(categoryScope("mobiliario")).toMatch(/entrega.*recolhimento/);
     expect(categoryScope("zzz")).toMatch(/entrega e retirada/);
+  });
+});
+
+describe("assunto do orçamento (sem parênteses aninhados)", () => {
+  it("formata itens com quantidade em linguagem natural", () => {
+    expect(
+      quoteSubjectWithItems("buffet", [
+        { label: "Buffet de jantar completo", quantity: 120, unit: "por_pessoa" },
+      ]),
+    ).toBe("buffet, com buffet de jantar completo para 120 pessoas");
+    expect(
+      quoteSubjectWithItems("mobiliario", [
+        { label: "Mesas e cadeiras", quantity: 15, unit: "unidade" },
+      ]),
+    ).toBe("aluguel de mesas e cadeiras, com 15 unidades de mesas e cadeiras");
+  });
+  it("nomes naturais para categorias com barra ou sigla", () => {
+    expect(quoteSubjectFor("espaco")).toBe("locação de espaço");
+    expect(quoteSubjectFor("som_dj")).toBe("som e DJ");
+    for (const c of Object.keys(CATEGORY_LABELS)) expect(quoteSubjectFor(c)).not.toMatch(/[/()]/);
   });
 });

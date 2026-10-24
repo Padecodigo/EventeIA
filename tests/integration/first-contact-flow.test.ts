@@ -60,7 +60,7 @@ describe("fluxo de primeiro contato (descoberta → job → payload Evolution)",
       category: "som_dj",
       now: new Date("2026-10-24T23:00:00Z"),
     });
-    expect(text).toMatch(/^Boa noite, tudo bem\? Aqui é da EventeIA\. .*orçamento de som e dj\./);
+    expect(text).toMatch(/^Boa noite, tudo bem\? Aqui é da EventeIA\. .*orçamento de som e DJ\./);
     expect(text).toContain("o repertório, a duração da apresentação e o equipamento de som");
     expect(text).toContain("uma festa infantil para 40 convidados em Taubaté");
     expect(text.endsWith("Estamos fazendo um levantamento de orçamentos.")).toBe(true);

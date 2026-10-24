@@ -3,9 +3,9 @@
  */
 import { z } from "zod";
 
-import { CATEGORY_LABELS, UNIT_LABELS, type CategoryCode, type Unit } from "@/lib/catalog/v1";
+import { CATEGORY_LABELS, type CategoryCode, type Unit } from "@/lib/catalog/v1";
 import { firstContactMessageSchema } from "@/lib/schemas/whatsapp";
-import { buildFirstContactText } from "@/lib/whatsapp/first-contact";
+import { buildFirstContactText, quoteSubjectWithItems } from "@/lib/whatsapp/first-contact";
 
 /** Meta de coleta: 5 cotações por categoria OU 48h. */
 export const QUOTES_TARGET_PER_CATEGORY = 5;
@@ -148,13 +148,6 @@ export interface FirstContactInput {
  * Passa pelo schema do primeiro contato (texto puro, sem URLs/emojis, ≤ 900).
  */
 export function renderDiscoveryFirstContact(input: FirstContactInput): string {
-  const categoryLabel = isCategoryCode(input.category)
-    ? CATEGORY_LABELS[input.category].toLowerCase()
-    : input.category;
-  const items = input.items
-    .slice(0, 4)
-    .map((i) => `${i.label.toLowerCase()} (${String(i.quantity)} ${UNIT_LABELS[i.unit]})`)
-    .join(", ");
   // Respostas da entrevista refletidas nos itens (observações) + demanda específica.
   const notes = input.items
     .map((i) => i.notes?.trim() ?? "")
@@ -171,7 +164,7 @@ export function renderDiscoveryFirstContact(input: FirstContactInput): string {
   const source = SOURCE_LABELS[input.sourceProvider] ?? "uma busca pública";
   const body = buildFirstContactText({
     now: input.now ?? new Date(),
-    quoteSubject: `${categoryLabel}${items.length > 0 ? ` (${items})` : ""}`,
+    quoteSubject: quoteSubjectWithItems(input.category, input.items),
     eventTypeLabel: input.eventTypeLabel,
     eventDateIso: input.eventDateIso,
     city: input.city,

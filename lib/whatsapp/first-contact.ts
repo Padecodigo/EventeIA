@@ -109,6 +109,49 @@ const SCOPE_LEADS = [
   "Também preciso saber o que está incluso e o que fica à parte, como:",
 ];
 
+/** Como cada categoria aparece em "Gostaria de um orçamento de …". */
+const SUBJECT_OVERRIDES: Partial<Record<CategoryCode, string>> = {
+  espaco: "locação de espaço",
+  som_dj: "som e DJ",
+  foto_video: "foto e vídeo",
+  audiovisual: "telão, projetor e microfones",
+  mobiliario: "aluguel de mesas e cadeiras",
+  louca: "aluguel de louça, talheres e toalhas",
+  transporte: "transporte de convidados",
+  gerador: "gerador de energia",
+  cerimonial: "cerimonial e assessoria",
+  outros: "um serviço específico",
+};
+
+export function quoteSubjectFor(category: string): string {
+  if (!isCategoryCode(category)) return category.replace(/_/g, " ").toLowerCase();
+  return SUBJECT_OVERRIDES[category] ?? CATEGORY_LABELS[category].toLowerCase();
+}
+
+const UNIT_PHRASE: Record<string, (q: number) => string> = {
+  por_pessoa: (q) => `para ${String(q)} pessoas`,
+  por_hora: (q) => `por ${String(q)} horas`,
+  pacote: () => "",
+};
+
+/** "buffet de jantar completo para 120 pessoas" — sem parênteses aninhados. */
+function describeItem(item: { label: string; quantity: number; unit: string }): string {
+  if (item.unit === "unidade")
+    return `${String(item.quantity)} unidades de ${item.label.toLowerCase()}`;
+  const qty = UNIT_PHRASE[item.unit]?.(item.quantity) ?? String(item.quantity);
+  return qty.length > 0 ? `${item.label.toLowerCase()} ${qty}` : item.label.toLowerCase();
+}
+
+/** "buffet, com buffet de jantar completo para 120 pessoas" */
+export function quoteSubjectWithItems(
+  category: string,
+  items: readonly { label: string; quantity: number; unit: string }[],
+): string {
+  const subject = quoteSubjectFor(category);
+  const described = items.slice(0, 4).map(describeItem);
+  return described.length > 0 ? `${subject}, com ${described.join(", ")}` : subject;
+}
+
 const GENERIC_ASK = "o que está incluso e como é feita a entrega ou a execução";
 
 export function categoryAsk(category: string | undefined): string {
