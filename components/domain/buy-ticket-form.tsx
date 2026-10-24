@@ -8,6 +8,7 @@ import {
   type CheckoutState,
   type CouponCheckState,
 } from "@/app/(dashboard)/eventos/actions";
+import { WelcomeCountdown } from "@/components/domain/welcome-countdown";
 import { Button } from "@/components/ui/button";
 import { formatBRL } from "@/lib/money";
 
@@ -18,9 +19,11 @@ export interface BuyTicketFormProps {
   eventId: string;
   priceFormatted: string;
   defaultCpf: string;
+  /** Oferta de boas-vindas ativa (aplicada e revalidada no servidor ao gerar o Pix). */
+  welcome?: { remainingMs: number; fullCents: number; finalCents: number } | null;
 }
 
-export function BuyTicketForm({ eventId, priceFormatted, defaultCpf }: BuyTicketFormProps) {
+export function BuyTicketForm({ eventId, priceFormatted, defaultCpf, welcome = null }: BuyTicketFormProps) {
   const [couponState, applyCoupon, checkingCoupon] = useActionState(
     applyCouponAction,
     initialCoupon,
@@ -81,6 +84,19 @@ export function BuyTicketForm({ eventId, priceFormatted, defaultCpf }: BuyTicket
         Tíquete único de <strong className="text-vinho">{priceFormatted}</strong> — pagamento via Pix.
         Inclui orçamento completo, cotações ilimitadas e disparos pelo WhatsApp.
       </p>
+
+      {welcome !== null && !couponApplied ? (
+        <div role="status" className="mt-5 rounded-xl bg-vinho px-4 py-3 text-sm text-off-white">
+          <p>
+            Oferta de boas-vindas aplicada: <s className="opacity-80">{formatBRL(welcome.fullCents)}</s>{" "}
+            <strong className="text-champagne">{formatBRL(welcome.finalCents)}</strong> · economia de{" "}
+            {formatBRL(welcome.fullCents - welcome.finalCents)}
+          </p>
+          <p className="mt-1">
+            Expira em <WelcomeCountdown remainingMs={welcome.remainingMs} className="text-champagne" />
+          </p>
+        </div>
+      ) : null}
 
       {/* Cupom — feedback imediato antes de gerar o Pix (spec §3) */}
       <form action={applyCoupon} className="mt-5 rounded-xl border border-line-subtle bg-areia-quente p-4">

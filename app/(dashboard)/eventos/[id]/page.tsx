@@ -18,6 +18,8 @@ import { formatBRL } from "@/lib/money";
 import { latestScenarios } from "@/lib/quotes/scenarios";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { WELCOME_FINAL_PRICE_CENTS } from "@/lib/welcome/pure";
+import { lookupWelcomeOffer } from "@/lib/welcome/server";
 
 const eventTypeSchema = z.enum([
   "festa_infantil",
@@ -45,6 +47,20 @@ const statusLabels: Record<string, string> = {
   completed: "Concluído",
   canceled: "Cancelado",
 };
+
+/** Oferta de boas-vindas da conta (vincula a do aparelho, se houver). Prazo vem do banco. */
+async function welcomeForCheckout(
+  profileId: string,
+): Promise<{ remainingMs: number; fullCents: number; finalCents: number } | null> {
+  const fullCents = serverEnv().B2C_TICKET_PRICE_CENTS;
+  if (fullCents <= WELCOME_FINAL_PRICE_CENTS) {
+    return null;
+  }
+  const offer = await lookupWelcomeOffer({ claim: false, source: "new_ip", profileId }).catch(() => null);
+  return offer?.status === "active" && offer.remainingMs > 0
+    ? { remainingMs: offer.remainingMs, fullCents, finalCents: WELCOME_FINAL_PRICE_CENTS }
+    : null;
+}
 
 export default async function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -180,6 +196,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           <ActivateWithCredit eventId={event.id} />
         ) : (
           <BuyTicketForm
+            welcome={await welcomeForCheckout(event.owner_profile_id)}
             eventId={event.id}
             priceFormatted={formatBRL(serverEnv().B2C_TICKET_PRICE_CENTS)}
             defaultCpf={profileResult.data?.document_number ?? ""}

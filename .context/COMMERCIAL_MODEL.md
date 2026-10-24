@@ -196,3 +196,7 @@ create table public.credit_ledger (
 - Reembolso B2C após cotação emitida → **bloqueado** com motivo auditável.
 - Expiração não afeta top-ups.
 - Todos os valores em centavos inteiros; nenhuma conversão com float no caminho.
+
+## Oferta de boas-vindas (novo visitante)
+
+Visitante novo (novo IP, link `?convite=`, ou promo `utm_source`/`utm_campaign`/`?ref=`) recebe na hora um cupom que leva o **tíquete único a R$ 47** (`WELCOME_FINAL_PRICE_CENTS`), válido por **24h a partir da emissão** (prazo no banco). Vinculado à conta no cadastro (e-mail ou Google). Auto-aplicado no checkout Asaas; preço calculado no servidor. A contagem nunca reinicia e não reaparece após expirar. Prova social só com dado real (ofertas pagas em 30 dias). Uso em `/admin/cupons` e `/admin/financeiro`.

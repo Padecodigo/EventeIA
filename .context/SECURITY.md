@@ -163,3 +163,10 @@ Implementação: Redis (Upstash/BullMQ) com chave `rl:{scope}:{id}:{janela}`; ex
 
 - Vulnerabilidades: `security@eventeia.com` (PGP sob solicitação).
 - Privacidade/LGPD: `privacidade@eventeia.com`.
+
+## Oferta de boas-vindas (migração 0022) — revisão de segurança
+
+- **LGPD:** IP e id de aparelho só são gravados como `HMAC-SHA256(WELCOME_HASH_SALT, valor)`; o IP bruto nunca é persistido nem logado. Sem salt configurado a oferta fica desligada (falha fechada).
+- **RLS:** `welcome_offers` e `welcome_rate_limits` com RLS forçada; só admin lê ofertas; escrita apenas via funções `SECURITY DEFINER` executáveis por `service_role`.
+- **Prazo real:** `expires_at = now() + 24h` no banco; checkout reserva com `now()` do banco. O client recebe só o tempo restante (sem o código do cupom).
+- **Anti-abuso:** 1 oferta por hash de IP, por aparelho e por conta (índices únicos; expirar não libera outra); rate limit de 30 req/min por IP; POST exige mesma origem; oferta presa a 1 conta e 1 evento; redenção só em `paid/confirmed`.

@@ -27,6 +27,8 @@ import { enqueue, QUEUE_NAMES } from "@/lib/queue";
 import { prospectingJobSchema } from "@/lib/schemas/whatsapp";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { welcomeDiscountCents } from "@/lib/welcome/pure";
+import { bindWelcomeOfferToUser, reserveWelcomeOffer } from "@/lib/welcome/server";
 import { renderQuotationSummary } from "@/lib/whatsapp/templates";
 
 export interface ActionState {
@@ -258,6 +260,14 @@ export async function buyTicketAction(
 
       discount = discountCents(coupon, env.B2C_TICKET_PRICE_CENTS);
       couponCode = couponRaw;
+    } else {
+      // Oferta de boas-vindas: auto-aplicada, validada no BANCO (prazo, conta, 1 evento).
+      await bindWelcomeOfferToUser(user.id);
+      const welcome = await reserveWelcomeOffer(user.id, event.id);
+      if (welcome !== null) {
+        discount = welcomeDiscountCents(env.B2C_TICKET_PRICE_CENTS);
+        couponCode = discount > 0 ? welcome.code : null;
+      }
     }
 
     const finalPrice = finalPriceCents(env.B2C_TICKET_PRICE_CENTS, discount);
