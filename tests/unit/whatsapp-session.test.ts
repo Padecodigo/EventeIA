@@ -19,11 +19,14 @@ import {
   canSendFirstContact,
   canTransition,
   computeDrainAtMs,
+  isCollectionComplete,
   resolveCollectionWindowMinutes,
   toSessionState,
 } from "@/lib/whatsapp/session-lifecycle";
 import {
   activateSession,
+  completeCollectionIfReady,
+  finishCollection,
   endCollectionWindow,
   handleSessionLost,
   type SessionDeps,
@@ -130,8 +133,9 @@ describe("session-lifecycle", () => {
   });
   it("janela com clamp 30–60", () => {
     expect(resolveCollectionWindowMinutes(10)).toBe(30);
-    expect(resolveCollectionWindowMinutes(90)).toBe(60);
-    expect(resolveCollectionWindowMinutes(undefined)).toBe(45);
+    expect(resolveCollectionWindowMinutes(90)).toBe(90);
+    expect(resolveCollectionWindowMinutes(5000)).toBe(2880);
+    expect(resolveCollectionWindowMinutes(undefined)).toBe(2880);
     expect(computeDrainAtMs(0, 30)).toBe(1_800_000);
   });
   it("só envia em active", () => {
@@ -165,6 +169,14 @@ function fakeSessionDeps(initial: string | null): SessionDeps & { calls: string[
       deps.calls.push(`schedule:${String(delayMs)}`);
       return Promise.resolve();
     },
+    triggerCollectionEnd: (_i: string, eventId: string) => {
+      deps.calls.push(`trigger:${eventId}`);
+      return Promise.resolve();
+    },
+    deliverQuotes: vi.fn((eventId: string) => {
+      deps.calls.push(`deliver:${eventId}`);
+      return Promise.resolve();
+    }),
     notifyQuotationsReady: (eventId: string, reason: string) => {
       deps.calls.push(`notify:${eventId}:${reason}`);
       return Promise.resolve();
@@ -182,11 +194,76 @@ describe("session-manager", () => {
     expect(deps.calls).toEqual(["status:active", "schedule:1800000"]);
   });
 
-  it("fim da janela: draining → logout → disconnected → notifica", async () => {
+  it("ativa por 48h por padrão (sessão fica conectada durante toda a coleta)", async () => {
+    const deps = fakeSessionDeps("connecting");
+    const result = await activateSession(deps, { instance: "i", eventId: "e" });
+    expect(result.windowMinutes).toBe(2880);
+    expect(deps.calls).toEqual(["status:active", `schedule:${String(48 * 3_600_000)}`]);
+  });
+
+  it("fim da janela: draining → entrega cotações → logout → disconnected → notifica", async () => {
     const deps = fakeSessionDeps("active");
     expect(await endCollectionWindow(deps, { instance: "i", eventId: "e" })).toBe("closed");
-    expect(deps.calls).toEqual(["status:draining", "logout", "status:disconnected", "notify:e:window_closed"]);
+    expect(deps.calls).toEqual([
+      "status:draining",
+      "deliver:e",
+      "logout",
+      "status:disconnected",
+      "notify:e:window_closed",
+    ]);
     expect(await endCollectionWindow(deps, { instance: "i", eventId: "e" })).toBe("already_closed");
+  });
+
+  it("entrega falha: NÃO desconecta (fica em draining) e o erro sobe para retry", async () => {
+    const deps = fakeSessionDeps("active");
+    deps.deliverQuotes = () => Promise.reject(new Error("cenários"));
+    await expect(endCollectionWindow(deps, { instance: "i", eventId: "e" })).rejects.toThrow("cenários");
+    expect(deps.status).toBe("draining");
+    expect(deps.calls).not.toContain("logout");
+  });
+
+  it("meta de 5 cotações por categoria dispara o encerramento antecipado", async () => {
+    const deps = fakeSessionDeps("active");
+    const base = { instance: "i", eventId: "e", categories: ["buffet", "doces"] };
+    expect(await completeCollectionIfReady(deps, { ...base, quotesByCategory: { buffet: 5, doces: 4 } })).toBe(
+      "pending",
+    );
+    expect(await completeCollectionIfReady(deps, { ...base, quotesByCategory: { buffet: 6, doces: 5 } })).toBe(
+      "triggered",
+    );
+    expect(deps.calls).toEqual(["trigger:e"]);
+    const closed = fakeSessionDeps("disconnected");
+    expect(await completeCollectionIfReady(closed, { ...base, quotesByCategory: { buffet: 5, doces: 5 } })).toBe(
+      "not_active",
+    );
+  });
+
+  it("encerramento por meta notifica com motivo collection_complete", async () => {
+    const deps = fakeSessionDeps("active");
+    await endCollectionWindow(deps, { instance: "i", eventId: "e", reason: "collection_complete" });
+    expect(deps.calls.at(-1)).toBe("notify:e:collection_complete");
+  });
+
+  it("isCollectionComplete: todas as categorias precisam da meta; sem categorias nunca", () => {
+    expect(isCollectionComplete({ a: 5, b: 5 }, ["a", "b"])).toBe(true);
+    expect(isCollectionComplete({ a: 5 }, ["a", "b"])).toBe(false);
+    expect(isCollectionComplete({}, [])).toBe(false);
+    expect(isCollectionComplete({ a: 2 }, ["a"], 2)).toBe(true);
+  });
+
+  it("finishCollection: sem sessão entrega e notifica direto; com sessão ativa faz logout", async () => {
+    const none = fakeSessionDeps(null);
+    expect(await finishCollection(none, { instance: null, eventId: "e", reason: "collection_complete" })).toBe(
+      "delivered_without_session",
+    );
+    expect(none.calls).toEqual(["deliver:e", "notify:e:collection_complete"]);
+    const lost = fakeSessionDeps("disconnected");
+    expect(await finishCollection(lost, { instance: "i", eventId: "e", reason: "window_closed" })).toBe(
+      "delivered_without_session",
+    );
+    const active = fakeSessionDeps("active");
+    expect(await finishCollection(active, { instance: "i", eventId: "e", reason: "window_closed" })).toBe("closed");
+    expect(active.calls).toContain("logout");
   });
 
   it("logout falho ainda encerra localmente", async () => {

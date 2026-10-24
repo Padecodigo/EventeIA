@@ -12,6 +12,8 @@ import {
   type WhatsappOutboundJob,
 } from "@/lib/jobs/whatsapp-outbound";
 import { logger } from "@/lib/logger";
+import { createDiscoveryWorker } from "@/lib/queue/discovery-worker";
+import { createQuoteExtractionWorker } from "@/lib/queue/quote-extraction-worker";
 import { createProspectingWorker, createSessionLifecycleWorker } from "@/lib/queue/whatsapp-worker";
 import { QUEUE_NAMES, getQueue, getRedisConnection } from "@/lib/queue";
 
@@ -77,6 +79,9 @@ const prospectingWorker = createProspectingWorker(
 );
 // Fim da janela de coleta (30–60 min): logout gracioso + notificação quotations_ready.
 const sessionLifecycleWorker = createSessionLifecycleWorker(connection);
+// Descoberta automática de fornecedores (streaming → prospecção).
+const discoveryWorker = createDiscoveryWorker(connection);
+const quoteExtractionWorker = createQuoteExtractionWorker(connection);
 
 // Agendamentos (America/Sao_Paulo):
 // 09:30 — conciliação Asaas (PAYMENTS.md §8)
@@ -128,6 +133,8 @@ const workers = [
   instanceHealthWorker,
   prospectingWorker,
   sessionLifecycleWorker,
+  discoveryWorker,
+  quoteExtractionWorker,
 ];
 
 for (const worker of workers) {

@@ -149,8 +149,8 @@ describe("pickIntervalSeconds", () => {
 
 describe("prospectingJobSchema", () => {
   const validJob = {
-    prospectId: "11111111-1111-1111-1111-111111111111",
-    eventId: "22222222-2222-2222-2222-222222222222",
+    prospectId: "11111111-1111-4111-8111-111111111111",
+    eventId: "22222222-2222-4222-8222-222222222222",
     instance: "eventeia-ab12cd34",
     phoneE164: "+5512999998888",
     vendorName: "Buffet da Vila",

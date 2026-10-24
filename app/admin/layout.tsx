@@ -14,10 +14,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <div className="flex items-center gap-3">
             <span className="font-brand text-2xl">EventeIA</span>
             <span className="rounded-full bg-champagne/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-champagne">
-              Moderação
+              Admin
             </span>
           </div>
           <nav className="flex items-center gap-5 text-sm text-off-white/80">
+            <Link href="/admin/financeiro" className="transition hover:text-off-white">
+              Financeiro
+            </Link>
             <Link href="/admin/depoimentos" className="transition hover:text-off-white">
               Depoimentos
             </Link>

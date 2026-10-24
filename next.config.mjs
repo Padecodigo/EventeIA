@@ -39,6 +39,8 @@ const nextConfig = {
     qualities: [70, 75],
     minimumCacheTTL: 60 * 60 * 24 * 30,
   },
+  // Build enxuto para Docker (server.js + node_modules mínimos).
+  output: "standalone",
   // Raiz explícita: evita o Next inferir /home/fedora (há um package-lock.json lá fora).
   outputFileTracingRoot: fileURLToPath(new URL(".", import.meta.url)),
   async headers() {

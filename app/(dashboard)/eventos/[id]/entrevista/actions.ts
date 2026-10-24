@@ -8,6 +8,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { parseAnswers, resolveRequirements } from "@/lib/catalog/rules";
 import { ALL_EVENT_TYPES, CATALOG_VERSION } from "@/lib/catalog/v1";
+import { startDiscovery } from "@/lib/discovery/runtime";
 import type { EventType } from "@/lib/engine/types";
 import { logger } from "@/lib/logger";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -110,6 +111,16 @@ export async function saveInterviewAction(
   if (eventError !== null) {
     logger.error({ code: eventError.code }, "falha ao concluir entrevista");
     return { error: "Não foi possível salvar a entrevista. Tente novamente." };
+  }
+
+  // Evento já pago + entrevista concluída ⇒ começa a buscar fornecedores na cidade.
+  const { data: fresh } = await supabase.from("events").select("status").eq("id", event.id).maybeSingle();
+  if (fresh?.status === "active") {
+    try {
+      await startDiscovery(event.id);
+    } catch {
+      logger.warn({ eventId: event.id }, "não foi possível iniciar a descoberta");
+    }
   }
 
   revalidatePath(`/eventos/${event.id}`);

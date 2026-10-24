@@ -30,7 +30,7 @@ const completionResponseSchema = z.object({
 });
 
 const DEFAULT_BASE_URL = "https://api.deepseek.com";
-const DEFAULT_MODEL = "deepseek-chat";
+const DEFAULT_MODEL = "deepseek-flash"; // DeepSeek-V4.1-Flash-1017 (docs oficiais)
 const TIMEOUT_MS = 30_000;
 
 export function createLiveDeepSeekClient(options: {
