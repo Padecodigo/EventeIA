@@ -4,6 +4,7 @@ import { Worker } from "bullmq";
 import type { Redis } from "ioredis";
 import { z } from "zod";
 
+import { createRouterUsageStore, getRouter } from "@/lib/ai/runtime";
 import { runDiscoveryRound } from "@/lib/discovery/engine";
 import { resolveProviders } from "@/lib/discovery/providers/registry";
 import { createDiscoveryDeps, createRedisLlmUsage } from "@/lib/discovery/runtime";
@@ -20,7 +21,10 @@ export function createDiscoveryWorker(connection: Redis): Worker {
     async (job) => {
       const data = discoveryJobSchema.parse(job.data);
       const env = serverEnv();
-      const providers = resolveProviders(env, undefined, createRedisLlmUsage());
+      const router = getRouter();
+      // Busca ao vivo do Grok conta no mesmo teto de 25% do roteador de LLM.
+      const usage = router !== null ? createRouterUsageStore(router, env.AI_GROK_SEARCH_CALL_MICROUSD) : createRedisLlmUsage();
+      const providers = resolveProviders(env, undefined, usage);
       const summary = await runDiscoveryRound(createDiscoveryDeps(), providers, data);
       logger.info(
         { eventId: data.eventId, round: data.round, status: summary.status, providers: providers.map((p) => p.name) },

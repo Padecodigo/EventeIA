@@ -52,6 +52,17 @@ const serverSchema = z.object({
   // Orçamento diário de chamadas Grok e % de uso a partir do qual troca para o NIM.
   XAI_DAILY_BUDGET: z.coerce.number().int().min(1).max(100000).default(200),
   XAI_USAGE_SWITCH_PCT: z.coerce.number().min(0).max(100).default(25),
+  // Roteador de LLM (lib/ai/router.ts): preços por 1M tokens em micro-USD (US$ 1 = 1_000_000).
+  AI_PRICE_NIM_IN_PER_1M: z.coerce.number().int().min(0).default(100_000),
+  AI_PRICE_NIM_OUT_PER_1M: z.coerce.number().int().min(0).default(400_000),
+  AI_PRICE_GROK_IN_PER_1M: z.coerce.number().int().min(0).default(3_000_000),
+  AI_PRICE_GROK_OUT_PER_1M: z.coerce.number().int().min(0).default(15_000_000),
+  AI_PRICE_DEEPSEEK_IN_PER_1M: z.coerce.number().int().min(0).default(270_000),
+  AI_PRICE_DEEPSEEK_OUT_PER_1M: z.coerce.number().int().min(0).default(1_100_000),
+  // Folga inicial do Grok (sem histórico qualquer chamada passaria de 25%) e custo estimado por busca ao vivo.
+  AI_GROK_BOOTSTRAP_MICROUSD: z.coerce.number().int().min(0).default(200_000),
+  AI_GROK_SEARCH_CALL_MICROUSD: z.coerce.number().int().min(0).default(30_000),
+  AI_USE_DEEPSEEK: z.enum(["true", "false", ""]).default("false").transform((v) => v === "true"),
   WHATSAPP_DAILY_FIRST_CONTACTS: z.coerce.number().int().min(1).max(200).default(50),
 });
 
