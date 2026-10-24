@@ -46,9 +46,14 @@ const SESSION_ERROR_HINTS = [
   "qr code",
   "pairing",
   "unauthorized",
+  // Instância apagada/nunca pareada (ex.: HTTP 404 "instance does not exist"):
+  // pausa graciosa em vez de queimar as 5 tentativas do job.
+  "does not exist",
+  "instance not found",
 ];
 
-function looksLikeSessionProblem(status: number, bodyText: string): boolean {
+/** Exportada para testes. */
+export function looksLikeSessionProblem(status: number, bodyText: string): boolean {
   if (status === 401 || status === 403) {
     return true;
   }

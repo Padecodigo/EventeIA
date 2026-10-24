@@ -2,7 +2,7 @@
 -- Tudo dentro de transação com rollback — não altera dados locais.
 begin;
 create extension if not exists pgtap;
-select plan(5);
+select plan(6);
 
 insert into auth.users
   (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -14,10 +14,10 @@ values
    '{}'::jsonb, '{"full_name":"Carol"}'::jsonb, now(), now());
 
 insert into public.events
-  (id, owner_profile_id, title, event_type, event_date, region_code, guest_count)
+  (id, owner_profile_id, title, event_type, event_date, region_code, guest_count, status)
 values
   ('cccccccc-cccc-cccc-cccc-cccccccccccc', '33333333-3333-3333-3333-333333333333',
-   'Festa infantil', 'aniversario', '2026-12-10', 'sp', 30);
+   'Festa infantil', 'aniversario', '2026-12-10', 'sp', 30, 'awaiting_payment');
 
 insert into public.payments (profile_id, purpose, event_id, asaas_payment_id, billing_type, amount_cents)
 values ('33333333-3333-3333-3333-333333333333', 'event_ticket',
@@ -42,6 +42,8 @@ select is((select count(*)::int from public.event_tickets where event_id = 'cccc
   'exatamente 1 tíquete');
 select is((select status from public.event_tickets where event_id = 'cccccccc-cccc-cccc-cccc-cccccccccccc'), 'active',
   'tíquete ativo');
+select is((select status from public.events where id = 'cccccccc-cccc-cccc-cccc-cccccccccccc'), 'active',
+  'evento ativado junto com o tíquete (0014)');
 
 select * from finish();
 rollback;
