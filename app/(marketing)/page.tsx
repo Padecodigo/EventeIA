@@ -163,11 +163,11 @@ export default async function LandingPage() {
             </p>
 
             <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:items-center">
-              <Link href="/registrar" className={primaryCta}>
+              <Link prefetch={false} href="/registrar" className={primaryCta}>
                 Começar agora
                 <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">→</span>
               </Link>
-              <Link
+              <Link prefetch={false}
                 href="#planos"
                 className="inline-flex items-center justify-center rounded-full border border-champagne-claro bg-white/80 px-6 py-3.5 text-[15px] font-semibold text-vinho backdrop-blur transition hover:border-champagne hover:bg-white"
               >
@@ -305,7 +305,7 @@ export default async function LandingPage() {
               </li>
             ))}
           </ol>
-          <Link href="/como-funciona" className="mt-10 inline-flex items-center gap-1 text-sm font-semibold text-vinho hover:text-coral-escuro">
+          <Link prefetch={false} href="/como-funciona" className="mt-10 inline-flex items-center gap-1 text-sm font-semibold text-vinho hover:text-coral-escuro">
             Ver o passo a passo completo <span aria-hidden="true">→</span>
           </Link>
         </div>
@@ -350,7 +350,7 @@ export default async function LandingPage() {
                 <li>✓ 3 opções comparadas</li>
                 <li>✓ Pix ou cartão</li>
               </ul>
-              <Link href="/registrar" className="mt-7 inline-flex justify-center rounded-full bg-primaria px-5 py-3 text-sm font-bold text-white transition hover:bg-primaria-escura">
+              <Link prefetch={false} href="/registrar" className="mt-7 inline-flex justify-center rounded-full bg-primaria px-5 py-3 text-sm font-bold text-white transition hover:bg-primaria-escura">
                 Começar agora
               </Link>
             </article>
@@ -369,7 +369,7 @@ export default async function LandingPage() {
                 <p className="mt-5 font-display text-4xl font-semibold tracking-tight">{formatBRL(plan.priceCents)}</p>
                 <p className="mt-1 text-sm text-vinho/60">por mês · {plan.credits} eventos</p>
                 <p className="mt-5 flex-1 text-sm leading-relaxed text-vinho/75">{plan.description}</p>
-                <Link href="/planos" className="mt-7 inline-flex justify-center rounded-full border border-vinho/15 px-5 py-3 text-sm font-semibold transition hover:bg-white">
+                <Link prefetch={false} href="/planos" className="mt-7 inline-flex justify-center rounded-full border border-vinho/15 px-5 py-3 text-sm font-semibold transition hover:bg-white">
                   Ver detalhes
                 </Link>
               </article>
@@ -409,7 +409,7 @@ export default async function LandingPage() {
           <p className="mx-auto mt-4 max-w-prose text-white/75">
             Conte o que você imagina. A EventeIA corre atrás dos orçamentos e te mostra as melhores opções.
           </p>
-          <Link href="/registrar" className="group mt-9 inline-flex items-center gap-2 rounded-full bg-[#E8A587] px-7 py-3.5 font-semibold text-vinho transition hover:-translate-y-0.5 hover:bg-[#EDB89F]">
+          <Link prefetch={false} href="/registrar" className="group mt-9 inline-flex items-center gap-2 rounded-full bg-[#E8A587] px-7 py-3.5 font-semibold text-vinho transition hover:-translate-y-0.5 hover:bg-[#EDB89F]">
             Testar agora <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">→</span>
           </Link>
         </div>

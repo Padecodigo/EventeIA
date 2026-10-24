@@ -11,7 +11,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-line-subtle bg-white/75 backdrop-blur-xl backdrop-saturate-150">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-8">
-        <Link href="/" className="flex cursor-pointer items-center gap-3" aria-label="EventeIA — início">
+        <Link prefetch={false} href="/" className="flex cursor-pointer items-center gap-3" aria-label="EventeIA — início">
           <Image
             src="/logo-e.png"
             alt="Monograma EventeIA"
@@ -30,7 +30,7 @@ export function SiteHeader() {
 
         <nav aria-label="Navegação principal" className="flex items-center gap-1 sm:gap-2">
           {navItems.map((item) => (
-            <Link
+            <Link prefetch={false}
               key={item.href}
               href={item.href}
               className="hidden px-4 py-2 text-xs font-medium text-vinho underline decoration-transparent underline-offset-4 transition-colors hover:decoration-primaria sm:block sm:text-sm"
@@ -38,13 +38,13 @@ export function SiteHeader() {
               {item.label}
             </Link>
           ))}
-          <Link
+          <Link prefetch={false}
             href="/entrar"
             className="hidden px-4 py-2 text-xs font-medium text-vinho underline decoration-transparent underline-offset-4 transition-colors hover:decoration-primaria sm:block sm:text-sm"
           >
             Entrar
           </Link>
-          <Link
+          <Link prefetch={false}
             href="/registrar"
             className="rounded-full bg-primaria px-5 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primaria-escura active:scale-95 sm:text-sm"
           >

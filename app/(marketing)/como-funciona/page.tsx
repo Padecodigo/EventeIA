@@ -135,7 +135,7 @@ export default function ComoFuncionaPage() {
               Festas de tamanhos e orçamentos diferentes. A mesma clareza para decidir — e a mesma
               atenção para o que importa.
             </p>
-            <Link
+            <Link prefetch={false}
               href="/registrar"
               className="mt-8 inline-flex rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-white transition hover:bg-primaria-escura"
             >
