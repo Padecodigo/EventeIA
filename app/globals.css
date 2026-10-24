@@ -92,7 +92,7 @@
   50% { transform: translateY(-6px); }
 }
 .ev-fade-up { animation: ev-fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
-.ev-marquee { animation: ev-marquee 40s linear infinite; }
+.ev-marquee { animation: ev-marquee 40s linear infinite; will-change: transform; }
 .ev-marquee:hover { animation-play-state: paused; }
 .ev-float { animation: ev-float 6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
