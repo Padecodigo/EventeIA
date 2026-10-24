@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   TYPE_LABELS,
   adminAlertEmail,
+  confirmationEmail,
+  TICKET_TYPES,
   canTransition,
   countTickets,
   createTicketSchema,
@@ -94,5 +96,17 @@ describe("TYPE_LABELS", () => {
   it("mostra 'Erro no site' para o tipo problema (valor do enum mantido)", () => {
     expect(TYPE_LABELS.problema).toBe("Erro no site");
     expect(Object.values(TYPE_LABELS)).not.toContain("Problema (chamado)");
+  });
+});
+
+describe("e-mails por tipo (regressão de concordância)", () => {
+  it.each(TICKET_TYPES)("confirmação e alerta neutros para %s", (type) => {
+    const t = { id: "abcdef12-0000", type, subject: "Assunto", priority: "normal" as const };
+    const label = TYPE_LABELS[type];
+    const conf = confirmationEmail(t, "https://app", true).text;
+    expect(conf).toContain(`Recebemos seu chamado (${label}): "Assunto".`);
+    expect(conf).not.toMatch(/Recebemos sua /);
+    expect(conf).not.toContain(label.toLowerCase());
+    expect(adminAlertEmail(t, "https://app").text).toContain(`Novo chamado (${label}) com prioridade normal`);
   });
 });
