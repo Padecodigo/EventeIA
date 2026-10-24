@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 
 import { DashboardNav } from "@/components/dashboard-nav";
 import { NotificationsPoller } from "@/components/notifications/notifications-poller";
+import { SupportButton } from "@/components/support/support-button";
 import { requireUser } from "@/lib/auth";
 import { bindWelcomeOfferToUser } from "@/lib/welcome/server";
 
@@ -50,6 +51,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         © {new Date().getFullYear()} EventeIA · Pagamentos via Pix e cartão · Dados protegidos (LGPD)
       </footer>
       <NotificationsPoller />
+      <SupportButton />
     </div>
   );
 }

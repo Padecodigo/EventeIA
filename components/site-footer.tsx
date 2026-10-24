@@ -41,6 +41,9 @@ export function SiteFooter() {
           <Link prefetch={false} href="/registrar" className="text-off-white/70 transition hover:text-off-white">
             Criar conta
           </Link>
+          <Link prefetch={false} href="/contato" className="text-off-white/70 transition hover:text-off-white">
+            Contato e suporte
+          </Link>
           <span className="text-off-white/70">Privacidade e LGPD em breve</span>
         </div>
       </nav>

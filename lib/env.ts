@@ -75,6 +75,8 @@ const serverSchema = z.object({
   AI_GROK_BOOTSTRAP_MICROUSD: z.coerce.number().int().min(0).default(200_000),
   AI_GROK_SEARCH_CALL_MICROUSD: z.coerce.number().int().min(0).default(30_000),
   AI_USE_DEEPSEEK: z.enum(["true", "false", ""]).default("true").transform((v) => v !== "false"),
+  // Central de atendimento: destino dos alertas imediatos (problema/urgente). Vazio = sem alerta.
+  SUPPORT_ADMIN_EMAIL: z.string().email().optional().or(z.literal("")),
   WHATSAPP_DAILY_FIRST_CONTACTS: z.coerce.number().int().min(1).max(200).default(50),
 });
 
