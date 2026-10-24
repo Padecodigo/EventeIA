@@ -15,9 +15,10 @@ function mosaicSources(): string[] {
 describe("landing — hero", () => {
   it("festa infantil abre o mosaico, mas há vários tipos de evento", () => {
     const srcs = mosaicSources();
-    expect(srcs[0]).toBe("/festa-infantil.jpg");
+    expect(srcs[0]).toBe("/img/eventos/festa-infantil-velas.jpg");
     expect(srcs.length).toBeGreaterThanOrEqual(5);
-    expect(srcs).toEqual(expect.arrayContaining(["/EventeIA-wedding.png", "/img/eventos/formatura.jpg", "/img/eventos/corporativo.jpg", "/img/eventos/15-anos.jpg"]));
+    expect(srcs).toEqual(expect.arrayContaining(["/img/eventos/casamento.jpg", "/img/eventos/formatura-familia.jpg", "/img/eventos/15-anos.jpg", "/festa-infantil.jpg"]));
+    for (const src of srcs) expect(src.startsWith("/eventos/")).toBe(false);
     expect(source).toContain("priority={index === 0}");
   });
 
@@ -26,6 +27,7 @@ describe("landing — hero", () => {
     const hero = source.slice(source.indexOf("<h1"), source.indexOf("</p>", h1End));
     expect(hero).toMatch(/WhatsApp/);
     expect(hero).toMatch(/3 opções/);
+    expect(hero).not.toMatch(/\bIA\b|fila/);
     for (const word of ["preço", "custo-benefício", "comodidade"]) expect(hero).toContain(word);
   });
 
@@ -44,6 +46,12 @@ describe("landing — hero", () => {
   });
 });
 
+describe("landing — sem nome do gateway", () => {
+  it("não cita 'via Asaas' nem o gateway nos textos da landing", () => {
+    expect(source).not.toMatch(/Asaas/);
+  });
+});
+
 describe("landing — v2 visual", () => {
   it("usa 'Corporativo' (nunca 'Empresa') no texto da landing", () => {
     expect(source).not.toMatch(/\bEmpresa\b/);
@@ -51,7 +59,8 @@ describe("landing — v2 visual", () => {
   });
   it("fotos têm hover dinâmico e respeitam prefers-reduced-motion", () => {
     expect(source).toContain("group-hover:scale-110");
-    expect(source).toContain("hover:-translate-y-1.5");
+    expect(source).toContain("hover:rotate-0");
+    expect(source).toContain("hover:z-50");
     const css = readFileSync(join(process.cwd(), "app/globals.css"), "utf8");
     expect(css).toMatch(/prefers-reduced-motion: reduce[\s\S]*ev-photo/);
   });
@@ -60,7 +69,8 @@ describe("landing — v2 visual", () => {
 describe("landing — depoimentos de exemplo", () => {
   it("fallback é marcado como exemplo e não traz números inventados", () => {
     expect(testimonials).toMatch(/CONTEÚDO DE EXEMPLO/);
-    expect(testimonials).toContain("EXAMPLE_TESTIMONIALS_NOTE");
+    expect(testimonials).not.toContain("Exemplos ilustrativos");
+    expect(source).not.toContain("Exemplos ilustrativos");
     expect(testimonials).not.toMatch(/outcome: "[^"]*\d/);
   });
   it("cidades da região do Vale do Paraíba", () => {

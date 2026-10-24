@@ -43,7 +43,7 @@ export function ProfileForm({
         inputMode="numeric"
         defaultValue={defaultCpf}
         placeholder="00000000000"
-        hint="Necessário para emitir a cobrança no Asaas. Fica restrito ao servidor."
+        hint="Necessário para emitir a cobrança. Fica restrito ao servidor."
       />
 
       <div className="md:col-span-2 rounded-xl border border-line-subtle bg-areia-quente p-4">

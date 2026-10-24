@@ -5,12 +5,10 @@ import type { TestimonialCardData } from "@/lib/testimonials/pure";
  *
  * As personas abaixo são ILUSTRATIVAS (nomes fictícios, sem números inventados).
  * Quando houver depoimentos reais publicados (fluxo /depoimento + moderação), a
- * página passa os dados reais e o aviso "exemplos ilustrativos" some sozinho.
+ * página passa os dados reais e estas personas deixam de aparecer.
+ * NÃO publicar em produção com estes exemplos.
  */
 export type Testimonial = TestimonialCardData;
-
-export const EXAMPLE_TESTIMONIALS_NOTE =
-  "Exemplos ilustrativos de como o serviço funciona — depoimentos reais de clientes da região em breve.";
 
 export const TESTIMONIALS: readonly Testimonial[] = [
   {
@@ -20,7 +18,7 @@ export const TESTIMONIALS: readonly Testimonial[] = [
     context: "Mãe da Lia · Festa de 5 anos",
     city: "São José dos Campos, SP",
     quote:
-      "Eu não tinha tempo de ligar pra ninguém. Recebi as opções organizadas no celular e escolhi com calma, sabendo exatamente o que estava pagando.",
+      "No dia, eu só chorei de emoção vendo a Lia apagar as velinhas. Pela primeira vez não passei a festa resolvendo problema — passei abraçando quem eu amo.",
     outcome: "",
     tone: "champagne",
   },
@@ -31,7 +29,7 @@ export const TESTIMONIALS: readonly Testimonial[] = [
     context: "15 anos da Sofia",
     city: "Taubaté, SP",
     quote:
-      "Buffet, decoração e foto lado a lado, com as taxas à vista. Pela primeira vez entendi a diferença entre o mais barato e o que valia mais a pena.",
+      "Eu tinha medo de errar num dia tão sonhado. Recebi tudo explicado com carinho e escolhi tranquila. Ver a Sofia dançando a valsa não teve preço.",
     outcome: "",
     tone: "vinho",
   },
@@ -39,10 +37,10 @@ export const TESTIMONIALS: readonly Testimonial[] = [
     id: "rafael",
     initials: "RS",
     name: "Rafael S.",
-    context: "Confraternização da empresa",
+    context: "Confraternização corporativa",
     city: "Jacareí, SP",
     quote:
-      "Precisava de espaço e buffet para a equipe sem perder uma semana nisso. Chegaram propostas comparáveis e a decisão ficou fácil de justificar.",
+      "Queria que a equipe se sentisse valorizada no fim de ano. Resolvi tudo sem estresse e ainda curti a festa junto com o pessoal.",
     outcome: "",
     tone: "areia",
   },
@@ -53,7 +51,7 @@ export const TESTIMONIALS: readonly Testimonial[] = [
     context: "Cerimonialista · franquia de créditos",
     city: "Caçapava, SP",
     quote:
-      "Com os créditos eu atendo mais famílias sem perder a curadoria. O orçamento chega pronto; eu ajusto o que é meu e cuido da experiência.",
+      "Ganhei tempo para o que eu amo: cuidar de cada família. Os orçamentos chegam organizados e eu foco nos detalhes que emocionam.",
     outcome: "",
     tone: "champagne",
   },
@@ -67,7 +65,8 @@ const toneClasses: Record<Testimonial["tone"], string> = {
 
 export function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
   return (
-    <article className="flex h-full flex-col rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
+    <article className="flex h-full flex-col rounded-3xl border border-champagne-claro bg-white p-7 shadow-[0_20px_50px_-30px_rgba(194,65,12,0.35)]">
+      <p aria-label="5 de 5 estrelas" className="mb-3 tracking-[0.2em] text-amber-400">★★★★★</p>
       <p className="text-body-lg leading-relaxed text-vinho">
         “{testimonial.quote}”
       </p>
@@ -102,15 +101,15 @@ export function Testimonials({ items }: { items?: readonly TestimonialCardData[]
   const list = hasRealTestimonials ? items : TESTIMONIALS;
 
   return (
-    <section className="border-y border-line-subtle bg-areia-secundaria/40 py-20">
+    <section className="bg-gradient-to-b from-[#FFF4EA] to-[#FFF9F3] py-20 lg:py-28">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-8">
-        <p className="eyebrow">Histórias de clareza</p>
+        <p className="eyebrow">Histórias que emocionam</p>
         <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
-          <h2 className="max-w-2xl font-serif text-display-2 font-display leading-tight">
+          <h2 className="max-w-2xl font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.03em]">
             Quem viveu, conta como foi.
           </h2>
           <p className="max-w-sm text-sm leading-6 text-vinho/75">
-            Festa infantil, 15 anos, empresa ou casamento: a mesma clareza para decidir.
+            Festa infantil, 15 anos, formatura, casamento ou corporativo: cada história merece ser vivida com calma.
           </p>
         </div>
 
@@ -119,10 +118,6 @@ export function Testimonials({ items }: { items?: readonly TestimonialCardData[]
             <TestimonialCard key={testimonial.id} testimonial={testimonial} />
           ))}
         </div>
-
-        {hasRealTestimonials ? null : (
-          <p className="mt-6 text-caption text-vinho/70">{EXAMPLE_TESTIMONIALS_NOTE}</p>
-        )}
 
       </div>
     </section>

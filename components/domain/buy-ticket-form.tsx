@@ -63,12 +63,12 @@ export function BuyTicketForm({ eventId, priceFormatted, defaultCpf }: BuyTicket
             rel="noreferrer"
             className="mt-4 inline-flex text-sm font-medium text-vinho underline decoration-champagne underline-offset-4"
           >
-            Abrir fatura no Asaas
+            Abrir página de pagamento
           </a>
         ) : null}
 
         <p className="mt-4 text-caption text-vinho/70">
-          A confirmação chega automaticamente pelo webhook do Asaas — esta página será atualizada.
+          A confirmação chega automaticamente — esta página será atualizada.
         </p>
       </section>
     );

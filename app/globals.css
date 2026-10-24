@@ -4,9 +4,9 @@
 
 /* Design System "Festa Clara" (v2) — nomes históricos, valores novos. Ver tailwind.config.ts */
 :root {
-  --color-vinho: #0F172A;
-  --color-areia-quente: #FAFAF8;
-  --color-areia-secundaria: #F3F1EE;
+  --color-vinho: #2B1E1A;
+  --color-areia-quente: #FFF8F1;
+  --color-areia-secundaria: #FDEEE3;
   --color-off-white: #ffffff;
   --color-champagne: #ff7a45;
   --color-champagne-claro: #ffe1d1;
@@ -81,5 +81,5 @@
 .ev-float { animation: ev-float 6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
   .ev-fade-up, .ev-marquee, .ev-float { animation: none !important; }
-  .ev-photo, .ev-photo * { transition: none !important; transform: none !important; }
+  .ev-photo, .ev-photo * { transition: none !important; }
 }

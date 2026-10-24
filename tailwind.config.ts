@@ -6,10 +6,10 @@ import type { Config } from "tailwindcss";
  *
  * Os NOMES históricos dos tokens (vinho, champagne, areia…) foram mantidos para
  * não quebrar o painel e as demais páginas; os VALORES mudaram:
- *   vinho          → azul-noite profundo #0F172A (texto/primária — confiança, AA em todo fundo claro)
+ *   vinho          → azul-noite profundo #2B1E1A (texto/primária — confiança, AA em todo fundo claro)
  *   champagne      → coral #FF7A45 (CTA e destaques; texto azul-noite sobre coral = 5,6:1)
  *   champagne-claro→ pêssego #FFE1D1
- *   areia-quente   → creme #FAFAF8 · areia-secundaria → #F3F1EE · off-white → #FFFFFF
+ *   areia-quente   → creme #FFF8F1 · areia-secundaria → #FDEEE3 · off-white → #FFFFFF
  * Novos acentos decorativos: sol #FFC94D, menta #2BB59A, lilas #8B7CF6 (nunca como texto pequeno).
  * - Tipografia: Plus Jakarta Sans (display) · Inter (corpo/UI).
  * - O produto é light-first; dark mode não faz parte do DS v1.
@@ -31,14 +31,14 @@ const config: Config = {
        * ====================================================== */
       colors: {
         /* ---- Paleta canônica (hex oficial) ---- */
-        vinho: "#0F172A", // azul-noite (nome histórico mantido)
-        "areia-quente": "#FAFAF8",
-        "areia-secundaria": "#F3F1EE",
+        vinho: "#2B1E1A", // azul-noite (nome histórico mantido)
+        "areia-quente": "#FFF8F1",
+        "areia-secundaria": "#FDEEE3",
         "off-white": "#FFFFFF",
         champagne: "#FF7A45", // coral
         coral: "#FF7A45",
         "coral-escuro": "#C2410C", // texto coral sobre claro (AA)
-        noite: "#0F172A",
+        noite: "#2B1E1A",
         sol: "#FFC94D",
         menta: "#2BB59A",
         lilas: "#8B7CF6",
@@ -46,18 +46,18 @@ const config: Config = {
 
         /* ---- Tokens semânticos (preferidos nos componentes) ---- */
         brand: {
-          primary: "#0F172A",
+          primary: "#2B1E1A",
           accent: "#FF7A45",
           accentSoft: "#FFE1D1",
         },
         surface: {
           canvas: "#FFFFFF",   // cards, campos
-          warm: "#FAFAF8",     // fundo padrão de página
-          muted: "#F3F1EE",    // faixas alternadas, linhas de tabela
-          dark: "#0F172A",     // seções editoriais escuras
+          warm: "#FFF8F1",     // fundo padrão de página
+          muted: "#FDEEE3",    // faixas alternadas, linhas de tabela
+          dark: "#2B1E1A",     // seções editoriais escuras
         },
         ink: {
-          primary: "#0F172A",
+          primary: "#2B1E1A",
           inverse: "#FFFFFF",
           accent: "#FF7A45",   // apenas sobre azul-noite (contraste AA)
           soft: "#FFE1D1",
@@ -82,6 +82,8 @@ const config: Config = {
         /* "serif" mantido como nome do token de títulos; agora é a display arredondada */
         serif: ["var(--font-display)", "Plus Jakarta Sans", "system-ui", "sans-serif"],
         display: ["var(--font-display)", "Plus Jakarta Sans", "system-ui", "sans-serif"],
+        /* acento manuscrito (uma ou duas palavras por seção, nunca texto corrido) */
+        script: ["var(--font-script)", "cursive"],
         sans: [
           "var(--font-body)",
           "Inter",

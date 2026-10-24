@@ -1,4 +1,4 @@
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Caveat, Inter, Plus_Jakarta_Sans } from "next/font/google";
 
 import type { Metadata } from "next";
 
@@ -9,6 +9,14 @@ const display = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["500", "600", "700", "800"],
   variable: "--font-display",
+  display: "swap",
+});
+
+/** Acento manuscrito: Caveat — só em palavras de destaque (calor humano). */
+const script = Caveat({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  variable: "--font-script",
   display: "swap",
 });
 
@@ -45,7 +53,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt-BR" className={`${display.variable} ${body.variable}`}>
+    <html lang="pt-BR" className={`${display.variable} ${body.variable} ${script.variable}`}>
       <body>{children}</body>
     </html>
   );
