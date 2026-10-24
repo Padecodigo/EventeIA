@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  TYPE_LABELS,
   adminAlertEmail,
   canTransition,
   countTickets,
@@ -86,5 +87,12 @@ describe("central de atendimento — regras puras", () => {
     expect(mail.subject).toContain("#ABCDEF12");
     expect(mail.text).toContain("https://app/admin/chamados/abcdef12-0000");
     expect(mail.text).not.toContain("@");
+  });
+});
+
+describe("TYPE_LABELS", () => {
+  it("mostra 'Erro no site' para o tipo problema (valor do enum mantido)", () => {
+    expect(TYPE_LABELS.problema).toBe("Erro no site");
+    expect(Object.values(TYPE_LABELS)).not.toContain("Problema (chamado)");
   });
 });

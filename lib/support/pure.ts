@@ -14,7 +14,7 @@ export const TYPE_LABELS: Record<TicketType, string> = {
   sugestao: "Sugestão",
   reclamacao: "Reclamação",
   elogio: "Elogio / feedback",
-  problema: "Problema (chamado)",
+  problema: "Erro no site",
 };
 
 export const STATUS_LABELS: Record<TicketStatus, string> = {
