@@ -1,0 +1,11 @@
+# Correções do pnpm audit (escopadas para não afetar outras dependências).
+overrides:
+  postcss: "^8.5.23"
+  "@sentry/node>cookie": "^0.7.0"
+  tmp: "^0.2.6"
+  "@lhci/cli>uuid": "^11.1.1"
+  basic-ftp: "^6.2.1"
+allowBuilds:
+  esbuild: true
+  msgpackr-extract: false
+  unrs-resolver: false

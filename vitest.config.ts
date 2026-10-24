@@ -5,7 +5,7 @@ import { defineConfig } from "vitest/config";
 const rootDir = fileURLToPath(new URL(".", import.meta.url));
 
 export default defineConfig({
-  esbuild: { jsx: "automatic" },
+  oxc: { jsx: { runtime: "automatic" } },
   test: {
     environment: "node",
     include: ["tests/**/*.test.{ts,tsx}"],
