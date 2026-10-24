@@ -4,13 +4,7 @@
  * (script `pnpm gen:types`). Mantenha em sincronia com supabase/migrations/.
  */
 
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[];
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 type Table<Row> = {
   Row: Row;
@@ -138,13 +132,7 @@ export interface Database {
         billing_type: "PIX" | "CREDIT_CARD";
         amount_cents: number;
         status:
-          | "pending"
-          | "paid"
-          | "confirmed"
-          | "overdue"
-          | "refunded"
-          | "risk_review"
-          | "chargeback";
+          "pending" | "paid" | "confirmed" | "overdue" | "refunded" | "risk_review" | "chargeback";
         asaas_fee_cents: number | null;
         net_cents: number | null;
         credits_granted: number | null;
@@ -197,14 +185,7 @@ export interface Database {
         template: string;
         to_number_e164: string;
         body: string;
-        status:
-          | "pending"
-          | "queued"
-          | "sent"
-          | "delivered"
-          | "read"
-          | "failed"
-          | "canceled";
+        status: "pending" | "queued" | "sent" | "delivered" | "read" | "failed" | "canceled";
         idempotency_key: string;
         external_message_id: string | null;
         scheduled_for: string | null;
@@ -240,6 +221,23 @@ export interface Database {
         created_at: string;
         expires_at: string;
         bound_at: string | null;
+        reserved_event_id: string | null;
+        redeemed_at: string | null;
+        payment_id: string | null;
+        visit_hash: string | null;
+        forfeited_at: string | null;
+      }>;
+      lucky_coupons: Table<{
+        id: string;
+        code: string;
+        ip_hash: string;
+        device_hash: string;
+        profile_id: string | null;
+        percent: number;
+        created_at: string;
+        expires_at: string;
+        redraw_at: string;
+        superseded_at: string | null;
         reserved_event_id: string | null;
         redeemed_at: string | null;
         payment_id: string | null;
@@ -349,7 +347,18 @@ export interface Database {
       cost_entries: Table<{
         id: string;
         occurred_at: string;
-        provider: "deepseek" | "xai" | "nim" | "search" | "fetch" | "whatsapp" | "asaas" | "vps" | "supabase" | "domain" | "other";
+        provider:
+          | "deepseek"
+          | "xai"
+          | "nim"
+          | "search"
+          | "fetch"
+          | "whatsapp"
+          | "asaas"
+          | "vps"
+          | "supabase"
+          | "domain"
+          | "other";
         kind: "variable" | "fixed";
         reason: string;
         event_id: string | null;
@@ -436,6 +445,33 @@ export interface Database {
       welcome_offer_reserve: {
         Args: { p_profile_id: string; p_event_id: string };
         Returns: { code: string; expires_at: string }[];
+      };
+      welcome_offer_touch_visit: {
+        Args: { p_device_hash: string; p_profile_id: string | null; p_visit_hash: string | null };
+        Returns: string;
+      };
+      lucky_coupon_lookup: {
+        Args: {
+          p_ip_hash: string;
+          p_device_hash: string;
+          p_profile_id: string | null;
+          p_percent: number | null;
+          p_window_hours: number;
+          p_validity_hours: number;
+        };
+        Returns: {
+          status: "available" | "active" | "expired" | "redeemed" | "ineligible";
+          code: string | null;
+          percent: number | null;
+          expires_at: string | null;
+          redraw_at: string | null;
+          server_now: string;
+          created: boolean;
+        }[];
+      };
+      lucky_coupon_reserve: {
+        Args: { p_profile_id: string; p_event_id: string };
+        Returns: { code: string; percent: number; expires_at: string }[];
       };
       welcome_offer_recent_redemptions: {
         Args: Record<string, never>;

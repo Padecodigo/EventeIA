@@ -21,6 +21,8 @@ import { ENGINE_VERSION } from "@/lib/engine";
 import { serverEnv } from "@/lib/env";
 import { emitFeed } from "@/lib/feeds";
 import { logger } from "@/lib/logger";
+import { luckyDiscountCents } from "@/lib/lucky/pure";
+import { reserveLuckyCoupon } from "@/lib/lucky/server";
 import { formatBRL, parseBRLToCents } from "@/lib/money";
 import { normalizePhoneE164 } from "@/lib/phone";
 import { enqueue, QUEUE_NAMES } from "@/lib/queue";
@@ -109,7 +111,10 @@ export async function createEventAction(
       source: "app",
     });
   } catch (caught) {
-    logger.warn({ reason: caught instanceof Error ? caught.message : "desconhecido" }, "feed event.created falhou");
+    logger.warn(
+      { reason: caught instanceof Error ? caught.message : "desconhecido" },
+      "feed event.created falhou",
+    );
   }
 
   revalidatePath("/eventos");
@@ -241,8 +246,7 @@ export async function buyTicketAction(
 
     // Cupom (opcional): validação e desconto SEMPRE no servidor (0010).
     const couponRawEntry = formData.get("coupon");
-    const couponRaw =
-      typeof couponRawEntry === "string" ? normalizeCouponCode(couponRawEntry) : "";
+    const couponRaw = typeof couponRawEntry === "string" ? normalizeCouponCode(couponRawEntry) : "";
 
     let discount = 0;
     let couponCode: string | null = null;
@@ -267,6 +271,13 @@ export async function buyTicketAction(
       if (welcome !== null) {
         discount = welcomeDiscountCents(env.B2C_TICKET_PRICE_CENTS);
         couponCode = discount > 0 ? welcome.code : null;
+      } else {
+        // Cupom sorteado: percentual SEMPRE o gravado no banco (nunca do client).
+        const lucky = await reserveLuckyCoupon(user.id, event.id);
+        if (lucky !== null) {
+          discount = luckyDiscountCents(env.B2C_TICKET_PRICE_CENTS, lucky.percent);
+          couponCode = lucky.code;
+        }
       }
     }
 
@@ -317,10 +328,12 @@ export async function buyTicketAction(
       return { error: "Pagamento criado, mas o registro local falhou. Nossa equipe foi avisada." };
     }
 
-    const { error: ticketError } = await supabase.from("event_tickets").upsert(
-      { event_id: event.id, status: "pending", payment_id: paymentRow.id },
-      { onConflict: "event_id" },
-    );
+    const { error: ticketError } = await supabase
+      .from("event_tickets")
+      .upsert(
+        { event_id: event.id, status: "pending", payment_id: paymentRow.id },
+        { onConflict: "event_id" },
+      );
 
     if (ticketError !== null) {
       logger.error({ code: ticketError.code }, "falha ao registrar tíquete pendente");
@@ -341,7 +354,10 @@ export async function buyTicketAction(
         source: "app",
       });
     } catch (caught) {
-      logger.warn({ reason: caught instanceof Error ? caught.message : "desconhecido" }, "feed payment.created falhou");
+      logger.warn(
+        { reason: caught instanceof Error ? caught.message : "desconhecido" },
+        "feed payment.created falhou",
+      );
     }
 
     revalidatePath(`/eventos/${event.id}`);
@@ -979,16 +995,27 @@ export async function setWhatsappNumberModeAction(
   formData: FormData,
 ): Promise<NumberModeState> {
   const user = await requireUser();
-  const parsed = numberModeSchema.safeParse({ eventId: formData.get("eventId"), mode: formData.get("mode") });
+  const parsed = numberModeSchema.safeParse({
+    eventId: formData.get("eventId"),
+    mode: formData.get("mode"),
+  });
   if (!parsed.success) return { error: "Escolha uma das opções." };
 
   const supabase = await createSupabaseServerClient();
-  const { data: event } = await supabase.from("events").select("id").eq("id", parsed.data.eventId).maybeSingle();
+  const { data: event } = await supabase
+    .from("events")
+    .select("id")
+    .eq("id", parsed.data.eventId)
+    .maybeSingle();
   if (event === null) return { error: "Evento não encontrado." };
 
   const admin = getSupabaseAdmin();
   const instance = `eventeia-${user.id.slice(0, 8)}`;
-  const { data: existing } = await admin.from("whatsapp_instances").select("id").eq("instance_name", instance).maybeSingle();
+  const { data: existing } = await admin
+    .from("whatsapp_instances")
+    .select("id")
+    .eq("instance_name", instance)
+    .maybeSingle();
   const { error } =
     existing === null
       ? await admin.from("whatsapp_instances").insert({
@@ -998,7 +1025,10 @@ export async function setWhatsappNumberModeAction(
           event_id: event.id,
           number_mode: parsed.data.mode,
         })
-      : await admin.from("whatsapp_instances").update({ number_mode: parsed.data.mode }).eq("id", existing.id);
+      : await admin
+          .from("whatsapp_instances")
+          .update({ number_mode: parsed.data.mode })
+          .eq("id", existing.id);
   if (error !== null) {
     logger.error({ code: error.code }, "falha ao salvar modo do número");
     return { error: "Não foi possível salvar. Tente novamente." };

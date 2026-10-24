@@ -170,3 +170,10 @@ Implementação: Redis (Upstash/BullMQ) com chave `rl:{scope}:{id}:{janela}`; ex
 - **RLS:** `welcome_offers` e `welcome_rate_limits` com RLS forçada; só admin lê ofertas; escrita apenas via funções `SECURITY DEFINER` executáveis por `service_role`.
 - **Prazo real:** `expires_at = now() + 24h` no banco; checkout reserva com `now()` do banco. O client recebe só o tempo restante (sem o código do cupom).
 - **Anti-abuso:** 1 oferta por hash de IP, por aparelho e por conta (índices únicos; expirar não libera outra); rate limit de 30 req/min por IP; POST exige mesma origem; oferta presa a 1 conta e 1 evento; redenção só em `paid/confirmed`.
+
+## Cupom sorteado (migração 0025) — revisão de segurança
+
+- Sorteio só no servidor (`crypto.randomInt(20, 41)`); o banco valida 20..40 (CHECK + função). O client não envia percentual; checkout usa o valor gravado.
+- Concorrência: `pg_advisory_xact_lock` por aparelho/conta — cliques simultâneos não geram dois sorteios na janela de 48h.
+- RLS forçada em `lucky_coupons`; só admin lê; RPCs `SECURITY DEFINER` com EXECUTE só para `service_role`. LGPD: apenas HMACs (IP, aparelho, visita).
+- Aditiva: 2 colunas nullable em `welcome_offers` (`visit_hash`, `forfeited_at`), nova tabela, novas funções e trigger. Sem DROP/DELETE.
