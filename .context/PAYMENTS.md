@@ -222,3 +222,10 @@ A conta Asaas atual é de **pessoa física (CPF)**. Quando a EventeIA constituir
 | Expiração de Pix (30 min) | Novo checkout gera novo `asaas_payment_id`; antigo → `overdue` |
 
 Mocks de API: servidor fake Asaas (MSW/nock) com fixtures versionados em `tests/integration/fixtures/asaas/`.
+
+## Ambiente e teste local (revisão 2026-10)
+
+- `ASAAS_ENVIRONMENT=sandbox|production` seleciona a base (`https://sandbox.asaas.com/api/v3` ou `https://api.asaas.com/v3`); `ASAAS_API_URL` é override opcional. Ver `lib/asaas/environment.ts`.
+- O webhook `/api/webhooks/asaas` agora chama `process_payment_webhook` **inline** (atômico e idempotente em SQL); a fila BullMQ é apenas fallback quando o RPC falha.
+- `POST /api/dev/simulate-payment` (`{ "asaasPaymentId": "...", "webhookEventId"?: "..." }`) existe só com `NODE_ENV=development` (404 caso contrário) e envia `PAYMENT_RECEIVED` ao webhook real com o token. Repetir o mesmo `webhookEventId` retorna `duplicated: true`.
+- Testes: `tests/unit/asaas-webhook-route.test.ts` e `supabase/tests/payment_webhook_idempotency_test.sql`.

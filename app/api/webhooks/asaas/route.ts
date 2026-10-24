@@ -76,19 +76,29 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json({ ok: true, duplicated: true });
     }
 
-    const enqueued = await enqueue(
-      QUEUE_NAMES.asaasWebhooks,
-      "process",
-      { webhookEventId: inserted.id },
-      { jobId: inserted.id },
-    );
+    // Processamento atômico e idempotente em SQL (process_payment_webhook):
+    // pagamento → tíquete B2C ou crédito B2B na MESMA transação. Inline para
+    // não depender do Redis; a fila é só fallback se o banco falhar agora.
+    const { data: result, error: rpcError } = await admin.rpc("process_payment_webhook", {
+      p_webhook_event_id: inserted.id,
+    });
 
-    if (!enqueued) {
-      // Evento persistido; a conciliação diária cobre a fila indisponível (PAYMENTS.md §8).
-      logger.error({ webhookEventId: inserted.id }, "fila indisponível ao enfileirar webhook asaas");
+    if (rpcError !== null) {
+      logger.error({ webhookEventId: inserted.id, code: rpcError.code }, "process_payment_webhook falhou — fallback fila");
+      const enqueued = await enqueue(
+        QUEUE_NAMES.asaasWebhooks,
+        "process",
+        { webhookEventId: inserted.id },
+        { jobId: inserted.id },
+      );
+      if (!enqueued) {
+        // Evento persistido; a conciliação diária cobre a fila indisponível (PAYMENTS.md §8).
+        logger.error({ webhookEventId: inserted.id }, "fila indisponível ao enfileirar webhook asaas");
+      }
+      return NextResponse.json({ ok: true, queued: enqueued });
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, result });
   } catch (caught) {
     logger.error(
       { reason: caught instanceof Error ? caught.message : "desconhecido" },

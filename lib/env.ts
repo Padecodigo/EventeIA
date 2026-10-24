@@ -13,7 +13,10 @@ const serverSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(20),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(20).optional(),
   REDIS_URL: z.string().url().default("redis://localhost:6379"),
-  ASAAS_API_URL: z.string().url().default("https://api-sandbox.asaas.com/v3"),
+  // sandbox (padrão) → https://sandbox.asaas.com/api/v3 · production → https://api.asaas.com/v3
+  ASAAS_ENVIRONMENT: z.enum(["sandbox", "production"]).default("sandbox"),
+  // Override opcional (compatibilidade); vazio = usa ASAAS_ENVIRONMENT.
+  ASAAS_API_URL: z.string().url().optional().or(z.literal("")),
   // Chaves de API podem ser vazias em dev: o .env.example usa "" e o checkout
   // degrada com AsaasNotConfiguredError. "Vazio = não configurado", nunca erro de env.
   ASAAS_API_KEY: z.string().optional(),

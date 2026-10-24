@@ -2,6 +2,7 @@ import "server-only";
 
 import { z } from "zod";
 
+import { resolveAsaasBaseUrl } from "@/lib/asaas/environment";
 import { isConfigured, serverEnv } from "@/lib/env";
 
 /**
@@ -39,13 +40,18 @@ async function request<T>(path: string, init: RequestInit, schema: z.ZodType<T>)
     throw new AsaasNotConfiguredError();
   }
 
-  const response = await fetch(`${env.ASAAS_API_URL}${path}`, {
+  const baseUrl = resolveAsaasBaseUrl({
+    environment: env.ASAAS_ENVIRONMENT,
+    overrideUrl: env.ASAAS_API_URL,
+  });
+  const response = await fetch(`${baseUrl}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
       access_token: apiKey,
     },
     cache: "no-store",
+    signal: AbortSignal.timeout(20_000),
   });
 
   const text = await response.text();
