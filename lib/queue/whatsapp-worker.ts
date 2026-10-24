@@ -1,206 +1,196 @@
 import "server-only";
 
-import { Queue, Worker, type Job } from "bullmq";
+import { DelayedError, Worker, type Job } from "bullmq";
+import type { Redis } from "ioredis";
 
-import { sendText } from "@/lib/evolution-api/client";
-import { EvolutionSessionError } from "@/lib/evolution-api/client";
+import { EvolutionSessionError, sendFirstContact } from "@/lib/evolution-api/client";
 import { emitFeed } from "@/lib/feeds";
 import { logger } from "@/lib/logger";
-import { getRedisConnection, QUEUE_NAMES } from "@/lib/queue";
-import {
-  pickIntervalSeconds,
-  resolveIntervalSeconds,
-} from "@/lib/queue/prospecting-pacing";
+import { QUEUE_NAMES } from "@/lib/queue";
+import { reservePacingSlot, type PacingStore } from "@/lib/queue/prospecting-pacing";
 import {
   prospectingJobSchema,
   renderFirstContact,
   type ProspectingJob,
 } from "@/lib/schemas/whatsapp";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { canSendFirstContact, toSessionState } from "@/lib/whatsapp/session-lifecycle";
+import { endCollectionWindow, handleSessionLost } from "@/lib/whatsapp/session-manager";
+import { createSessionDeps, isEventPaused } from "@/lib/whatsapp/session-runtime";
 
 /**
  * Agente Orçamentista — worker da fila `quotation-prospecting-queue`.
  *
  * Regras invioláveis (ver .context/WHATSAPP_EVOLUTION.md):
- * 1. Pacing humanizado por instância: intervalo ALEATÓRIO de 45–90s entre
- *    disparos (chave Redis por instância; BullMQ limiter como piso rígido).
- * 2. Primeiro contato: texto puro validado por Zod (sem URLs/emojis/anexos).
+ * 1. Pacing humanizado POR INSTÂNCIA: intervalo aleatório 45–90s, reservado
+ *    atomicamente (SET NX PX). Instâncias diferentes não se bloqueiam (≈100 sessões).
+ * 2. Primeiro contato: texto puro validado por Zod (payload estrito, sem anexos/URLs).
  * 3. Opt-out do fornecedor pula o envio imediatamente.
- * 4. Sessão desconectada: pausa a fila + status da instância no banco.
+ * 4. Sessão inválida/desconectada: instância `disconnected`, pausa SÓ os jobs
+ *    do evento (flag Redis) e notifica o app — nunca a fila global.
  */
 
+const SESSION_WAIT_MS = 60_000;
+const PAUSED_EVENT_RECHECK_MS = 15 * 60_000;
 
-const PACE_TTL_SECONDS = 15 * 60;
-
-function pacingKey(instance: string): string {
-  return `eventeia:prospect-pace:${instance}`;
+export function createRedisPacingStore(redis: Redis): PacingStore {
+  return {
+    async setIfAbsent(key, ttlMs) {
+      return (await redis.set(key, "1", "PX", ttlMs, "NX")) === "OK";
+    },
+    async ttlMs(key) {
+      return redis.pttl(key);
+    },
+  };
 }
 
-async function readNextAllowedAt(instance: string): Promise<number> {
-  const redis = getRedisConnection();
-  const value = await redis.get(pacingKey(instance));
-  return value === null ? 0 : Number(value);
-}
-
-async function writeNextAllowedAt(instance: string, nextAllowedAt: number): Promise<void> {
-  const redis = getRedisConnection();
-  await redis.set(pacingKey(instance), String(nextAllowedAt), "EX", PACE_TTL_SECONDS);
-}
-
-async function handleSessionDisconnected(instance: string, queue: Queue): Promise<void> {
-  const admin = getSupabaseAdmin();
-
-  await admin
-    .from("whatsapp_instances")
-    .update({ status: "disconnected", last_checked_at: new Date().toISOString() })
-    .eq("instance_name", instance);
-
-  await queue.pause();
-
-  try {
-    await emitFeed(admin, {
-      type: "whatsapp.instance_disconnected",
-      actorType: "system",
-      aggregateType: "whatsapp_instance",
-      aggregateId: instance,
-      payload: { action: "queue_paused", queue: QUEUE_NAMES.quotationProspecting },
-      correlationId: `pause:${instance}:${String(Date.now())}`,
-      source: "worker",
-    });
-  } catch {
-    // feed não bloqueia a pausa
-  }
-
-  logger.error({ instance, queue: queue.name }, "sessão desconectada — fila pausada");
+async function delay(job: Job, untilMs: number, token: string | undefined): Promise<never> {
+  await job.moveToDelayed(untilMs, token);
+  // BullMQ v5: após moveToDelayed é obrigatório lançar DelayedError.
+  throw new DelayedError();
 }
 
 async function processProspectingJob(
   job: Job<ProspectingJob>,
-  _queue: Queue,
+  token: string | undefined,
+  pacing: PacingStore,
 ): Promise<void> {
   const admin = getSupabaseAdmin();
-  const { prospectId, instance, phoneE164 } = prospectingJobSchema.parse(job.data);
+  const data = prospectingJobSchema.parse(job.data);
 
   // Regra 3: opt-out (ou já enviado) — pula o envio imediatamente.
   const { data: prospect } = await admin
     .from("vendor_prospects")
     .select("id,status,vendor_name,vendor_category")
-    .eq("id", prospectId)
+    .eq("id", data.prospectId)
     .maybeSingle();
 
   if (prospect === null) {
-    logger.warn({ prospectId }, "prospect não encontrado — job descartado");
+    logger.warn({ prospectId: data.prospectId }, "prospect não encontrado — job descartado");
     return;
   }
-
   if (prospect.status === "opt_out" || prospect.status === "sent") {
     return;
   }
 
-  // Regra 1: pacing humanizado — adia o job sem ocupar o worker.
-  const nextAllowedAt = await readNextAllowedAt(instance);
-  const now = Date.now();
+  // Regra 4: evento pausado por queda de sessão — adia sem consumir tentativa.
+  if (await isEventPaused(data.eventId)) {
+    await delay(job, Date.now() + PAUSED_EVENT_RECHECK_MS, token);
+  }
 
-  if (nextAllowedAt > now) {
-    await job.moveToDelayed(nextAllowedAt, job.token);
+  const { data: instanceRow } = await admin
+    .from("whatsapp_instances")
+    .select("status")
+    .eq("instance_name", data.instance)
+    .maybeSingle();
+  const state = toSessionState(instanceRow?.status ?? "connecting");
+
+  if (state === "connecting") {
+    await delay(job, Date.now() + SESSION_WAIT_MS, token); // aguardando QR/pareamento
+  }
+  if (!canSendFirstContact(state)) {
+    logger.info({ prospectId: data.prospectId, state }, "sessão fora de 'active' — envio não iniciado");
     return;
   }
 
-  const parsedJob = prospectingJobSchema.parse(job.data);
-  const message = renderFirstContact({
-    vendorName: parsedJob.vendorName,
-    eventTitle: parsedJob.eventTitle,
-    eventType: parsedJob.eventType,
-    eventDateIso: parsedJob.eventDateIso,
-    city: parsedJob.city,
-    guestCount: parsedJob.guestCount,
-  });
+  // Regra 1: reserva atômica do intervalo humanizado desta instância.
+  const decision = await reservePacingSlot(pacing, data.instance, Date.now());
+  if (!decision.allowed) {
+    await delay(job, decision.retryAtMs, token);
+    return;
+  }
 
-  const result = await sendText(instance, phoneE164, message);
+  const message = renderFirstContact(data);
 
-  // Registra a mensagem enviada (auditoria) e agenda o próximo intervalo.
+  let externalMessageId: string | undefined;
+  try {
+    ({ externalMessageId } = await sendFirstContact(data.instance, {
+      number: data.phoneE164,
+      text: message,
+    }));
+  } catch (error) {
+    if (error instanceof EvolutionSessionError) {
+      await handleSessionLost(createSessionDeps(), { instance: data.instance, eventId: data.eventId });
+      await delay(job, Date.now() + PAUSED_EVENT_RECHECK_MS, token);
+    }
+    throw error;
+  }
+
+  const nowIso = new Date().toISOString();
   await admin.from("whatsapp_messages").upsert(
     {
-      event_id: parsedJob.eventId,
+      event_id: data.eventId,
       direction: "outbound",
       template: "vendor_first_contact",
-      to_number_e164: phoneE164,
+      to_number_e164: data.phoneE164,
       body: message,
       status: "sent",
-      external_message_id: result.externalMessageId ?? null,
-      sent_at: new Date().toISOString(),
-      idempotency_key: `prospect:${String(prospectId)}`,
+      external_message_id: externalMessageId ?? null,
+      sent_at: nowIso,
+      idempotency_key: `prospect:${data.prospectId}`,
     },
     { onConflict: "idempotency_key", ignoreDuplicates: true },
   );
 
   await admin
     .from("vendor_prospects")
-    .update({ status: "sent", last_message_at: new Date().toISOString() })
-    .eq("id", prospectId);
-
-  await writeNextAllowedAt(instance, Date.now() + pickIntervalSeconds() * 1000);
+    .update({ status: "sent", last_message_at: nowIso })
+    .eq("id", data.prospectId);
 
   try {
     await emitFeed(admin, {
       type: "vendor.prospected",
       actorType: "system",
       aggregateType: "event",
-      aggregateId: parsedJob.eventId,
+      aggregateId: data.eventId,
       payload: { vendor: prospect.vendor_name, category: prospect.vendor_category },
-      correlationId: String(prospectId),
+      correlationId: data.prospectId,
       source: "worker",
     });
   } catch {
     // feed não bloqueia o envio
   }
 
-  logger.info({ prospectId, instance }, "prospecção enviada ao fornecedor");
+  logger.info(
+    { prospectId: data.prospectId, instance: data.instance, nextIntervalSeconds: decision.intervalSeconds },
+    "prospecção enviada ao fornecedor",
+  );
 }
 
 /**
- * Cria o worker da fila de prospecção.
- * `intervalSeconds` é o piso rígido do limiter BullMQ; o pacing humanizado
- * (45–90s por instância) fica na chave Redis (Regra 1).
+ * Worker da fila de prospecção. Sem limiter global: o limite é por instância
+ * (pacing). `concurrency` atende várias sessões em paralelo com UMA conexão
+ * Redis compartilhada (BullMQ duplica só a conexão bloqueante do worker).
  */
-export function createProspectingWorker(
-  connection: ReturnType<typeof getRedisConnection>,
-  intervalSeconds: number,
-): Worker {
-  const queue = new Queue(QUEUE_NAMES.quotationProspecting, { connection });
+export function createProspectingWorker(connection: Redis, concurrency: number): Worker {
+  const pacing = createRedisPacingStore(connection);
 
   const worker = new Worker<ProspectingJob>(
     QUEUE_NAMES.quotationProspecting,
-    async (job) => {
-      await processProspectingJob(job, queue);
+    async (job, token) => {
+      await processProspectingJob(job, token, pacing);
     },
-    {
-      connection,
-      concurrency: 1,
-      // Piso rígido por instância: no máximo 1 mensagem a cada `interval` s.
-      // Piso rígido global; o pacing por instância (45–90s) fica na chave Redis
-      // `eventeia:prospect-pace:<instância>` + moveToDelayed (prospecting-pacing.ts).
-      limiter: { max: 1, duration: resolveIntervalSeconds(intervalSeconds) * 1000 },
-    },
+    { connection, concurrency: Math.max(1, Math.min(200, concurrency)) },
   );
 
   worker.on("failed", (job, error) => {
-    if (error instanceof EvolutionSessionError) {
-      const instance = job?.data.instance;
-      if (typeof instance === "string") {
-        void handleSessionDisconnected(instance, queue);
-      }
-      return;
-    }
     logger.warn(
       { queue: worker.name, jobId: job?.id, reason: error.message },
       "job de prospecção falhou (retry com backoff)",
     );
   });
 
-  worker.on("error", (error) => {
-    logger.error({ queue: worker.name, reason: error.message }, "erro no worker de prospecção");
-  });
-
   return worker;
+}
+
+/** Worker do fim da janela de coleta: draining → logout → disconnected → notifica. */
+export function createSessionLifecycleWorker(connection: Redis): Worker {
+  return new Worker<{ instance: string; eventId: string }>(
+    QUEUE_NAMES.whatsappSessionLifecycle,
+    async (job) => {
+      const result = await endCollectionWindow(createSessionDeps(), job.data);
+      logger.info({ instance: job.data.instance, result }, "janela de coleta encerrada");
+    },
+    { connection, concurrency: 5 },
+  );
 }

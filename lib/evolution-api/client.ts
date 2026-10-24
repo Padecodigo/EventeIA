@@ -4,7 +4,11 @@ import { isConfigured, serverEnv } from "@/lib/env";
 import {
   evolutionConnectionStateSchema,
   evolutionSendResponseSchema,
+  firstContactPayloadSchema,
 } from "@/lib/schemas/whatsapp";
+
+/** Timeout por requisição: evita sockets pendurados com ~100 sessões. */
+const REQUEST_TIMEOUT_MS = 20_000;
 
 /**
  * Cliente tipado da Evolution API (self-hosted) — Agente Orçamentista.
@@ -98,6 +102,7 @@ export async function sendText(
     headers: { "Content-Type": "application/json", apikey: apiKey },
     body: JSON.stringify({ number: numberE164, text }),
     cache: "no-store",
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
 
   const body: unknown = await parseResponse(response);
@@ -118,6 +123,7 @@ export async function getConnectionState(instance: string): Promise<"open" | "co
     method: "GET",
     headers: { apikey: apiKey },
     cache: "no-store",
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
 
   const body: unknown = await parseResponse(response);
@@ -128,4 +134,31 @@ export async function getConnectionState(instance: string): Promise<"open" | "co
   }
 
   return parsed.data.state === "closed" ? "close" : parsed.data.state;
+}
+
+/**
+ * Primeiro contato: valida o payload completo (texto puro, sem anexos/URLs)
+ * ANTES de chamar a Evolution. Campos extras são rejeitados pelo Zod.
+ */
+export async function sendFirstContact(
+  instance: string,
+  payload: unknown,
+): Promise<{ externalMessageId?: string }> {
+  const parsed = firstContactPayloadSchema.parse(payload);
+  return sendText(instance, parsed.number, parsed.text);
+}
+
+/** Logout gracioso da sessão (fim da janela de coleta). 404 = já encerrada. */
+export async function logoutInstance(instance: string): Promise<void> {
+  const { baseUrl, apiKey } = requireEnv();
+  const response = await fetch(`${baseUrl}/instance/logout/${encodeURIComponent(instance)}`, {
+    method: "DELETE",
+    headers: { apikey: apiKey },
+    cache: "no-store",
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  if (response.status === 404) {
+    return;
+  }
+  await parseResponse(response);
 }

@@ -758,6 +758,7 @@ export async function addVendorProspectAction(
       profile_id: user.id,
       instance_name: instance,
       status: "connecting",
+      event_id: event.id,
     });
 
     if (instanceError !== null) {
@@ -801,7 +802,8 @@ export async function addVendorProspectAction(
     QUEUE_NAMES.quotationProspecting,
     "prospect",
     { ...job, instance },
-    { jobId: `prospect:${String(prospect.id)}` },
+    // BullMQ v5 rejeita ":" em jobId customizado — usar "-".
+    { jobId: `prospect-${String(prospect.id)}` },
   );
 
   if (!queued) {

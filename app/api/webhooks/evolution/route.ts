@@ -2,12 +2,15 @@ import { NextResponse } from "next/server";
 
 import { z } from "zod";
 
+import { serverEnv } from "@/lib/env";
 import { emitFeed } from "@/lib/feeds";
 import { logger } from "@/lib/logger";
 import { detectOptOut } from "@/lib/schemas/whatsapp";
 import { verifyEvolutionWebhookToken } from "@/lib/security";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/types";
+import { activateSession, handleSessionLost } from "@/lib/whatsapp/session-manager";
+import { createSessionDeps } from "@/lib/whatsapp/session-runtime";
 import { renderOptOutConfirmation } from "@/lib/whatsapp/templates";
 
 export const runtime = "nodejs";
@@ -22,6 +25,7 @@ const dataSchema = z
       })
       .optional(),
     status: z.string().optional(),
+    state: z.string().optional(),
     message: z
       .object({
         conversation: z.string().optional(),
@@ -136,7 +140,21 @@ export async function POST(request: Request): Promise<NextResponse> {
         data?.message?.conversation ?? data?.message?.extendedTextMessage?.text ?? null;
 
       if (phone !== null && text !== null) {
-        if (text.trim().toUpperCase().includes("SAIR")) {
+        await admin.from("whatsapp_messages").upsert(
+          {
+            direction: "inbound",
+            template: "inbound",
+            to_number_e164: phone,
+            body: text,
+            status: "delivered",
+            idempotency_key: `inbound:${messageId ?? externalEventId}`,
+          },
+          { onConflict: "idempotency_key", ignoreDuplicates: true },
+        );
+
+        // Regra 3 — opt-out (sair, parar, não tenho interesse…), sem acento/caixa.
+        // Antes: "SAIR" era tratado num ramo separado e NÃO marcava o fornecedor.
+        if (detectOptOut(text)) {
           await admin.from("consents").upsert(
             {
               phone_e164: phone,
@@ -147,50 +165,61 @@ export async function POST(request: Request): Promise<NextResponse> {
             },
             { onConflict: "phone_e164,channel" },
           );
-
-          logger.info({ phoneMasked: `${phone.slice(0, 5)}…` }, "opt-out registrado");
           void renderOptOutConfirmation();
-        } else {
-          await admin.from("whatsapp_messages").upsert(
-            {
-              direction: "inbound",
-              template: "inbound",
-              to_number_e164: phone,
-              body: text,
-              status: "delivered",
-              idempotency_key: `inbound:${messageId ?? externalEventId}`,
-            },
-            { onConflict: "idempotency_key", ignoreDuplicates: true },
-          );
 
-          // Regra 3 — opt-out imediato do fornecedor (Agente Orçamentista).
-          if (detectOptOut(text)) {
-            const { data: optedOut } = await admin
-              .from("vendor_prospects")
-              .update({ status: "opt_out", opt_out_at: new Date().toISOString() })
-              .eq("phone_e164", phone)
-              .in("status", ["pending", "sent", "replied", "failed"])
-              .select("id,event_id");
+          const { data: optedOut } = await admin
+            .from("vendor_prospects")
+            .update({ status: "opt_out", opt_out_at: new Date().toISOString() })
+            .eq("phone_e164", phone)
+            .in("status", ["pending", "sent", "replied", "failed"])
+            .select("id,event_id");
 
-            if (optedOut !== null && optedOut.length > 0) {
-              for (const row of optedOut) {
-                try {
-                  await emitFeed(admin, {
-                    type: "vendor.opt_out",
-                    actorType: "system",
-                    aggregateType: "event",
-                    aggregateId: row.event_id,
-                    payload: { prospect_id: row.id },
-                    correlationId: externalEventId,
-                    source: "webhook",
-                  });
-                } catch {
-                  // feed não bloqueia o opt-out
-                }
-              }
-              logger.info({ phoneMasked: `${phone.slice(0, 7)}…` }, "fornecedor opt-out");
+          for (const row of optedOut ?? []) {
+            try {
+              await emitFeed(admin, {
+                type: "vendor.opt_out",
+                actorType: "system",
+                aggregateType: "event",
+                aggregateId: row.event_id,
+                payload: { prospect_id: row.id },
+                correlationId: externalEventId,
+                source: "webhook",
+              });
+            } catch {
+              // feed não bloqueia o opt-out
             }
           }
+          logger.info({ phoneMasked: `${phone.slice(0, 5)}…` }, "opt-out registrado");
+        } else {
+          await admin
+            .from("vendor_prospects")
+            .update({ status: "replied", last_message_at: new Date().toISOString() })
+            .eq("phone_e164", phone)
+            .eq("status", "sent");
+        }
+      }
+    }
+
+    // Ciclo de vida da sessão efêmera: open ⇒ active (inicia janela); close ⇒ perdida.
+    const normalizedEvent = payload.event.toLowerCase().replace(/_/g, ".");
+    if (normalizedEvent.startsWith("connection.update") && payload.instance !== undefined) {
+      const { data: instanceRow } = await admin
+        .from("whatsapp_instances")
+        .select("event_id")
+        .eq("instance_name", payload.instance)
+        .maybeSingle();
+      const eventId = instanceRow?.event_id ?? null;
+
+      if (eventId !== null) {
+        const deps = createSessionDeps();
+        if (data?.state === "open") {
+          await activateSession(deps, {
+            instance: payload.instance,
+            eventId,
+            windowMinutes: serverEnv().WHATSAPP_COLLECTION_WINDOW_MINUTES,
+          });
+        } else if (data?.state === "close") {
+          await handleSessionLost(deps, { instance: payload.instance, eventId });
         }
       }
     }

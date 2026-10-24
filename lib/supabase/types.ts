@@ -206,9 +206,25 @@ export interface Database {
         id: string;
         profile_id: string;
         instance_name: string;
-        status: "connecting" | "connected" | "disconnected" | "paused";
+        status: "connecting" | "connected" | "active" | "draining" | "disconnected" | "paused";
         credentials_encrypted: string | null;
         last_checked_at: string | null;
+        event_id: string | null;
+        collection_window_minutes: number | null;
+        activated_at: string | null;
+        drain_at: string | null;
+        disconnected_at: string | null;
+        created_at: string;
+      }>;
+      notifications: Table<{
+        id: string;
+        profile_id: string;
+        event_id: string | null;
+        type: "quotations_ready";
+        payload: Json;
+        idempotency_key: string;
+        email_sent_at: string | null;
+        read_at: string | null;
         created_at: string;
       }>;
       vendor_prospects: Table<{

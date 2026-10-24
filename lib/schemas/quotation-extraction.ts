@@ -54,7 +54,7 @@ export interface QuotationExtractionResult {
 }
 
 /** Extração vazia/segura usada em falhas — nunca estima valores. */
-export const EMPTY_QUOTATION: NuancedQuotation = Object.freeze({
+export const EMPTY_QUOTATION: Readonly<NuancedQuotation> = Object.freeze({
   total_price_cents: null,
   base_price_cents: null,
   mandatory_fees: [],
@@ -62,4 +62,4 @@ export const EMPTY_QUOTATION: NuancedQuotation = Object.freeze({
   validity_days: null,
   payment_conditions: null,
   confidence_score: 0,
-}) as NuancedQuotation;
+});

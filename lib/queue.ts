@@ -9,6 +9,7 @@ import { logger } from "./logger";
 export const QUEUE_NAMES = {
   asaasWebhooks: "asaas-webhooks",
   quotationProspecting: "quotation-prospecting-queue",
+  whatsappSessionLifecycle: "whatsapp-session-lifecycle",
   whatsappInstanceHealth: "whatsapp-instance-health",
   asaasReconcile: "asaas-reconcile",
   whatsappOutbound: "whatsapp-outbound",
@@ -64,10 +65,13 @@ export async function enqueue(
   queueName: QueueName,
   jobName: string,
   data: Record<string, unknown>,
-  opts?: { jobId?: string },
+  opts?: { jobId?: string; delayMs?: number },
 ): Promise<boolean> {
   try {
-    const jobOpts = opts?.jobId !== undefined ? { jobId: opts.jobId } : undefined;
+    const jobOpts = {
+      ...(opts?.jobId !== undefined ? { jobId: opts.jobId } : {}),
+      ...(opts?.delayMs !== undefined ? { delay: Math.max(0, opts.delayMs) } : {}),
+    };
     await Promise.race([
       getQueue(queueName).add(jobName, data, jobOpts),
       new Promise<never>((_, reject) => {

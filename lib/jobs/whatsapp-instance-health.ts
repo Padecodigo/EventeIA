@@ -7,6 +7,9 @@ import { emitFeed } from "@/lib/feeds";
 import { logger } from "@/lib/logger";
 import { getQueue, QUEUE_NAMES } from "@/lib/queue";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { toSessionState } from "@/lib/whatsapp/session-lifecycle";
+import { handleSessionLost } from "@/lib/whatsapp/session-manager";
+import { createSessionDeps, resumeEventJobs } from "@/lib/whatsapp/session-runtime";
 
 /**
  * Saúde das instâncias WhatsApp (Regra 4 — retomada):
@@ -24,7 +27,7 @@ export async function runInstanceHealthSweep(): Promise<number> {
   const admin = getSupabaseAdmin();
   const { data: instances, error } = await admin
     .from("whatsapp_instances")
-    .select("id,instance_name,status")
+    .select("id,instance_name,status,event_id")
     .order("created_at", { ascending: true })
     .limit(100);
 
@@ -40,7 +43,26 @@ export async function runInstanceHealthSweep(): Promise<number> {
   for (const instance of instances ?? []) {
     try {
       const state = await getConnectionState(instance.instance_name);
-      const status = state === "open" ? "connected" : state === "connecting" ? "connecting" : "disconnected";
+      const lifecycle = toSessionState(instance.status);
+      // Sessão efêmera: "open" mantém active/draining (não regride o ciclo de vida).
+      const status =
+        state === "open"
+          ? lifecycle === "active" || lifecycle === "draining"
+            ? instance.status
+            : "connected"
+          : state === "connecting"
+            ? "connecting"
+            : "disconnected";
+
+      // Queda durante a coleta: pausa só os jobs do evento e avisa o app.
+      if (status === "disconnected" && lifecycle !== "disconnected" && instance.event_id !== null) {
+        await handleSessionLost(createSessionDeps(), {
+          instance: instance.instance_name,
+          eventId: instance.event_id,
+        });
+        updated += 1;
+        continue;
+      }
 
       if (state === "open") {
         anyConnected = true;
@@ -53,6 +75,9 @@ export async function runInstanceHealthSweep(): Promise<number> {
           .eq("id", instance.id);
 
         if (status === "connected" && instance.status === "disconnected") {
+          if (instance.event_id !== null) {
+            await resumeEventJobs(instance.event_id);
+          }
           try {
             await emitFeed(admin, {
               type: "whatsapp.instance_reconnected",

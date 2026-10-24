@@ -12,7 +12,7 @@ import {
   type WhatsappOutboundJob,
 } from "@/lib/jobs/whatsapp-outbound";
 import { logger } from "@/lib/logger";
-import { createProspectingWorker } from "@/lib/queue/whatsapp-worker";
+import { createProspectingWorker, createSessionLifecycleWorker } from "@/lib/queue/whatsapp-worker";
 import { QUEUE_NAMES, getQueue, getRedisConnection } from "@/lib/queue";
 
 /**
@@ -69,11 +69,14 @@ const instanceHealthWorker = new Worker(
   { connection, concurrency: 1 },
 );
 
-// Agente Orçamentista: pacing humanizado 45–90s por instância (configurável com clamp).
+// Agente Orçamentista: pacing humanizado 45–90s POR INSTÂNCIA (reserva atômica no Redis);
+// concorrência configurável para ~100 sessões simultâneas.
 const prospectingWorker = createProspectingWorker(
   connection,
-  serverEnv().WHATSAPP_MIN_INTERVAL_SECONDS,
+  serverEnv().WHATSAPP_PROSPECTING_CONCURRENCY,
 );
+// Fim da janela de coleta (30–60 min): logout gracioso + notificação quotations_ready.
+const sessionLifecycleWorker = createSessionLifecycleWorker(connection);
 
 // Agendamentos (America/Sao_Paulo):
 // 09:30 — conciliação Asaas (PAYMENTS.md §8)
@@ -124,6 +127,7 @@ const workers = [
   creditsExpireWorker,
   instanceHealthWorker,
   prospectingWorker,
+  sessionLifecycleWorker,
 ];
 
 for (const worker of workers) {

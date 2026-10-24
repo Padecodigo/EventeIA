@@ -31,6 +31,19 @@ export const firstContactMessageSchema = z
 
 export type FirstContactMessage = z.infer<typeof firstContactMessageSchema>;
 
+/**
+ * Payload de envio do primeiro contato: SOMENTE número + texto.
+ * `.strict()` rejeita qualquer campo extra (media, url, attachment, buttons…).
+ */
+export const firstContactPayloadSchema = z
+  .object({
+    number: z.string().regex(/^\+\d{10,15}$/),
+    text: firstContactMessageSchema,
+  })
+  .strict();
+
+export type FirstContactPayload = z.infer<typeof firstContactPayloadSchema>;
+
 /* ============================================================
  * Payload do job de prospecção (fila quotation-prospecting-queue).
  * ============================================================ */
@@ -76,25 +89,46 @@ export type EvolutionConnectionState = z.infer<typeof evolutionConnectionStateSc
 /* ============================================================
  * Regra 3 — Opt-out imediato do fornecedor.
  * "não" conta como recusa apenas como mensagem inteira;
- * frases compostas casam por substring (acentos/case ignorados).
+ * frases casam por PALAVRAS inteiras (acentos/case ignorados) — "parece" não é "pare".
  * ============================================================ */
 
 const OPT_OUT_PHRASES = [
   "nao tenho interesse",
+  "nao temos interesse",
+  "sem interesse",
   "nao quero receber",
   "nao quero mais",
   "nao desejo receber",
+  "nao me mande",
+  "nao mande mais",
+  "nao envie mais",
+  "remover meu numero",
   "descadastrar",
-  "cancelar",
-  "remover",
+  "descadastre",
   "unsubscribe",
-  "parar",
-  "pare",
-  "sair",
-  "stop",
+  "pare de",
+  "parar de",
+  "sair da lista",
+  "me tire da lista",
 ] as const;
 
-const OPT_OUT_EXACT = new Set(["nao", "n", "no"]);
+/** Comandos de uma palavra: só valem em mensagens curtas ("SAIR", "parar, por favor"). */
+const OPT_OUT_COMMANDS = ["parar", "pare", "sair", "stop"] as const;
+const SHORT_MESSAGE_MAX_TOKENS = 5;
+
+/** Recusas válidas apenas como mensagem inteira (ambíguas dentro de frases). */
+const OPT_OUT_EXACT = new Set(["nao", "n", "no", "cancelar", "remover", "chega"]);
+
+/** Casa a frase como sequência de PALAVRAS inteiras (evita "parece" ⇒ "pare"). */
+function containsPhrase(tokens: readonly string[], phrase: string): boolean {
+  const target = phrase.split(" ");
+  for (let i = 0; i + target.length <= tokens.length; i += 1) {
+    if (target.every((word, offset) => tokens[i + offset] === word)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 /** Normaliza: minúsculas, sem acentos, espaços colapsados. */
 export function normalizeReplyText(text: string): string {
@@ -115,7 +149,14 @@ export function detectOptOut(text: string): boolean {
     return true;
   }
 
-  return OPT_OUT_PHRASES.some((phrase) => normalized.includes(phrase));
+  const tokens = normalized.split(" ");
+  if (OPT_OUT_PHRASES.some((phrase) => containsPhrase(tokens, phrase))) {
+    return true;
+  }
+  return (
+    tokens.length <= SHORT_MESSAGE_MAX_TOKENS &&
+    OPT_OUT_COMMANDS.some((command) => tokens.includes(command))
+  );
 }
 
 /** Monta a mensagem de primeiro contato (Regra 2: texto puro, sem URLs/emojis). */
