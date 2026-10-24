@@ -3,16 +3,13 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { serverEnv } from "@/lib/env";
-import { emitFeed } from "@/lib/feeds";
 import { logger } from "@/lib/logger";
-import { enqueueQuoteExtraction } from "@/lib/quotes/runtime";
-import { detectOptOut } from "@/lib/schemas/whatsapp";
 import { verifyEvolutionWebhookToken } from "@/lib/security";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/types";
+import { processInboundEvents, type InboundEvent } from "@/lib/whatsapp/inbound";
 import { activateSession, handleSessionLost } from "@/lib/whatsapp/session-manager";
 import { createSessionDeps } from "@/lib/whatsapp/session-runtime";
-import { renderOptOutConfirmation } from "@/lib/whatsapp/templates";
 
 export const runtime = "nodejs";
 
@@ -117,109 +114,25 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
 
     const status = data?.status === undefined ? undefined : STATUS_MAP[data.status.toUpperCase()];
-
-    if (payload.event.startsWith("messages.update") && messageId !== undefined && status !== undefined) {
-      const update =
-        status === "failed"
-          ? { status, failed_at: new Date().toISOString(), error: "falha reportada pela Evolution" }
-          : status === "delivered"
-            ? { status, delivered_at: new Date().toISOString() }
-            : status === "read"
-              ? { status, read_at: new Date().toISOString() }
-              : { status };
-
-      await admin
-        .from("whatsapp_messages")
-        .update(update)
-        .eq("external_message_id", messageId)
-        .in("status", ["sent", "delivered"]);
+    const events: InboundEvent[] = [];
+    if (
+      payload.event.startsWith("messages.update") &&
+      messageId !== undefined &&
+      status !== undefined
+    ) {
+      events.push({ kind: "status", messageId, status });
     }
-
     if (payload.event.startsWith("messages.upsert") && data?.key?.fromMe !== true) {
       const phone = digitsToE164(data?.key?.remoteJid);
-      const text =
-        data?.message?.conversation ?? data?.message?.extendedTextMessage?.text ?? null;
-
+      const text = data?.message?.conversation ?? data?.message?.extendedTextMessage?.text ?? null;
       if (phone !== null && text !== null) {
-        // Fase 3: vincula a resposta ao fornecedor contatado mais recente (evento em coleta).
-        const { data: prospectRow } = await admin
-          .from("vendor_prospects")
-          .select("id,event_id")
-          .eq("phone_e164", phone)
-          .in("status", ["sent", "replied"])
-          .order("last_message_at", { ascending: false, nullsFirst: false })
-          .limit(1)
-          .maybeSingle();
-
-        await admin.from("whatsapp_messages").upsert(
-          {
-            direction: "inbound",
-            template: "inbound",
-            to_number_e164: phone,
-            body: text.slice(0, 4000),
-            status: "delivered",
-            idempotency_key: `inbound:${messageId ?? externalEventId}`,
-            ...(prospectRow !== null ? { event_id: prospectRow.event_id, prospect_id: prospectRow.id } : {}),
-          },
-          { onConflict: "idempotency_key", ignoreDuplicates: true },
-        );
-
-        // Regra 3 — opt-out (sair, parar, não tenho interesse…), sem acento/caixa.
-        // Antes: "SAIR" era tratado num ramo separado e NÃO marcava o fornecedor.
-        if (detectOptOut(text)) {
-          await admin.from("consents").upsert(
-            {
-              phone_e164: phone,
-              channel: "whatsapp",
-              status: "opted_out",
-              source: "whatsapp_inbound",
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: "phone_e164,channel" },
-          );
-          void renderOptOutConfirmation();
-          // Opt-out GLOBAL: o fornecedor sai do cache de descoberta para sempre.
-          await admin
-            .from("suppliers")
-            .update({ opt_out_at: new Date().toISOString() })
-            .eq("phone_e164", phone)
-            .is("opt_out_at", null);
-
-          const { data: optedOut } = await admin
-            .from("vendor_prospects")
-            .update({ status: "opt_out", opt_out_at: new Date().toISOString() })
-            .eq("phone_e164", phone)
-            .in("status", ["pending", "sent", "replied", "failed"])
-            .select("id,event_id");
-
-          for (const row of optedOut ?? []) {
-            try {
-              await emitFeed(admin, {
-                type: "vendor.opt_out",
-                actorType: "system",
-                aggregateType: "event",
-                aggregateId: row.event_id,
-                payload: { prospect_id: row.id },
-                correlationId: externalEventId,
-                source: "webhook",
-              });
-            } catch {
-              // feed não bloqueia o opt-out
-            }
-          }
-          logger.info({ phoneMasked: `${phone.slice(0, 5)}…` }, "opt-out registrado");
-        } else {
-          await admin
-            .from("vendor_prospects")
-            .update({ status: "replied", last_message_at: new Date().toISOString() })
-            .eq("phone_e164", phone)
-            .eq("status", "sent");
-          if (prospectRow !== null) {
-            await enqueueQuoteExtraction(prospectRow.event_id, prospectRow.id);
-          }
-        }
+        events.push({ kind: "message", messageId, phone, text });
       }
     }
+    await processInboundEvents(admin, events, {
+      channel: "evolution",
+      correlationId: externalEventId,
+    });
 
     // Ciclo de vida da sessão efêmera: open ⇒ active (inicia janela); close ⇒ perdida.
     const normalizedEvent = payload.event.toLowerCase().replace(/_/g, ".");

@@ -14,11 +14,16 @@ import {
 import { buildExtractionMessages } from "@/lib/deepseek/extractor";
 import { ENGINE_VERSION } from "@/lib/engine";
 import { serverEnv } from "@/lib/env";
-import { sendText } from "@/lib/evolution-api/client";
 import { logger } from "@/lib/logger";
 import { enqueue, QUEUE_NAMES } from "@/lib/queue";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/types";
+import {
+  lastInboundAt,
+  resolveEventChannel,
+  sendTextVia,
+  WindowClosedError,
+} from "@/lib/whatsapp/provider";
 import { toSessionState } from "@/lib/whatsapp/session-lifecycle";
 import { completeCollectionIfReady } from "@/lib/whatsapp/session-manager";
 import { createSessionDeps, findEventInstance } from "@/lib/whatsapp/session-runtime";
@@ -152,9 +157,10 @@ export function createCollectorDeps(): CollectorDeps {
         .eq("id", prospectId)
         .maybeSingle();
       if (p === null || p.status === "opt_out") return "skipped";
+      const channel = await resolveEventChannel(eventId);
       const instance = await findEventInstance(eventId);
       const { data: inst } =
-        instance === null
+        channel === "cloud" || instance === null
           ? { data: null }
           : await admin
               .from("whatsapp_instances")
@@ -164,14 +170,15 @@ export function createCollectorDeps(): CollectorDeps {
       const live =
         !env.DISCOVERY_DRY_RUN &&
         !p.dry_run &&
-        instance !== null &&
-        toSessionState(inst?.status ?? "") === "active";
+        (channel === "cloud" ||
+          (instance !== null && toSessionState(inst?.status ?? "") === "active"));
       const idempotencyKey = `followup:${prospectId}:${String(n)}`;
       const base = {
         event_id: eventId,
         prospect_id: prospectId,
         direction: "outbound" as const,
         template: "quote_followup",
+        channel,
         to_number_e164: phone,
         body: text,
         idempotency_key: idempotencyKey,
@@ -186,18 +193,34 @@ export function createCollectorDeps(): CollectorDeps {
           );
         return "dry_run";
       }
-      const sent = await sendText(instance, phone, text);
-      await admin
-        .from("whatsapp_messages")
-        .upsert(
-          {
-            ...base,
-            status: "sent",
-            sent_at: new Date().toISOString(),
-            external_message_id: sent.externalMessageId ?? null,
-          },
-          { onConflict: "idempotency_key", ignoreDuplicates: true },
-        );
+      let sent: { externalMessageId?: string };
+      try {
+        sent = await sendTextVia(channel, {
+          instance: instance ?? "",
+          to: phone,
+          text,
+          lastInboundAt: channel === "cloud" ? await lastInboundAt(phone) : null,
+        });
+      } catch (error) {
+        if (!(error instanceof WindowClosedError)) throw error;
+        // Cloud API fora da janela de 24h: não envia texto livre.
+        await admin
+          .from("whatsapp_messages")
+          .upsert(
+            { ...base, status: "canceled", error: "window_closed" },
+            { onConflict: "idempotency_key", ignoreDuplicates: true },
+          );
+        return "skipped";
+      }
+      await admin.from("whatsapp_messages").upsert(
+        {
+          ...base,
+          status: "sent",
+          sent_at: new Date().toISOString(),
+          external_message_id: sent.externalMessageId ?? null,
+        },
+        { onConflict: "idempotency_key", ignoreDuplicates: true },
+      );
       return "sent";
     },
 

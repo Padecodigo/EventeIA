@@ -33,6 +33,7 @@ export interface Database {
         asaas_customer_id: string | null;
         created_at: string;
         updated_at: string;
+        whatsapp_channel: "cloud" | "evolution" | null;
       }>;
       plans: Table<{
         code: string;
@@ -74,6 +75,7 @@ export interface Database {
         collection_ended_at: string | null;
         quotes_delivered_at: string | null;
         created_at: string;
+        whatsapp_channel: "cloud" | "evolution" | null;
       }>;
       event_requirements: Table<{
         id: string;
@@ -164,7 +166,7 @@ export interface Database {
       }>;
       webhook_events: Table<{
         id: string;
-        source: "asaas" | "evolution";
+        source: "asaas" | "evolution" | "whatsapp_cloud";
         external_event_id: string;
         payload: Json;
         status: "received" | "processing" | "processed" | "failed";
@@ -213,6 +215,7 @@ export interface Database {
         error: string | null;
         prospect_id: string | null;
         created_at: string;
+        channel: "cloud" | "evolution" | null;
       }>;
       system_events: Table<{
         id: string;
