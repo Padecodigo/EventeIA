@@ -1,13 +1,13 @@
-import { Inter, Nunito } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 
 import type { Metadata } from "next";
 
 import "./globals.css";
 
-/** Display: Nunito (arredondada, acolhedora). Corpo/UI: Inter (limpa, confiável). */
-const display = Nunito({
+/** Display: Plus Jakarta Sans (geométrica, moderna). Corpo/UI: Inter (limpa, confiável). */
+const display = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  weight: ["600", "700", "800"],
+  weight: ["500", "600", "700", "800"],
   variable: "--font-display",
   display: "swap",
 });

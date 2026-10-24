@@ -32,9 +32,9 @@ const EVENT_TYPES = [
 ] as const;
 
 const OPTIONS = [
-  { title: "Preço", text: "A combinação mais barata entre as propostas que chegaram, já com taxas incluídas.", dot: "bg-menta" },
-  { title: "Custo-benefício", text: "O melhor equilíbrio entre valor e qualidade — o que mais vale a pena.", dot: "bg-champagne" },
-  { title: "Comodidade", text: "Menos fornecedores, menos dor de cabeça: pacotes que resolvem mais coisas juntos.", dot: "bg-lilas" },
+  { title: "Preço", text: "A combinação mais barata entre as propostas que chegaram, já com taxas incluídas.", dot: "from-emerald-400 to-teal-500" },
+  { title: "Custo-benefício", text: "O melhor equilíbrio entre valor e qualidade — o que mais vale a pena.", dot: "from-orange-400 to-rose-500" },
+  { title: "Comodidade", text: "Menos fornecedores, menos dor de cabeça: pacotes que resolvem mais coisas juntos.", dot: "from-indigo-400 to-violet-500" },
 ] as const;
 
 const STEPS = [
@@ -75,195 +75,276 @@ const FAQ = [
 ] as const;
 
 const primaryCta =
-  "inline-flex items-center justify-center gap-2 rounded-full bg-champagne px-7 py-4 text-base font-bold text-vinho shadow-[0_10px_28px_rgba(255,122,69,0.35)] transition hover:-translate-y-0.5 hover:bg-[#FF8B5C] active:translate-y-0";
+  "group inline-flex items-center justify-center gap-2 rounded-full bg-vinho px-7 py-3.5 text-[15px] font-semibold text-white shadow-[0_8px_24px_-6px_rgba(15,23,42,0.45)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#1E293B] hover:shadow-[0_14px_32px_-8px_rgba(15,23,42,0.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral-escuro focus-visible:ring-offset-2 active:translate-y-0";
+
+const sectionTitle = "font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.035em] text-vinho";
+
+function Stars() {
+  return (
+    <span aria-label="5 de 5 estrelas" className="flex gap-0.5 text-amber-400">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <svg key={i} aria-hidden="true" viewBox="0 0 20 20" className="h-4 w-4 fill-current">
+          <path d="M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.5 7.7l5.9-.9L10 1.5z" />
+        </svg>
+      ))}
+    </span>
+  );
+}
+
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0))
+    .join("")
+    .toUpperCase();
+}
 
 export default async function LandingPage() {
   const realTestimonials = await getPublishedTestimonials();
-  const heroTestimonials = (realTestimonials.length > 0 ? realTestimonials : TESTIMONIALS).slice(0, 2);
+  const heroTestimonials = (realTestimonials.length > 0 ? realTestimonials : TESTIMONIALS).slice(0, 1);
   const heroIsExample = realTestimonials.length === 0;
+  const [mainTestimonial] = heroTestimonials;
 
   return (
     <>
       {/* ================= HERO (acima da dobra) ================= */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-champagne-claro/60 via-areia-quente to-areia-quente">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-sol/30 blur-3xl"
-        />
-        <div className="relative mx-auto grid w-full max-w-7xl gap-10 px-4 pb-14 pt-8 sm:px-8 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-14 lg:pb-20 lg:pt-14">
-          <div>
-            <p className="eyebrow">Festa infantil · 15 anos · Formatura · Casamento · Empresa</p>
-            <h1 className="mt-4 font-serif text-[clamp(2.2rem,5.2vw,3.9rem)] font-display leading-[1.05] tracking-[-0.02em] text-vinho">
+      <section className="relative isolate overflow-hidden bg-[#FAFAF8]">
+        {/* glow sutil de marca */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute -top-40 right-[-10%] h-[520px] w-[520px] rounded-full bg-[radial-gradient(closest-side,rgba(255,122,69,0.22),transparent)]" />
+          <div className="absolute -left-40 top-40 h-[420px] w-[420px] rounded-full bg-[radial-gradient(closest-side,rgba(139,124,246,0.12),transparent)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(15,23,42,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(15,23,42,0.04)_1px,transparent_1px)] bg-[size:56px_56px] [mask-image:radial-gradient(ellipse_at_top,black_30%,transparent_70%)]" />
+        </div>
+
+        <div className="mx-auto grid w-full max-w-7xl gap-8 px-5 pb-14 pt-4 sm:px-8 lg:grid-cols-[1.02fr_1fr] lg:items-center lg:gap-16 lg:pb-20 lg:pt-12">
+          <div className="ev-fade-up">
+            <p className="eyebrow hidden sm:inline-flex">
+              <span className="h-1.5 w-1.5 rounded-full bg-coral" aria-hidden="true" />
+              Festa infantil · 15 anos · Formatura · Casamento · Corporativo
+            </p>
+            <h1 className="mt-0 font-display text-[clamp(2.1rem,5.6vw,4.4rem)] font-extrabold leading-[1.02] tracking-[-0.035em] text-vinho">
               Orçamentos do seu evento,{" "}
-              <span className="relative whitespace-nowrap">
-                sem ligar pra ninguém
-                <span aria-hidden="true" className="absolute -bottom-1 left-0 h-2 w-full rounded-full bg-sol/70" />
+              <span className="bg-gradient-to-r from-[#C2410C] via-[#EA580C] to-[#E11D48] bg-clip-text text-transparent">
+                sem ligar pra ninguém.
               </span>
-              .
             </h1>
-            <p className="mt-5 max-w-xl text-lg leading-8 text-vinho/80">
-              A EventeIA pede orçamentos aos fornecedores da sua região <strong>pelo WhatsApp</strong>,
-              compara tudo e te entrega <strong>3 opções prontas</strong>: a de melhor{" "}
-              <strong>preço</strong>, a de melhor <strong>custo-benefício</strong> e a de mais{" "}
-              <strong>comodidade</strong>.
+            <p className="mt-4 max-w-xl text-base leading-relaxed text-slate-600 sm:mt-6 sm:text-lg">
+              A EventeIA pede orçamentos aos fornecedores da sua região <strong className="font-semibold text-vinho">pelo WhatsApp</strong>,
+              compara tudo e te entrega <strong className="font-semibold text-vinho">3 opções prontas</strong>: a de melhor{" "}
+              <strong className="font-semibold text-vinho">preço</strong>, a de melhor{" "}
+              <strong className="font-semibold text-vinho">custo-benefício</strong> e a de mais{" "}
+              <strong className="font-semibold text-vinho">comodidade</strong>.
             </p>
 
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:items-center">
               <Link href="/registrar" className={primaryCta}>
-                Começar agora <span aria-hidden="true">→</span>
+                Começar agora
+                <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">→</span>
               </Link>
               <Link
                 href="#planos"
-                className="inline-flex items-center justify-center rounded-full border-2 border-vinho/15 bg-off-white px-6 py-3.5 text-base font-semibold text-vinho transition hover:border-vinho/30"
+                className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white/80 px-6 py-3.5 text-[15px] font-semibold text-vinho backdrop-blur transition hover:border-slate-300 hover:bg-white"
               >
                 Ver planos e preços
               </Link>
             </div>
-            <p className="mt-3 text-sm text-vinho/75">
-              Ticket avulso: <strong className="text-vinho">{formatBRL(ticketPriceCents)} por evento</strong> ·
-              sem mensalidade · Pix ou cartão via Asaas
-            </p>
+            <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-600">
+              <span className="inline-flex items-center gap-2 rounded-full bg-coral/10 px-3 py-1 font-medium text-coral-escuro">
+                Ticket avulso · <strong className="font-bold">{formatBRL(ticketPriceCents)}</strong> por evento
+              </span>
+              <span>Sem mensalidade · Pix ou cartão via Asaas</span>
+            </div>
 
-            {/* Depoimentos curtos — prova social logo de cara */}
-            <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              {heroTestimonials.map((t) => (
-                <figure key={t.id} className="rounded-2xl border border-line-subtle bg-off-white p-4 shadow-soft">
-                  <p aria-hidden="true" className="text-sol">★★★★★</p>
-                  <blockquote className="mt-1 text-sm leading-6 text-vinho/85">“{t.quote}”</blockquote>
-                  <figcaption className="mt-3 text-caption text-vinho/70">
-                    <strong className="text-vinho">{t.name}</strong> · {t.context}
-                    {t.city.length > 0 ? ` · ${t.city}` : ""}
+            {mainTestimonial ? (
+              <figure className="mt-7 max-w-xl rounded-3xl border border-white/60 bg-white/70 p-5 shadow-[0_20px_50px_-24px_rgba(15,23,42,0.25)] backdrop-blur-xl">
+                <div className="flex items-start gap-4">
+                  <span
+                    aria-hidden="true"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-orange-300 to-rose-400 text-sm font-bold text-white ring-4 ring-white"
+                  >
+                    {initials(mainTestimonial.name)}
+                  </span>
+                  <div className="min-w-0">
+                    <Stars />
+                    <blockquote className="mt-2 text-[15px] leading-relaxed text-slate-700">“{mainTestimonial.quote}”</blockquote>
+                    <figcaption className="mt-3 text-sm text-slate-500">
+                      <strong className="font-semibold text-vinho">{mainTestimonial.name}</strong> · {mainTestimonial.context}
+                      {mainTestimonial.city.length > 0 ? ` · ${mainTestimonial.city}` : ""}
+                    </figcaption>
+                  </div>
+                </div>
+              </figure>
+            ) : null}
+            {heroIsExample ? <p className="mt-2 text-xs text-slate-500">{EXAMPLE_TESTIMONIALS_NOTE}</p> : null}
+          </div>
+
+          {/* Mosaico de fotos — hover: zoom, elevação e rótulo deslizando */}
+          <div className="relative order-first lg:order-none">
+            <div
+              className="grid auto-rows-[64px] grid-cols-3 gap-2 sm:auto-rows-[150px] sm:gap-4 lg:h-[580px] lg:auto-rows-auto lg:grid-rows-3"
+              aria-label="Tipos de evento"
+            >
+              {MOSAIC.map((photo, index) => (
+                <figure
+                  key={photo.src}
+                  className={`ev-photo group relative overflow-hidden rounded-2xl bg-slate-100 shadow-[0_10px_30px_-12px_rgba(15,23,42,0.35)] ring-1 ring-black/5 transition duration-500 ease-out hover:z-10 hover:-translate-y-1.5 hover:shadow-[0_28px_60px_-18px_rgba(15,23,42,0.5)] sm:rounded-3xl ${
+                    "big" in photo ? "col-span-2 row-span-2" : ""
+                  }`}
+                >
+                  <Image
+                    src={photo.src}
+                    alt={photo.alt}
+                    width={photo.w}
+                    height={photo.h}
+                    priority={index === 0}
+                    sizes={index === 0 ? "(max-width: 1024px) 66vw, 400px" : "(max-width: 1024px) 33vw, 200px"}
+                    className="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-110"
+                  />
+                  <div
+                    aria-hidden="true"
+                    className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent opacity-60 transition duration-500 group-hover:opacity-100"
+                  />
+                  <figcaption className="absolute inset-x-2 bottom-2 flex items-center justify-between sm:inset-x-3 sm:bottom-3">
+                    <span className="rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white ring-1 ring-white/30 backdrop-blur-md transition duration-500 group-hover:-translate-y-0.5 sm:text-xs">
+                      {photo.label}
+                    </span>
+                    <span
+                      aria-hidden="true"
+                      className="hidden translate-x-2 text-white opacity-0 transition duration-500 group-hover:translate-x-0 group-hover:opacity-100 sm:inline"
+                    >
+                      →
+                    </span>
                   </figcaption>
                 </figure>
               ))}
             </div>
-            {heroIsExample ? <p className="mt-2 text-[11px] text-vinho/60">{EXAMPLE_TESTIMONIALS_NOTE}</p> : null}
+            {/* card flutuante — resultado */}
+            <div className="ev-float pointer-events-none absolute -left-8 -top-6 hidden rounded-2xl border border-white/60 bg-white/80 p-4 shadow-[0_20px_40px_-16px_rgba(15,23,42,0.35)] backdrop-blur-xl lg:block">
+              <p className="text-xs font-medium text-slate-500">Sua busca</p>
+              <p className="mt-1 text-sm font-bold text-vinho">3 opções prontas para comparar</p>
+              <div className="mt-2 flex gap-1.5">
+                {OPTIONS.map((o) => (
+                  <span key={o.title} className={`rounded-full bg-gradient-to-r ${o.dot} px-2 py-0.5 text-[10px] font-semibold text-white`}>
+                    {o.title}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
+        </div>
 
-          {/* Mosaico de fotos */}
-          <div
-            className="order-first grid auto-rows-[92px] grid-cols-3 gap-2 sm:auto-rows-[150px] sm:gap-3 lg:order-none lg:h-[560px] lg:auto-rows-auto lg:grid-rows-3"
-            aria-label="Tipos de evento"
-          >
-            {MOSAIC.map((photo, index) => (
-              <figure
-                key={photo.src}
-                className={`relative overflow-hidden rounded-2xl bg-areia-secundaria shadow-soft ${
-                  "big" in photo ? "col-span-2 row-span-2" : ""
-                }`}
-              >
-                <Image
-                  src={photo.src}
-                  alt={photo.alt}
-                  width={photo.w}
-                  height={photo.h}
-                  priority={index === 0}
-                  sizes={index === 0 ? "(max-width: 1024px) 66vw, 380px" : "(max-width: 1024px) 33vw, 190px"}
-                  className="h-full w-full object-cover"
-                />
-                <figcaption className="absolute bottom-2 left-2 rounded-full bg-off-white/95 px-2.5 py-0.5 text-[11px] font-bold text-vinho">
-                  {photo.label}
-                </figcaption>
-              </figure>
+        {/* Faixa de tipos de evento em movimento */}
+        <div className="relative border-y border-slate-200/70 bg-white/60 py-4 backdrop-blur [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
+          <ul className="ev-marquee flex w-max gap-10 whitespace-nowrap text-sm font-medium text-slate-500">
+            {[...EVENT_TYPES, ...EVENT_TYPES].map((e, i) => (
+              <li key={`${e.label}-${i}`} aria-hidden={i >= EVENT_TYPES.length} className="flex items-center gap-10">
+                {e.label}
+                <span aria-hidden="true" className="h-1 w-1 rounded-full bg-coral" />
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       </section>
 
       {/* ================= Selos de confiança ================= */}
-      <section aria-label="Por que confiar" className="border-y border-line-subtle bg-off-white">
-        <ul className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-8 sm:grid-cols-2 sm:px-8 lg:grid-cols-4">
+      <section aria-label="Por que confiar" className="bg-white">
+        <ul className="mx-auto grid w-full max-w-7xl gap-4 px-5 py-14 sm:grid-cols-2 sm:px-8 lg:grid-cols-4">
           {TRUST.map((item) => (
-            <li key={item.title} className="flex gap-3">
-              <span aria-hidden="true" className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-menta/15 text-sm font-bold text-[#17735F]">
+            <li key={item.title} className="rounded-2xl border border-slate-200/80 bg-[#FAFAF8] p-5 transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_30px_-16px_rgba(15,23,42,0.3)]">
+              <span aria-hidden="true" className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-sm font-bold text-emerald-700 shadow-sm ring-1 ring-slate-200">
                 ✓
               </span>
-              <div>
-                <p className="text-sm font-bold text-vinho">{item.title}</p>
-                <p className="mt-0.5 text-caption leading-5 text-vinho/75">{item.text}</p>
-              </div>
+              <p className="mt-4 text-[15px] font-semibold text-vinho">{item.title}</p>
+              <p className="mt-1 text-sm leading-6 text-slate-600">{item.text}</p>
             </li>
           ))}
         </ul>
       </section>
 
       {/* ================= As 3 opções ================= */}
-      <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-8">
-        <p className="eyebrow">O que você recebe</p>
-        <h2 className="mt-3 max-w-2xl font-serif text-[clamp(1.8rem,3.6vw,2.6rem)] font-display leading-tight">
-          Três caminhos claros. Você só escolhe.
-        </h2>
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
-          {OPTIONS.map((o) => (
-            <article key={o.title} className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
-              <span aria-hidden="true" className={`block h-2 w-10 rounded-full ${o.dot}`} />
-              <h3 className="mt-4 font-serif text-title-2 font-display">{o.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-vinho/75">{o.text}</p>
-            </article>
-          ))}
+      <section className="bg-white">
+        <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-28">
+          <p className="eyebrow">O que você recebe</p>
+          <h2 className={`mt-4 max-w-2xl ${sectionTitle}`}>Três caminhos claros. Você só escolhe.</h2>
+          <div className="mt-12 grid gap-5 md:grid-cols-3">
+            {OPTIONS.map((o, i) => (
+              <article
+                key={o.title}
+                className="group relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_50px_-24px_rgba(15,23,42,0.3)]"
+              >
+                <div aria-hidden="true" className={`absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br ${o.dot} opacity-10 blur-2xl transition duration-500 group-hover:opacity-25`} />
+                <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${o.dot} text-sm font-bold text-white`}>
+                  {i + 1}
+                </span>
+                <h3 className="mt-6 font-display text-2xl font-bold tracking-tight text-vinho">{o.title}</h3>
+                <p className="mt-2 text-[15px] leading-relaxed text-slate-600">{o.text}</p>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* ================= Como funciona ================= */}
-      <section className="bg-off-white py-16">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-8">
+      <section className="bg-[#FAFAF8]">
+        <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-28">
           <p className="eyebrow">Como funciona</p>
-          <h2 className="mt-3 max-w-2xl font-serif text-[clamp(1.8rem,3.6vw,2.6rem)] font-display leading-tight">
-            Do “preciso organizar” ao “já escolhi” em 4 passos.
-          </h2>
-          <ol className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <h2 className={`mt-4 max-w-2xl ${sectionTitle}`}>Do “preciso organizar” ao “já escolhi” em 4 passos.</h2>
+          <ol className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s) => (
-              <li key={s.n} className="rounded-card bg-areia-quente p-6">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-vinho font-serif text-lg font-display text-off-white">
-                  {s.n}
-                </span>
-                <h3 className="mt-4 font-serif text-title-3 font-display">{s.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-vinho/75">{s.text}</p>
+              <li key={s.n} className="rounded-3xl bg-white p-7 ring-1 ring-slate-200/80">
+                <span className="font-display text-sm font-bold text-coral-escuro">Passo {s.n}</span>
+                <h3 className="mt-3 font-display text-xl font-bold tracking-tight text-vinho">{s.title}</h3>
+                <p className="mt-2 text-[15px] leading-relaxed text-slate-600">{s.text}</p>
               </li>
             ))}
           </ol>
-          <Link href="/como-funciona" className="mt-8 inline-block text-sm font-semibold text-vinho underline decoration-champagne decoration-2 underline-offset-8">
-            Ver o passo a passo completo
+          <Link href="/como-funciona" className="mt-10 inline-flex items-center gap-1 text-sm font-semibold text-vinho hover:text-coral-escuro">
+            Ver o passo a passo completo <span aria-hidden="true">→</span>
           </Link>
         </div>
       </section>
 
       {/* ================= Tipos de evento ================= */}
-      <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-8">
-        <p className="eyebrow">Para todo tipo de evento</p>
-        <h2 className="mt-3 max-w-2xl font-serif text-[clamp(1.8rem,3.6vw,2.6rem)] font-display leading-tight">
-          Da festinha em casa à convenção da empresa.
-        </h2>
-        <ul className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
-          {EVENT_TYPES.map((e) => (
-            <li key={e.label} className="rounded-2xl border border-line-subtle bg-off-white p-4">
-              <p className="font-serif text-base font-display text-vinho">{e.label}</p>
-              <p className="mt-1 text-caption text-vinho/70">{e.hint}</p>
-            </li>
-          ))}
-        </ul>
+      <section className="bg-white">
+        <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-28">
+          <p className="eyebrow">Para todo tipo de evento</p>
+          <h2 className={`mt-4 max-w-2xl ${sectionTitle}`}>Da festinha em casa ao evento corporativo.</h2>
+          <ul className="mt-12 grid grid-cols-2 gap-3 md:grid-cols-4">
+            {EVENT_TYPES.map((e) => (
+              <li
+                key={e.label}
+                className="group rounded-2xl border border-slate-200/80 bg-white p-5 transition duration-300 hover:-translate-y-0.5 hover:border-coral/40 hover:shadow-[0_16px_40px_-20px_rgba(255,122,69,0.5)]"
+              >
+                <p className="font-display text-base font-bold text-vinho">{e.label}</p>
+                <p className="mt-1 text-sm text-slate-500">{e.hint}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
 
       {/* ================= Planos ================= */}
-      <section id="planos" className="scroll-mt-24 bg-vinho py-16 text-off-white">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-8">
-          <p className="text-overline font-bold uppercase text-champagne">Planos</p>
-          <h2 className="mt-3 max-w-2xl font-serif text-[clamp(1.8rem,3.6vw,2.6rem)] font-display leading-tight">
+      <section id="planos" className="relative isolate scroll-mt-24 overflow-hidden bg-vinho py-20 text-white lg:py-28">
+        <div aria-hidden="true" className="absolute left-1/2 top-0 -z-10 h-[480px] w-[900px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(255,122,69,0.25),transparent)]" />
+        <div className="mx-auto w-full max-w-7xl px-5 sm:px-8">
+          <p className="inline-flex rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">Planos</p>
+          <h2 className="mt-4 max-w-2xl font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.035em]">
             Pague só pelo seu evento. Ou assine, se você organiza vários.
           </h2>
-          <div className="mt-10 grid gap-5 lg:grid-cols-4">
-            <article className="flex flex-col rounded-card bg-off-white p-6 text-vinho shadow-raised ring-4 ring-champagne lg:col-span-1">
-              <p className="text-overline font-bold uppercase text-coral-escuro">Ticket avulso</p>
-              <h3 className="mt-2 font-serif text-title-2 font-display">Para o seu evento</h3>
-              <p className="mt-4 font-serif text-[2.4rem] font-display leading-none">{formatBRL(ticketPriceCents)}</p>
-              <p className="mt-1 text-caption text-vinho/70">pagamento único por evento</p>
-              <ul className="mt-5 flex-1 space-y-2 text-sm text-vinho/80">
+          <div className="mt-12 grid gap-5 lg:grid-cols-4">
+            <article className="flex flex-col rounded-3xl bg-white p-7 text-vinho shadow-[0_30px_60px_-20px_rgba(255,122,69,0.45)] ring-2 ring-coral">
+              <p className="text-xs font-bold uppercase tracking-wider text-coral-escuro">Ticket avulso</p>
+              <h3 className="mt-2 font-display text-xl font-bold">Para o seu evento</h3>
+              <p className="mt-5 font-display text-5xl font-extrabold tracking-tight">{formatBRL(ticketPriceCents)}</p>
+              <p className="mt-1 text-sm text-slate-500">pagamento único por evento</p>
+              <ul className="mt-6 flex-1 space-y-2.5 text-sm text-slate-700">
                 <li>✓ Sem mensalidade</li>
                 <li>✓ Cotações pelo WhatsApp</li>
                 <li>✓ 3 opções comparadas</li>
                 <li>✓ Pix ou cartão</li>
               </ul>
-              <Link href="/registrar" className={`${primaryCta} mt-6 w-full py-3 text-sm`}>
+              <Link href="/registrar" className="mt-7 inline-flex justify-center rounded-full bg-coral px-5 py-3 text-sm font-bold text-vinho transition hover:bg-[#FF8B5C]">
                 Começar agora
               </Link>
             </article>
@@ -271,21 +352,18 @@ export default async function LandingPage() {
             {PLANS.map((plan) => (
               <article
                 key={plan.code}
-                className={`flex flex-col rounded-card p-6 ${
-                  plan.featured ? "bg-off-white/10 ring-2 ring-champagne-claro/60" : "bg-off-white/5 ring-1 ring-off-white/15"
+                className={`flex flex-col rounded-3xl p-7 backdrop-blur transition duration-300 hover:-translate-y-1 ${
+                  plan.featured ? "bg-white/10 ring-1 ring-white/30" : "bg-white/[0.04] ring-1 ring-white/10"
                 }`}
               >
-                <p className="text-overline font-bold uppercase text-champagne-claro">
+                <p className="text-xs font-bold uppercase tracking-wider text-white/60">
                   {plan.featured ? "Planners · mais escolhido" : "Planners"}
                 </p>
-                <h3 className="mt-2 font-serif text-title-2 font-display">{plan.name}</h3>
-                <p className="mt-4 font-serif text-[2rem] font-display leading-none">{formatBRL(plan.priceCents)}</p>
-                <p className="mt-1 text-caption text-off-white/70">por mês · {plan.credits} eventos</p>
-                <p className="mt-4 flex-1 text-sm text-off-white/80">{plan.description}</p>
-                <Link
-                  href="/planos"
-                  className="mt-6 inline-flex justify-center rounded-full border-2 border-off-white/30 px-5 py-3 text-sm font-semibold transition hover:border-off-white/60"
-                >
+                <h3 className="mt-2 font-display text-xl font-bold">{plan.name}</h3>
+                <p className="mt-5 font-display text-4xl font-extrabold tracking-tight">{formatBRL(plan.priceCents)}</p>
+                <p className="mt-1 text-sm text-white/60">por mês · {plan.credits} eventos</p>
+                <p className="mt-5 flex-1 text-sm leading-relaxed text-white/75">{plan.description}</p>
+                <Link href="/planos" className="mt-7 inline-flex justify-center rounded-full border border-white/20 px-5 py-3 text-sm font-semibold transition hover:bg-white/10">
                   Ver detalhes
                 </Link>
               </article>
@@ -297,33 +375,34 @@ export default async function LandingPage() {
       <Testimonials items={realTestimonials.length > 0 ? realTestimonials : undefined} />
 
       {/* ================= FAQ ================= */}
-      <section className="mx-auto w-full max-w-3xl px-4 py-16 sm:px-8">
+      <section className="mx-auto w-full max-w-3xl px-5 py-20 sm:px-8 lg:py-28">
         <p className="eyebrow">Dúvidas frequentes</p>
-        <h2 className="mt-3 font-serif text-[clamp(1.8rem,3.6vw,2.6rem)] font-display leading-tight">Perguntas que a gente sempre ouve</h2>
-        <div className="mt-8 divide-y divide-line-subtle rounded-card border border-line-subtle bg-off-white">
+        <h2 className={`mt-4 ${sectionTitle}`}>Perguntas que a gente sempre ouve</h2>
+        <div className="mt-10 space-y-3">
           {FAQ.map((item) => (
-            <details key={item.q} className="group p-5">
+            <details key={item.q} className="group rounded-2xl border border-slate-200/80 bg-white p-5 transition open:shadow-[0_12px_30px_-18px_rgba(15,23,42,0.3)]">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-vinho">
                 {item.q}
-                <span aria-hidden="true" className="text-xl text-coral-escuro transition group-open:rotate-45">+</span>
+                <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-lg text-vinho transition group-open:rotate-45">+</span>
               </summary>
-              <p className="mt-3 text-sm leading-6 text-vinho/75">{item.a}</p>
+              <p className="mt-3 text-[15px] leading-relaxed text-slate-600">{item.a}</p>
             </details>
           ))}
         </div>
       </section>
 
       {/* ================= CTA final ================= */}
-      <section className="px-4 pb-20 sm:px-8">
-        <div className="mx-auto w-full max-w-5xl rounded-[2rem] bg-gradient-to-br from-champagne-claro via-areia-secundaria to-sol/40 px-6 py-14 text-center">
-          <h2 className="font-serif text-[clamp(1.8rem,3.6vw,2.6rem)] font-display leading-tight">
+      <section className="px-5 pb-24 sm:px-8">
+        <div className="relative isolate mx-auto w-full max-w-5xl overflow-hidden rounded-[2.5rem] bg-vinho px-6 py-16 text-center text-white sm:py-20">
+          <div aria-hidden="true" className="absolute -top-24 left-1/2 -z-10 h-80 w-[700px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(255,122,69,0.45),transparent)]" />
+          <h2 className="font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.035em]">
             Seu evento merece ser curtido, não administrado.
           </h2>
-          <p className="mx-auto mt-4 max-w-prose text-vinho/80">
+          <p className="mx-auto mt-4 max-w-prose text-white/75">
             Conte o que você imagina. A EventeIA corre atrás dos orçamentos e te mostra as melhores opções.
           </p>
-          <Link href="/registrar" className={`${primaryCta} mt-8`}>
-            Testar agora <span aria-hidden="true">→</span>
+          <Link href="/registrar" className="group mt-9 inline-flex items-center gap-2 rounded-full bg-coral px-7 py-3.5 font-semibold text-vinho transition hover:-translate-y-0.5 hover:bg-[#FF8B5C]">
+            Testar agora <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">→</span>
           </Link>
         </div>
       </section>

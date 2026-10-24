@@ -44,6 +44,19 @@ describe("landing — hero", () => {
   });
 });
 
+describe("landing — v2 visual", () => {
+  it("usa 'Corporativo' (nunca 'Empresa') no texto da landing", () => {
+    expect(source).not.toMatch(/\bEmpresa\b/);
+    expect(source).toContain("evento corporativo");
+  });
+  it("fotos têm hover dinâmico e respeitam prefers-reduced-motion", () => {
+    expect(source).toContain("group-hover:scale-110");
+    expect(source).toContain("hover:-translate-y-1.5");
+    const css = readFileSync(join(process.cwd(), "app/globals.css"), "utf8");
+    expect(css).toMatch(/prefers-reduced-motion: reduce[\s\S]*ev-photo/);
+  });
+});
+
 describe("landing — depoimentos de exemplo", () => {
   it("fallback é marcado como exemplo e não traz números inventados", () => {
     expect(testimonials).toMatch(/CONTEÚDO DE EXEMPLO/);

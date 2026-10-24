@@ -6,12 +6,12 @@ import type { Config } from "tailwindcss";
  *
  * Os NOMES históricos dos tokens (vinho, champagne, areia…) foram mantidos para
  * não quebrar o painel e as demais páginas; os VALORES mudaram:
- *   vinho          → azul-noite #1E2A4A (texto/primária — confiança, AA em todo fundo claro)
+ *   vinho          → azul-noite profundo #0F172A (texto/primária — confiança, AA em todo fundo claro)
  *   champagne      → coral #FF7A45 (CTA e destaques; texto azul-noite sobre coral = 5,6:1)
  *   champagne-claro→ pêssego #FFE1D1
- *   areia-quente   → creme #FFF8F1 · areia-secundaria → #FDEDE1 · off-white → #FFFFFF
+ *   areia-quente   → creme #FAFAF8 · areia-secundaria → #F3F1EE · off-white → #FFFFFF
  * Novos acentos decorativos: sol #FFC94D, menta #2BB59A, lilas #8B7CF6 (nunca como texto pequeno).
- * - Tipografia: Nunito (display arredondada) · Inter (corpo/UI).
+ * - Tipografia: Plus Jakarta Sans (display) · Inter (corpo/UI).
  * - O produto é light-first; dark mode não faz parte do DS v1.
  */
 const config: Config = {
@@ -31,14 +31,14 @@ const config: Config = {
        * ====================================================== */
       colors: {
         /* ---- Paleta canônica (hex oficial) ---- */
-        vinho: "#1E2A4A", // azul-noite (nome histórico mantido)
-        "areia-quente": "#FFF8F1",
-        "areia-secundaria": "#FDEDE1",
+        vinho: "#0F172A", // azul-noite (nome histórico mantido)
+        "areia-quente": "#FAFAF8",
+        "areia-secundaria": "#F3F1EE",
         "off-white": "#FFFFFF",
         champagne: "#FF7A45", // coral
         coral: "#FF7A45",
         "coral-escuro": "#C2410C", // texto coral sobre claro (AA)
-        noite: "#1E2A4A",
+        noite: "#0F172A",
         sol: "#FFC94D",
         menta: "#2BB59A",
         lilas: "#8B7CF6",
@@ -46,18 +46,18 @@ const config: Config = {
 
         /* ---- Tokens semânticos (preferidos nos componentes) ---- */
         brand: {
-          primary: "#1E2A4A",
+          primary: "#0F172A",
           accent: "#FF7A45",
           accentSoft: "#FFE1D1",
         },
         surface: {
           canvas: "#FFFFFF",   // cards, campos
-          warm: "#FFF8F1",     // fundo padrão de página
-          muted: "#FDEDE1",    // faixas alternadas, linhas de tabela
-          dark: "#1E2A4A",     // seções editoriais escuras
+          warm: "#FAFAF8",     // fundo padrão de página
+          muted: "#F3F1EE",    // faixas alternadas, linhas de tabela
+          dark: "#0F172A",     // seções editoriais escuras
         },
         ink: {
-          primary: "#1E2A4A",
+          primary: "#0F172A",
           inverse: "#FFFFFF",
           accent: "#FF7A45",   // apenas sobre azul-noite (contraste AA)
           soft: "#FFE1D1",
@@ -78,10 +78,10 @@ const config: Config = {
        * ====================================================== */
       fontFamily: {
         /* Wordmark da marca: Bodoni Moda (exceção editorial — ver DESIGN_SYSTEM.md §4.1) */
-        brand: ["var(--font-display)", "Nunito", "system-ui", "sans-serif"],
+        brand: ["var(--font-display)", "Plus Jakarta Sans", "system-ui", "sans-serif"],
         /* "serif" mantido como nome do token de títulos; agora é a display arredondada */
-        serif: ["var(--font-display)", "Nunito", "system-ui", "sans-serif"],
-        display: ["var(--font-display)", "Nunito", "system-ui", "sans-serif"],
+        serif: ["var(--font-display)", "Plus Jakarta Sans", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "Plus Jakarta Sans", "system-ui", "sans-serif"],
         sans: [
           "var(--font-body)",
           "Inter",
@@ -112,7 +112,7 @@ const config: Config = {
       },
 
       fontWeight: {
-        /* Nunito 800 = títulos; Inter 400/500 = corpo/UI */
+        /* Plus Jakarta Sans 800 = títulos; Inter 400/500 = corpo/UI */
         display: "800",
       },
 

@@ -9,7 +9,7 @@ const navItems = [
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-line-subtle bg-areia-quente/90 backdrop-blur-md">
+    <header className="sticky top-0 z-50 w-full border-b border-slate-200/60 bg-white/70 backdrop-blur-xl backdrop-saturate-150">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-8">
         <Link href="/" className="flex cursor-pointer items-center gap-3" aria-label="EventeIA — início">
           <Image
@@ -22,7 +22,7 @@ export function SiteHeader() {
           />
           <span className="flex select-none flex-col justify-center">
             <span className="font-brand text-xl leading-none text-vinho sm:text-2xl">EventeIA</span>
-            <span className="mt-0.5 text-[9px] font-semibold uppercase leading-tight tracking-[0.15em] text-vinho/70 sm:text-[10px]">
+            <span className="mt-0.5 hidden text-[9px] font-semibold sm:block uppercase leading-tight tracking-[0.15em] text-vinho/70 sm:text-[10px]">
               Você imagina. A EventeIA faz acontecer.
             </span>
           </span>
@@ -46,7 +46,7 @@ export function SiteHeader() {
           </Link>
           <Link
             href="/registrar"
-            className="rounded-full bg-champagne px-5 py-2 text-xs font-bold text-vinho shadow-sm transition-all hover:bg-[#FF8B5C] active:scale-95 sm:text-sm"
+            className="rounded-full bg-vinho px-5 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-[#1E293B] active:scale-95 sm:text-sm"
           >
             Começar agora
           </Link>
