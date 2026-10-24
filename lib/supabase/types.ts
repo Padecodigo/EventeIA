@@ -295,6 +295,16 @@ export interface Database {
         error: string | null;
         created_at: string;
       }>;
+      llm_usage_events: Table<{
+        id: string;
+        provider: "nim" | "grok" | "deepseek";
+        task: string;
+        input_tokens: number;
+        output_tokens: number;
+        cost_micro_usd: number;
+        outcome: "ok" | "invalid" | "low_confidence" | "error";
+        created_at: string;
+      }>;
       consents: Table<{
         id: string;
         profile_id: string | null;

@@ -1,5 +1,7 @@
 import "server-only";
 
+import { getRouter } from "@/lib/ai/runtime";
+import { routeQuotationExtraction } from "@/lib/ai/tasks";
 import { logger } from "@/lib/logger";
 import {
   EMPTY_QUOTATION,
@@ -75,8 +77,17 @@ function salvagePartial(candidate: unknown): NuancedQuotation {
  */
 export async function extractQuotationFromText(
   rawText: string,
-  client: DeepSeekClient = getDeepSeekClient(),
+  explicitClient?: DeepSeekClient,
 ): Promise<QuotationExtractionResult> {
+  // Produção: roteador NIM → Grok (teto 25%) → contingência. DeepSeek direto só se injetado/sem roteador.
+  const router = explicitClient === undefined ? getRouter() : null;
+  if (router !== null) {
+    const routed = await routeQuotationExtraction(router, buildExtractionMessages(rawText), rawText);
+    return routed.provider === "contingency"
+      ? { status: "parsing_failed", quotation: routed.value, issues: ["contingency_parser"] }
+      : { status: "success", quotation: routed.value, issues: [] };
+  }
+  const client = explicitClient ?? getDeepSeekClient();
   let content: string;
   try {
     content = await client.complete({ messages: buildExtractionMessages(rawText) });
