@@ -30,6 +30,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": rootDir,
+      "server-only": `${rootDir}workers/stubs/server-only.ts`,
     },
   },
 });
