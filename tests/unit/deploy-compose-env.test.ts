@@ -55,6 +55,10 @@ describe("docker-compose.prod.yml", () => {
     expect(compose).toMatch(/EVOLUTION_API_URL: http:\/\/eventeia-evolution-api:8080/);
   });
 
+  it("Evolution aceita chamadas sem Origin (regressão: CORS 500 em server→server)", () => {
+    expect(compose).toMatch(/^\s+CORS_ORIGIN: "\*"$/m);
+  });
+
   it("app e worker não dependem da Evolution para subir", () => {
     expect(compose).not.toMatch(/depends_on:[\s\S]{0,120}evolution-api/);
   });
