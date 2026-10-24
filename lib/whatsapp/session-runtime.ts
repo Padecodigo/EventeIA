@@ -63,6 +63,19 @@ export function createSessionDeps(): SessionDeps {
         { jobId: `window-end-${instance}-${eventId}`, delayMs },
       );
     },
+    async triggerCollectionEnd(instance, eventId) {
+      await enqueue(
+        QUEUE_NAMES.whatsappSessionLifecycle,
+        "collection-complete",
+        { instance, eventId, reason: "collection_complete" },
+        { jobId: `collection-complete-${instance}-${eventId}` },
+      );
+    },
+    async deliverQuotes(eventId) {
+      // Fase 4 conecta aqui a geração dos cenários; até lá só registra.
+      logger.info({ eventId }, "coleta encerrada: entrega de cotações");
+      return Promise.resolve();
+    },
     notifyQuotationsReady,
     warn(message, context) {
       logger.warn(context, message);

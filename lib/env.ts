@@ -29,7 +29,7 @@ const serverSchema = z.object({
   // Agente Orçamentista: intervalo humanizado entre disparos (clamp 45–90s no worker).
   WHATSAPP_MIN_INTERVAL_SECONDS: z.coerce.number().int().default(60),
   // Janela de coleta da sessão efêmera (clamp 30–60 min) e concorrência do worker.
-  WHATSAPP_COLLECTION_WINDOW_MINUTES: z.coerce.number().int().default(45),
+  WHATSAPP_COLLECTION_WINDOW_MINUTES: z.coerce.number().int().default(2880),
   WHATSAPP_PROSPECTING_CONCURRENCY: z.coerce.number().int().min(1).max(200).default(25),
   // AES-256 (hex 64 chars) p/ credenciais de instância; opcional em dev.
   WHATSAPP_CREDENTIALS_KEY: z.string().optional(),
