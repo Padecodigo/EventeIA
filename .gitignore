@@ -49,3 +49,4 @@ test-results/
 blob-report/
 .env.*.bak
 *.bak
+package-lock.json
