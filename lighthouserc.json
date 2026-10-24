@@ -1,0 +1,49 @@
+{
+  "ci": {
+    "collect": {
+      "startServerCommand": "pnpm start",
+      "startServerReadyPattern": "ready|Started server|Local:",
+      "url": [
+        "http://localhost:3000/",
+        "http://localhost:3000/como-funciona",
+        "http://localhost:3000/para-planners",
+        "http://localhost:3000/planos"
+      ],
+      "numberOfRuns": 3,
+      "settings": {
+        "preset": "desktop",
+        "chromeFlags": "--no-sandbox --headless=new",
+        "skipAudits": ["canonical", "is-crawlable"]
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": ["error", { "minScore": 0.9, "aggregationMethod": "optimistic" }],
+        "categories:accessibility": ["error", { "minScore": 0.95, "aggregationMethod": "optimistic" }],
+        "categories:best-practices": ["error", { "minScore": 0.92 }],
+        "categories:seo": ["error", { "minScore": 0.9 }],
+
+        "color-contrast": "error",
+        "csp-xss": "warn",
+        "inspector-issues": "warn",
+        "valid-lang": "error",
+        "html-has-lang": "error",
+        "aria-hidden-focus": "error",
+        "label": "error",
+        "button-name": "error",
+        "link-name": "error",
+
+        "largest-contentful-paint": ["warn", { "maxNumericValue": 2500 }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1 }],
+        "total-blocking-time": ["warn", { "maxNumericValue": 300 }],
+        "server-response-time": ["warn", { "maxNumericValue": 800 }],
+        "render-blocking-resources": "warn",
+        "unused-javascript": "off",
+        "unused-css-rules": "off"
+      }
+    },
+    "upload": {
+      "target": "temporary-public-storage"
+    }
+  }
+}

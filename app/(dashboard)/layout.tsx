@@ -1,0 +1,49 @@
+import Image from "next/image";
+import Link from "next/link";
+
+import type { ReactNode } from "react";
+
+import { DashboardNav } from "@/components/dashboard-nav";
+import { NotificationsPoller } from "@/components/notifications/notifications-poller";
+import { requireUser } from "@/lib/auth";
+
+import { signOutAction } from "./actions";
+
+export const dynamic = "force-dynamic";
+
+export default async function DashboardLayout({ children }: { children: ReactNode }) {
+  const user = await requireUser();
+
+  return (
+    <div className="min-h-screen bg-[radial-gradient(60%_40%_at_100%_0%,#F3E6DD,transparent)] bg-areia-quente text-vinho">
+      <header className="sticky top-0 z-40 border-b border-line-subtle bg-white/80 backdrop-blur-xl">
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
+          <Link href="/painel" className="flex items-center gap-3">
+            <Image src="/logo-e.png" alt="EventeIA" width={120} height={67} priority className="h-9 w-auto object-contain" />
+            <span className="font-brand text-xl leading-none text-vinho sm:text-2xl">EventeIA</span>
+          </Link>
+
+          <DashboardNav />
+
+          <div className="flex items-center gap-4">
+            <span className="hidden text-caption text-vinho/70 sm:inline">{user.email ?? ""}</span>
+            <form action={signOutAction}>
+              <button
+                type="submit"
+                className="rounded-full border border-vinho/15 bg-white px-4 py-2 text-sm font-semibold text-vinho transition hover:border-primaria/40 hover:bg-verde-claro/50"
+              >
+                Sair
+              </button>
+            </form>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-6xl px-6 py-10">{children}</main>
+      <footer className="border-t border-line-subtle py-6 text-center text-[11px] text-vinho/60">
+        © {new Date().getFullYear()} EventeIA · Pagamentos via Pix e cartão · Dados protegidos (LGPD)
+      </footer>
+      <NotificationsPoller />
+    </div>
+  );
+}

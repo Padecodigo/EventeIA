@@ -1,0 +1,158 @@
+"use client";
+
+import { useActionState } from "react";
+
+import {
+  applyCouponAction,
+  buyTicketAction,
+  type CheckoutState,
+  type CouponCheckState,
+} from "@/app/(dashboard)/eventos/actions";
+import { Button } from "@/components/ui/button";
+import { formatBRL } from "@/lib/money";
+
+const initialCheckout: CheckoutState = {};
+const initialCoupon: CouponCheckState = {};
+
+export interface BuyTicketFormProps {
+  eventId: string;
+  priceFormatted: string;
+  defaultCpf: string;
+}
+
+export function BuyTicketForm({ eventId, priceFormatted, defaultCpf }: BuyTicketFormProps) {
+  const [couponState, applyCoupon, checkingCoupon] = useActionState(
+    applyCouponAction,
+    initialCoupon,
+  );
+  const [state, formAction, pending] = useActionState(buyTicketAction, initialCheckout);
+
+  const couponApplied = couponState.ok === true;
+
+  if (state.pix !== undefined) {
+    return (
+      <section className="rounded-card border border-champagne/50 bg-off-white p-6 shadow-soft">
+        <h2 className="font-serif text-title-1">Pix gerado.</h2>
+
+        {state.applied !== undefined ? (
+          <p className="mt-2 text-sm text-vinho/75">
+            Cupom <strong className="text-vinho">{state.applied.code}</strong> aplicado — desconto de{" "}
+            {formatBRL(state.applied.discountCents)}. Total:{" "}
+            <strong className="text-vinho">{formatBRL(state.applied.finalCents)}</strong>.
+          </p>
+        ) : null}
+
+        <p className="mt-2 text-sm text-vinho/70">
+          Finalize o pagamento para liberar o orçamento completo. O Pix expira em até 30 minutos.
+        </p>
+
+        <div className="mt-4 rounded-xl border border-line-subtle bg-areia-quente p-4">
+          <p className="text-overline uppercase tracking-[0.12em] text-vinho/70">Pix copia e cola</p>
+          <textarea
+            readOnly
+            value={state.pix.payload}
+            rows={4}
+            className="mt-2 w-full resize-none break-all rounded-lg border border-line-subtle bg-off-white p-3 font-mono text-xs text-vinho"
+          />
+        </div>
+
+        {state.pix.invoiceUrl !== undefined ? (
+          <a
+            href={state.pix.invoiceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-4 inline-flex text-sm font-medium text-vinho underline decoration-champagne underline-offset-4"
+          >
+            Abrir página de pagamento
+          </a>
+        ) : null}
+
+        <p className="mt-4 text-caption text-vinho/70">
+          A confirmação chega automaticamente — esta página será atualizada.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
+      <h2 className="font-serif text-title-1">Liberar este evento</h2>
+      <p className="mt-2 text-sm text-vinho/70">
+        Tíquete único de <strong className="text-vinho">{priceFormatted}</strong> — pagamento via Pix.
+        Inclui orçamento completo, cotações ilimitadas e disparos pelo WhatsApp.
+      </p>
+
+      {/* Cupom — feedback imediato antes de gerar o Pix (spec §3) */}
+      <form action={applyCoupon} className="mt-5 rounded-xl border border-line-subtle bg-areia-quente p-4">
+        <label htmlFor="coupon" className="text-sm font-medium text-vinho">
+          Possui cupom de desconto?
+        </label>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <input
+            id="coupon"
+            name="code"
+            autoComplete="off"
+            placeholder="BEMVINDA10"
+            className="h-11 min-w-0 flex-1 rounded-xl border border-line-subtle bg-off-white px-4 text-sm uppercase text-vinho"
+          />
+          <Button type="submit" variant="secondary" disabled={checkingCoupon} className="h-11">
+            {checkingCoupon ? "Verificando…" : "Aplicar cupom"}
+          </Button>
+        </div>
+
+        {couponApplied && couponState.code !== undefined ? (
+          <p
+            role="status"
+            className="mt-2 rounded-lg bg-semantic-success/10 px-3 py-2 text-sm text-semantic-success"
+          >
+            Cupom <strong>{couponState.code}</strong> aplicado — desconto de{" "}
+            {formatBRL(couponState.discountCents ?? 0)}. Total:{" "}
+            <strong>{formatBRL(couponState.finalCents ?? 0)}</strong>.
+          </p>
+        ) : null}
+
+        {couponState.error !== undefined ? (
+          <p role="alert" className="mt-2 text-sm text-semantic-error">
+            {couponState.error}
+          </p>
+        ) : null}
+      </form>
+
+      <form action={formAction} className="mt-5 flex flex-col gap-4">
+        <input type="hidden" name="eventId" value={eventId} />
+        {couponApplied && couponState.code !== undefined ? (
+          <input type="hidden" name="coupon" value={couponState.code} />
+        ) : null}
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="cpf" className="text-sm font-medium text-vinho">
+            CPF do titular
+          </label>
+          <input
+            id="cpf"
+            name="cpf"
+            required
+            inputMode="numeric"
+            autoComplete="off"
+            defaultValue={defaultCpf}
+            placeholder="00000000000"
+            className="h-12 rounded-xl border border-line-subtle bg-off-white px-4 text-sm text-vinho"
+          />
+          <p className="text-caption text-vinho/70">
+            Usado apenas para emissão da cobrança. Não aparece em orçamentos.
+          </p>
+        </div>
+
+        {state.error !== undefined ? (
+          <p role="alert" className="rounded-xl bg-semantic-error/10 px-4 py-3 text-sm text-semantic-error">
+            {state.error}
+          </p>
+        ) : null}
+
+        <Button type="submit" variant="gold" disabled={pending}>
+          {pending ? "Gerando Pix…" : "Pagar com Pix"}
+        </Button>
+      </form>
+    </section>
+  );
+}

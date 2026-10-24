@@ -1,0 +1,52 @@
+# Dependências
+node_modules/
+.pnpm-store/
+.home/
+.cache/
+.state/
+.data/
+.tmp/
+.npm-cache/
+.pnpm-home/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# Build e cobertura
+dist/
+coverage/
+*.tsbuildinfo
+
+# Variáveis de ambiente — NUNCA commitar valores reais
+.env
+.env.local
+.env.development
+.env.production
+.env*.local
+!.env.example
+
+# Supabase
+supabase/.branches/
+supabase/.temp/
+
+# Lighthouse
+.lhci/
+
+# Sistema / editor
+.DS_Store
+*.pem
+.shots/
+
+# Logs, Vercel e testes E2E
+*.log
+npm-debug.log*
+pnpm-debug.log*
+.vercel/
+playwright-report/
+test-results/
+blob-report/
+.env.*.bak
+*.bak
+package-lock.json

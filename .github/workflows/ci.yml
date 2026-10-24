@@ -1,0 +1,174 @@
+# EventeIA — Pipeline de validação contínua
+# Regra: nada entra no tronco sem este pipeline verde (ver AGENTS.md §2).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  CI: "true"
+
+jobs:
+  # ------------------------------------------------------------------
+  # 1. Qualidade: lint, tipos, dependências não utilizadas, testes, build
+  # ------------------------------------------------------------------
+  quality:
+    name: Qualidade (lint · tipos · knip · testes · build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Instalar dependências (lockfile estrito)
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint (ESLint — TypeScript + Next)
+        run: pnpm lint
+
+      - name: Tipos (tsc --noEmit)
+        run: pnpm typecheck
+
+      - name: Dependências não utilizadas (knip)
+        run: pnpm knip
+
+      - name: Auditoria de segurança de dependências
+        run: pnpm audit --audit-level high
+
+      - name: Testes (unitários + integração com mocks)
+        run: pnpm test -- --run --coverage
+
+      - name: Build de produção
+        run: pnpm build
+        env:
+          # Valores fictícios apenas para o build do CI — nunca segredos reais
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-role-key
+          REDIS_URL: redis://localhost:6379
+          ASAAS_API_URL: https://api-sandbox.asaas.com/v3
+          ASAAS_API_KEY: ci-placeholder-asaas-key
+          ASAAS_WEBHOOK_TOKEN: ci-placeholder-webhook-token
+          EVOLUTION_API_URL: http://localhost:8080
+          EVOLUTION_API_KEY: ci-placeholder-evolution-key
+          EVOLUTION_INSTANCE: EventeIA-ci
+          EVOLUTION_WEBHOOK_TOKEN: ci-placeholder-evolution-token
+          B2C_TICKET_PRICE_CENTS: "9700"
+          ENGINE_TIMEZONE: America/Sao_Paulo
+
+  # ------------------------------------------------------------------
+  # 2. Banco de dados: migrações aplicam limpo + testes de RLS
+  # ------------------------------------------------------------------
+  database:
+    name: Banco de dados e RLS
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Subir Supabase local
+        run: supabase start
+
+      - name: Aplicar migrações do zero (db reset)
+        run: supabase db reset
+
+      - name: Validar geração de tipos do banco
+        run: supabase gen types typescript --local > /dev/null
+
+      - name: Testes de políticas RLS (pgTAP)
+        run: pnpm test:rls
+
+      - name: Parar Supabase local
+        if: always()
+        run: supabase stop
+
+  # ------------------------------------------------------------------
+  # 3. Performance e acessibilidade (Lighthouse CI)
+  # ------------------------------------------------------------------
+  lighthouse:
+    name: Lighthouse CI (performance · acessibilidade)
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Build de produção
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-role-key
+          REDIS_URL: redis://localhost:6379
+          ASAAS_API_URL: https://api-sandbox.asaas.com/v3
+          ASAAS_API_KEY: ci-placeholder-asaas-key
+          ASAAS_WEBHOOK_TOKEN: ci-placeholder-webhook-token
+          EVOLUTION_API_URL: http://localhost:8080
+          EVOLUTION_API_KEY: ci-placeholder-evolution-key
+          EVOLUTION_INSTANCE: EventeIA-ci
+          EVOLUTION_WEBHOOK_TOKEN: ci-placeholder-evolution-token
+          B2C_TICKET_PRICE_CENTS: "9700"
+          ENGINE_TIMEZONE: America/Sao_Paulo
+
+      - name: Lighthouse CI (lighthouserc.json)
+        run: pnpm dlx @lhci/cli@0.14.x autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
