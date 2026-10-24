@@ -74,3 +74,87 @@ export interface EngineResult {
   breakdown: EngineLineItem[];
   warnings: EngineWarning[];
 }
+
+/* ============================================================
+ * Cotações reais de fornecedores (calculator.ts / scenarios.ts)
+ * Inteiros em centavos; taxas percentuais em basis points (1% = 100 bps).
+ * ============================================================ */
+
+export type QuoteFeeCategory =
+  | "cleaning"
+  | "dishes_and_cutlery"
+  | "delivery_pickup"
+  | "service_staff"
+  | "other";
+
+export interface QuoteFee {
+  category: QuoteFeeCategory;
+  description: string;
+  /** Valor fixo em centavos. Se null, usa `rateBps` sobre o valor base. */
+  amountCents: number | null;
+  /** Percentual sobre o base, em bps (ex.: 10% de serviço = 1000). */
+  rateBps?: number | null;
+  includedInBase: boolean;
+}
+
+export interface SupplierQuote {
+  supplierId: string;
+  supplierName: string;
+  /** Categorias de serviço que a proposta cobre (pacote = várias). */
+  covers: string[];
+  basePriceCents: number | null;
+  totalPriceCents: number | null;
+  fees: QuoteFee[];
+  /** Qualidade/confiança 0..10000 bps (ex.: confidence_score × 10000, inteiro). */
+  qualityBps: number | null;
+}
+
+export interface UserAssets {
+  /** Categorias de serviço que a família já tem (ex.: "decoracao") ⇒ custo 0. */
+  alreadyOwned: string[];
+  /** Taxas que não se aplicam (ex.: já tem louça) ⇒ ignoradas. */
+  unneededFeeCategories: QuoteFeeCategory[];
+}
+
+export type MissingField = "base_price_cents" | "fee_amount" | "quality_bps" | "quote";
+
+export interface MissingInfo {
+  category: string;
+  supplierId: string | null;
+  field: MissingField;
+}
+
+export type EffectiveCostResult =
+  | {
+      ok: true;
+      effectiveCents: number;
+      baseCents: number;
+      hiddenFeesCents: number;
+      ignoredFeesCents: number;
+    }
+  | { ok: false; missing: MissingField[] };
+
+export type ScenarioKind = "preco" | "custo_beneficio" | "comodidade";
+
+export interface ScenarioSelection {
+  supplierId: string;
+  supplierName: string;
+  categories: string[];
+  effectiveCents: number;
+}
+
+export interface Scenario {
+  kind: ScenarioKind;
+  totalCents: number;
+  supplierCount: number;
+  /** Score determinístico (custo ajustado pela qualidade) — só em custo_beneficio. */
+  scoreCents: number | null;
+  selections: ScenarioSelection[];
+  ownedCategories: string[];
+}
+
+export interface ScenarioOutcome {
+  kind: ScenarioKind;
+  scenario: Scenario | null;
+  missing: MissingInfo[];
+}
