@@ -5,6 +5,8 @@
 
 import { z } from "zod";
 
+import { normalizeScopeItem } from "@/lib/quotes/scope-items";
+
 export const FEE_CATEGORIES = [
   "cleaning",
   "dishes_and_cutlery",
@@ -32,11 +34,25 @@ export const itemBreakdownSchema = z.object({
   notes: z.string().trim().max(300).optional(),
 });
 
+/**
+ * Escopo estruturado: cada item "inclui" ou "nao_inclui", com preço à parte
+ * quando o fornecedor informar (ex.: louça não inclusa, R$ 3/pessoa).
+ */
+export const scopeEntrySchema = z.object({
+  item: z.string().trim().min(1).max(60).transform(normalizeScopeItem),
+  status: z.enum(["inclui", "nao_inclui"]),
+  price_cents: centsSchema.nullable().default(null),
+  notes: z.string().trim().max(200).optional(),
+});
+
+export type ScopeEntry = z.infer<typeof scopeEntrySchema>;
+
 export const nuancedQuotationSchema = z.object({
   total_price_cents: centsSchema.nullable(),
   base_price_cents: centsSchema.nullable(),
   mandatory_fees: z.array(mandatoryFeeSchema).max(30),
   item_breakdown: z.array(itemBreakdownSchema).max(100),
+  scope: z.array(scopeEntrySchema).max(40).default([]),
   validity_days: z.number().int().min(0).max(365).nullable(),
   payment_conditions: z.string().trim().max(500).nullable(),
   confidence_score: z.number().min(0).max(1),
@@ -59,6 +75,7 @@ export const EMPTY_QUOTATION: Readonly<NuancedQuotation> = Object.freeze({
   base_price_cents: null,
   mandatory_fees: [],
   item_breakdown: [],
+  scope: [],
   validity_days: null,
   payment_conditions: null,
   confidence_score: 0,
