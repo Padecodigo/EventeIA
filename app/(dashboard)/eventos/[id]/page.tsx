@@ -14,6 +14,8 @@ import { CATEGORY_LABELS, type CategoryCode } from "@/lib/catalog/v1";
 import { calculate } from "@/lib/engine";
 import type { EngineItemSelection, EventType, RegionCode } from "@/lib/engine/types";
 import { serverEnv } from "@/lib/env";
+import { luckyDiscountCents } from "@/lib/lucky/pure";
+import { lookupLuckyCoupon } from "@/lib/lucky/server";
 import { formatBRL } from "@/lib/money";
 import { latestScenarios } from "@/lib/quotes/scenarios";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -51,14 +53,27 @@ const statusLabels: Record<string, string> = {
 /** Oferta de boas-vindas da conta (vincula a do aparelho, se houver). Prazo vem do banco. */
 async function welcomeForCheckout(
   profileId: string,
-): Promise<{ remainingMs: number; fullCents: number; finalCents: number } | null> {
+): Promise<{ remainingMs: number; fullCents: number; finalCents: number; label?: string } | null> {
   const fullCents = serverEnv().B2C_TICKET_PRICE_CENTS;
-  if (fullCents <= WELCOME_FINAL_PRICE_CENTS) {
-    return null;
+  const offer = await lookupWelcomeOffer({ claim: false, source: "new_ip", profileId }).catch(
+    () => null,
+  );
+  if (
+    offer?.status === "active" &&
+    offer.remainingMs > 0 &&
+    fullCents > WELCOME_FINAL_PRICE_CENTS
+  ) {
+    return { remainingMs: offer.remainingMs, fullCents, finalCents: WELCOME_FINAL_PRICE_CENTS };
   }
-  const offer = await lookupWelcomeOffer({ claim: false, source: "new_ip", profileId }).catch(() => null);
-  return offer?.status === "active" && offer.remainingMs > 0
-    ? { remainingMs: offer.remainingMs, fullCents, finalCents: WELCOME_FINAL_PRICE_CENTS }
+  // Nunca as duas ofertas juntas: o cupom sorteado só entra sem boas-vindas ativa.
+  const lucky = await lookupLuckyCoupon({ draw: false, profileId }).catch(() => null);
+  return lucky?.status === "active" && lucky.percent !== null && lucky.remainingMs > 0
+    ? {
+        remainingMs: lucky.remainingMs,
+        fullCents,
+        finalCents: fullCents - luckyDiscountCents(fullCents, lucky.percent),
+        label: `Cupom sorteado de ${lucky.percent}% aplicado`,
+      }
     : null;
 }
 
@@ -82,29 +97,29 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
   const [ticketResult, profileResult, quotationsResult, prospectsResult, instancesResult] =
     await Promise.all([
-    supabase.from("event_tickets").select("status").eq("event_id", event.id).maybeSingle(),
-    supabase
-      .from("profiles")
-      .select("display_name,document_number")
-      .eq("id", event.owner_profile_id)
-      .maybeSingle(),
-    supabase
-      .from("quotations")
-      .select("id,category,vendor_name,vendor_contact,amount_cents,status,created_at")
-      .eq("event_id", event.id)
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("vendor_prospects")
-      .select("id,vendor_name,vendor_category,phone_e164,status,created_at")
-      .eq("event_id", event.id)
-      .order("created_at", { ascending: false }),
-    getSupabaseAdmin()
-      .from("whatsapp_instances")
-      .select("status,number_mode")
-      .eq("profile_id", event.owner_profile_id)
-      .limit(1)
-      .maybeSingle(),
-  ]);
+      supabase.from("event_tickets").select("status").eq("event_id", event.id).maybeSingle(),
+      supabase
+        .from("profiles")
+        .select("display_name,document_number")
+        .eq("id", event.owner_profile_id)
+        .maybeSingle(),
+      supabase
+        .from("quotations")
+        .select("id,category,vendor_name,vendor_contact,amount_cents,status,created_at")
+        .eq("event_id", event.id)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("vendor_prospects")
+        .select("id,vendor_name,vendor_category,phone_e164,status,created_at")
+        .eq("event_id", event.id)
+        .order("created_at", { ascending: false }),
+      getSupabaseAdmin()
+        .from("whatsapp_instances")
+        .select("status,number_mode")
+        .eq("profile_id", event.owner_profile_id)
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
   const eventType: EventType = eventTypeSchema.safeParse(event.event_type).data ?? "casamento";
   const region: RegionCode = regionSchema.safeParse(event.region_code).data ?? "outros";

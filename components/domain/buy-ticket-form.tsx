@@ -20,10 +20,15 @@ export interface BuyTicketFormProps {
   priceFormatted: string;
   defaultCpf: string;
   /** Oferta de boas-vindas ativa (aplicada e revalidada no servidor ao gerar o Pix). */
-  welcome?: { remainingMs: number; fullCents: number; finalCents: number } | null;
+  welcome?: { remainingMs: number; fullCents: number; finalCents: number; label?: string } | null;
 }
 
-export function BuyTicketForm({ eventId, priceFormatted, defaultCpf, welcome = null }: BuyTicketFormProps) {
+export function BuyTicketForm({
+  eventId,
+  priceFormatted,
+  defaultCpf,
+  welcome = null,
+}: BuyTicketFormProps) {
   const [couponState, applyCoupon, checkingCoupon] = useActionState(
     applyCouponAction,
     initialCoupon,
@@ -39,8 +44,8 @@ export function BuyTicketForm({ eventId, priceFormatted, defaultCpf, welcome = n
 
         {state.applied !== undefined ? (
           <p className="mt-2 text-sm text-vinho/75">
-            Cupom <strong className="text-vinho">{state.applied.code}</strong> aplicado — desconto de{" "}
-            {formatBRL(state.applied.discountCents)}. Total:{" "}
+            Cupom <strong className="text-vinho">{state.applied.code}</strong> aplicado — desconto
+            de {formatBRL(state.applied.discountCents)}. Total:{" "}
             <strong className="text-vinho">{formatBRL(state.applied.finalCents)}</strong>.
           </p>
         ) : null}
@@ -50,7 +55,9 @@ export function BuyTicketForm({ eventId, priceFormatted, defaultCpf, welcome = n
         </p>
 
         <div className="mt-4 rounded-xl border border-line-subtle bg-areia-quente p-4">
-          <p className="text-overline uppercase tracking-[0.12em] text-vinho/70">Pix copia e cola</p>
+          <p className="text-overline uppercase tracking-[0.12em] text-vinho/70">
+            Pix copia e cola
+          </p>
           <textarea
             readOnly
             value={state.pix.payload}
@@ -81,25 +88,30 @@ export function BuyTicketForm({ eventId, priceFormatted, defaultCpf, welcome = n
     <section className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
       <h2 className="font-serif text-title-1">Liberar este evento</h2>
       <p className="mt-2 text-sm text-vinho/70">
-        Tíquete único de <strong className="text-vinho">{priceFormatted}</strong> — pagamento via Pix.
-        Inclui orçamento completo, cotações ilimitadas e disparos pelo WhatsApp.
+        Tíquete único de <strong className="text-vinho">{priceFormatted}</strong> — pagamento via
+        Pix. Inclui orçamento completo, cotações ilimitadas e disparos pelo WhatsApp.
       </p>
 
       {welcome !== null && !couponApplied ? (
         <div role="status" className="mt-5 rounded-xl bg-vinho px-4 py-3 text-sm text-off-white">
           <p>
-            Oferta de boas-vindas aplicada: <s className="opacity-80">{formatBRL(welcome.fullCents)}</s>{" "}
-            <strong className="text-champagne">{formatBRL(welcome.finalCents)}</strong> · economia de{" "}
-            {formatBRL(welcome.fullCents - welcome.finalCents)}
+            {welcome.label ?? "Oferta de boas-vindas aplicada"}:{" "}
+            <s className="opacity-80">{formatBRL(welcome.fullCents)}</s>{" "}
+            <strong className="text-champagne">{formatBRL(welcome.finalCents)}</strong> · economia
+            de {formatBRL(welcome.fullCents - welcome.finalCents)}
           </p>
           <p className="mt-1">
-            Expira em <WelcomeCountdown remainingMs={welcome.remainingMs} className="text-champagne" />
+            Expira em{" "}
+            <WelcomeCountdown remainingMs={welcome.remainingMs} className="text-champagne" />
           </p>
         </div>
       ) : null}
 
       {/* Cupom — feedback imediato antes de gerar o Pix (spec §3) */}
-      <form action={applyCoupon} className="mt-5 rounded-xl border border-line-subtle bg-areia-quente p-4">
+      <form
+        action={applyCoupon}
+        className="mt-5 rounded-xl border border-line-subtle bg-areia-quente p-4"
+      >
         <label htmlFor="coupon" className="text-sm font-medium text-vinho">
           Possui cupom de desconto?
         </label>
@@ -160,7 +172,10 @@ export function BuyTicketForm({ eventId, priceFormatted, defaultCpf, welcome = n
         </div>
 
         {state.error !== undefined ? (
-          <p role="alert" className="rounded-xl bg-semantic-error/10 px-4 py-3 text-sm text-semantic-error">
+          <p
+            role="alert"
+            className="rounded-xl bg-semantic-error/10 px-4 py-3 text-sm text-semantic-error"
+          >
             {state.error}
           </p>
         ) : null}

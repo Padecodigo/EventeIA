@@ -7,9 +7,12 @@ import { createHmac } from "node:crypto";
 export const WELCOME_FINAL_PRICE_CENTS = 4700;
 export const WELCOME_CODE_PREFIX = "BEMVINDO-";
 export const DEVICE_COOKIE = "ev_vid";
+/** Cookie de sessão que identifica a VISITA (a oferta de boas-vindas só vale na 1ª visita). */
+export const VISIT_COOKIE = "ev_visit";
 
 export type WelcomeSource = "new_ip" | "convite" | "promo";
-export type WelcomeStatus = "active" | "expired" | "redeemed" | "ineligible" | "none" | "unavailable";
+export type WelcomeStatus =
+  "active" | "expired" | "redeemed" | "ineligible" | "none" | "unavailable";
 
 /** Origem da visita: convite (?convite=), promo/anúncio (utm_source, utm_campaign, ?ref=) ou novo IP. */
 export function detectSource(params: Record<string, unknown>): WelcomeSource {
@@ -101,6 +104,7 @@ export function summarizeWelcomeOffers(rows: WelcomeOfferRow[], now: Date): Welc
       summary.expired += 1;
     }
   }
-  summary.conversionBps = rows.length === 0 ? 0 : Math.round((summary.redeemed * 10000) / rows.length);
+  summary.conversionBps =
+    rows.length === 0 ? 0 : Math.round((summary.redeemed * 10000) / rows.length);
   return summary;
 }
