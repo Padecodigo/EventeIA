@@ -27,12 +27,10 @@ describe("firstContactMessageSchema", () => {
   });
 
   it("rejeita URLs", () => {
-    expect(
-      firstContactMessageSchema.safeParse(`${clean} Veja: https://eventeia.com`).success,
-    ).toBe(false);
-    expect(firstContactMessageSchema.safeParse(`${clean} acesse www.site.com`).success).toBe(
+    expect(firstContactMessageSchema.safeParse(`${clean} Veja: https://eventeia.com`).success).toBe(
       false,
     );
+    expect(firstContactMessageSchema.safeParse(`${clean} acesse www.site.com`).success).toBe(false);
   });
 
   it("rejeita emojis", () => {
@@ -57,7 +55,8 @@ describe("renderFirstContact", () => {
       guestCount: 60,
     });
 
-    expect(message).toContain("Buffet da Vila");
+    expect(message).toMatch(/^(Bom dia|Boa tarde|Boa noite), tudo bem\? Aqui é da EventeIA\./);
+    expect(message).toContain("Estamos fazendo um levantamento de orçamentos.");
     expect(message).toContain("Festa de 5 anos da Lia");
     expect(message).toContain("São José dos Campos");
     expect(message).toContain("60 convidados");

@@ -5,6 +5,8 @@
 
 import { z } from "zod";
 
+import { buildFirstContactText } from "@/lib/whatsapp/first-contact";
+
 /* ============================================================
  * Regra 2 — Primeiro contato: APENAS texto puro.
  * Proibido: URLs, emojis, anexos. Comprimento humano.
@@ -172,17 +174,21 @@ export function renderFirstContact(input: {
   eventDateIso: string;
   city: string;
   guestCount: number;
+  category?: string;
+  now?: Date;
 }): FirstContactMessage {
-  const date = new Date(`${input.eventDateIso}T12:00:00Z`).toLocaleDateString("pt-BR");
-  const where = input.city.length > 0 ? ` em ${input.city}` : "";
-
-  const text = [
-    `Olá, tudo bem? Falo com ${input.vendorName}?`,
-    `Estou organizando o evento "${input.eventTitle}" (${input.eventType})${where},`,
-    `previsto para ${date}, com cerca de ${String(input.guestCount)} convidados.`,
-    `Gostaria de saber se você atende e se podemos combinar um orçamento.`,
-    `Desde já, agradeço a atenção.`,
-  ].join(" ");
-
+  const text = buildFirstContactText({
+    now: input.now ?? new Date(),
+    quoteSubject:
+      input.category !== undefined && input.category.length > 0
+        ? input.category.replace(/_/g, " ")
+        : "fornecedor para o evento",
+    eventTypeLabel: input.eventType.replace(/_/g, " "),
+    eventDateIso: input.eventDateIso,
+    city: input.city,
+    guestCount: input.guestCount,
+    details: `O evento se chama "${input.eventTitle}".`,
+    seed: input.vendorName,
+  });
   return firstContactMessageSchema.parse(text);
 }

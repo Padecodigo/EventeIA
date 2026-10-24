@@ -33,9 +33,30 @@ describe("telefone BR / DDD", () => {
 describe("regras de coleta", () => {
   const start = new Date("2026-10-20T12:00:00Z");
   it("encerra em 48h ou com 5 orçamentos em todas as categorias", () => {
-    expect(collectionEnded({ startedAt: start, now: new Date(start.getTime() + 48 * 3600_000), categories: ["buffet"], quotesByCategory: {} })).toEqual({ ended: true, reason: "time" });
-    expect(collectionEnded({ startedAt: start, now: start, categories: ["buffet", "dj"], quotesByCategory: { buffet: 5, dj: 5 } }).reason).toBe("quotes");
-    expect(collectionEnded({ startedAt: start, now: start, categories: ["buffet", "dj"], quotesByCategory: { buffet: 5 } }).ended).toBe(false);
+    expect(
+      collectionEnded({
+        startedAt: start,
+        now: new Date(start.getTime() + 48 * 3600_000),
+        categories: ["buffet"],
+        quotesByCategory: {},
+      }),
+    ).toEqual({ ended: true, reason: "time" });
+    expect(
+      collectionEnded({
+        startedAt: start,
+        now: start,
+        categories: ["buffet", "dj"],
+        quotesByCategory: { buffet: 5, dj: 5 },
+      }).reason,
+    ).toBe("quotes");
+    expect(
+      collectionEnded({
+        startedAt: start,
+        now: start,
+        categories: ["buffet", "dj"],
+        quotesByCategory: { buffet: 5 },
+      }).ended,
+    ).toBe(false);
   });
   it("tetos permitem atingir 5 orçamentos por categoria", () => {
     expect(categoryNeed({ quotes: 0, prospects: 0, eventProspects: 0 })).toBe(5);
@@ -76,10 +97,15 @@ describe("primeiro contato da descoberta", () => {
     expect(text).toContain("Taubaté");
     expect(text).toContain("120");
     expect(text).toMatch(/internet/);
+    expect(text).toContain("Aqui é da EventeIA.");
+    expect(text).toContain("orçamento de buffet");
     expect(text).toContain("SAIR");
     expect(firstContactMessageSchema.safeParse(text).success).toBe(true);
   });
   it("candidato exige source_url válida", () => {
-    expect(supplierCandidateSchema.safeParse({ name: "X Festas", category: "dj", sourceUrl: "nao-url" }).success).toBe(false);
+    expect(
+      supplierCandidateSchema.safeParse({ name: "X Festas", category: "dj", sourceUrl: "nao-url" })
+        .success,
+    ).toBe(false);
   });
 });
