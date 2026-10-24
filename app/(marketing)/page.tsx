@@ -114,7 +114,7 @@ const sectionTitle = "font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leadi
 
 function Stars() {
   return (
-    <span aria-label="5 de 5 estrelas" className="flex gap-0.5 text-amber-400">
+    <span role="img" aria-label="5 de 5 estrelas" className="flex gap-0.5 text-amber-400">
       {[0, 1, 2, 3, 4].map((i) => (
         <svg key={i} aria-hidden="true" viewBox="0 0 20 20" className="h-4 w-4 fill-current">
           <path d="M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.5 7.7l5.9-.9L10 1.5z" />
@@ -193,7 +193,7 @@ export default async function LandingPage() {
                   <div className="min-w-0">
                     <Stars />
                     <blockquote className="mt-2 text-[15px] leading-relaxed text-vinho/85">“{mainTestimonial.quote}”</blockquote>
-                    <figcaption className="mt-3 text-sm text-vinho/60">
+                    <figcaption className="mt-3 text-sm text-vinho/75">
                       <strong className="font-semibold text-vinho">{mainTestimonial.name}</strong> · {mainTestimonial.context}
                       {mainTestimonial.city.length > 0 ? ` · ${mainTestimonial.city}` : ""}
                     </figcaption>
@@ -242,7 +242,7 @@ export default async function LandingPage() {
 
         {/* Faixa de tipos de evento em movimento */}
         <div className="relative border-y border-champagne-claro bg-white/60 py-4 backdrop-blur [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
-          <ul className="ev-marquee flex w-max gap-10 whitespace-nowrap font-display text-xl italic font-medium text-vinho/60">
+          <ul className="ev-marquee flex w-max gap-10 whitespace-nowrap font-display text-xl italic font-medium text-vinho/75">
             {[...EVENT_TYPES, ...EVENT_TYPES].map((e, i) => (
               <li key={`${e.label}-${i}`} aria-hidden={i >= EVENT_TYPES.length} className="flex items-center gap-10">
                 {e.label}
@@ -323,7 +323,7 @@ export default async function LandingPage() {
                 className="group rounded-2xl border border-champagne-claro bg-white p-5 transition duration-300 hover:-translate-y-0.5 hover:border-coral/40 hover:shadow-[0_16px_40px_-20px_rgba(163,72,90,0.35)]"
               >
                 <p className="font-display text-base font-bold text-vinho">{e.label}</p>
-                <p className="mt-1 text-sm text-vinho/60">{e.hint}</p>
+                <p className="mt-1 text-sm text-vinho/75">{e.hint}</p>
               </li>
             ))}
           </ul>
@@ -343,7 +343,7 @@ export default async function LandingPage() {
               <p className="text-xs font-bold uppercase tracking-wider text-coral-escuro">Ticket avulso</p>
               <h3 className="mt-2 font-display text-xl font-bold">Para o seu evento</h3>
               <p className="mt-5 font-display text-5xl font-semibold tracking-tight">{formatBRL(ticketPriceCents)}</p>
-              <p className="mt-1 text-sm text-vinho/60">pagamento único por evento</p>
+              <p className="mt-1 text-sm text-vinho/75">pagamento único por evento</p>
               <ul className="mt-6 flex-1 space-y-2.5 text-sm text-vinho/80">
                 <li>✓ Sem mensalidade</li>
                 <li>✓ Cotações pelo WhatsApp</li>
@@ -367,7 +367,7 @@ export default async function LandingPage() {
                 </p>
                 <h3 className="mt-2 font-display text-xl font-bold">{plan.name}</h3>
                 <p className="mt-5 font-display text-4xl font-semibold tracking-tight">{formatBRL(plan.priceCents)}</p>
-                <p className="mt-1 text-sm text-vinho/60">por mês · {plan.credits} eventos</p>
+                <p className="mt-1 text-sm text-vinho/75">por mês · {plan.credits} eventos</p>
                 <p className="mt-5 flex-1 text-sm leading-relaxed text-vinho/75">{plan.description}</p>
                 <Link prefetch={false} href="/planos" className="mt-7 inline-flex justify-center rounded-full border border-vinho/15 px-5 py-3 text-sm font-semibold transition hover:bg-white">
                   Ver detalhes

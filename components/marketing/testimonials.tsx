@@ -66,7 +66,7 @@ const toneClasses: Record<Testimonial["tone"], string> = {
 export function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
   return (
     <article className="flex h-full flex-col rounded-3xl border border-champagne-claro bg-white p-7 shadow-[0_20px_50px_-30px_rgba(163,72,90,0.35)]">
-      <p aria-label="5 de 5 estrelas" className="mb-3 tracking-[0.2em] text-amber-400">★★★★★</p>
+      <p role="img" aria-label="5 de 5 estrelas" className="mb-3 tracking-[0.2em] text-amber-400">★★★★★</p>
       <p className="text-body-lg leading-relaxed text-vinho">
         “{testimonial.quote}”
       </p>

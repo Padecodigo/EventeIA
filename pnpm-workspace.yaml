@@ -1,9 +1,10 @@
 # Correções do pnpm audit (escopadas para não afetar outras dependências).
+# Lighthouse CI roda sob demanda (pnpm dlx @lhci/cli) e não é dependência do projeto.
 overrides:
   postcss: "^8.5.23"
   "@sentry/node>cookie": "^0.7.0"
   tmp: "^0.2.6"
-  "@lhci/cli>uuid": "^11.1.1"
+  zod: ">=4.6.6"
   basic-ftp: "^6.2.1"
 # pnpm >= 10 bloqueia scripts de build por padrão; libera só os necessários.
 allowBuilds:
