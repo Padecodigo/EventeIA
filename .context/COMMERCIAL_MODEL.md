@@ -7,9 +7,9 @@
 
 ## 1. Princípios
 
-1. **Dois produtos, um motor**: B2C compra um *tíquete por evento único*; B2B assina uma *franquia mensal de créditos*. Ambos desbloqueiam o mesmo núcleo de valor: orçamento determinístico + cotações + disparos.
+1. **Dois produtos, um motor**: B2C compra um _tíquete por evento único_; B2B assina uma _franquia mensal de créditos_. Ambos desbloqueiam o mesmo núcleo de valor: orçamento determinístico + cotações + disparos.
 2. **Preço nasce no servidor**: env `B2C_TICKET_PRICE_CENTS` (B2C) e tabela `plans` (B2B). Nunca hardcoded em componente; nunca aceito do cliente.
-3. **Crédito é livro-razão** (*ledger*): cada movimento é um lançamento imutável; saldo é consequência auditável. Proibido atualizar saldo sem lançamento.
+3. **Crédito é livro-razão** (_ledger_): cada movimento é um lançamento imutável; saldo é consequência auditável. Proibido atualizar saldo sem lançamento.
 4. **Idempotência em tudo**: cada concessão/consumo tem `idempotency_key` UNIQUE.
 5. **Transparência**: todo débito é explicável ao usuário (o quê, quando, qual evento, qual documento de origem).
 
@@ -19,13 +19,13 @@
 
 ### 2.1 Definição
 
-| Atributo | Regra |
-|---|---|
-| O que compra | 1 tíquete = 1 evento ativado (vitalício para **aquele** evento) |
-| Preço | `B2C_TICKET_PRICE_CENTS` (padrão `9700` = R$ 97,00 — configurável por ambiente) |
-| Meios | Pix dinâmico ou cartão (Asaas) |
-| Validade do acesso | Permanente ao orçamento/cotações do evento |
-| Validade dos disparos WhatsApp | Até 7 dias após a data do evento (cortesia de follow-up) |
+| Atributo                       | Regra                                                                           |
+| ------------------------------ | ------------------------------------------------------------------------------- |
+| O que compra                   | 1 tíquete = 1 evento ativado (vitalício para **aquele** evento)                 |
+| Preço                          | `B2C_TICKET_PRICE_CENTS` (padrão `9700` = R$ 97,00 — configurável por ambiente) |
+| Meios                          | Pix dinâmico ou cartão (Asaas)                                                  |
+| Validade do acesso             | Permanente ao orçamento/cotações do evento                                      |
+| Validade dos disparos WhatsApp | Até 7 dias após a data do evento (cortesia de follow-up)                        |
 
 ### 2.2 O que desbloqueia o tíquete
 
@@ -65,11 +65,11 @@ available ──checkout──► pending ──pagamento confirmado──► ac
 
 ### 3.2 Planos (estrutura em `plans`; valores ilustrativos)
 
-| `plan_code` | Mensalidade | Créditos/ciclo | ≈ por evento | Observações |
-|---|---|---|---|---|
-| `essencial` | R$ 117 (`11700`) | 3 | R$ 39,00 | Entrada para quem começa a organizar festas infantis |
-| `atelier` | R$ 197 (`19700`) | 7 | R$ 28,14 | Plano de referência |
-| `maison` | R$ 397 (`39700`) | 17 | R$ 23,35 | Estúdios/cerimonialistas multi-cliente |
+| `plan_code` | Mensalidade      | Créditos/ciclo | ≈ por evento | Observações                                          |
+| ----------- | ---------------- | -------------- | ------------ | ---------------------------------------------------- |
+| `essencial` | R$ 117 (`11700`) | 3              | R$ 39,00     | Entrada para quem começa a organizar festas infantis |
+| `atelier`   | R$ 197 (`19700`) | 7              | R$ 28,14     | Plano de referência                                  |
+| `maison`    | R$ 397 (`39700`) | 17             | R$ 23,35     | Estúdios/cerimonialistas multi-cliente               |
 
 > **Regra de ouro**: nenhum plano pode vender crédito abaixo do custo. Com custo de R$ 9,00/evento, o piso de margem de contribuição é **35%**; os valores acima foram calibrados e são verificados por teste no CI (`lib/pricing.ts`).
 
@@ -77,36 +77,32 @@ available ──checkout──► pending ──pagamento confirmado──► ac
 - Pacotes **não expiram** e passam pelo mesmo piso de margem (`CREDIT_PACKAGES` em `lib/plans.ts`; teste em `tests/unit/pricing.test.ts`).
 - Slider sob medida (3..20 eventos) em `lib/credit-slider.ts`: interpolação linear por trechos entre 3=R$117, 7=R$197, 17=R$397, 20=R$450, arredondada para reais cheios; o servidor recalcula o preço (`buyCreditsAction`, campo `credits`). Sem migração: reutiliza `payments.credits_granted` + ramo `credit_topup` da 0008.
 
-### 3.3 Validade e *rollover*
+### 3.3 Validade e _rollover_
 
-| Origem do crédito | Expira? |
-|---|---|
-| Franquia mensal | Sim — no fim do ciclo seguinte ao da concessão (D+30 do ciclo subsequente), se não consumido |
-| Top-up avulso | **Não expira** |
-| Compensação (reembolso/cortesia) | Não expira |
+**Créditos nunca expiram**, qualquer que seja a origem (franquia, pacotes, avulso, extras, compensação). Garantido no banco pela migração `0034_credits_never_expire.sql` (trigger força `expires_at = null` e recusa lançamentos `expire`). O antigo job `credits-expire` foi removido; o worker apenas apaga o agendamento legado.
 
-Expiração executada pelo job diário `credits-expire` (11:00, `lib/jobs/credits-expire.ts`): FIFO por `expires_at` — o restante de uma franquia é `saldo − créditos ativos que vencem depois` (top-ups nunca expiram, logo são consumidos por último). Emite `credits.expired`; nunca saldo negativo; lança `-remaining` com idempotência `expire:grant:<id>`.
+Franquia: na compra o cliente escolhe **renovar automaticamente todo mês** (assinatura Asaas, Pix ou cartão de crédito; créditos concedidos a cada pagamento confirmado — 0009) ou **compra única** (mesmo fluxo de pacote). A renovação pode ser cancelada no painel (`/creditos`). Evento avulso e créditos extras são sempre compra única.
 
 ### 3.4 Economia unitária e piso de margem
 
 Premissas conservadoras (Out/2026):
 
-| Item | Valor |
-|---|---|
-| Custo direto por evento ativado (infra + IA + WhatsApp + suporte) | **R$ 9,00** |
-| Simples Nacional (Anexo III/ME) | 6% do faturamento |
-| Asaas Pix | R$ 1,99 por cobrança |
-| Asaas cartão | 2,99% + R$ 0,49 |
-| Piso de margem de contribuição | **35% por crédito** |
+| Item                                                              | Valor                |
+| ----------------------------------------------------------------- | -------------------- |
+| Custo direto por evento ativado (infra + IA + WhatsApp + suporte) | **R$ 9,00**          |
+| Simples Nacional (Anexo III/ME)                                   | 6% do faturamento    |
+| Asaas Pix                                                         | R$ 1,99 por cobrança |
+| Asaas cartão                                                      | 2,99% + R$ 0,49      |
+| Piso de margem de contribuição                                    | **35% por crédito**  |
 
 Fórmula por crédito: `receita = preço ÷ créditos`; `imposto = 6% × receita`; `taxa = taxa da cobrança ÷ créditos`; `contribuição = receita − imposto − taxa − R$ 9`; `margem = contribuição ÷ receita`.
 
-| Oferta | Receita/evento | Contribuição (Pix) | Margem (Pix) | Margem (cartão) |
-|---|---|---|---|---|
-| Essencial (3) | R$ 39,00 | R$ 26,99 | 69,2% | 67,5% |
-| Atelier (7) | R$ 28,14 | R$ 17,17 | 61,0% | 58,8% |
-| Maison (17) | R$ 23,35 | R$ 12,83 | 54,9% | 52,3% |
-| Tíquete B2C (R$ 97) | R$ 97,00 | R$ 80,19 | 82,7% | 81,2% |
+| Oferta              | Receita/evento | Contribuição (Pix) | Margem (Pix) | Margem (cartão) |
+| ------------------- | -------------- | ------------------ | ------------ | --------------- |
+| Essencial (3)       | R$ 39,00       | R$ 26,99           | 69,2%        | 67,5%           |
+| Atelier (7)         | R$ 28,14       | R$ 17,17           | 61,0%        | 58,8%           |
+| Maison (17)         | R$ 23,35       | R$ 12,83           | 54,9%        | 52,3%           |
+| Tíquete B2C (R$ 97) | R$ 97,00       | R$ 80,19           | 82,7%        | 81,2%           |
 
 - Implementação: `lib/pricing.ts` (cálculo puro) e `lib/plans.ts` (catálogo).
 - Migração: `supabase/migrations/0005_plan_pricing.sql`; seed idêntico.
@@ -150,13 +146,13 @@ create table public.credit_ledger (
 
 ## 5. Inadimplência e cancelamento (B2B)
 
-| Situação | Efeito |
-|---|---|
-| Fatura `OVERDUE` no ciclo | Sem concessão do ciclo; workspace em `grace`: leitura total, **disparos suspensos** |
-| Regularização | Concessão retroativa do ciclo + saída de `grace` |
-| Cancelamento pelo cliente | Assinatura encerrada no fim do ciclo atual; créditos já concedidos permanecem até expirarem (sem reembolso de franquia) |
-| Chargeback | Estorno dos créditos do ciclo (`-adjust`) e workspace suspenso até resolução |
-| Reembolso de top-up | Somente integral, em 7 dias, se **nenhum** crédito do pacote foi consumido |
+| Situação                  | Efeito                                                                                                                 |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Fatura `OVERDUE` no ciclo | Sem concessão do ciclo; workspace em `grace`: leitura total, **disparos suspensos**                                    |
+| Regularização             | Concessão retroativa do ciclo + saída de `grace`                                                                       |
+| Cancelamento pelo cliente | Assinatura encerrada no fim do ciclo atual; créditos já concedidos permanecem (não expiram; sem reembolso de franquia) |
+| Chargeback                | Estorno dos créditos do ciclo (`-adjust`) e workspace suspenso até resolução                                           |
+| Reembolso de top-up       | Somente integral, em 7 dias, se **nenhum** crédito do pacote foi consumido                                             |
 
 ---
 
@@ -217,6 +213,7 @@ Visitante novo (novo IP, link `?convite=`, ou promo `utm_source`/`utm_campaign`/
 - **Todo cupom vale 1× por conta**: `coupon_redemptions` com índice único parcial `(coupon_id, profile_id)` em `reserved|redeemed`. A reserva (`reserve_coupon`) acontece no INÍCIO do checkout com `select … for update` no cupom ⇒ `max_redemptions` não estoura sob concorrência. Reservas de Pix/cartão vencidos/estornados ou sem pagamento após 15 min são liberadas.
 
 ### Autoavaliação Supabase + segurança (0033)
+
 - Aditiva: só amplia CHECKs (`'free'`, `'COURTESY'`, `amount_cents = 0` apenas com `COURTESY`), cria tabela/funções/trigger; nenhum dado apagado. Backfill insere redenções a partir de pagamentos já pagos.
 - RLS habilitada e forçada em `coupon_redemptions` sem políticas; `revoke` para `anon/authenticated`.
 - Funções `security definer` com `search_path = public`, `execute` revogado de `public/anon/authenticated` e concedido só a `service_role`.

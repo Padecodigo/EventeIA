@@ -187,12 +187,16 @@ export async function getAsaasPayment(
   return { id: payment.id, status: payment.status, subscription: payment.subscription ?? null };
 }
 
-/** Cria assinatura mensal no Asaas (uma fatura Pix por ciclo). */
+/**
+ * Cria assinatura mensal recorrente no Asaas (uma cobrança por ciclo, Pix ou
+ * cartão de crédito). Os créditos entram a cada confirmação (webhook, 0009).
+ */
 export async function createAsaasSubscription(input: {
   customerId: string;
   priceCents: number;
   description: string;
   nextDueDate: string;
+  billingType?: CheckoutBillingType;
 }): Promise<{ subscriptionId: string; status: string }> {
   if (!Number.isInteger(input.priceCents) || input.priceCents <= 0) {
     throw new Error("priceCents inválido para assinatura");
@@ -204,7 +208,7 @@ export async function createAsaasSubscription(input: {
       method: "POST",
       body: JSON.stringify({
         customer: input.customerId,
-        billingType: "PIX",
+        billingType: input.billingType ?? "PIX",
         cycle: "MONTHLY",
         value: input.priceCents / 100,
         description: input.description,
@@ -218,4 +222,25 @@ export async function createAsaasSubscription(input: {
   );
 
   return { subscriptionId: subscription.id, status: subscription.status ?? "ACTIVE" };
+}
+
+/** URL da primeira fatura (hospedada) de uma assinatura — Pix ou cartão de crédito. */
+export async function getAsaasSubscriptionFirstInvoiceUrl(
+  subscriptionId: string,
+): Promise<string | null> {
+  const page = await request(
+    `/subscriptions/${encodeURIComponent(subscriptionId)}/payments`,
+    { method: "GET" },
+    z.object({ data: z.array(z.object({ invoiceUrl: z.string().nullish() })).default([]) }),
+  );
+  return page.data[0]?.invoiceUrl ?? null;
+}
+
+/** Cancela a recorrência no Asaas (não gera novas cobranças; créditos já concedidos ficam). */
+export async function cancelAsaasSubscription(subscriptionId: string): Promise<void> {
+  await request(
+    `/subscriptions/${encodeURIComponent(subscriptionId)}`,
+    { method: "DELETE" },
+    z.object({ deleted: z.boolean().optional() }).passthrough(),
+  );
 }

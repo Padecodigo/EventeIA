@@ -42,7 +42,8 @@ export default function PlansPage() {
             <li>Disparos pelo WhatsApp com consentimento</li>
             <li>Acesso permanente ao evento</li>
           </ul>
-          <Link prefetch={false}
+          <Link
+            prefetch={false}
             href="/registrar"
             className="mt-8 rounded-full bg-primaria px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-primaria-escura"
           >
@@ -67,18 +68,23 @@ export default function PlansPage() {
                   : "flex flex-col rounded-card border border-line-subtle bg-off-white p-8 shadow-soft"
               }
             >
-              <p className={plan.featured ? "w-fit rounded-full bg-champagne-claro px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-primaria-escura" : "text-[10px] font-semibold uppercase tracking-[0.16em] opacity-70"}>
+              <p
+                className={
+                  plan.featured
+                    ? "w-fit rounded-full bg-champagne-claro px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-primaria-escura"
+                    : "text-[10px] font-semibold uppercase tracking-[0.16em] opacity-70"
+                }
+              >
                 {plan.featured ? "✦ Mais escolhido" : "Planners"}
               </p>
               <h2 className="mt-3 font-serif text-title-1">{plan.name}</h2>
               <p className="mt-6 font-serif text-display-2">{formatBRL(plan.priceCents)}</p>
               <p className="text-caption opacity-70">por mês</p>
               <p className="mt-4 text-sm font-medium">{plan.credits} créditos/mês</p>
-              <p className="text-caption opacity-70">
-                ≈ {formatBRL(perCreditCents)} por evento
-              </p>
+              <p className="text-caption opacity-70">≈ {formatBRL(perCreditCents)} por evento</p>
               <p className="mt-2 flex-1 text-sm opacity-75">{plan.description}</p>
-              <Link prefetch={false}
+              <Link
+                prefetch={false}
                 href="/registrar"
                 className={
                   plan.featured
@@ -95,14 +101,14 @@ export default function PlansPage() {
 
       <div className="mt-10 flex flex-wrap items-center justify-between gap-4">
         <p className="text-caption text-vinho/70">
-          Créditos da franquia valem por ciclo; top-ups avulsos não expiram. Regras e economia
-          unitária em{" "}
+          Seus créditos não expiram: use quando quiser. Regras e economia unitária em{" "}
           <code className="rounded bg-areia-secundaria px-1.5 py-0.5 text-vinho/70">
             .context/COMMERCIAL_MODEL.md
           </code>
           .
         </p>
-        <Link prefetch={false}
+        <Link
+          prefetch={false}
           href="/para-planners"
           className="text-sm font-medium text-vinho underline decoration-champagne underline-offset-8"
         >

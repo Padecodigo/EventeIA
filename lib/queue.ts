@@ -14,7 +14,8 @@ export const QUEUE_NAMES = {
   asaasReconcile: "asaas-reconcile",
   whatsappOutbound: "whatsapp-outbound",
   feedsDispatch: "feeds-dispatch",
-  creditsExpire: "credits-expire",
+  /** Legado: só para remover o agendamento antigo (créditos não expiram). */
+  creditsExpireLegacy: "credits-expire",
   testimonialInvites: "testimonial-invites",
   supplierDiscovery: "supplier-discovery-queue",
   quoteExtraction: "quote-extraction-queue",

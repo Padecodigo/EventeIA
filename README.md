@@ -21,10 +21,10 @@ A EventeIA é um SaaS de **inteligência de custos e cotações para eventos**, 
 
 Dois públicos, um produto:
 
-| Público | Modelo | O que recebe |
-|---|---|---|
-| **B2C — Anfitriões** | **Tíquete por Evento Único** (Pix/cartão) | Orçamento completo, cotações ilimitadas do evento e disparos via WhatsApp |
-| **B2B — Planners & Cerimonialistas** | **Franquia de Créditos por Assinatura** | Créditos mensais por workspace, múltiplos eventos de clientes, gestão profissional |
+| Público                              | Modelo                                    | O que recebe                                                                       |
+| ------------------------------------ | ----------------------------------------- | ---------------------------------------------------------------------------------- |
+| **B2C — Anfitriões**                 | **Tíquete por Evento Único** (Pix/cartão) | Orçamento completo, cotações ilimitadas do evento e disparos via WhatsApp          |
+| **B2B — Planners & Cerimonialistas** | **Franquia de Créditos por Assinatura**   | Créditos mensais por workspace, múltiplos eventos de clientes, gestão profissional |
 
 Pagamentos via **Asaas** (Pix dinâmico e cartão). Começamos com CPF e evoluímos para **CNPJ ME/SLU** — ver [`.context/PAYMENTS.md`](.context/PAYMENTS.md).
 
@@ -45,15 +45,15 @@ Pagamentos via **Asaas** (Pix dinâmico e cartão). Começamos com CPF e evoluí
 
 ## Stack
 
-| Camada | Tecnologia |
-|---|---|
-| Aplicação | **Next.js (App Router)** · React 19 · TypeScript strict |
-| Estilo | **Tailwind CSS** (Design System “Atelier”) |
-| Backend/Dados | **Supabase** — Auth, PostgreSQL, **RLS** |
-| Pagamentos | **Asaas** (webhooks idempotentes) |
-| Filas/Jobs | **BullMQ** + Redis (workers em processo separado) |
-| Mensageria | **Evolution API** (WhatsApp, self-hosted) |
-| Qualidade | ESLint estrito · knip · Vitest · Lighthouse CI · GitHub Actions |
+| Camada        | Tecnologia                                                      |
+| ------------- | --------------------------------------------------------------- |
+| Aplicação     | **Next.js (App Router)** · React 19 · TypeScript strict         |
+| Estilo        | **Tailwind CSS** (Design System “Atelier”)                      |
+| Backend/Dados | **Supabase** — Auth, PostgreSQL, **RLS**                        |
+| Pagamentos    | **Asaas** (webhooks idempotentes)                               |
+| Filas/Jobs    | **BullMQ** + Redis (workers em processo separado)               |
+| Mensageria    | **Evolution API** (WhatsApp, self-hosted)                       |
+| Qualidade     | ESLint estrito · knip · Vitest · Lighthouse CI · GitHub Actions |
 
 ---
 
@@ -61,17 +61,17 @@ Pagamentos via **Asaas** (Pix dinâmico e cartão). Começamos com CPF e evoluí
 
 A pasta [`.context/`](.context/) é a **fonte da verdade**. Leia antes de codar.
 
-| Documento | Conteúdo |
-|---|---|
-| [`AGENTS.md`](AGENTS.md) | Regras de conduta, proibições de código destrutivo, Trunk-Based Development |
-| [`ARCHITECTURE.md`](.context/ARCHITECTURE.md) | Estrutura, App Router, camadas, motor determinístico financeiro |
-| [`DESIGN_SYSTEM.md`](.context/DESIGN_SYSTEM.md) | Paleta, tipografia, variáveis CSS, regras de componentes |
-| [`PAYMENTS.md`](.context/PAYMENTS.md) | Asaas, webhooks idempotentes, fluxos B2C × B2B |
-| [`DATABASE_RLS.md`](.context/DATABASE_RLS.md) | Schemas de tabelas e políticas Supabase RLS |
-| [`WHATSAPP_EVOLUTION.md`](.context/WHATSAPP_EVOLUTION.md) | Disparos via Evolution API + BullMQ |
-| [`COMMERCIAL_MODEL.md`](.context/COMMERCIAL_MODEL.md) | Tíquetes B2C, franquia de créditos B2B, reembolsos |
-| [`FEEDS.md`](.context/FEEDS.md) | Registro de eventos do sistema, logs e auditoria |
-| [`SECURITY.md`](.context/SECURITY.md) | Proteção de dados (LGPD), SAN e mitigação de vulnerabilidades |
+| Documento                                                 | Conteúdo                                                                    |
+| --------------------------------------------------------- | --------------------------------------------------------------------------- |
+| [`AGENTS.md`](AGENTS.md)                                  | Regras de conduta, proibições de código destrutivo, Trunk-Based Development |
+| [`ARCHITECTURE.md`](.context/ARCHITECTURE.md)             | Estrutura, App Router, camadas, motor determinístico financeiro             |
+| [`DESIGN_SYSTEM.md`](.context/DESIGN_SYSTEM.md)           | Paleta, tipografia, variáveis CSS, regras de componentes                    |
+| [`PAYMENTS.md`](.context/PAYMENTS.md)                     | Asaas, webhooks idempotentes, fluxos B2C × B2B                              |
+| [`DATABASE_RLS.md`](.context/DATABASE_RLS.md)             | Schemas de tabelas e políticas Supabase RLS                                 |
+| [`WHATSAPP_EVOLUTION.md`](.context/WHATSAPP_EVOLUTION.md) | Disparos via Evolution API + BullMQ                                         |
+| [`COMMERCIAL_MODEL.md`](.context/COMMERCIAL_MODEL.md)     | Tíquetes B2C, franquia de créditos B2B, reembolsos                          |
+| [`FEEDS.md`](.context/FEEDS.md)                           | Registro de eventos do sistema, logs e auditoria                            |
+| [`SECURITY.md`](.context/SECURITY.md)                     | Proteção de dados (LGPD), SAN e mitigação de vulnerabilidades               |
 
 ---
 
@@ -131,22 +131,22 @@ pnpm install
 
 Copie `.env.example` para `.env.local` e preencha:
 
-| Variável | Obrigatória | Descrição |
-|---|---|---|
-| `NEXT_PUBLIC_APP_URL` | ✅ | `http://localhost:3000` |
-| `NEXT_PUBLIC_SUPABASE_URL` | ✅ | URL do projeto Supabase |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ | Chave anon (pública) |
-| `SUPABASE_SERVICE_ROLE_KEY` | ✅ | **Server-only** — nunca no client |
-| `REDIS_URL` | ✅ | `redis://localhost:6379` |
-| `ASAAS_API_URL` | ✅ | `https://api-sandbox.asaas.com/v3` |
-| `ASAAS_API_KEY` | ✅ | Chave da conta sandbox |
-| `ASAAS_WEBHOOK_TOKEN` | ✅ | Token do webhook configurado no Asaas |
-| `EVOLUTION_API_URL` | ✅ | `http://localhost:8080` |
-| `EVOLUTION_API_KEY` | ✅ | Chave da instância |
-| `EVOLUTION_INSTANCE` | ✅ | Nome da instância (ex.: `EventeIA`) |
-| `EVOLUTION_WEBHOOK_TOKEN` | ✅ | Token do webhook Evolution |
-| `B2C_TICKET_PRICE_CENTS` | ✅ | Preço do tíquete (ex.: `9700`) |
-| `ENGINE_TIMEZONE` | ⬜ | Default `America/Sao_Paulo` |
+| Variável                        | Obrigatória | Descrição                             |
+| ------------------------------- | ----------- | ------------------------------------- |
+| `NEXT_PUBLIC_APP_URL`           | ✅          | `http://localhost:3000`               |
+| `NEXT_PUBLIC_SUPABASE_URL`      | ✅          | URL do projeto Supabase               |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅          | Chave anon (pública)                  |
+| `SUPABASE_SERVICE_ROLE_KEY`     | ✅          | **Server-only** — nunca no client     |
+| `REDIS_URL`                     | ✅          | `redis://localhost:6379`              |
+| `ASAAS_API_URL`                 | ✅          | `https://api-sandbox.asaas.com/v3`    |
+| `ASAAS_API_KEY`                 | ✅          | Chave da conta sandbox                |
+| `ASAAS_WEBHOOK_TOKEN`           | ✅          | Token do webhook configurado no Asaas |
+| `EVOLUTION_API_URL`             | ✅          | `http://localhost:8080`               |
+| `EVOLUTION_API_KEY`             | ✅          | Chave da instância                    |
+| `EVOLUTION_INSTANCE`            | ✅          | Nome da instância (ex.: `EventeIA`)   |
+| `EVOLUTION_WEBHOOK_TOKEN`       | ✅          | Token do webhook Evolution            |
+| `B2C_TICKET_PRICE_CENTS`        | ✅          | Preço do tíquete (ex.: `9700`)        |
+| `ENGINE_TIMEZONE`               | ⬜          | Default `America/Sao_Paulo`           |
 
 > **Nunca** commite `.env.local`. Segredos seguem [`.context/SECURITY.md`](.context/SECURITY.md).
 
@@ -172,16 +172,16 @@ pnpm dev          # Next.js em http://localhost:3000
 Em outro terminal, os workers das filas:
 
 ```bash
-pnpm workers      # BullMQ: asaas-webhooks · whatsapp-outbound · credits-expire · feeds
+pnpm workers      # BullMQ: asaas-webhooks · whatsapp-outbound · feeds
 ```
 
 ### 6. Webhooks em desenvolvimento
 
 Exponha o localhost e configure as URLs no Asaas Sandbox e na Evolution API:
 
-| Gateway | URL |
-|---|---|
-| Asaas | `{tunnel}/api/webhooks/asaas` |
+| Gateway       | URL                               |
+| ------------- | --------------------------------- |
+| Asaas         | `{tunnel}/api/webhooks/asaas`     |
 | Evolution API | `{tunnel}/api/webhooks/evolution` |
 
 Ferramentas: `cloudflared tunnel --url http://localhost:3000` (ou `ngrok http 3000`).
@@ -190,23 +190,23 @@ Ferramentas: `cloudflared tunnel --url http://localhost:3000` (ou `ngrok http 30
 
 ## Scripts
 
-| Comando | O que faz |
-|---|---|
-| `pnpm dev` | Next.js em modo desenvolvimento |
-| `pnpm build` / `pnpm start` | Build de produção / servidor |
-| `pnpm workers` | Processo BullMQ (filas e jobs) |
-| `pnpm lint` | ESLint estrito (TS + Next) |
-| `pnpm typecheck` | `tsc --noEmit` |
-| `pnpm test` | Vitest (unit + integração com mocks) |
-| `pnpm test:rls` | Testes de políticas RLS (pgTAP) |
-| `pnpm knip` | Dependências não utilizadas |
-| `pnpm lighthouse` | Lighthouse CI local (`lhci autorun`) |
-| `pnpm audit` | Vulnerabilidades de dependências |
-| `pnpm simulate:webhook <payment_id> [evento]` | Simula webhook Asaas (apenas desenvolvimento) |
-| `pnpm demo:seed` | Cria usuários/dados de demonstração no Supabase local |
-| `pnpm e2e:local` | E2E do fluxo financeiro (webhook Pix → tíquete → assinatura → créditos) |
-| `pnpm simulate:webhook <id> [evento] [sub_id]` | Simula webhook Asaas; com `sub_id`, fatura de assinatura |
-| `bash scripts/validate-sql.sh` | Aplica migrações + RLS + funções num Postgres limpo (Docker) |
+| Comando                                        | O que faz                                                               |
+| ---------------------------------------------- | ----------------------------------------------------------------------- |
+| `pnpm dev`                                     | Next.js em modo desenvolvimento                                         |
+| `pnpm build` / `pnpm start`                    | Build de produção / servidor                                            |
+| `pnpm workers`                                 | Processo BullMQ (filas e jobs)                                          |
+| `pnpm lint`                                    | ESLint estrito (TS + Next)                                              |
+| `pnpm typecheck`                               | `tsc --noEmit`                                                          |
+| `pnpm test`                                    | Vitest (unit + integração com mocks)                                    |
+| `pnpm test:rls`                                | Testes de políticas RLS (pgTAP)                                         |
+| `pnpm knip`                                    | Dependências não utilizadas                                             |
+| `pnpm lighthouse`                              | Lighthouse CI local (`lhci autorun`)                                    |
+| `pnpm audit`                                   | Vulnerabilidades de dependências                                        |
+| `pnpm simulate:webhook <payment_id> [evento]`  | Simula webhook Asaas (apenas desenvolvimento)                           |
+| `pnpm demo:seed`                               | Cria usuários/dados de demonstração no Supabase local                   |
+| `pnpm e2e:local`                               | E2E do fluxo financeiro (webhook Pix → tíquete → assinatura → créditos) |
+| `pnpm simulate:webhook <id> [evento] [sub_id]` | Simula webhook Asaas; com `sub_id`, fatura de assinatura                |
+| `bash scripts/validate-sql.sh`                 | Aplica migrações + RLS + funções num Postgres limpo (Docker)            |
 
 ### Simular a confirmação de um Pix localmente
 
@@ -225,7 +225,7 @@ Com o tunnel e o Asaas Sandbox configurados:
 
 Já implementado: autenticação (Supabase Auth + middleware), criação de eventos, motor
 determinístico (v1.1.0 com golden tests), checkout Pix (Asaas), **assinatura recorrente com
-concessão automática de franquia (0009)**, **conciliação diária e expiração de créditos (jobs)**,
+concessão automática de franquia (0009)**, **conciliação diária (job); créditos não expiram (0034)**,
 webhooks idempotentes Asaas/Evolution, ativação de tíquete em transação SQL, ledger de créditos
 com guarda de saldo, **testes de componentes React (Vitest + Testing Library)**,
 landing + `/como-funciona` + `/para-planners` + `/planos` + auth/painel, perfil com CPF/WhatsApp e
@@ -280,10 +280,10 @@ PORT=3100 pnpm start      # app em http://localhost:3100
 
 **Credenciais**
 
-| Perfil | E-mail | Senha |
-|---|---|---|
-| Anfitriã (B2C) | `ana@eventeia.com` | `EventeIA@2026` |
-| Admin (moderação) | `admin@eventeia.com` | `Admin@2026` |
+| Perfil            | E-mail               | Senha           |
+| ----------------- | -------------------- | --------------- |
+| Anfitriã (B2C)    | `ana@eventeia.com`   | `EventeIA@2026` |
+| Admin (moderação) | `admin@eventeia.com` | `Admin@2026`    |
 
 **Login automático local**
 
