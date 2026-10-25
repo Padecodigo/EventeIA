@@ -103,3 +103,29 @@ export function parseConnectResponse(body: unknown): ConnectPayload {
 export function instanceNameFor(userId: string): string {
   return `eventeia-${userId.slice(0, 8)}`;
 }
+
+export type InstanceBinding = "insert" | "keep" | "rebind" | "busy";
+
+/**
+ * A instância é uma por usuário, mas o webhook `connection.update` resolve o
+ * evento por `whatsapp_instances.event_id`. Ao parear para OUTRO evento, o
+ * vínculo precisa migrar — senão a sessão ativa a janela do evento antigo.
+ * Se a instância está em coleta (active/draining) de outro evento, não mexe.
+ */
+export function decideInstanceBinding(
+  row: { event_id: string | null; status: string } | null,
+  eventId: string,
+): InstanceBinding {
+  if (row === null) return "insert";
+  if (row.event_id === eventId) return "keep";
+  if (row.status === "active" || row.status === "draining") return "busy";
+  return "rebind";
+}
+
+/** Lançado quando o WhatsApp do usuário está coletando cotações de outro evento. */
+export class InstanceBusyError extends Error {
+  constructor() {
+    super("instância em uso por outro evento");
+    this.name = "InstanceBusyError";
+  }
+}
