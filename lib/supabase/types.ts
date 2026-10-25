@@ -74,6 +74,7 @@ export interface Database {
         discovery_status: "running" | "completed" | "paused" | null;
         collection_ended_at: string | null;
         quotes_delivered_at: string | null;
+        search_start_date: string | null;
         created_at: string;
         whatsapp_channel: "cloud" | "evolution" | null;
       }>;

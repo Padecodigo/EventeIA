@@ -72,6 +72,15 @@ const MOSAIC = [
     pos: "left-[3%] bottom-0 w-[37%] -rotate-[4deg] z-40",
     ratio: "aspect-[6/5]",
   },
+  {
+    src: "/img/eventos/corporativo.webp",
+    alt: "Plateia lotada em um auditório durante um evento corporativo",
+    label: "Corporativo",
+    w: 800,
+    h: 1000,
+    pos: "left-[35%] bottom-[4%] w-[25%] rotate-[2deg] z-30",
+    ratio: "aspect-[4/5]",
+  },
 ] as const;
 
 const EVENT_TYPES = [

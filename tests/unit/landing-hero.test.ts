@@ -22,6 +22,18 @@ describe("landing — hero", () => {
     expect(source).toContain("priority={index === 0}");
   });
 
+  it("mosaico inclui card Corporativo (WebP licenciado, alt em PT) — 6 tipos", () => {
+    const srcs = mosaicSources();
+    expect(srcs).toHaveLength(6);
+    expect(srcs).toContain("/img/eventos/corporativo.webp");
+    const block = source.slice(source.indexOf("const MOSAIC"), source.indexOf("] as const;"));
+    expect(block).toMatch(/label: "Corporativo"/);
+    expect(block).toMatch(/alt: "Plateia lotada em um auditório durante um evento corporativo"/);
+    const credits = readFileSync(join(process.cwd(), "public/img/eventos/CREDITOS.md"), "utf8");
+    expect(credits).toContain("corporativo.webp");
+    for (const src of srcs) expect(readFileSync(join(process.cwd(), "public", src)).length).toBeLessThan(220_000);
+  });
+
   it("proposta de valor clara: WhatsApp + 3 opções (preço, custo-benefício, comodidade)", () => {
     const h1End = source.indexOf("</h1>");
     const hero = source.slice(source.indexOf("<h1"), source.indexOf("</p>", h1End));

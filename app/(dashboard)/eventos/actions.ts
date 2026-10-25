@@ -31,6 +31,7 @@ import { attachUserOffer, releaseUserOffer } from "@/lib/offers/server";
 import { normalizePhoneE164 } from "@/lib/phone";
 import { enqueue, QUEUE_NAMES } from "@/lib/queue";
 import { prospectingJobSchema } from "@/lib/schemas/whatsapp";
+import { canEditSearchStart, parseSearchStartInput } from "@/lib/search-start";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ensureUserInstance, newInstanceNameFor } from "@/lib/whatsapp/instance-store";
@@ -83,6 +84,13 @@ export async function createEventAction(
     return { error: "Confira os dados do evento e tente novamente." };
   }
 
+  const searchStart = parseSearchStartInput(
+    formData.get("searchStartMode"),
+    formData.get("searchStartDate"),
+    parsed.data.eventDate,
+  );
+  if (!searchStart.ok) return { error: searchStart.error };
+
   const municipio =
     parsed.data.cityCode === undefined ? null : findMunicipioByCode(parsed.data.cityCode);
   if (parsed.data.cityCode !== undefined && municipio === null) {
@@ -115,6 +123,7 @@ export async function createEventAction(
         ? { city: municipio.name, city_uf: municipio.uf, city_ibge_code: municipio.code }
         : {}),
       guest_count: parsed.data.guestCount,
+      search_start_date: searchStart.value,
       status: "draft",
     })
     .select("id")
@@ -1121,4 +1130,46 @@ export async function saveWhatsappNumberModeAction(
   // Sem revalidatePath: a UI já reflete a escolha localmente e não precisa
   // re-renderizar a página inteira (nem esperar por isso) a cada clique.
   return { saved: parsed.data.mode };
+}
+
+const searchStartSchema = z.object({ eventId: z.string().uuid() });
+
+/** Cliente altera "quando começar a busca" — só enquanto a busca não começou. */
+export async function updateSearchStartAction(
+  _previous: ActionState & { saved?: boolean },
+  formData: FormData,
+): Promise<ActionState & { saved?: boolean }> {
+  await requireUser();
+  const parsed = searchStartSchema.safeParse({ eventId: formData.get("eventId") });
+  if (!parsed.success) return { error: "Evento inválido." };
+
+  const supabase = await createSupabaseServerClient();
+  const { data: event } = await supabase
+    .from("events")
+    .select("id,event_date,discovery_started_at,quotes_delivered_at")
+    .eq("id", parsed.data.eventId)
+    .maybeSingle();
+  if (event === null) return { error: "Evento não encontrado." };
+  if (!canEditSearchStart(event)) return { error: "A busca já começou — a data não pode mais ser alterada." };
+
+  const searchStart = parseSearchStartInput(formData.get("searchStartMode"), formData.get("searchStartDate"), event.event_date);
+  if (!searchStart.ok) return { error: searchStart.error };
+
+  // RLS (dono/planner) + trigger 0040 revalidam no banco.
+  const { error } = await supabase.from("events").update({ search_start_date: searchStart.value }).eq("id", event.id);
+  if (error !== null) {
+    logger.warn({ code: error.code }, "falha ao salvar search_start_date");
+    return { error: "Não foi possível salvar a data. Escolha um dia útil antes do evento." };
+  }
+
+  try {
+    const { rescheduleDiscovery } = await import("@/lib/discovery/runtime");
+    await rescheduleDiscovery(event.id, searchStart.value);
+  } catch (rescheduleError) {
+    // O worker re-checa a data na execução; reagendar é só otimização.
+    logger.warn({ reason: rescheduleError instanceof Error ? rescheduleError.message : "?" }, "reagendamento da descoberta falhou");
+  }
+
+  revalidatePath(`/eventos/${event.id}`);
+  return { saved: true };
 }

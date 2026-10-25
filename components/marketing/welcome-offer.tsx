@@ -9,6 +9,8 @@ const WELCOME_COPY = welcomeVisitorCopy();
  * Oferta de boas-vindas nas páginas públicas — Server Component (guarda de TBT: sem React
  * no client). O HTML nasce oculto; /welcome-offer.js (lazyOnload, ~2 KB) consulta
  * /api/boas-vindas e só então revela faixa/modal com o tempo restante calculado no BANCO.
+ * As faixas ficam NO FLUXO (acima do header, sem position fixed/overlay): nunca cobrem menu,
+ * CTAs ou conteúdo. Minimizar vira um selo no canto e é lembrado (localStorage).
  */
 function prices(): { full: number } | null {
   const full = Number(process.env.B2C_TICKET_PRICE_CENTS ?? "9700");
@@ -26,7 +28,7 @@ export function WelcomeOffer() {
         id="ev-welcome-banner"
         hidden
         aria-label="Oferta de boas-vindas"
-        className="fixed inset-x-0 top-0 z-[60] bg-vinho text-off-white shadow-raised"
+        className="relative bg-vinho text-off-white"
       >
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 py-2 text-sm">
           <span>{WELCOME_COPY}</span>
@@ -39,7 +41,7 @@ export function WelcomeOffer() {
           <button
             type="button"
             data-welcome-dismiss
-            aria-label="Fechar faixa da oferta"
+            aria-label="Minimizar faixa da oferta"
             className="ml-1 rounded-full px-2 leading-none hover:bg-off-white/10"
           >
             ×
@@ -47,13 +49,24 @@ export function WelcomeOffer() {
         </div>
       </aside>
 
+      {/* Faixa minimizada: selo pequeno no canto (abaixo do z do header), reabre a faixa. */}
+      <button
+        type="button"
+        id="ev-offer-badge"
+        hidden
+        aria-label="Mostrar oferta de boas-vindas"
+        className="fixed bottom-4 left-4 z-30 rounded-full bg-vinho px-3 py-1.5 text-xs font-semibold text-off-white shadow-soft"
+      >
+        🎁 Oferta
+      </button>
+
       {/* Cupom sorteado ("Quer cupom?"): só aparece quando a oferta de boas-vindas já não está
           ativa (expirada/usada) — o script nunca revela as duas. Sorteio 100% no servidor. */}
       <aside
         id="ev-lucky-banner"
         hidden
         aria-label="Cupom sorteado"
-        className="fixed inset-x-0 top-0 z-[60] bg-vinho text-off-white shadow-raised"
+        className="relative bg-vinho text-off-white"
       >
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 py-2 text-sm">
           <span data-lucky-teaser>Ainda dá tempo de economizar no seu tíquete.</span>

@@ -1,12 +1,48 @@
 /* EventeIA — oferta de boas-vindas (vanilla, sem dependências).
  * O prazo vem do servidor (tempo restante calculado com o relógio do banco) e avança com
- * performance.now(): mudar o relógio do aparelho não estende nada. Nada é guardado no client. */
+ * performance.now(): mudar o relógio do aparelho não estende nada. O client só lembra se a faixa foi minimizada (preferência visual). */
 (function () {
   "use strict";
   var banner = document.getElementById("ev-welcome-banner");
   var luckyBanner = document.getElementById("ev-lucky-banner");
   var luckyModal = document.getElementById("ev-lucky-modal");
+  var badge = document.getElementById("ev-offer-badge");
   if (!banner && !luckyBanner) return;
+  var MIN_KEY = "ev-offer-minimized";
+  function isMin() {
+    try {
+      return window.localStorage.getItem(MIN_KEY) === "1";
+    } catch (e) {
+      return false;
+    }
+  }
+  function setMin(v) {
+    try {
+      if (v) window.localStorage.setItem(MIN_KEY, "1");
+      else window.localStorage.removeItem(MIN_KEY);
+    } catch (e) {
+      /* sem storage: só nesta página */
+    }
+  }
+  // Mostra a faixa (el) ou, se minimizada, só o selo do canto.
+  function reveal(el) {
+    if (!el) return;
+    var min = isMin();
+    el.hidden = min;
+    if (badge) {
+      badge.hidden = !min;
+      badge.onclick = function () {
+        setMin(false);
+        badge.hidden = true;
+        el.hidden = false;
+      };
+    }
+  }
+  function minimize(el) {
+    setMin(true);
+    el.hidden = true;
+    if (badge) badge.hidden = false;
+  }
 
   var params = new URLSearchParams(window.location.search);
   var body = {};
@@ -26,11 +62,11 @@
     // Visitante: texto fixo da oferta real (R$ 40 avulso / 30% pacotes por 48h a partir do
     // 1º acesso logado, controlado no servidor). Sem contagem regressiva para visitantes.
     if (!banner) return;
-    banner.hidden = false;
+    reveal(banner);
     var dismiss = banner.querySelector("[data-welcome-dismiss]");
     if (dismiss)
       dismiss.addEventListener("click", function () {
-        banner.hidden = true;
+        minimize(banner);
       });
   }
 
@@ -68,7 +104,7 @@
     var dismiss = luckyBanner.querySelector("[data-lucky-dismiss]");
     if (dismiss)
       dismiss.addEventListener("click", function () {
-        luckyBanner.hidden = true;
+        minimize(luckyBanner);
       });
     var close = luckyModal && luckyModal.querySelector("[data-lucky-close]");
     if (close)
@@ -94,7 +130,8 @@
       if (teaser) teaser.hidden = true;
       if (drawBtn) drawBtn.hidden = true;
       luckyBanner.querySelector("[data-lucky-summary]").hidden = false;
-      luckyBanner.hidden = false;
+      if (animate) setMin(false);
+      reveal(luckyBanner);
       var start = performance.now();
       var id = setInterval(function () {
         var left = Math.max(0, c.remainingMs - (performance.now() - start));
@@ -104,6 +141,7 @@
         if (left === 0) {
           clearInterval(id);
           luckyBanner.hidden = true;
+          if (badge) badge.hidden = true;
           if (luckyModal && luckyModal.open) luckyModal.close();
         }
       }, 1000);
@@ -138,7 +176,7 @@
           return;
         }
         if (c.status !== "available" || !drawBtn) return;
-        luckyBanner.hidden = false;
+        reveal(luckyBanner);
         drawBtn.addEventListener("click", function () {
           drawBtn.disabled = true;
           fetch("/api/cupom-sorte", { method: "POST", credentials: "same-origin" })
