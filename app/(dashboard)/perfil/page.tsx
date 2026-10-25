@@ -56,7 +56,7 @@ export default async function ProfilePage() {
         className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft sm:p-8"
       >
         <h2 className="font-serif text-title-2">{hasPassword ? "Alterar senha" : "Criar senha"}</h2>
-        <p className="mt-2 text-sm leading-6 text-vinho/75">
+        <p className="mt-2 text-sm leading-6 text-vinho/75 [overflow-wrap:anywhere]">
           {hasPassword
             ? "Troque a senha usada para entrar com e-mail."
             : hasGoogle

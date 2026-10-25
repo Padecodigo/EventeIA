@@ -20,7 +20,7 @@ export function FinanceForms({ month, today }: { month: string; today: string })
   const [fx, fxAction, fxPending] = useActionState(setFxAction, {});
   const [price, priceAction, pricePending] = useActionState(setPriceAction, {});
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
       <form action={fixedAction} className="flex flex-col gap-2 rounded-card border border-line-subtle bg-off-white p-5">
         <h3 className="font-serif text-title-3">Custo fixo mensal</h3>
         <p className="text-caption text-vinho/60">Assinaturas e mensalidades (VPS, Supabase, domínio…). Valor real da fatura.</p>

@@ -33,7 +33,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   return (
     <div className="min-h-screen bg-[radial-gradient(60%_40%_at_100%_0%,#F3E6DD,transparent)] bg-areia-quente text-vinho">
       <header className="sticky top-0 z-40 border-b border-line-subtle bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3 sm:px-6 sm:py-4">
           <Link href="/painel" className="flex items-center gap-3">
             <Image
               src="/logo-e.png"
@@ -46,7 +46,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
             <span className="font-brand text-xl leading-none text-vinho sm:text-2xl">EventeIA</span>
           </Link>
 
-          <DashboardNav isAdmin={isAdmin} />
+          <div className="order-last w-full xl:order-none xl:w-auto">
+            <DashboardNav isAdmin={isAdmin} />
+          </div>
 
           <div className="flex items-center gap-4">
             <span className="hidden text-caption text-vinho/70 sm:inline"><EmailText email={user.email} /></span>

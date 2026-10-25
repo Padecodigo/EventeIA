@@ -23,7 +23,7 @@ export function NewEventForm({ today }: { today: string }) {
         Rascunhar é gratuito. A ativação acontece quando você comprar o tíquete do evento.
       </p>
 
-      <form action={formAction} className="mt-6 grid gap-4 md:grid-cols-2">
+      <form action={formAction} className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
           <Field label="Nome do evento" name="title" required placeholder="Nome do evento" />
         </div>

@@ -93,7 +93,7 @@ export default async function AdminCouponsPage() {
           <p className="px-6 py-6 text-sm text-vinho/75">Nenhum cupom criado ainda.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
+            <table className="w-full min-w-[36rem] border-collapse text-sm">
               <thead>
                 <tr className="text-left text-overline uppercase tracking-[0.12em] text-vinho/70">
                   <th className="px-6 py-3 font-medium">Código</th>

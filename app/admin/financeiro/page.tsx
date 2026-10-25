@@ -99,7 +99,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
 
       {data.truncated ? <p role="alert" className="text-caption text-semantic-error">Período muito grande: lista limitada a 20 mil linhas por fonte. Reduza o intervalo.</p> : null}
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card label="Receita líquida" value={formatBRL(r.netCents)} hint={`Bruto ${formatBRL(r.grossCents)} · taxas Asaas ${formatBRL(r.feeCents)}`} />
         <Card label="Custos totais" value={formatBRL(r.costBrlCents)} hint={`Variável ${formatBRL(r.variableBrlCents)} · fixo ${formatBRL(r.fixedBrlCents)} · ${usd(r.costMicroUsd)}`} />
         <Card label="Lucro" value={formatBRL(r.profitCents)} hint={r.marginBps === null ? "Sem receita no período" : `Margem ${(r.marginBps / 100).toFixed(1)}%`} />
@@ -108,7 +108,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
 
       <WelcomeStats data={welcome} title="Cupom de boas-vindas no período" />
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <RevenueCostLine points={revenueCostSeries(r.revenueByDay, r.costByDay)} />
         <CostDonut rows={r.byProvider} label={provider} />
         <MarginByEvent rows={marginByEvent(data.costs, data.revenue)} label={eventLabel} />
@@ -117,7 +117,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
         <CountBars title="Eventos por cidade" rows={eventsByCity(stats.events)} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Bars title="Gasto por provedor" rows={r.byProvider} label={provider} />
         <Bars title="Gasto por motivo" rows={r.byReason} label={reason} />
         <Bars title="Eventos mais caros" rows={r.byEvent} label={eventLabel} />
@@ -145,8 +145,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
         </div>
         <p className="text-caption text-vinho/60">“Excluir” (em cada custo) e “Limpar custos do período” tiram os lançamentos das listas e de TODOS os totais (aqui, Saúde financeira e Consumo). É reversível. Pagamentos não podem ser excluídos.</p>
         <p className="text-caption text-vinho/60">Cada custo e cada pagamento do período, linha a linha (horário de Brasília). Status do pagamento: paid/confirmed = recebido; pending = aguardando; refunded/chargeback = devolvido.</p>
-        <div className="mt-3 overflow-x-auto rounded-card border border-line-subtle bg-off-white">
-          <table className="w-full text-sm">
+        <div className="relative mt-3 overflow-x-auto rounded-card border border-line-subtle bg-off-white">
+          <table className="w-full min-w-[36rem] text-sm [&_td]:px-2 [&_td]:py-2 [&_th]:px-2 [&_th]:py-2 [&_th]:font-medium">
             <thead className="bg-areia-quente/60 text-left">
               <tr><th className="px-3 py-2">Data (Brasília)</th><th>Tipo</th><th>Provedor/Plano</th><th>Motivo/Cliente</th><th>Evento</th><th>Detalhe</th><th className="px-3 text-right">Valor</th><th className="px-3"><span className="sr-only">Ações</span></th></tr>
             </thead>

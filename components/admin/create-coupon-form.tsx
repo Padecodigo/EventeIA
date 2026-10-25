@@ -11,7 +11,7 @@ export function CreateCouponForm() {
   const [state, formAction, pending] = useActionState(createCouponAction, initialState);
 
   return (
-    <form action={formAction} className="grid gap-4 md:grid-cols-2">
+    <form action={formAction} className="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div className="flex flex-col gap-1.5">
         <label htmlFor="coupon-code" className="text-sm font-medium text-vinho">
           Código

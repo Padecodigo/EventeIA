@@ -59,10 +59,10 @@ export default async function AdminEventoPage({ params }: { params: Promise<{ id
         <h3 className="font-serif text-title-3">Custo, receita e margem</h3>
         <p className="text-sm tabular-nums">Custo {formatBRL(cost.costCents)} · Receita {formatBRL(cost.revenueCents)} · <span className={cost.marginCents < 0 ? "text-semantic-error" : ""}>Margem {formatBRL(cost.marginCents)}</span></p>
         {cost.tools.length > 0 ? (
-          <table className="mt-2 w-full text-sm tabular-nums">
+          <div className="mt-2 overflow-x-auto"><table className="w-full text-sm tabular-nums">
             <thead className="text-left text-caption text-vinho/60"><tr><th>Ferramenta</th><th>Chamadas</th><th>Valor</th></tr></thead>
             <tbody>{cost.tools.map((t) => <tr key={t.provider} className="border-t border-line-subtle"><td>{PROVIDER_LABELS[t.provider] ?? t.provider}</td><td>{t.calls}</td><td>{formatBRL(t.cents)}{t.estimatedCents > 0 ? " (estimado)" : ""}</td></tr>)}</tbody>
-          </table>
+          </table></div>
         ) : <p className="text-caption text-vinho/70">Nenhum custo registrado para este evento.</p>}
         <p className="mt-2 text-caption"><Link className="underline" href={`/admin/custos?ordem=recente#custo-por-evento`}>Ver na tela de custos por evento</Link></p>
       </Card>

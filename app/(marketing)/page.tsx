@@ -94,7 +94,7 @@ export default async function LandingPage() {
           <div className="absolute -left-32 bottom-0 h-[460px] w-[460px] rounded-full bg-[radial-gradient(closest-side,rgba(201,115,79,0.22),transparent)]" />
         </div>
 
-        <div className="mx-auto grid w-full max-w-7xl gap-6 px-5 pb-14 pt-4 sm:px-8 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:gap-12 lg:pb-20 lg:pt-10">
+        <div className="mx-auto grid grid-cols-1 w-full max-w-7xl gap-6 px-5 pb-14 pt-4 sm:px-8 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:gap-12 lg:pb-20 lg:pt-10">
           <div className="ev-rise">
             <p className="eyebrow hidden sm:inline-flex">
               <span aria-hidden="true" className="text-coral-escuro">♥</span>
@@ -179,7 +179,7 @@ export default async function LandingPage() {
 
       {/* ================= Selos de confiança ================= */}
       <section aria-label="Por que confiar" className="bg-white">
-        <ul className="mx-auto grid w-full max-w-7xl gap-4 px-5 py-14 sm:grid-cols-2 sm:px-8 lg:grid-cols-4">
+        <ul className="mx-auto grid grid-cols-1 w-full max-w-7xl gap-4 px-5 py-14 sm:grid-cols-2 sm:px-8 lg:grid-cols-4">
           {TRUST.map((item) => (
             <li key={item.title} className="rounded-2xl border border-champagne-claro bg-areia-quente p-5 transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_30px_-16px_rgba(59,36,32,0.3)]">
               <span aria-hidden="true" className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-sm font-bold text-primaria shadow-sm ring-1 ring-champagne-claro">
@@ -197,7 +197,7 @@ export default async function LandingPage() {
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-28">
           <p className="eyebrow">O que você recebe</p>
           <h2 className={`mt-4 max-w-2xl ${sectionTitle}`}>Três caminhos claros. Você só escolhe.</h2>
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
+          <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
             {OPTIONS.map((o, i) => (
               <article
                 key={o.title}
@@ -220,7 +220,7 @@ export default async function LandingPage() {
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-28">
           <p className="eyebrow">Como funciona</p>
           <h2 className={`mt-4 max-w-2xl ${sectionTitle}`}>Do “preciso organizar” ao “já escolhi” em 4 passos.</h2>
-          <ol className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <ol className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s) => (
               <li key={s.n} className="rounded-3xl bg-white p-7 ring-1 ring-champagne-claro">
                 <span className="font-display text-sm font-bold text-coral-escuro">Passo {s.n}</span>
@@ -262,7 +262,7 @@ export default async function LandingPage() {
           <h2 className="mt-4 max-w-2xl font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.02em]">
             Pague só pelo seu evento. Ou assine, se você organiza vários.
           </h2>
-          <div className="mt-12 grid gap-5 lg:grid-cols-4">
+          <div className="mt-12 grid grid-cols-1 gap-5 lg:grid-cols-4">
             <article className="flex flex-col rounded-3xl bg-white p-7 text-vinho shadow-[0_30px_60px_-20px_rgba(163,72,90,0.35)] ring-2 ring-primaria">
               <p className="text-xs font-bold uppercase tracking-wider text-coral-escuro">Ticket avulso</p>
               <h3 className="mt-2 font-display text-xl font-bold">Para o seu evento</h3>

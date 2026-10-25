@@ -102,14 +102,14 @@ export default async function CustosPage({ searchParams }: { searchParams?: Prom
         <CheckNowButton />
       </header>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card title="Gasto hoje" value={formatBRL(panel.todayTotalCents)} />
         <Card title="Gasto no mês" value={formatBRL(panel.monthTotalCents)} hint="inclui fixos e taxas Asaas" />
         <Card title="Receita líquida no mês" value={formatBRL(m.revenueNetCents)} hint={`margem bruta ${pct(m.marginBps)}`} />
         <Card title="Custo por evento (mês)" value={formatBRL(m.costPerEventCents)} hint={`${String(m.events)} eventos com custo`} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ProviderList title="Hoje por provedor" rows={panel.todayByProvider} total={panel.todayTotalCents} />
         <ProviderList title="Mês por provedor" rows={panel.monthByProvider} total={panel.monthTotalCents} />
       </div>
@@ -117,7 +117,7 @@ export default async function CustosPage({ searchParams }: { searchParams?: Prom
       <section className="rounded-card border border-line-subtle bg-off-white p-5 shadow-soft">
         <h3 className="font-serif text-title-3">Tendência mensal</h3>
         <div className="mt-3 overflow-x-auto">
-          <table className="w-full text-sm" data-testid="monthly-trend">
+          <table className="w-full min-w-[32rem] text-sm [&_td]:px-2 [&_th]:px-2" data-testid="monthly-trend">
             <thead className="text-left text-caption text-vinho/60">
               <tr><th>Mês</th><th>Receita líq.</th><th>Custos</th><th>Margem</th><th>%</th><th>Custo/evento</th></tr>
             </thead>
@@ -201,7 +201,7 @@ export default async function CustosPage({ searchParams }: { searchParams?: Prom
           DeepSeek, Asaas e Serper são consultados pela API (diário às 08:00 e no botão acima). Google Places não tem API de saldo: defina um orçamento mensal e o saldo = orçamento − gasto do mês. Os demais: informe o saldo manualmente.
           Alerta (banner + e-mail) quando o saldo fica abaixo do limite ou o fôlego projetado é menor que os dias definidos.
         </p>
-        <dl className="mt-2 grid gap-x-4 gap-y-1 text-caption text-vinho/70 sm:grid-cols-2" data-testid="balance-legend">
+        <dl className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-caption text-vinho/70 sm:grid-cols-2" data-testid="balance-legend">
           <div><dt className="inline font-semibold">Saldo:</dt> <dd className="inline">crédito restante no provedor (pela API ou informado por você).</dd></div>
           <div><dt className="inline font-semibold">Gasto/dia:</dt> <dd className="inline">média diária recente de gasto neste provedor.</dd></div>
           <div><dt className="inline font-semibold">Fôlego:</dt> <dd className="inline">quantos dias o saldo dura nesse ritmo (saldo ÷ gasto/dia).</dd></div>

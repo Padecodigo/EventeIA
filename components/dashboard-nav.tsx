@@ -23,7 +23,7 @@ export function DashboardNav({ isAdmin = false }: { isAdmin?: boolean }) {
   return (
     <nav
       aria-label="Navegação do painel"
-      className="flex flex-wrap items-center gap-1 text-sm font-medium text-vinho/75"
+      className="-mx-1 flex w-full items-center gap-1 overflow-x-auto whitespace-nowrap px-1 text-sm font-medium text-vinho/75 [scrollbar-width:none] xl:mx-0 xl:w-auto xl:flex-wrap xl:overflow-visible xl:px-0"
     >
       {DASHBOARD_NAV.map((item) => {
         const active = isActivePath(pathname, item.href);
@@ -53,7 +53,7 @@ function AdminSection({ pathname }: { pathname: string }) {
     <div
       role="group"
       aria-label="Admin"
-      className="flex flex-wrap items-center gap-1 border-l border-vinho/15 pl-2"
+      className="flex shrink-0 items-center gap-1 border-l border-vinho/15 pl-2 xl:flex-wrap"
     >
       <Link
         href="/admin"

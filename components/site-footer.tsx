@@ -4,7 +4,7 @@ import Link from "next/link";
 export function SiteFooter() {
   return (
   <footer className="bg-vinho text-off-white">
-    <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-14 sm:px-8 md:grid-cols-[1.2fr_0.8fr]">
+    <div className="mx-auto grid grid-cols-1 w-full max-w-7xl gap-10 px-4 py-14 sm:px-8 md:grid-cols-[1.2fr_0.8fr]">
       <div>
         <p className="font-brand text-3xl">EventeIA</p>
         <p className="mt-3 font-serif text-xl italic text-[#E8A587]">

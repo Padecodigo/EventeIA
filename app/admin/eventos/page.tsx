@@ -44,7 +44,7 @@ export default async function AdminEventosPage({ searchParams }: { searchParams:
       <Card testId="events-list">
         {events.length === 0 ? <p className="text-caption text-vinho/70">Nenhum evento encontrado.</p> : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[36rem] text-sm [&_td]:px-2 [&_td]:py-2 [&_th]:px-2 [&_th]:py-2 [&_th]:font-medium">
               <thead className="text-left text-caption text-vinho/60"><tr><th>Evento</th><th>Data</th><th>Cidade</th><th>Situação</th><th>Cliente</th></tr></thead>
               <tbody>
                 {events.map((e) => (

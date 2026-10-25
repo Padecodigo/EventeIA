@@ -24,7 +24,7 @@ export function ProfileForm({
   const [state, formAction, pending] = useActionState(updateProfileAction, initialState);
 
   return (
-    <form action={formAction} className="mt-6 grid gap-5 md:grid-cols-2">
+    <form action={formAction} className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
       <div className="md:col-span-2">
         <Field label="Nome" name="displayName" required defaultValue={defaultName} maxLength={80} />
       </div>
