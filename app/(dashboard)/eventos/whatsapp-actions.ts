@@ -5,6 +5,7 @@ import { connectInstance, getConnectionState } from "@/lib/evolution-api/client"
 import { logger } from "@/lib/logger";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { decideInstanceBinding, InstanceBusyError } from "@/lib/whatsapp/pairing";
 import {
   checkPairing,
   startPairing,
@@ -24,20 +25,26 @@ function deps(): PairingDeps {
       const admin = getSupabaseAdmin();
       const { data } = await admin
         .from("whatsapp_instances")
-        .select("id")
+        .select("id,event_id,status")
         .eq("instance_name", instance)
         .maybeSingle();
-      if (data !== null) return;
-      const { error } = await admin
-        .from("whatsapp_instances")
-        .insert({
-          profile_id: userId,
-          instance_name: instance,
-          status: "connecting",
-          event_id: eventId,
-        });
+      const binding = decideInstanceBinding(data, eventId);
+      if (binding === "keep") return;
+      if (binding === "busy") throw new InstanceBusyError();
+      const { error } =
+        binding === "insert" || data === null
+          ? await admin.from("whatsapp_instances").insert({
+              profile_id: userId,
+              instance_name: instance,
+              status: "connecting",
+              event_id: eventId,
+            })
+          : await admin
+              .from("whatsapp_instances")
+              .update({ event_id: eventId, status: "connecting" })
+              .eq("id", data.id);
       if (error !== null) {
-        logger.error({ code: error.code }, "falha ao criar instância (pareamento)");
+        logger.error({ code: error.code, binding }, "falha ao preparar instância (pareamento)");
         throw new Error("instância");
       }
     },

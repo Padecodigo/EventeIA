@@ -4,6 +4,7 @@
  */
 
 import {
+  InstanceBusyError,
   PAIRING_CODE_TTL_SECONDS,
   instanceNameFor,
   parsePairingPhone,
@@ -14,7 +15,7 @@ export interface PairingDeps {
   now(): number;
   /** O evento pertence ao usuário (RLS)? */
   ownsEvent(eventId: string): Promise<boolean>;
-  /** Garante a linha em whatsapp_instances (status connecting). */
+  /** Garante a linha em whatsapp_instances (status connecting) vinculada a ESTE evento; InstanceBusyError se ocupada. */
   ensureInstanceRow(input: { userId: string; instance: string; eventId: string }): Promise<void>;
   connect(instance: string, numberDigits: string): Promise<ConnectPayload>;
   connectionState(instance: string): Promise<"open" | "connecting" | "close">;
@@ -60,7 +61,14 @@ export async function startPairing(
       expiresAt: deps.now() + PAIRING_CODE_TTL_SECONDS * 1000,
       connected: payload.alreadyConnected,
     };
-  } catch {
+  } catch (caught) {
+    if (caught instanceof InstanceBusyError) {
+      return {
+        ok: false,
+        error:
+          "Seu WhatsApp ainda está coletando orçamentos de outro evento. Aguarde essa coleta terminar para conectar este.",
+      };
+    }
     return { ok: false, error: "Não foi possível falar com o WhatsApp agora. Tente novamente." };
   }
 }
