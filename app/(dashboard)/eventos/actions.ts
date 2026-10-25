@@ -843,7 +843,8 @@ export async function addVendorProspectAction(
   const { count: existing } = await admin
     .from("vendor_prospects")
     .select("id", { count: "exact", head: true })
-    .eq("event_id", event.id);
+    .eq("event_id", event.id)
+    .eq("dry_run", false);
 
   if ((existing ?? 0) >= MAX_PROSPECTS_PER_EVENT) {
     return { error: `Limite de ${String(MAX_PROSPECTS_PER_EVENT)} fornecedores por evento.` };

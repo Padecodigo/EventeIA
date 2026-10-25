@@ -1,3 +1,4 @@
+import { createDeepseekRefinedProvider } from "./deepseek";
 import { createFallbackProvider, createMemoryUsageStore, type LlmUsageStore } from "./fallback";
 import { createGrokProvider } from "./grok";
 import { createMockProvider } from "./mock";
@@ -16,6 +17,9 @@ export interface ProviderEnv {
   NIM_MODEL?: string;
   XAI_DAILY_BUDGET?: number;
   XAI_USAGE_SWITCH_PCT?: number;
+  DEEPSEEK_API_KEY?: string;
+  DEEPSEEK_BASE_URL?: string;
+  DEEPSEEK_MODEL?: string;
 }
 
 /**
@@ -35,10 +39,15 @@ export function resolveProviders(env: ProviderEnv, fetchImpl?: FetchLike, usage:
         : hasNim
           ? ["grok", "overpass", "mock"]
         : ["mock"];
-  const overpass = createOverpassProvider(fetchImpl);
+  const rawOverpass = createOverpassProvider(fetchImpl);
+  // Com DEEPSEEK_API_KEY, o OSM passa pelo DeepSeek (relevância/categoria/nome); sem chave, OSM puro.
+  const overpass =
+    env.DEEPSEEK_API_KEY !== undefined && env.DEEPSEEK_API_KEY.length > 0
+      ? createDeepseekRefinedProvider({ apiKey: env.DEEPSEEK_API_KEY, baseUrl: env.DEEPSEEK_BASE_URL, model: env.DEEPSEEK_MODEL, source: rawOverpass, fetchImpl })
+      : rawOverpass;
   const nim =
     hasNim && env.NVIDIA_NIM_API_KEY !== undefined
-      ? createNimProvider({ apiKey: env.NVIDIA_NIM_API_KEY, model: env.NIM_MODEL, sources: [overpass], fetchImpl })
+      ? createNimProvider({ apiKey: env.NVIDIA_NIM_API_KEY, model: env.NIM_MODEL, sources: [rawOverpass], fetchImpl })
       : null;
   const out: DiscoveryProvider[] = [];
   const added = new Set<string>();

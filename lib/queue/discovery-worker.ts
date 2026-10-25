@@ -24,7 +24,11 @@ export function createDiscoveryWorker(connection: Redis): Worker {
       const router = getRouter();
       // Busca ao vivo do Grok conta no mesmo teto de 25% do roteador de LLM.
       const usage = router !== null ? createRouterUsageStore(router, env.AI_GROK_SEARCH_CALL_MICROUSD) : createRedisLlmUsage();
-      const providers = resolveProviders(env, undefined, usage);
+      const providers = resolveProviders(
+        { ...env, DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL: process.env.DEEPSEEK_BASE_URL, DEEPSEEK_MODEL: process.env.DEEPSEEK_MODEL },
+        undefined,
+        usage,
+      );
       const summary = await runDiscoveryRound(createDiscoveryDeps(), providers, data);
       logger.info(
         { eventId: data.eventId, round: data.round, status: summary.status, providers: providers.map((p) => p.name) },

@@ -124,6 +124,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
         .from("vendor_prospects")
         .select("id,vendor_name,vendor_category,phone_e164,status,created_at")
         .eq("event_id", event.id)
+        // Prospects fictícios de simulação (dry-run) não aparecem no painel.
+        .eq("dry_run", false)
         .order("created_at", { ascending: false }),
       getSupabaseAdmin()
         .from("whatsapp_instances")

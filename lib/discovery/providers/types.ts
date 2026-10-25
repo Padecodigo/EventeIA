@@ -6,6 +6,8 @@ export interface DiscoveryQuery {
   city: string;
   /** UF do município (IBGE). Ausente em eventos legados sem UF. */
   uf?: string;
+  /** Código IBGE do município (quando conhecido). */
+  ibgeCode?: number;
   eventTypeLabel: string;
   /** Texto livre (demanda específica) quando category = "outros". */
   freeText?: string;

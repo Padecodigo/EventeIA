@@ -59,17 +59,17 @@ describe("GrokProvider (fetch mockado)", () => {
 describe("OverpassProvider (fetch mockado)", () => {
   it("monta a query e lê nome/telefone das tags", async () => {
     expect(buildOverpassQuery("Taubaté", "buffet")).toContain('area["name"="Taubaté"]');
+    expect(buildOverpassQuery("Taubaté", "buffet", { uf: "SP" })).toContain('"ISO3166-2"="BR-SP"');
     expect(buildOverpassQuery("Taubaté", "categoria-inexistente")).toBeNull();
-    const provider = createOverpassProvider(() =>
+    const provider = createOverpassProvider((() =>
       Promise.resolve(
         jsonResponse({
           elements: [
-            { type: "node", id: 1, tags: { name: "Salão Lua", phone: "+55 12 3622-1234" } },
+            { type: "node", id: 1, tags: { name: "Salão Lua", phone: "+55 12 99622-1234" } },
             { type: "node", id: 2, tags: { name: "Sem telefone" } },
           ],
         }),
-      ),
-    );
+      )), { minIntervalMs: 0 });
     const found = await provider.search(query);
     expect(found).toHaveLength(1);
     expect(found[0]?.sourceUrl).toBe("https://www.openstreetmap.org/node/1");
