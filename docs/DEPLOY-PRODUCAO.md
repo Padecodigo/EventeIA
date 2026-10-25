@@ -52,7 +52,7 @@ O `docker-compose.dev.yml` continua sendo só para desenvolvimento local.
 | A | `api.whatsapp` | IPv4 da Hetzner | Proxied |
 | AAAA (opcional) | idem | IPv6 da Hetzner | Proxied |
 
-> `api.whatsapp.eventeia.com.br` é subdomínio de 2º nível: o certificado Universal gratuito da Cloudflare cobre só `*.eventeia.com.br`. Use **Advanced Certificate Manager** ou troque para um nome de 1 nível, ex. `whatsapp-api.eventeia.com.br` (recomendado, sem custo). Ajuste `EVOLUTION_DOMAIN`.
+> `api.whatseventeia.com.br` é subdomínio de 2º nível: o certificado Universal gratuito da Cloudflare cobre só `*.eventeia.com.br`. Use **Advanced Certificate Manager** ou troque para um nome de 1 nível, ex. `whatsapp-api.eventeia.com.br` (recomendado, sem custo). Ajuste `EVOLUTION_DOMAIN`.
 
 ## 3. Cloudflare — SSL/TLS
 
@@ -61,7 +61,7 @@ O `docker-compose.dev.yml` continua sendo só para desenvolvimento local.
    - **A) Cloudflare Origin Certificate (mais simples com proxy):** SSL/TLS → Origin Server → Create Certificate (RSA, hostnames `eventeia.com.br, *.eventeia.com.br`, 15 anos). No Coolify: Servers → Proxy → adicionar o cert/key em `/data/coolify/proxy/certs/` e um arquivo dynamic `tls.certificates`. Defina `TRAEFIK_CERTRESOLVER=` vazio para os routers não pedirem Let's Encrypt. Opcional: *Authenticated Origin Pulls*.
    - **B) Let's Encrypt via DNS-01:** criar API Token Cloudflare (Zone:DNS:Edit só desta zona); no Coolify configurar o Traefik com `--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare` e env `CF_DNS_API_TOKEN`. HTTP-01 funciona atrás do proxy na maioria dos casos, mas DNS-01 é o mais robusto.
 3. **Não cachear API/webhooks** — Caching → Cache Rules:
-   - Regra "Bypass API": `(http.host eq "app.eventeia.com.br" and starts_with(http.request.uri.path, "/api/"))` → *Bypass cache*.
+   - Regra "Bypass API": `(http.host eq "eventeia.com.br" and starts_with(http.request.uri.path, "/api/"))` → *Bypass cache*.
    - Regra "Bypass Evolution": `http.host eq "<EVOLUTION_DOMAIN>"` → *Bypass cache*.
    - Security → WAF: não aplicar challenge/Bot Fight em `/api/webhooks/*` (Asaas é server-to-server; um challenge quebra o webhook). Crie uma *Skip rule* para esse path.
    - Desative *Rocket Loader* (quebra o CSP/hidratação do Next).
@@ -74,7 +74,7 @@ supabase link --project-ref <project-ref>
 supabase db push            # aplica supabase/migrations
 supabase test db --linked   # opcional: testes RLS contra o remoto (cuidado: nunca em dados reais)
 ```
-- Auth → URL Configuration: Site URL `https://app.eventeia.com.br`, redirect URLs do app.
+- Auth → URL Configuration: Site URL `https://eventeia.com.br`, redirect URLs do app.
 - Plano Pro para PITR/backups diários; habilitar SMTP próprio (Resend) no Auth.
 - `SUPABASE_SERVICE_ROLE_KEY` só no servidor (app/worker), nunca em `NEXT_PUBLIC_*`.
 
@@ -85,14 +85,14 @@ supabase test db --linked   # opcional: testes RLS contra o remoto (cuidado: nun
 3. Environment Variables: colar todas de `.env.production.example` com valores reais (marcar segredos como *Secret*; `NEXT_PUBLIC_*` também como *Build Variable*).
 4. Domínios: o compose já traz labels Traefik (`APP_DOMAIN`, `EVOLUTION_DOMAIN`). Se preferir a UI do Coolify para domínios, remova as labels para não duplicar routers.
 5. Gerar segredos: `openssl rand -hex 32` para `REDIS_PASSWORD`, `EVOLUTION_DB_PASSWORD`, `EVOLUTION_API_KEY`, `*_WEBHOOK_TOKEN`, `WHATSAPP_CREDENTIALS_KEY`.
-6. Deploy. Verificar: todos os containers `healthy`; `curl -I https://app.eventeia.com.br/api/health` → 200; `https://<EVOLUTION_DOMAIN>/` responde com a versão.
+6. Deploy. Verificar: todos os containers `healthy`; `curl -I https://eventeia.com.br/api/health` → 200; `https://<EVOLUTION_DOMAIN>/` responde com a versão.
 7. Ativar *Auto Deploy* por webhook do GitHub no push em `main` (após CI verde).
 
 ## 6. Webhooks
 
 | Origem | URL | Autenticação |
 |---|---|---|
-| Asaas (Integrações → Webhooks) | `https://app.eventeia.com.br/api/webhooks/asaas` | campo *Token de autenticação* = `ASAAS_WEBHOOK_TOKEN` (header `asaas-access-token`) |
+| Asaas (Integrações → Webhooks) | `https://eventeia.com.br/api/webhooks/asaas` | campo *Token de autenticação* = `ASAAS_WEBHOOK_TOKEN` (header `asaas-access-token`) |
 | Evolution (global, interno) | `http://app:3000/api/webhooks/evolution?token=<EVOLUTION_WEBHOOK_TOKEN>` | já setado no compose |
 
 Asaas: cadastrar o webhook **separadamente** no sandbox e na produção; eventos de cobrança (`PAYMENT_*`). Fila de sincronização: se ficar interrompida (>15 falhas), reativar no painel.

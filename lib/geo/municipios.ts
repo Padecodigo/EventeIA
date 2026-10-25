@@ -97,3 +97,38 @@ export function regionForUf(uf: string): RegionCode {
   }
 }
 
+
+/** Teto de cidades de busca por evento (inclui a do evento) — igual ao CHECK da migração 0034. */
+export const MAX_SEARCH_CITIES = 10;
+
+/**
+ * Valida a lista de cidades extras vinda do formulário ("3554102,3524402"):
+ * só códigos IBGE existentes, sem repetir, sem a cidade do evento, até MAX_SEARCH_CITIES-1.
+ * Entradas inválidas são descartadas (nunca texto livre).
+ */
+export function parseSearchCityCodes(raw: string | null | undefined, eventCode: number): number[] {
+  if (typeof raw !== "string" || raw.length === 0 || raw.length > 200) return [];
+  const out: number[] = [];
+  for (const part of raw.split(",")) {
+    if (!/^\d{7}$/.test(part.trim())) continue;
+    const code = Number(part.trim());
+    if (code === eventCode || out.includes(code) || findMunicipioByCode(code) === null) continue;
+    out.push(code);
+    if (out.length >= MAX_SEARCH_CITIES - 1) break;
+  }
+  return out;
+}
+
+/** Eventos legados (só `city` em texto): acha o município de mesmo nome, preferindo a UF dada (ou SP). */
+export function resolveMunicipio(input: { code?: number | null; name?: string | null; uf?: string | null }): Municipio | null {
+  if (typeof input.code === "number") {
+    const byId = findMunicipioByCode(input.code);
+    if (byId !== null) return byId;
+  }
+  const name = (input.name ?? "").trim();
+  if (name.length < 2) return null;
+  const key = normalizeText(name);
+  const exact = all().filter((m) => m.key === key);
+  const pick = exact.find((m) => m.uf === (input.uf ?? "SP")) ?? exact.find((m) => m.uf === "SP") ?? exact[0];
+  return pick === undefined ? null : { code: pick.code, name: pick.name, uf: pick.uf };
+}

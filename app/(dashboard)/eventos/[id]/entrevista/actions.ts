@@ -10,6 +10,7 @@ import { parseAnswers, resolveRequirements } from "@/lib/catalog/rules";
 import { ALL_EVENT_TYPES, CATALOG_VERSION } from "@/lib/catalog/v1";
 import { kickoffDiscovery } from "@/lib/discovery/kickoff-runtime";
 import type { EventType } from "@/lib/engine/types";
+import { findMunicipioByCode, parseSearchCityCodes } from "@/lib/geo/municipios";
 import { logger } from "@/lib/logger";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -19,7 +20,8 @@ export interface InterviewState {
 
 const inputSchema = z.object({
   eventId: z.string().uuid(),
-  city: z.string().trim().min(2).max(80),
+  cityCode: z.coerce.number().int().min(1000000).max(9999999),
+  searchCityCodes: z.string().max(200).optional(),
   answers: z.string().max(8_000),
 });
 
@@ -31,12 +33,18 @@ export async function saveInterviewAction(
 
   const parsed = inputSchema.safeParse({
     eventId: formData.get("eventId"),
-    city: formData.get("city"),
+    cityCode: formData.get("cityCode") || undefined,
+    searchCityCodes: formData.get("searchCityCodes") ?? undefined,
     answers: formData.get("answers"),
   });
   if (!parsed.success) {
-    return { error: "Informe a cidade da festa e responda as perguntas." };
+    return { error: "Escolha a cidade da festa na lista e responda as perguntas." };
   }
+  const municipio = findMunicipioByCode(parsed.data.cityCode);
+  if (municipio === null) {
+    return { error: "Escolha a cidade da festa na lista." };
+  }
+  const searchCityCodes = parseSearchCityCodes(parsed.data.searchCityCodes, municipio.code);
 
   let rawAnswers: unknown;
   try {
@@ -106,7 +114,13 @@ export async function saveInterviewAction(
 
   const { error: eventError } = await supabase
     .from("events")
-    .update({ city: parsed.data.city, interview_answers: answers.data, interview_completed_at: now })
+    .update({
+      city: municipio.name,
+      city_uf: municipio.uf,
+      city_ibge_code: municipio.code,
+      search_city_codes: searchCityCodes.length > 0 ? searchCityCodes : null,
+      interview_answers: answers.data, interview_completed_at: now,
+    })
     .eq("id", event.id);
   if (eventError !== null) {
     logger.error({ code: eventError.code }, "falha ao concluir entrevista");

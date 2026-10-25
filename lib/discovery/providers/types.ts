@@ -4,6 +4,8 @@ export interface DiscoveryQuery {
   category: string;
   categoryLabel: string;
   city: string;
+  /** UF do município (IBGE). Ausente em eventos legados sem UF. */
+  uf?: string;
   eventTypeLabel: string;
   /** Texto livre (demanda específica) quando category = "outros". */
   freeText?: string;

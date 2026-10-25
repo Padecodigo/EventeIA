@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import type { SupplierCandidate } from "../pure";
-import { extractJsonBlock } from "./grok";
+import { cityLabel, extractJsonBlock } from "./grok";
 import { ProviderQuotaError, type DiscoveryProvider, type DiscoveryQuery, type FetchLike } from "./types";
 
 /**
@@ -26,7 +26,7 @@ export function buildNimPrompt(q: DiscoveryQuery, raw: readonly SupplierCandidat
   const list = raw.map((c, i) => `${String(i)}. ${c.name}${c.websiteUrl !== undefined ? ` (${c.websiteUrl})` : ""}`).join("\n");
   const what = q.category === "outros" && q.freeText !== undefined ? q.freeText : q.categoryLabel;
   return [
-    `Classifique quais destes estabelecimentos de ${q.city} (SP) provavelmente oferecem "${what}" para um evento (${q.eventTypeLabel}).`,
+    `Classifique quais destes estabelecimentos de ${cityLabel(q)} provavelmente oferecem "${what}" para um evento (${q.eventTypeLabel}).`,
     `Não invente nada; use apenas os índices da lista. Limpe o nome comercial se necessário.`,
     `Responda SOMENTE JSON: {"keep":[{"i":0,"name":"Nome"}]}`,
     list,

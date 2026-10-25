@@ -178,3 +178,31 @@ export function renderDiscoveryFirstContact(input: FirstContactInput): string {
     text.length > 900 ? `${text.slice(0, 880).trimEnd()}… Responda SAIR para não receber.` : text;
   return firstContactMessageSchema.parse(clipped);
 }
+
+export interface SearchCity {
+  city: string;
+  uf?: string;
+}
+
+/** Máximo de cidades de busca por evento (igual ao CHECK da migração 0034). */
+export const MAX_SEARCH_CITIES = 10;
+
+/**
+ * Cidades onde a descoberta procura: a cidade do evento SEMPRE primeiro,
+ * depois as extras escolhidas pelo usuário (sem repetição, teto MAX_SEARCH_CITIES).
+ */
+export function searchCitiesFor(event: { city: string; cityUf?: string | null; searchCities?: readonly SearchCity[] }): SearchCity[] {
+  const out: SearchCity[] = [];
+  const seen = new Set<string>();
+  const add = (c: SearchCity) => {
+    const city = c.city.trim();
+    if (city.length < 2) return;
+    const key = `${dedupeKey(city, "")}|${c.uf ?? ""}`;
+    if (seen.has(key) || out.length >= MAX_SEARCH_CITIES) return;
+    seen.add(key);
+    out.push(c.uf !== undefined ? { city, uf: c.uf } : { city });
+  };
+  add({ city: event.city, ...(event.cityUf ? { uf: event.cityUf } : {}) });
+  for (const c of event.searchCities ?? []) add(c);
+  return out;
+}
