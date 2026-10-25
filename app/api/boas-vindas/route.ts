@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { z } from "zod";
 
+import { requestIsSameOrigin } from "@/lib/http/same-origin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { detectSource, WELCOME_FINAL_PRICE_CENTS } from "@/lib/welcome/pure";
 import {
@@ -52,8 +53,7 @@ async function respond(view: WelcomeOfferView): Promise<NextResponse> {
 }
 
 function sameOrigin(request: NextRequest): boolean {
-  const origin = request.headers.get("origin");
-  return origin === null || origin === request.nextUrl.origin;
+  return requestIsSameOrigin(request);
 }
 
 /** Consulta sem emitir (usada em /planos e páginas internas). */
