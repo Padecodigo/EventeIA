@@ -17,7 +17,7 @@ function from(table: string) {
       ops.every(([op, col, v]) => {
         const x = r[col];
         if (op === "eq") return x === v;
-        if (op === "is") return x === v;
+        if (op === "is") return (x ?? null) === v; // linhas sem deleted_at = não excluídas
         if (op === "gte") return String(x) >= String(v);
         if (op === "lte") return String(x) <= String(v);
         if (op === "in") return (v as unknown[]).includes(x);

@@ -370,6 +370,8 @@ export interface Database {
         stage: ProcessStageDb | null;
         whatsapp_channel: "cloud" | "evolution" | null;
         created_at: string;
+        deleted_at?: string | null;
+        deleted_by?: string | null;
       }>;
       event_outcomes: Table<{
         event_id: string;
@@ -416,6 +418,7 @@ export interface Database {
         deleted_by: string | null;
         created_by: string | null;
         created_at: string;
+        recurring?: boolean;
       }>;
       pricing_rates: Table<{
         key: string;
@@ -441,6 +444,8 @@ export interface Database {
         note: string | null;
         updated_by: string | null;
         updated_at: string;
+        renewal_date?: string | null;
+        monthly_cost_brl_cents?: number | null;
       }>;
       finance_alerts: Table<{
         id: string;
@@ -511,6 +516,10 @@ export interface Database {
         priority: "baixa" | "normal" | "alta" | "urgente";
         created_at: string;
         updated_at: string;
+        closed_at?: string | null;
+        closed_by?: string | null;
+        deleted_at?: string | null;
+        deleted_by?: string | null;
       }>;
       support_ticket_messages: Table<{
         id: string;

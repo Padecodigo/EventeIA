@@ -8,6 +8,7 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/types";
 
 import { alertEmailText, budgetRemaining, dailyBurn, evaluateBalance, parseAsaasBalance, parseDeepseekBalance, parseSerperBalance } from "./balances";
+import { brDate, recurringDue, type RecurringRow } from "./fixed-extras";
 import { currentFxMicro, currentPrices } from "./runtime";
 
 const BURN_WINDOW_DAYS = 7;
@@ -52,7 +53,7 @@ async function burnByProvider(): Promise<Map<string, number>> {
   const since = new Date(Date.now() - BURN_WINDOW_DAYS * 86_400_000).toISOString();
   const [entries, llm] = await Promise.all([
     admin.from("cost_entries").select("provider,cost_brl_cents").eq("kind", "variable").is("deleted_at", null).gte("occurred_at", since).limit(50_000),
-    admin.from("llm_usage_events").select("provider,cost_brl_cents").gte("created_at", since).limit(50_000),
+    admin.from("llm_usage_events").select("provider,cost_brl_cents").is("deleted_at", null).gte("created_at", since).limit(50_000),
   ]);
   const sums = new Map<string, number[]>();
   for (const r of [...(entries.data ?? []), ...(llm.data ?? [])]) {
@@ -131,6 +132,41 @@ export async function runBalanceCheck(opts: { fetchImpl?: FetchLike; now?: Date 
       toAlert.map((a) => ({ provider: a.provider, kind: a.kind, balance_brl_cents: a.balanceBrlCents, runway_days: a.runwayDays, emailed })),
     );
   }
+  await copyRecurringFixed(now);
   logger.info({ checked: rows?.length ?? 0, alerts: toAlert.length }, "cheque de saldos concluído");
   return { checked: rows?.length ?? 0, alerts: toAlert.length };
+}
+
+/** "Repete todo mês": lança a cópia do mês corrente dos custos fixos recorrentes (idempotente). */
+export async function copyRecurringFixed(now: Date): Promise<number> {
+  const admin = getSupabaseAdmin();
+  const month = brDate(now).slice(0, 7);
+  const { data } = await admin
+    .from("cost_entries")
+    .select("id,provider,note,occurred_at,recurring,quantity,unit_price_micro_usd,cost_micro_usd,fx_brl_per_usd_micro,cost_brl_cents,created_by")
+    .eq("kind", "fixed")
+    .is("deleted_at", null)
+    .limit(5000);
+  const rows = (data ?? []) as (RecurringRow & Record<string, unknown>)[];
+  const due = recurringDue(rows.map((r) => ({ ...r, recurring: r.recurring === true })), month);
+  for (const r of due) {
+    const src = rows.find((x) => x.id === r.id);
+    if (!src) continue;
+    await admin.from("cost_entries").insert({
+      occurred_at: `${month}-01T12:00:00Z`,
+      provider: src.provider as never,
+      kind: "fixed",
+      reason: "fixed_monthly",
+      quantity: src.quantity as number,
+      unit_price_micro_usd: src.unit_price_micro_usd as number,
+      cost_micro_usd: src.cost_micro_usd as number,
+      fx_brl_per_usd_micro: src.fx_brl_per_usd_micro as number,
+      cost_brl_cents: src.cost_brl_cents as number,
+      is_estimate: false,
+      recurring: true,
+      note: src.note,
+      created_by: (src.created_by as string | null) ?? null,
+    });
+  }
+  return due.length;
 }

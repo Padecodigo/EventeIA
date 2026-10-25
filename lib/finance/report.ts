@@ -1,6 +1,8 @@
 /** Agregações puras do painel financeiro (centavos BRL inteiros). */
 
 export interface CostRow {
+  /** Referência para exclusão: "c:<id>" (cost_entries) ou "l:<id>" (llm_usage_events). */
+  ref?: string;
   at: string;
   provider: string;
   reason: string;

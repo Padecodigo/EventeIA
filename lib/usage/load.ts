@@ -29,6 +29,7 @@ export async function loadUsage(f: UsageFilters): Promise<UsageData> {
   let q = supabase
     .from("llm_usage_events")
     .select("created_at,provider,task,outcome,profile_id,event_id,stage,whatsapp_channel,input_tokens,output_tokens,cost_micro_usd,cost_brl_cents,fx_brl_per_usd_micro")
+    .is("deleted_at", null)
     .gte("created_at", start)
     .lte("created_at", end);
   if (f.task !== undefined) q = q.eq("task", f.task);

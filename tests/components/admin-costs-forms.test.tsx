@@ -5,7 +5,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/app/admin/custos/actions", () => ({
-  checkBalancesNowAction: vi.fn(), softDeleteAction: vi.fn(), updateBalanceAction: vi.fn(), updateFixedCostAction: vi.fn(),
+  addFixedCostBrlAction: vi.fn(), checkBalancesNowAction: vi.fn(), softDeleteAction: vi.fn(), updateBalanceAction: vi.fn(), updateFixedCostAction: vi.fn(),
 }));
 
 import { BalanceForm, ConfirmDelete, FixedCostEdit } from "@/app/admin/custos/forms";

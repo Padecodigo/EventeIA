@@ -1,8 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/auth";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { closeTicket, reopenTicket, softDeleteTicket, type TicketDb } from "@/lib/support/admin-ops";
 import { createSupportDeps } from "@/lib/support/runtime";
 import { replyAsAdmin, updateTicketAsAdmin, type ActionResult } from "@/lib/support/service";
 
@@ -35,4 +38,36 @@ export async function adminUpdateTicketAction(_prev: State, formData: FormData):
     revalidatePath(`/admin/chamados/${result.ticketId}`);
   }
   return result;
+}
+
+type OpState = { ok?: boolean; error?: string } | null;
+
+function revalidateTicket(id: unknown) {
+  revalidatePath("/admin/chamados");
+  if (typeof id === "string") revalidatePath(`/admin/chamados/${id}`);
+}
+
+export async function adminCloseTicketAction(_prev: OpState, formData: FormData): Promise<OpState> {
+  const admin = await requireAdmin();
+  const id = formData.get("ticketId");
+  const r = await closeTicket(getSupabaseAdmin() as unknown as TicketDb, id, admin.id);
+  if (r.ok) revalidateTicket(id);
+  return r;
+}
+
+export async function adminReopenTicketAction(_prev: OpState, formData: FormData): Promise<OpState> {
+  await requireAdmin();
+  const id = formData.get("ticketId");
+  const r = await reopenTicket(getSupabaseAdmin() as unknown as TicketDb, id);
+  if (r.ok) revalidateTicket(id);
+  return r;
+}
+
+export async function adminDeleteTicketAction(_prev: OpState, formData: FormData): Promise<OpState> {
+  const admin = await requireAdmin();
+  const id = formData.get("ticketId");
+  const r = await softDeleteTicket(getSupabaseAdmin() as unknown as TicketDb, id, admin.id);
+  if (!r.ok) return r;
+  revalidateTicket(id);
+  redirect("/admin/chamados?excluido=1");
 }

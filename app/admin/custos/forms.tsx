@@ -2,7 +2,7 @@
 
 import { useActionState, useRef, type ReactNode } from "react";
 
-import { checkBalancesNowAction, softDeleteAction, updateBalanceAction, updateFixedCostAction, type CostsActionState } from "./actions";
+import { addFixedCostBrlAction, checkBalancesNowAction, softDeleteAction, updateBalanceAction, updateFixedCostAction, type CostsActionState } from "./actions";
 
 const button = "rounded-full bg-primaria px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-primaria-escura disabled:opacity-50";
 
@@ -34,9 +34,11 @@ export const BALANCE_HELP = {
   threshold: "Mostra o selo “baixo” e envia e-mail quando o saldo fica abaixo deste valor.",
   runway: "Também alerta se, no ritmo atual de gasto, o saldo durar menos dias que isto.",
   note: "Livre, só para você (ex.: plano contratado, quem paga).",
+  renewal: "Data do próximo vencimento ou renovação do plano. Mostra “X dias restantes” e alerta quando faltar o fôlego mínimo (dias) ou menos.",
+  monthlyCost: "Quanto o plano custa por mês (padrão R$ 100,00 se vazio).",
 } as const;
 
-export function BalanceForm(props: { provider: string; manual: boolean; budget: boolean; budgetCents: number | null; balanceCents: number | null; thresholdCents: number; runwayDays: number; note: string | null }) {
+export function BalanceForm(props: { provider: string; manual: boolean; budget: boolean; budgetCents: number | null; balanceCents: number | null; thresholdCents: number; runwayDays: number; note: string | null; renewal?: { date: string | null; monthlyCents: number | null } }) {
   const [state, action, pending] = useActionState(updateBalanceAction, {});
   const id = (k: string) => `bal-${props.provider}-${k}`;
   return (
@@ -51,6 +53,16 @@ export function BalanceForm(props: { provider: string; manual: boolean; budget: 
         <Field id={id("budget")} label="Orçamento mensal (R$)" help={BALANCE_HELP.budget}>
           {(a) => <input {...a} name="budget" inputMode="decimal" defaultValue={reais(props.budgetCents)} placeholder="0,00" className={field} />}
         </Field>
+      ) : null}
+      {props.renewal ? (
+        <>
+          <Field id={id("renewal")} label="Próximo vencimento" help={BALANCE_HELP.renewal}>
+            {(a) => <input {...a} name="renewal" type="date" defaultValue={props.renewal?.date ?? ""} className={field} />}
+          </Field>
+          <Field id={id("monthlyCost")} label="Valor mensal (R$)" help={BALANCE_HELP.monthlyCost}>
+            {(a) => <input {...a} name="monthlyCost" inputMode="decimal" defaultValue={reais(props.renewal?.monthlyCents ?? 10_000)} placeholder="100,00" className={field} />}
+          </Field>
+        </>
       ) : null}
       <Field id={id("threshold")} label="Alertar abaixo de (R$)" help={BALANCE_HELP.threshold}>
         {(a) => <input {...a} name="threshold" inputMode="decimal" defaultValue={reais(props.thresholdCents)} className={field} required />}
@@ -129,5 +141,55 @@ export function ConfirmDelete(props: { target: "fixed" | "alert"; items: { id: s
         </form>
       </dialog>
     </>
+  );
+}
+
+const FIXED_OPTIONS = [
+  { value: "vps", label: "VPS" },
+  { value: "supabase", label: "Supabase" },
+  { value: "domain", label: "Domínio" },
+  { value: "other", label: "Outro (digite o nome)" },
+] as const;
+
+/** Botão "Adicionar custo fixo" na própria Saúde financeira (abre o formulário). */
+export function AddFixedCost({ month }: { month: string }) {
+  const [state, action, pending] = useActionState(addFixedCostBrlAction, {});
+  const ref = useRef<HTMLDetailsElement>(null);
+  return (
+    <details ref={ref} className="mt-3 rounded-card border border-line-subtle bg-white p-3" data-testid="add-fixed">
+      <summary className="cursor-pointer text-sm font-semibold text-primaria-escura">+ Adicionar custo fixo</summary>
+      <form action={action} className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Field id="addfix-provider" label="Ferramenta / nome" help="Escolha VPS, Supabase, Domínio ou “Outro” e digite o nome ao lado.">
+          {(a) => (
+            <select {...a} name="provider" defaultValue="vps" className={field}>
+              {FIXED_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          )}
+        </Field>
+        <Field id="addfix-name" label="Nome (se “Outro”)" help="Ex.: Canva, Google Workspace. Obrigatório só para “Outro”.">
+          {(a) => <input {...a} name="name" maxLength={60} list="addfix-suggestions" className={field} />}
+        </Field>
+        <datalist id="addfix-suggestions"><option value="VPS" /><option value="Supabase" /><option value="Domínio" /></datalist>
+        <Field id="addfix-amount" label="Valor (R$)" help="Quanto custa no mês (ex.: 100,00).">
+          {(a) => <input {...a} name="amount" inputMode="decimal" placeholder="0,00" required className={field} />}
+        </Field>
+        <Field id="addfix-month" label="Mês de referência" help="Mês em que o custo entra nas contas.">
+          {(a) => <input {...a} name="month" type="month" defaultValue={month} required className={field} />}
+        </Field>
+        <Field id="addfix-note" label="Observação" help="Opcional (ex.: nº da fatura).">
+          {(a) => <input {...a} name="note" maxLength={200} className={field} />}
+        </Field>
+        <div className="flex flex-col gap-1">
+          <label className="flex items-center gap-2 text-sm font-semibold text-vinho/80">
+            <input type="checkbox" name="recurring" aria-describedby="addfix-recurring-help" className="h-4 w-4" /> Repete todo mês
+          </label>
+          <p id="addfix-recurring-help" className="text-caption text-vinho/60">O cheque diário lança este mesmo valor automaticamente a cada mês novo. Para parar, exclua o lançamento mais recente.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 sm:col-span-2 lg:col-span-3">
+          <button className={button} disabled={pending}>Adicionar</button>
+          <Status state={state} />
+        </div>
+      </form>
+    </details>
   );
 }

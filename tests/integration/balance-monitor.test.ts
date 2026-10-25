@@ -73,4 +73,17 @@ describe("cheque diário de saldos", () => {
     await runBalanceCheck({ fetchImpl, now: new Date("2026-10-25T12:00:00Z") });
     expect((tables.provider_balances)[0]?.last_error).toMatch(/HTTP 500/);
   });
+
+  it("alerta dispensado não reaparece na hora; volta só no próximo ciclo (20h) se o saldo seguir baixo", async () => {
+    const fetchImpl = vi.fn((url: string) =>
+      Promise.resolve(new Response(JSON.stringify(url.includes("deepseek") ? { balance_infos: [{ currency: "USD", total_balance: "2.00" }] } : { balance: 2500 }), { status: 200 })),
+    );
+    await runBalanceCheck({ fetchImpl, now: new Date("2026-10-25T12:00:00Z") });
+    // "Limpar todos": marca deleted_at sem mexer em last_alert_at
+    for (const a of tables.finance_alerts ?? []) a.deleted_at = "2026-10-25T12:05:00Z";
+    const r1 = await runBalanceCheck({ fetchImpl, now: new Date("2026-10-25T18:00:00Z") });
+    expect(r1.alerts).toBe(0);
+    const r2 = await runBalanceCheck({ fetchImpl, now: new Date("2026-10-26T09:00:00Z") });
+    expect(r2.alerts).toBe(2);
+  });
 });

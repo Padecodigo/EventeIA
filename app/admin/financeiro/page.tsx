@@ -10,6 +10,7 @@ import { buildReport, resolvePeriod } from "@/lib/finance/report";
 import { formatBRL } from "@/lib/money";
 import { loadWelcomeAdmin } from "@/lib/welcome/admin";
 
+import { ClearCostPeriod, DeleteCostRow } from "./delete-controls";
 import { FinanceForms } from "./forms";
 
 export const metadata = { title: "Financeiro" };
@@ -137,12 +138,17 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
       </section>
 
       <section>
-        <h2 className="font-serif text-title-1">Detalhamento</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-serif text-title-1">Detalhamento</h2>
+          <ClearCostPeriod from={period.from} to={period.to} labels={PROVIDER_LABELS}
+            counts={data.costs.reduce<Record<string, number>>((m, c) => ((m[c.provider] = (m[c.provider] ?? 0) + 1), m), {})} />
+        </div>
+        <p className="text-caption text-vinho/60">“Excluir” (em cada custo) e “Limpar custos do período” tiram os lançamentos das listas e de TODOS os totais (aqui, Saúde financeira e Consumo). É reversível. Pagamentos não podem ser excluídos.</p>
         <p className="text-caption text-vinho/60">Cada custo e cada pagamento do período, linha a linha (horário de Brasília). Status do pagamento: paid/confirmed = recebido; pending = aguardando; refunded/chargeback = devolvido.</p>
         <div className="mt-3 overflow-x-auto rounded-card border border-line-subtle bg-off-white">
           <table className="w-full text-sm">
             <thead className="bg-areia-quente/60 text-left">
-              <tr><th className="px-3 py-2">Data (Brasília)</th><th>Tipo</th><th>Provedor/Plano</th><th>Motivo/Cliente</th><th>Evento</th><th>Detalhe</th><th className="px-3 text-right">Valor</th></tr>
+              <tr><th className="px-3 py-2">Data (Brasília)</th><th>Tipo</th><th>Provedor/Plano</th><th>Motivo/Cliente</th><th>Evento</th><th>Detalhe</th><th className="px-3 text-right">Valor</th><th className="px-3"><span className="sr-only">Ações</span></th></tr>
             </thead>
             <tbody>
               {[
@@ -151,6 +157,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
                     <td className="px-3 py-1.5 tabular-nums">{brt(c.at)}</td><td>Custo</td><td>{provider(c.provider)}</td><td>{reason(c.reason)}</td>
                     <td>{c.eventId ? eventLabel(c.eventId) : "—"}</td><td className="text-caption text-vinho/70">{c.detail}{c.inputTokens + c.outputTokens > 0 ? ` · ${String(c.inputTokens)}/${String(c.outputTokens)} tok` : ""}</td>
                     <td className="px-3 text-right tabular-nums text-semantic-error">−{formatBRL(c.costBrlCents)}</td>
+                    <td className="px-3">{c.ref ? <DeleteCostRow refId={c.ref} label={`${brt(c.at)} · ${provider(c.provider)} · ${reason(c.reason)} · ${formatBRL(c.costBrlCents)}`} /> : null}</td>
                   </tr>
                 )),
                 ...data.revenue.slice(0, 200).map((p) => (
@@ -158,6 +165,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
                     <td className="px-3 py-1.5 tabular-nums">{brt(p.at)}</td><td>Receita</td><td>{p.plan}</td><td>{p.clientLabel}</td>
                     <td>{p.eventId ? eventLabel(p.eventId) : "—"}</td><td className="text-caption text-vinho/70">{p.status}{p.refunded ? " · estornado" : ""} · taxa {formatBRL(p.feeCents)}</td>
                     <td className="px-3 text-right tabular-nums">{formatBRL(p.netCents)}</td>
+                    <td />
                   </tr>
                 )),
               ]}
