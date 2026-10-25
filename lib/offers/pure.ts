@@ -61,3 +61,9 @@ export function offerHeadline(kind: OfferKind, terms: OfferTerms): string {
   const reais = `R$ ${String(Math.round(terms.avulsoOffCents / 100))}`;
   return `${label}: ${reais} de desconto no evento avulso ou ${String(terms.packPercent)}% nos pacotes de créditos`;
 }
+
+/** Texto público (visitante) da boas-vindas — espelha as constantes acima, sem contagem. */
+export function welcomeVisitorCopy(): string {
+  const reais = (WELCOME_AVULSO_OFF_CENTS / 100).toLocaleString("pt-BR");
+  return `Crie sua conta e ganhe R$ ${reais} no evento avulso ou ${WELCOME_PACK_PERCENT}% nos pacotes por ${OFFER_WINDOW_HOURS}h.`;
+}

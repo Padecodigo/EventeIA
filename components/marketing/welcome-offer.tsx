@@ -1,18 +1,18 @@
 import Script from "next/script";
 
 import { formatBRL } from "@/lib/money";
-import { WELCOME_FINAL_PRICE_CENTS } from "@/lib/welcome/pure";
+import { welcomeVisitorCopy } from "@/lib/offers/pure";
+
+const WELCOME_COPY = welcomeVisitorCopy();
 
 /**
  * Oferta de boas-vindas nas páginas públicas — Server Component (guarda de TBT: sem React
  * no client). O HTML nasce oculto; /welcome-offer.js (lazyOnload, ~2 KB) consulta
  * /api/boas-vindas e só então revela faixa/modal com o tempo restante calculado no BANCO.
  */
-function prices(): { full: number; final: number } | null {
+function prices(): { full: number } | null {
   const full = Number(process.env.B2C_TICKET_PRICE_CENTS ?? "9700");
-  return Number.isInteger(full) && full > WELCOME_FINAL_PRICE_CENTS
-    ? { full, final: WELCOME_FINAL_PRICE_CENTS }
-    : null;
+  return Number.isInteger(full) && full > 0 ? { full } : null;
 }
 
 export function WelcomeOffer() {
@@ -29,21 +29,12 @@ export function WelcomeOffer() {
         className="fixed inset-x-0 top-0 z-[60] bg-vinho text-off-white shadow-raised"
       >
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 py-2 text-sm">
-          <span>
-            Boas-vindas: tíquete por <s className="opacity-80">{formatBRL(p.full)}</s>{" "}
-            <strong className="text-champagne">{formatBRL(p.final)}</strong>
-          </span>
-          <span>
-            expira em{" "}
-            <time data-welcome-countdown className="font-semibold tabular-nums text-champagne">
-              --:--:--
-            </time>
-          </span>
+          <span>{WELCOME_COPY}</span>
           <a
             href="/registrar"
             className="font-semibold underline decoration-champagne underline-offset-4"
           >
-            Garantir
+            Criar conta
           </a>
           <button
             type="button"
@@ -55,52 +46,6 @@ export function WelcomeOffer() {
           </button>
         </div>
       </aside>
-
-      <dialog
-        id="ev-welcome-modal"
-        aria-labelledby="welcome-title"
-        className="w-[min(92vw,28rem)] rounded-card bg-off-white p-0 text-vinho shadow-raised backdrop:bg-vinho/50"
-      >
-        <div className="p-7">
-          <p className="eyebrow">Boas-vindas</p>
-          <h2 id="welcome-title" className="mt-2 font-serif text-title-1">
-            Seu primeiro evento por {formatBRL(p.final)}.
-          </h2>
-          <p className="mt-4 flex items-baseline gap-3">
-            <s className="text-vinho/70">{formatBRL(p.full)}</s>
-            <span className="font-serif text-display-2">{formatBRL(p.final)}</span>
-          </p>
-          <p className="mt-1 text-sm">
-            Você economiza {formatBRL(p.full - p.final)} no tíquete único.
-          </p>
-          <p className="mt-4 rounded-xl bg-areia-secundaria px-4 py-3 text-sm">
-            Cupom reservado para você — expira em{" "}
-            <time data-welcome-countdown className="font-semibold tabular-nums">
-              --:--:--
-            </time>
-            . O prazo não reinicia.
-          </p>
-          <p data-welcome-social hidden className="mt-3 text-caption text-vinho/75" />
-          <div className="mt-6 flex flex-wrap gap-3">
-            <a
-              href="/registrar"
-              className="rounded-full bg-primaria px-5 py-3 text-sm font-semibold text-white hover:bg-primaria-escura"
-            >
-              Criar conta e usar
-            </a>
-            <button
-              type="button"
-              data-welcome-close
-              className="rounded-full border border-line-strong px-5 py-3 text-sm font-medium"
-            >
-              Agora não
-            </button>
-          </div>
-          <p className="mt-4 text-caption text-vinho/70">
-            Aplicado automaticamente no checkout. 1 por pessoa, aparelho e conta.
-          </p>
-        </div>
-      </dialog>
 
       {/* Cupom sorteado ("Quer cupom?"): só aparece quando a oferta de boas-vindas já não está
           ativa (expirada/usada) — o script nunca revela as duas. Sorteio 100% no servidor. */}
@@ -193,30 +138,14 @@ export function WelcomeOffer() {
   );
 }
 
-/** Selo com a contagem no card do tíquete em /planos (revelado pelo mesmo script). */
+/** Selo no card do tíquete em /planos: a oferta real, sem contagem para visitantes. */
 export function WelcomePlanosNote() {
-  const p = prices();
-  if (p === null) {
-    return null;
-  }
   return (
-    <div
-      id="ev-welcome-planos"
-      hidden
-      className="mt-4 rounded-xl bg-vinho px-4 py-3 text-sm text-off-white"
-    >
-      <p>
-        Sua oferta: <s className="opacity-80">{formatBRL(p.full)}</s>{" "}
-        <strong className="text-champagne">{formatBRL(p.final)}</strong> · economize{" "}
-        {formatBRL(p.full - p.final)}
+    <div id="ev-welcome-planos" className="mt-4 rounded-xl bg-vinho px-4 py-3 text-sm text-off-white">
+      <p>{WELCOME_COPY}</p>
+      <p className="mt-1 text-caption opacity-90">
+        O prazo de 48h começa no seu primeiro acesso e é controlado pelo servidor.
       </p>
-      <p className="mt-1">
-        Expira em{" "}
-        <time data-welcome-countdown className="font-semibold tabular-nums text-champagne">
-          --:--:--
-        </time>
-      </p>
-      <p data-welcome-social hidden className="mt-1 text-caption" />
     </div>
   );
 }

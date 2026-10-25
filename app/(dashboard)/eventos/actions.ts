@@ -33,8 +33,6 @@ import { enqueue, QUEUE_NAMES } from "@/lib/queue";
 import { prospectingJobSchema } from "@/lib/schemas/whatsapp";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { welcomeDiscountCents } from "@/lib/welcome/pure";
-import { bindWelcomeOfferToUser, reserveWelcomeOffer } from "@/lib/welcome/server";
 import { ensureUserInstance, newInstanceNameFor } from "@/lib/whatsapp/instance-store";
 import { supabaseInstanceStore } from "@/lib/whatsapp/instance-store-supabase";
 import { InstanceBusyError } from "@/lib/whatsapp/pairing";
@@ -324,19 +322,13 @@ export async function buyTicketAction(
       reservationId = resolved.reservationId;
       claimedOfferId = resolved.offerId;
     } else {
-      // Sem cupom e sem oferta pessoal: ofertas legadas do visitante (0022/0025).
-      await bindWelcomeOfferToUser(user.id);
-      const welcome = await reserveWelcomeOffer(user.id, event.id);
-      if (welcome !== null) {
-        discount = welcomeDiscountCents(env.B2C_TICKET_PRICE_CENTS);
-        couponCode = discount > 0 ? welcome.code : null;
-      } else {
-        // Cupom sorteado: percentual SEMPRE o gravado no banco (nunca do client).
-        const lucky = await reserveLuckyCoupon(user.id, event.id);
-        if (lucky !== null) {
-          discount = luckyDiscountCents(env.B2C_TICKET_PRICE_CENTS, lucky.percent);
-          couponCode = lucky.code;
-        }
+      // Sem cupom e sem oferta pessoal. A boas-vindas única é a oferta pessoal da conta
+      // (R$ 40 avulso / 30% pacotes, 48h — 0036); a legada de R$ 47 do visitante não vale mais.
+      // Cupom sorteado: percentual SEMPRE o gravado no banco (nunca do client).
+      const lucky = await reserveLuckyCoupon(user.id, event.id);
+      if (lucky !== null) {
+        discount = luckyDiscountCents(env.B2C_TICKET_PRICE_CENTS, lucky.percent);
+        couponCode = lucky.code;
       }
     }
 

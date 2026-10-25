@@ -184,22 +184,6 @@ export async function bindWelcomeOfferToUser(profileId: string): Promise<void> {
   }
 }
 
-/** Reserva (checkout) a oferta da conta para UM evento — validação com now() do banco. */
-export async function reserveWelcomeOffer(
-  profileId: string,
-  eventId: string,
-): Promise<{ code: string; expiresAt: string } | null> {
-  const { data, error } = await getSupabaseAdmin().rpc("welcome_offer_reserve", {
-    p_profile_id: profileId,
-    p_event_id: eventId,
-  });
-  const row = Array.isArray(data) ? data[0] : undefined;
-  if (error !== null || row === undefined) {
-    return null;
-  }
-  return { code: row.code, expiresAt: row.expires_at };
-}
-
 /** Prova social com dado real (0 quando indisponível — e aí não é exibida). */
 export async function recentWelcomeRedemptions(): Promise<number> {
   try {
