@@ -1,4 +1,4 @@
--- 0029: município do evento (IBGE) — ADITIVA e não destrutiva (expand).
+-- 0030: município do evento (IBGE) — ADITIVA e não destrutiva (expand).
 -- Só adiciona colunas anuláveis; `city` (0015) e `region_code` (0001) seguem como estão.
 -- Eventos antigos ficam com city_uf/city_ibge_code nulos e continuam válidos.
 -- RLS: as políticas de `events` são por linha; colunas novas herdam as mesmas regras.
