@@ -13,7 +13,8 @@ describe("migração 0029 (cliente não ativa evento/tíquete nem grava pagament
   });
   it("só restringe papéis do cliente; service_role/definer seguem livres", () => {
     expect(sql.match(/if current_user not in \('authenticated', 'anon'\) then\s+return new;/g)?.length).toBe(3);
-    expect(sql).not.toContain("security definer");
+    expect(sql).not.toMatch(/^\s*security definer/m);
+    expect(sql.match(/^\s*security invoker/gm)?.length).toBe(3);
   });
   it("cliente só move draft -> awaiting_payment e só cria tíquete/pagamento pendente", () => {
     expect(sql).toContain("old.status = 'draft' and new.status = 'awaiting_payment'");
