@@ -20,7 +20,9 @@ const m = vi.hoisted(() => ({
 vi.mock("server-only", () => ({}));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: m.redirect }));
+const cookieSet = vi.hoisted(() => vi.fn());
 vi.mock("next/headers", () => ({
+  cookies: () => Promise.resolve({ set: cookieSet }),
   headers: () =>
     Promise.resolve(new Headers({ host: "localhost:3100", "x-forwarded-proto": "http" })),
 }));
@@ -122,8 +124,13 @@ describe("Esqueci minha senha", () => {
     m.resetPasswordForEmail.mockResolvedValue({ data: {}, error: null });
     const r = await requestPasswordResetAction({}, fd({ email: "ana@gmail.com" }));
     expect(m.resetPasswordForEmail).toHaveBeenCalledWith("ana@gmail.com", {
-      redirectTo: "http://localhost:3100/auth/callback?next=%2Fredefinir-senha",
+      redirectTo: "http://localhost:3100/auth/callback",
     });
+    expect(cookieSet).toHaveBeenCalledWith(
+      "eventeia_auth_next",
+      "/redefinir-senha",
+      expect.objectContaining({ httpOnly: true, path: "/auth/callback" }),
+    );
     expect(r.notice).toMatch(/Se houver uma conta/);
   });
 

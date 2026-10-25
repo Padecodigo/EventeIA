@@ -1,11 +1,11 @@
 "use server";
 
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { z } from "zod";
 
-import { buildCallbackUrl, publicOrigin } from "@/lib/auth/oauth";
+import { RESET_NEXT_COOKIE, buildCallbackUrl, publicOrigin } from "@/lib/auth/oauth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { bindWelcomeOfferToUser } from "@/lib/welcome/server";
 
@@ -154,7 +154,16 @@ export async function requestPasswordResetAction(
   const origin = publicOrigin(h, "http://localhost:3000");
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-    redirectTo: buildCallbackUrl(origin, "/redefinir-senha"),
+    // Callback sem query (bate com a allowlist exata de redirect do Supabase);
+    // o destino pós-link vai num cookie curto lido pelo /auth/callback.
+    redirectTo: buildCallbackUrl(origin),
+  });
+  (await cookies()).set(RESET_NEXT_COOKIE, "/redefinir-senha", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: origin.startsWith("https://"),
+    path: "/auth/callback",
+    maxAge: 60 * 60,
   });
 
   if (error !== null && /rate limit/i.test(error.message)) {

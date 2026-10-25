@@ -11,6 +11,9 @@ export function safeNextPath(next: string | null | undefined, fallback = "/paine
   return next;
 }
 
+/** Cookie com o destino pós-callback do link "Esqueci minha senha". */
+export const RESET_NEXT_COOKIE = "eventeia_auth_next";
+
 /** URL do callback OAuth, sempre na origem do app. */
 export function buildCallbackUrl(origin: string, next?: string | null): string {
   const url = new URL("/auth/callback", origin);
@@ -25,7 +28,12 @@ export function oauthErrorMessage(code: string | null | undefined): string | und
   return "Não foi possível entrar com o Google. Tente novamente ou use e-mail e senha.";
 }
 
-const ORIGIN_ENV_KEYS = ["APP_URL", "SITE_URL", "NEXT_PUBLIC_SITE_URL", "NEXT_PUBLIC_APP_URL"] as const;
+const ORIGIN_ENV_KEYS = [
+  "APP_URL",
+  "SITE_URL",
+  "NEXT_PUBLIC_SITE_URL",
+  "NEXT_PUBLIC_APP_URL",
+] as const;
 
 function isBindHost(host: string): boolean {
   const h = host.toLowerCase().replace(/:\d+$/, "");
@@ -62,7 +70,8 @@ export function publicOrigin(
   const req = new URL(requestUrl);
   const fwdHost = headers.get("x-forwarded-host")?.split(",")[0]?.trim();
   const fwdProto = headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
-  const proto = fwdProto === "http" || fwdProto === "https" ? fwdProto : req.protocol.replace(":", "");
+  const proto =
+    fwdProto === "http" || fwdProto === "https" ? fwdProto : req.protocol.replace(":", "");
   for (const host of [fwdHost, headers.get("host")?.trim()]) {
     if (host && /^[a-z0-9.\-:[\]]+$/i.test(host)) {
       const o = toOrigin(`${proto}://${host}`);
