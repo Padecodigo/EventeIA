@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { getUserActivity } from "@/lib/activity";
 import { requireUser } from "@/lib/auth";
+import { personalEventsFilter } from "@/lib/auth/personal-scope-server";
 import { formatBRL } from "@/lib/money";
 import { categoryLabel } from "@/lib/quotes/export";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -21,14 +22,24 @@ export default async function DashboardPage() {
   const user = await requireUser();
   const supabase = await createSupabaseServerClient();
 
+  // Escopo explícito: admin lê tudo via RLS (0035) — o painel mostra só o que é do usuário.
+  const scope = await personalEventsFilter(supabase, user.id);
+  const { data: ownEvents } = await supabase.from("events").select("id").or(scope);
+  const ownEventIds = (ownEvents ?? []).map((row) => row.id);
+  const noEvents = ["00000000-0000-0000-0000-000000000000"];
   const [eventsResult, activeTicketsResult, countResult] = await Promise.all([
     supabase
       .from("events")
       .select("id,title,status,event_date,created_at")
+      .or(scope)
       .order("created_at", { ascending: false })
       .limit(5),
-    supabase.from("event_tickets").select("id", { count: "exact", head: true }).eq("status", "active"),
-    supabase.from("events").select("id", { count: "exact", head: true }),
+    supabase
+      .from("event_tickets")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "active")
+      .in("event_id", ownEventIds.length > 0 ? ownEventIds : noEvents),
+    supabase.from("events").select("id", { count: "exact", head: true }).or(scope),
   ]);
 
   const events = eventsResult.data ?? [];
@@ -45,6 +56,7 @@ export default async function DashboardPage() {
     supabase
       .from("quotations")
       .select("id,event_id,vendor_name,category,amount_cents,needs_followup,created_at")
+      .in("event_id", ownEventIds.length > 0 ? ownEventIds : noEvents)
       .order("created_at", { ascending: false })
       .limit(10),
   ]);

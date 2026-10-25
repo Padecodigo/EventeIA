@@ -18,6 +18,7 @@ import { logger } from "@/lib/logger";
 import { enqueue, QUEUE_NAMES } from "@/lib/queue";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/types";
+import { recipientOptedOut } from "@/lib/whatsapp/opt-out-runtime";
 import {
   lastInboundAt,
   resolveEventChannel,
@@ -154,10 +155,12 @@ export function createCollectorDeps(): CollectorDeps {
       const env = serverEnv();
       const { data: p } = await admin
         .from("vendor_prospects")
-        .select("dry_run,status")
+        .select("dry_run,status,supplier_id")
         .eq("id", prospectId)
         .maybeSingle();
-      if (p === null || p.status === "opt_out") return "skipped";
+      if (p === null) return "skipped";
+      if (await recipientOptedOut({ phoneE164: phone, prospectStatus: p.status, supplierId: p.supplier_id }))
+        return "skipped";
       const channel = await resolveEventChannel(eventId);
       const instance = await findEventInstance(eventId);
       const { data: inst } =

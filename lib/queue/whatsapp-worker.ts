@@ -20,6 +20,7 @@ import {
   type ProspectingJob,
 } from "@/lib/schemas/whatsapp";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { recipientOptedOut } from "@/lib/whatsapp/opt-out-runtime";
 import { resolveEventChannel, sendFirstContactVia } from "@/lib/whatsapp/provider";
 import { canSendFirstContact, toSessionState } from "@/lib/whatsapp/session-lifecycle";
 import { finishCollection, handleSessionLost } from "@/lib/whatsapp/session-manager";
@@ -165,6 +166,19 @@ async function processProspectingJob(
   const decision = await reservePacingSlot(pacing, data.instance, Date.now());
   if (!decision.allowed) {
     await delay(job, decision.retryAtMs, token);
+    return;
+  }
+
+  // Revogação vence até o último instante (consents opted_out / fornecedor com opt-out).
+  if (
+    await recipientOptedOut({
+      phoneE164: data.phoneE164,
+      prospectStatus: prospect.status,
+      supplierId: prospect.supplier_id,
+    })
+  ) {
+    await admin.from("vendor_prospects").update({ status: "opt_out" }).eq("id", data.prospectId);
+    logger.info({ prospectId: data.prospectId }, "envio cancelado: destinatário revogou o contato");
     return;
   }
 

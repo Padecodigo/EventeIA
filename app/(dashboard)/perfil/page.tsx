@@ -61,7 +61,7 @@ export default async function ProfilePage() {
             : hasGoogle
               ? "Você entra com o Google. Se quiser, crie uma senha para também entrar com e-mail e senha — o Google continua funcionando."
               : "Crie uma senha para entrar com e-mail e senha."}
-          {user.email ? ` E-mail de acesso: ${user.email}.` : ""}
+          {user.email ? ` E-mail de acesso: ${user.email}.` : null}
         </p>
         <PasswordForm hasPassword={hasPassword} />
       </section>
