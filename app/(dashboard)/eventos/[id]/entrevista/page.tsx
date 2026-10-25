@@ -7,6 +7,7 @@ import { EventInterview } from "@/components/domain/event-interview";
 import { defaultAnswers, parseAnswers } from "@/lib/catalog/rules";
 import { ALL_EVENT_TYPES, EVENT_TYPE_LABELS } from "@/lib/catalog/v1";
 import type { EventType } from "@/lib/engine/types";
+import { findMunicipioByCode, resolveMunicipio } from "@/lib/geo/municipios";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function EventInterviewPage({ params }: { params: Promise<{ id: string }> }) {
@@ -17,7 +18,7 @@ export default async function EventInterviewPage({ params }: { params: Promise<{
   const supabase = await createSupabaseServerClient();
   const { data: event } = await supabase
     .from("events")
-    .select("id,title,event_type,guest_count,city,interview_answers")
+    .select("id,title,event_type,guest_count,city,city_uf,city_ibge_code,search_city_codes,interview_answers")
     .eq("id", idParsed.data)
     .maybeSingle();
   if (event === null) notFound();
@@ -47,7 +48,10 @@ export default async function EventInterviewPage({ params }: { params: Promise<{
         eventType={eventType}
         guestCount={event.guest_count}
         initialAnswers={initialAnswers}
-        initialCity={event.city ?? ""}
+        initialCity={resolveMunicipio({ code: event.city_ibge_code, name: event.city, uf: event.city_uf })}
+        initialSearchCities={(event.search_city_codes ?? [])
+          .map((code) => findMunicipioByCode(code))
+          .filter((m) => m !== null)}
       />
     </div>
   );

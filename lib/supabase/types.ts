@@ -65,6 +65,7 @@ export interface Database {
         city: string | null;
         city_uf: string | null;
         city_ibge_code: number | null;
+        search_city_codes: number[] | null;
         interview_answers: Json | null;
         interview_completed_at: string | null;
         discovery_started_at: string | null;

@@ -32,10 +32,15 @@ const responseSchema = z.object({
     .optional(),
 });
 
+/** "Taubaté (SP, Brasil)" — nunca assume SP: usa a UF do município ou só "Brasil". */
+export function cityLabel(q: Pick<DiscoveryQuery, "city" | "uf">): string {
+  return q.uf !== undefined && /^[A-Z]{2}$/.test(q.uf) ? `${q.city} (${q.uf}, Brasil)` : `${q.city} (Brasil)`;
+}
+
 export function buildGrokPrompt(q: DiscoveryQuery): string {
   const what = q.category === "outros" && q.freeText !== undefined ? q.freeText : q.categoryLabel;
   return [
-    `Encontre até ${String(q.limit)} fornecedores REAIS de "${what}" que atendem a cidade de ${q.city} (SP, Brasil),`,
+    `Encontre até ${String(q.limit)} fornecedores REAIS de "${what}" que atendem a cidade de ${cityLabel(q)},`,
     `para um evento do tipo ${q.eventTypeLabel}. Use busca na web e no X (perfis públicos de empresas, sites, Google Maps, Instagram públicos via resultados de busca).`,
     `Regras: somente empresas/profissionais com contato comercial PÚBLICO; nunca invente telefones;`,
     `inclua apenas telefones que aparecem literalmente na fonte; source_url deve ser a página onde o contato aparece.`,

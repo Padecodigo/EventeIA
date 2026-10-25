@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 
-interface Municipio {
+export interface Municipio {
   code: number;
   name: string;
   uf: string;
@@ -12,11 +12,30 @@ interface Municipio {
  * Autocomplete de municípios (todos os ~5.570 do IBGE, busca sem acento em /api/municipios).
  * Envia `cityCode` (código IBGE) no formulário; o servidor resolve nome e UF.
  */
-export function CityPicker({ name = "cityCode", label = "Cidade do evento" }: { name?: string; label?: string }) {
+export function CityPicker({
+  name = "cityCode",
+  label = "Cidade do evento",
+  initial = null,
+  onChange,
+  required = true,
+  clearOnSelect = false,
+  placeholder = "Digite a cidade",
+}: {
+  /** Nome do input hidden com o código IBGE; "" ⇒ sem input (o pai controla via onChange). */
+  name?: string;
+  label?: string;
+  /** Município pré-selecionado (ex.: cidade do evento). */
+  initial?: Municipio | null;
+  onChange?: (m: Municipio | null) => void;
+  required?: boolean;
+  /** Modo "adicionar" (multi-seleção): limpa o campo após escolher. */
+  clearOnSelect?: boolean;
+  placeholder?: string;
+}) {
   const id = useId();
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initial === null ? "" : `${initial.name} – ${initial.uf}`);
   const [results, setResults] = useState<Municipio[]>([]);
-  const [selected, setSelected] = useState<Municipio | null>(null);
+  const [selected, setSelected] = useState<Municipio | null>(initial);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const abort = useRef<AbortController | null>(null);
@@ -43,9 +62,16 @@ export function CityPicker({ name = "cityCode", label = "Cidade do evento" }: { 
   }, [query, selected]);
 
   function choose(m: Municipio) {
+    setOpen(false);
+    onChange?.(m);
+    if (clearOnSelect) {
+      setSelected(null);
+      setQuery("");
+      setResults([]);
+      return;
+    }
     setSelected(m);
     setQuery(`${m.name} – ${m.uf}`);
-    setOpen(false);
   }
 
   return (
@@ -60,10 +86,11 @@ export function CityPicker({ name = "cityCode", label = "Cidade do evento" }: { 
         aria-controls={`${id}-list`}
         aria-autocomplete="list"
         autoComplete="off"
-        required
+        required={required}
         value={query}
-        placeholder="Digite a cidade"
+        placeholder={placeholder}
         onChange={(e) => {
+          if (selected !== null) onChange?.(null);
           setSelected(null);
           setQuery(e.target.value);
         }}
@@ -84,7 +111,7 @@ export function CityPicker({ name = "cityCode", label = "Cidade do evento" }: { 
         }}
         className="h-12 rounded-xl border border-line-subtle bg-off-white px-4 text-sm text-vinho placeholder:text-vinho/70"
       />
-      <input type="hidden" name={name} value={selected?.code ?? ""} />
+      {name !== "" ? <input type="hidden" name={name} value={selected?.code ?? ""} /> : null}
       {open && results.length > 0 ? (
         <ul
           id={`${id}-list`}
@@ -107,7 +134,7 @@ export function CityPicker({ name = "cityCode", label = "Cidade do evento" }: { 
           ))}
         </ul>
       ) : null}
-      {query.trim().length >= 2 && selected === null && !open ? (
+      {!clearOnSelect && query.trim().length >= 2 && selected === null && !open ? (
         <p className="text-caption text-vinho/70">Escolha uma cidade da lista.</p>
       ) : null}
     </div>

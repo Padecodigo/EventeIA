@@ -16,6 +16,8 @@ import {
   isCategoryCode,
   renderDiscoveryFirstContact,
   ROUND_INTERVAL_MS,
+  searchCitiesFor,
+  type SearchCity,
   supplierCandidateSchema,
   type SupplierCandidate,
 } from "./pure";
@@ -27,6 +29,10 @@ export interface DiscoveryEvent {
   eventDateIso: string;
   guestCount: number;
   city: string;
+  /** UF do município do evento (IBGE); null em eventos legados. */
+  cityUf?: string | null;
+  /** Cidades extras escolhidas pelo usuário (a do evento é sempre incluída). */
+  searchCities?: SearchCity[];
   regionCode: string;
   status: string;
   ownerId: string;
@@ -285,36 +291,44 @@ export async function runDiscoveryRound(
     };
 
     // 1) Cache global (reuso entre eventos/cidades, custo zero).
-    const cached = await deps.cachedSuppliers({ city: event.city, category, excludePhones: [...knownPhones], limit: need });
-    for (const c of cached) await consume(c.provider, [c]);
+    const cities = searchCitiesFor(event);
+    for (const sc of cities) {
+      if (need <= 0) break;
+      const cached = await deps.cachedSuppliers({ city: sc.city, category, excludePhones: [...knownPhones], limit: need });
+      for (const c of cached) await consume(c.provider, [c]);
+    }
 
     // 2) Provedores ao vivo, em ordem de prioridade.
     const label = isCategoryCode(category) ? CATEGORY_LABELS[category] : category;
     const freeText = category === "outros" ? event.requirements.find((r) => r.category === "outros")?.notes ?? undefined : undefined;
-    for (const provider of providers) {
+    for (const sc of cities) {
       if (need <= 0) break;
-      if (!(await deps.reserveProviderCall(event.id, provider.name))) {
-        await deps.recordRun({ eventId: event.id, provider: provider.name, category, round: input.round, found: 0, inserted: 0, enqueued: 0, status: "skipped", error: "cap" });
-        continue;
-      }
-      try {
-        const results = await provider.search({
-          category,
-          categoryLabel: label,
-          city: event.city,
-          eventTypeLabel: EVENT_TYPE_LABELS[event.eventType],
-          freeText,
-          limit: need,
-          exclude: [...knownPhones],
-        });
-        const used = provider.lastUsed ?? provider.name;
-        const r = await consume(used, results);
-        await deps.recordRun({ eventId: event.id, provider: used, category, round: input.round, found: results.length, inserted: r.inserted, enqueued: r.enqueued, status: "ok" });
-      } catch (error) {
-        await deps.recordRun({
-          eventId: event.id, provider: provider.lastUsed ?? provider.name, category, round: input.round, found: 0, inserted: 0, enqueued: 0,
-          status: "error", error: error instanceof Error ? error.message.slice(0, 200) : "erro",
-        });
+      for (const provider of providers) {
+        if (need <= 0) break;
+        if (!(await deps.reserveProviderCall(event.id, provider.name))) {
+          await deps.recordRun({ eventId: event.id, provider: provider.name, category, round: input.round, found: 0, inserted: 0, enqueued: 0, status: "skipped", error: "cap" });
+          continue;
+        }
+        try {
+          const results = await provider.search({
+            category,
+            categoryLabel: label,
+            city: sc.city,
+            uf: sc.uf,
+            eventTypeLabel: EVENT_TYPE_LABELS[event.eventType],
+            freeText,
+            limit: need,
+            exclude: [...knownPhones],
+          });
+          const used = provider.lastUsed ?? provider.name;
+          const r = await consume(used, results);
+          await deps.recordRun({ eventId: event.id, provider: used, category, round: input.round, found: results.length, inserted: r.inserted, enqueued: r.enqueued, status: "ok" });
+        } catch (error) {
+          await deps.recordRun({
+            eventId: event.id, provider: provider.lastUsed ?? provider.name, category, round: input.round, found: 0, inserted: 0, enqueued: 0,
+            status: "error", error: error instanceof Error ? error.message.slice(0, 200) : "erro",
+          });
+        }
       }
     }
   }

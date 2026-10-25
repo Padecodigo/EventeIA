@@ -6,6 +6,8 @@ import {
   saveInterviewAction,
   type InterviewState,
 } from "@/app/(dashboard)/eventos/[id]/entrevista/actions";
+import { CityPicker, type Municipio } from "@/components/domain/city-picker";
+import { SearchCitiesPicker } from "@/components/domain/search-cities-picker";
 import { Button } from "@/components/ui/button";
 import { resolveRequirements, visibleQuestions, type Answers } from "@/lib/catalog/rules";
 import { formatSchedule } from "@/lib/catalog/time";
@@ -13,21 +15,22 @@ import {
   CATEGORY_LABELS,
   STEPS,
   UNIT_LABELS,
-  VALE_DO_PARAIBA_CITIES,
   type AnswerValue,
   type Question,
 } from "@/lib/catalog/v1";
 import type { EventType } from "@/lib/engine/types";
 
 const initialState: InterviewState = {};
-const OTHER_CITY = "__outra__";
 
 export interface EventInterviewProps {
   eventId: string;
   eventType: EventType;
   guestCount: number;
   initialAnswers: Answers;
-  initialCity: string;
+  /** Município do evento (IBGE) para pré-preencher; null se ainda não há (ou legado sem match). */
+  initialCity: Municipio | null;
+  /** Cidades extras de busca já salvas. */
+  initialSearchCities?: Municipio[];
 }
 
 function QuestionField({
@@ -117,14 +120,18 @@ function QuestionField({
   );
 }
 
-export function EventInterview({ eventId, eventType, guestCount, initialAnswers, initialCity }: EventInterviewProps) {
+export function EventInterview({
+  eventId,
+  eventType,
+  guestCount,
+  initialAnswers,
+  initialCity,
+  initialSearchCities = [],
+}: EventInterviewProps) {
   const [state, formAction, pending] = useActionState(saveInterviewAction, initialState);
   const [answers, setAnswers] = useState<Answers>(initialAnswers);
-  const knownCity = (VALE_DO_PARAIBA_CITIES as readonly string[]).includes(initialCity);
-  const [citySelect, setCitySelect] = useState<string>(
-    initialCity === "" ? VALE_DO_PARAIBA_CITIES[0] : knownCity ? initialCity : OTHER_CITY,
-  );
-  const [cityOther, setCityOther] = useState<string>(knownCity ? "" : initialCity);
+  const [eventCity, setEventCity] = useState<Municipio | null>(initialCity);
+  const [searchCities, setSearchCities] = useState<Municipio[]>(initialSearchCities);
   const [step, setStep] = useState(0);
 
   const visible = useMemo(() => visibleQuestions(eventType, answers), [eventType, answers]);
@@ -132,7 +139,8 @@ export function EventInterview({ eventId, eventType, guestCount, initialAnswers,
     () => resolveRequirements(eventType, guestCount, answers),
     [eventType, guestCount, answers],
   );
-  const city = citySelect === OTHER_CITY ? cityOther.trim() : citySelect;
+  const city = eventCity === null ? "" : `${eventCity.name} – ${eventCity.uf}`;
+  const extraCities = searchCities.filter((m) => m.code !== eventCity?.code);
   const totalSteps = STEPS.length + 1; // + revisão
   const isReview = step === STEPS.length;
   const current = STEPS[step];
@@ -174,36 +182,12 @@ export function EventInterview({ eventId, eventType, guestCount, initialAnswers,
           </div>
 
           {current.code === "local" ? (
-            <div className="flex flex-col gap-2 rounded-xl border border-line-subtle bg-white/60 p-4">
-              <label htmlFor="city-select" className="text-sm font-medium text-vinho">
-                Cidade da festa
-              </label>
-              <select
-                id="city-select"
-                value={citySelect}
-                onChange={(e) => setCitySelect(e.target.value)}
-                className="h-12 rounded-xl border border-line-subtle bg-off-white px-4 text-sm text-vinho"
-              >
-                <optgroup label="Vale do Paraíba e Litoral Norte">
-                  {VALE_DO_PARAIBA_CITIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </optgroup>
-                <option value={OTHER_CITY}>Outra cidade…</option>
-              </select>
-              {citySelect === OTHER_CITY ? (
-                <input
-                  aria-label="Nome da cidade"
-                  value={cityOther}
-                  maxLength={80}
-                  onChange={(e) => setCityOther(e.target.value)}
-                  placeholder="Ex.: Mogi das Cruzes"
-                  className="h-12 rounded-xl border border-line-subtle bg-off-white px-4 text-sm text-vinho"
-                />
-              ) : null}
-              <p className="text-caption text-vinho/70">Vamos procurar fornecedores que atendem esta cidade.</p>
+            <div className="flex flex-col gap-4 rounded-xl border border-line-subtle bg-white/60 p-4">
+              <CityPicker name="" label="Cidade da festa" initial={initialCity} onChange={setEventCity} />
+              <p className="text-caption text-vinho/70">
+                Buscamos fornecedores nesta cidade. Se quiser, adicione cidades vizinhas abaixo.
+              </p>
+              <SearchCitiesPicker eventCity={eventCity} value={extraCities} onChange={setSearchCities} />
             </div>
           ) : null}
 
@@ -218,6 +202,9 @@ export function EventInterview({ eventId, eventType, guestCount, initialAnswers,
           <h2 className="font-serif text-title-2">O que vamos cotar</h2>
           <p className="mt-1 text-sm text-vinho/75">
             {city === "" ? "Informe a cidade na primeira etapa." : `Em ${city}, para ${guestCount} convidados.`}
+            {extraCities.length > 0
+              ? ` Também buscaremos fornecedores em ${extraCities.map((m) => `${m.name} – ${m.uf}`).join(", ")}.`
+              : null}
             {typeof answers.horario_inicio === "string" && typeof answers.horario_fim === "string"
               ? ` Festa ${formatSchedule(answers.horario_inicio, answers.horario_fim)}.`
               : null}
@@ -250,13 +237,14 @@ export function EventInterview({ eventId, eventType, guestCount, initialAnswers,
 
       <form action={formAction} className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <input type="hidden" name="eventId" value={eventId} />
-        <input type="hidden" name="city" value={city} />
+        <input type="hidden" name="cityCode" value={eventCity?.code ?? ""} />
+        <input type="hidden" name="searchCityCodes" value={extraCities.map((m) => m.code).join(",")} />
         <input type="hidden" name="answers" value={JSON.stringify(answers)} />
         <Button type="button" variant="secondary" disabled={step === 0} onClick={() => setStep((s) => s - 1)}>
           Voltar
         </Button>
         {isReview ? (
-          <Button type="submit" variant="primary" disabled={pending || city.length < 2}>
+          <Button type="submit" variant="primary" disabled={pending || eventCity === null}>
             {pending ? "Salvando…" : "Concluir entrevista"}
           </Button>
         ) : (
