@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   formatPairingCode,
-  instanceNameFor,
   isMobileUserAgent,
   parseConnectResponse,
   parsePairingPhone,
@@ -69,8 +68,7 @@ describe("parseConnectResponse", () => {
   });
 });
 
-it("formatPairingCode e instanceNameFor", () => {
+it("formatPairingCode", () => {
   expect(formatPairingCode("ABCD-EFGH")).toBe("ABCD-EFGH");
   expect(formatPairingCode("abc")).toBe("ABC");
-  expect(instanceNameFor("12345678-aaaa")).toBe("eventeia-12345678");
 });

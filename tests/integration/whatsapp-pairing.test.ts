@@ -14,6 +14,7 @@ vi.mock("@/lib/env", () => ({
 }));
 
 import { connectInstance, getConnectionState } from "@/lib/evolution-api/client";
+import { newInstanceNameFor } from "@/lib/whatsapp/instance-store";
 import { checkPairing, startPairing, type PairingDeps } from "@/lib/whatsapp/pairing-service";
 
 const USER = "abcdef12-3456-4789-8abc-def012345678";
@@ -26,9 +27,12 @@ function deps(owns = true): PairingDeps {
   return {
     now: () => 1_000_000,
     ownsEvent: async () => owns,
-    ensureInstanceRow: async ({ instance }) => {
+    ensureInstanceRow: async ({ userId }) => {
+      const instance = newInstanceNameFor(userId);
       if (!rows.includes(instance)) rows.push(instance);
+      return instance;
     },
+    instanceName: async (userId) => newInstanceNameFor(userId),
     connect: connectInstance,
     connectionState: getConnectionState,
   };
@@ -81,11 +85,11 @@ describe("pareamento do WhatsApp", () => {
       expiresAt: 1_060_000,
       connected: false,
     });
-    expect(rows).toEqual(["eventeia-abcdef12"]);
+    expect(rows).toEqual(["eventeia-abcdef12345647898abcdef012345678"]);
     expect(calls.map((c) => `${c.method} ${c.url}`)).toEqual([
-      "GET https://evo.test/instance/connect/eventeia-abcdef12?number=5511998765432",
+      "GET https://evo.test/instance/connect/eventeia-abcdef12345647898abcdef012345678?number=5511998765432",
       "POST https://evo.test/instance/create",
-      "GET https://evo.test/instance/connect/eventeia-abcdef12?number=5511998765432",
+      "GET https://evo.test/instance/connect/eventeia-abcdef12345647898abcdef012345678?number=5511998765432",
     ]);
     expect(calls.every((c) => c.apikey === "segredo-servidor")).toBe(true);
     expect(JSON.stringify(result)).not.toContain("segredo");
