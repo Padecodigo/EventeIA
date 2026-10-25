@@ -8,6 +8,7 @@ import {
 } from "@/app/(dashboard)/eventos/[id]/entrevista/actions";
 import { Button } from "@/components/ui/button";
 import { resolveRequirements, visibleQuestions, type Answers } from "@/lib/catalog/rules";
+import { formatSchedule } from "@/lib/catalog/time";
 import {
   CATEGORY_LABELS,
   STEPS,
@@ -83,6 +84,14 @@ function QuestionField({
             </button>
           ))}
         </div>
+      ) : question.kind === "time" ? (
+        <input
+          type="time"
+          aria-labelledby={labelId}
+          value={typeof value === "string" ? value : ""}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-12 w-40 rounded-xl border border-line-subtle bg-off-white px-4 text-sm text-vinho"
+        />
       ) : question.kind === "text" ? (
         <textarea
           aria-labelledby={labelId}
@@ -209,6 +218,9 @@ export function EventInterview({ eventId, eventType, guestCount, initialAnswers,
           <h2 className="font-serif text-title-2">O que vamos cotar</h2>
           <p className="mt-1 text-sm text-vinho/75">
             {city === "" ? "Informe a cidade na primeira etapa." : `Em ${city}, para ${guestCount} convidados.`}
+            {typeof answers.horario_inicio === "string" && typeof answers.horario_fim === "string"
+              ? ` Festa ${formatSchedule(answers.horario_inicio, answers.horario_fim)}.`
+              : null}
           </p>
           <ul className="mt-4 divide-y divide-line-subtle rounded-xl border border-line-subtle bg-white/60">
             {requirements.map((r) => (

@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import type { EventType } from "@/lib/engine/types";
 
+import { DEFAULT_START, DURATION_KEY, TIME_RE, addHours, durationHours } from "./time";
 import {
   CATALOG_VERSION,
   DEFAULT_OVERRIDES,
@@ -70,6 +71,8 @@ function questionValueSchema(q: Question): z.ZodType<AnswerValue> {
       return z.number().int().min(q.min).max(q.max);
     case "text":
       return z.string().trim().max(q.maxLength);
+    case "time":
+      return z.string().regex(TIME_RE);
   }
 }
 
@@ -84,7 +87,14 @@ export function parseAnswers(
   const base = z.record(z.string().max(64), z.union([z.boolean(), z.string().max(MAX_SPECIAL_REQUEST * 2), z.number()])).safeParse(raw);
   if (!base.success) return { success: false, error: "Formato de respostas inválido." };
 
-  const merged: Answers = { ...defaultAnswers(eventType), ...base.data };
+  const input: Answers = { ...base.data };
+  // Compatibilidade: evento antigo só com duracao_horas ⇒ início padrão + duração.
+  if (input.horario_inicio === undefined && input.horario_fim === undefined && typeof input[DURATION_KEY] === "number") {
+    const hours = Math.min(16, Math.max(1, Math.round(input[DURATION_KEY])));
+    input.horario_inicio = DEFAULT_START;
+    input.horario_fim = addHours(DEFAULT_START, hours);
+  }
+  const merged: Answers = { ...defaultAnswers(eventType), ...input };
   const result: Answers = {};
   // Itera até estabilizar: showIf depende de respostas anteriores.
   for (const q of visibleQuestions(eventType, merged)) {
@@ -94,11 +104,27 @@ export function parseAnswers(
   }
   const stable = visibleQuestions(eventType, result).every((q) => q.id in result);
   if (!stable) return { success: false, error: "Respostas inconsistentes." };
+  if (typeof result.horario_inicio === "string" && typeof result.horario_fim === "string") {
+    const hours = durationHours(result.horario_inicio, result.horario_fim);
+    if (hours === null) return { success: false, error: "O horário de fim precisa ser diferente do início." };
+    if (hours > 16) return { success: false, error: "A festa pode ter no máximo 16 horas." };
+    // Derivado (horas cheias, arredonda p/ cima): é o que os itens "por hora" usam.
+    result[DURATION_KEY] = Math.max(1, Math.ceil(hours));
+  }
   return { success: true, data: result };
 }
 
+/** Horas cheias da festa: início/fim quando houver; senão duracao_horas legado; senão 1. */
+export function partyHours(answers: Answers): number {
+  if (typeof answers.horario_inicio === "string" && typeof answers.horario_fim === "string") {
+    const h = durationHours(answers.horario_inicio, answers.horario_fim);
+    if (h !== null) return Math.max(1, Math.ceil(h));
+  }
+  return typeof answers[DURATION_KEY] === "number" ? answers[DURATION_KEY] : 1;
+}
+
 function quantityFor(item: CatalogItem, guestCount: number, answers: Answers): number {
-  const hours = typeof answers.duracao_horas === "number" ? answers.duracao_horas : 1;
+  const hours = partyHours(answers);
   switch (item.quantity.kind) {
     case "guests":
       return Math.max(1, guestCount);

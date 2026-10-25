@@ -128,7 +128,9 @@ export type Question =
   | (QuestionBase & { kind: "boolean"; defaultValue: boolean })
   | (QuestionBase & { kind: "single"; options: { value: string; label: string }[]; defaultValue: string })
   | (QuestionBase & { kind: "number"; min: number; max: number; defaultValue: number })
-  | (QuestionBase & { kind: "text"; maxLength: number; placeholder: string; defaultValue: string });
+  | (QuestionBase & { kind: "text"; maxLength: number; placeholder: string; defaultValue: string })
+  /** Horário "HH:MM" (24h). */
+  | (QuestionBase & { kind: "time"; defaultValue: string });
 
 /** Regra de quantidade: convidados, horas de festa, fixa ou 1 profissional a cada N convidados. */
 export type QuantityRule =
@@ -191,15 +193,24 @@ export const QUESTIONS: Question[] = [
     showIf: [{ question: "ambiente", equals: "aberto" }],
     defaultValue: true,
   },
+  // Duração (duracao_horas) é DERIVADA de início/fim em parseAnswers; eventos antigos
+  // que só têm duracao_horas continuam válidos (ver lib/catalog/time.ts).
   {
-    id: "duracao_horas",
+    id: "horario_inicio",
     step: "local",
-    kind: "number",
-    label: "Quantas horas de festa?",
+    kind: "time",
+    label: "Previsão de início",
     appliesTo: "all",
-    min: 2,
-    max: 16,
-    defaultValue: 5,
+    defaultValue: "18:00",
+  },
+  {
+    id: "horario_fim",
+    step: "local",
+    kind: "time",
+    label: "Previsão de fim",
+    hint: "Se terminar depois da meia-noite, tudo bem: contamos a virada do dia.",
+    appliesTo: "all",
+    defaultValue: "23:00",
   },
   {
     id: "estilo_comida",

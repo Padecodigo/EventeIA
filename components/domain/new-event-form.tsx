@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 
 import { createEventAction, type ActionState } from "@/app/(dashboard)/eventos/actions";
+import { CityPicker } from "@/components/domain/city-picker";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 
@@ -20,7 +21,7 @@ export function NewEventForm() {
 
       <form action={formAction} className="mt-6 grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
-          <Field label="Nome do evento" name="title" required placeholder="Festa de 5 anos da Lia" />
+          <Field label="Nome do evento" name="title" required placeholder="Nome do evento" />
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -46,23 +47,7 @@ export function NewEventForm() {
 
         <Field label="Data do evento" name="eventDate" type="date" required />
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="region" className="text-sm font-medium text-vinho">
-            Região
-          </label>
-          <select
-            id="region"
-            name="region"
-            required
-            className="h-12 rounded-xl border border-line-subtle bg-off-white px-4 text-sm text-vinho"
-            defaultValue="sp"
-          >
-            <option value="sp">São Paulo</option>
-            <option value="rj">Rio de Janeiro</option>
-            <option value="mg">Minas Gerais</option>
-            <option value="outros">Outras regiões</option>
-          </select>
-        </div>
+        <CityPicker />
 
         <Field
           label="Convidados"

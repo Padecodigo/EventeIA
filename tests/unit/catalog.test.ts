@@ -82,7 +82,8 @@ describe("regras condicionais", () => {
       seguranca: true,
       transporte: true,
       transporte_pessoas: 35,
-      duracao_horas: 6,
+      horario_inicio: "18:00",
+      horario_fim: "00:00",
       foto: "foto",
     };
     const byCode = new Map(resolveRequirements("casamento", 150, a).map((r) => [r.itemCode, r.quantity]));
@@ -94,7 +95,8 @@ describe("regras condicionais", () => {
   });
 
   it("rejeita valores fora do catálogo", () => {
-    expect(parseAnswers("casamento", { duracao_horas: 99 }).success).toBe(false);
+    expect(parseAnswers("casamento", { horario_inicio: "25:00" }).success).toBe(false);
+    expect(parseAnswers("casamento", { horario_inicio: "20:00", horario_fim: "20:00" }).success).toBe(false);
     expect(parseAnswers("casamento", { estilo_comida: "pizza" }).success).toBe(false);
     expect(parseAnswers("casamento", "não é objeto").success).toBe(false);
   });
