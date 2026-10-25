@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import {
   applyCouponAction,
@@ -8,19 +8,26 @@ import {
   type CheckoutState,
   type CouponCheckState,
 } from "@/app/(dashboard)/eventos/actions";
+import { CouponToggle, type CouponPreviewState } from "@/components/domain/coupon-toggle";
 import { WelcomeCountdown } from "@/components/domain/welcome-countdown";
 import { Button } from "@/components/ui/button";
 import { formatBRL } from "@/lib/money";
 
 const initialCheckout: CheckoutState = {};
-const initialCoupon: CouponCheckState = {};
 
 export interface BuyTicketFormProps {
   eventId: string;
   priceFormatted: string;
   defaultCpf: string;
   /** Oferta de boas-vindas ativa (aplicada e revalidada no servidor ao gerar o Pix). */
-  welcome?: { remainingMs: number; fullCents: number; finalCents: number; label?: string } | null;
+  welcome?: {
+    remainingMs: number;
+    fullCents: number;
+    finalCents: number;
+    label?: string;
+    /** Oferta pessoal (0036): contagem dd:hh:mm:ss. */
+    countdownFormat?: "hms" | "dhms";
+  } | null;
 }
 
 export function BuyTicketForm({
@@ -29,13 +36,13 @@ export function BuyTicketForm({
   defaultCpf,
   welcome = null,
 }: BuyTicketFormProps) {
-  const [couponState, applyCoupon, checkingCoupon] = useActionState(
-    applyCouponAction,
-    initialCoupon,
-  );
+  const [couponState, setCouponState] = useState<CouponCheckState>({});
   const [state, formAction, pending] = useActionState(buyTicketAction, initialCheckout);
 
   const couponApplied = couponState.ok === true;
+  const onApplied = (code: string | null, preview: CouponPreviewState | null): void => {
+    setCouponState(code !== null && preview !== null ? { ...preview, ok: true, code } : {});
+  };
 
   if (state.courtesy !== undefined) {
     return (
@@ -148,50 +155,18 @@ export function BuyTicketForm({
             de {formatBRL(welcome.fullCents - welcome.finalCents)}
           </p>
           <p className="mt-1">
-            Expira em{" "}
-            <WelcomeCountdown remainingMs={welcome.remainingMs} className="text-champagne" />
+            {welcome.countdownFormat === "dhms" ? "Termina em" : "Expira em"}{" "}
+            <WelcomeCountdown
+              remainingMs={welcome.remainingMs}
+              format={welcome.countdownFormat ?? "hms"}
+              className="text-champagne"
+            />
           </p>
         </div>
       ) : null}
 
       {/* Cupom — feedback imediato antes de gerar o Pix (spec §3) */}
-      <form
-        action={applyCoupon}
-        className="mt-5 rounded-xl border border-line-subtle bg-areia-quente p-4"
-      >
-        <label htmlFor="coupon" className="text-sm font-medium text-vinho">
-          Possui cupom de desconto?
-        </label>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <input
-            id="coupon"
-            name="code"
-            autoComplete="off"
-            placeholder="BEMVINDA10"
-            className="h-11 min-w-0 flex-1 rounded-xl border border-line-subtle bg-off-white px-4 text-sm uppercase text-vinho"
-          />
-          <Button type="submit" variant="secondary" disabled={checkingCoupon} className="h-11">
-            {checkingCoupon ? "Verificando…" : "Aplicar cupom"}
-          </Button>
-        </div>
-
-        {couponApplied && couponState.code !== undefined ? (
-          <p
-            role="status"
-            className="mt-2 rounded-lg bg-semantic-success/10 px-3 py-2 text-sm text-semantic-success"
-          >
-            Cupom <strong>{couponState.code}</strong> aplicado — desconto de{" "}
-            {formatBRL(couponState.discountCents ?? 0)}. Total:{" "}
-            <strong>{formatBRL(couponState.finalCents ?? 0)}</strong>.
-          </p>
-        ) : null}
-
-        {couponState.error !== undefined ? (
-          <p role="alert" className="mt-2 text-sm text-semantic-error">
-            {couponState.error}
-          </p>
-        ) : null}
-      </form>
+      <CouponToggle action={applyCouponAction} onApplied={onApplied} idPrefix="ticket" />
 
       <form action={formAction} className="mt-5 flex flex-col gap-4">
         <input type="hidden" name="eventId" value={eventId} />

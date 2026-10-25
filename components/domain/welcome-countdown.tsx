@@ -2,13 +2,22 @@
 
 import { useEffect, useState } from "react";
 
-import { formatCountdown } from "@/lib/welcome/format";
+import { formatCountdown, formatCountdownDays } from "@/lib/welcome/format";
 
 /**
- * Contagem honesta no checkout: parte do tempo restante calculado pelo BANCO e avança com
+ * Contagem honesta: parte do tempo restante calculado pelo BANCO e avança com
  * performance.now() — mudar o relógio do aparelho não estende o prazo.
+ * `format="dhms"` ⇒ dd:hh:mm:ss.
  */
-export function WelcomeCountdown({ remainingMs, className = "" }: { remainingMs: number; className?: string }) {
+export function WelcomeCountdown({
+  remainingMs,
+  className = "",
+  format = "hms",
+}: {
+  remainingMs: number;
+  className?: string;
+  format?: "hms" | "dhms";
+}) {
   const [left, setLeft] = useState(remainingMs);
 
   useEffect(() => {
@@ -23,9 +32,13 @@ export function WelcomeCountdown({ remainingMs, className = "" }: { remainingMs:
     return () => window.clearInterval(id);
   }, [remainingMs]);
 
+  const text = format === "dhms" ? formatCountdownDays(left) : formatCountdown(left);
   return (
-    <time className={`font-semibold tabular-nums ${className}`} dateTime={`PT${String(Math.floor(left / 1000))}S`}>
-      {left > 0 ? formatCountdown(left) : "expirada"}
+    <time
+      className={`font-semibold tabular-nums ${className}`}
+      dateTime={`PT${String(Math.floor(left / 1000))}S`}
+    >
+      {left > 0 ? text : "expirada"}
     </time>
   );
 }

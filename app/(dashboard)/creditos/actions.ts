@@ -12,6 +12,7 @@ import {
   createAsaasPixPayment,
   createAsaasSubscription,
   cancelAsaasSubscription,
+  discountFirstSubscriptionPayment,
   getAsaasSubscriptionFirstInvoiceUrl,
 } from "@/lib/asaas/client";
 import { requireUser } from "@/lib/auth";
@@ -22,6 +23,8 @@ import {
 } from "@/lib/credit-slider";
 import { emitFeed } from "@/lib/feeds";
 import { logger } from "@/lib/logger";
+import { previewCheckoutDiscount, resolveCheckoutDiscount } from "@/lib/offers/checkout";
+import { attachUserOffer, releaseUserOffer } from "@/lib/offers/server";
 import { CREDIT_PACKAGES, PLANS } from "@/lib/plans";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -69,6 +72,60 @@ export interface CreditsCheckoutState {
   };
   /** Cartão de crédito: o pagador conclui na Fatura hospedada do Asaas. */
   card?: { invoiceUrl: string };
+  applied?: AppliedDiscount;
+}
+
+export interface AppliedDiscount {
+  code: string;
+  discountCents: number;
+  finalCents: number;
+}
+
+export interface PackCouponState {
+  error?: string;
+  ok?: boolean;
+  code?: string;
+  discountCents?: number;
+  finalCents?: number;
+  offerWins?: boolean;
+}
+
+/** Preço cheio (servidor) do item do checkout de créditos. */
+function packPriceFrom(formData: FormData): number | null {
+  const planCode = formData.get("planCode");
+  if (typeof planCode === "string" && planCode.length > 0) {
+    return PLANS.find((item) => item.code === planCode)?.priceCents ?? null;
+  }
+  return resolvePack(formData)?.priceCents ?? null;
+}
+
+/** "Tem um cupom?" nos pacotes/slider/franquia — prévia com a mesma regra do checkout. */
+export async function applyPackCouponAction(
+  _previous: PackCouponState,
+  formData: FormData,
+): Promise<PackCouponState> {
+  const user = await requireUser();
+  const price = packPriceFrom(formData);
+  if (price === null) {
+    return { error: "Pacote inválido." };
+  }
+  const raw = formData.get("code");
+  const result = await previewCheckoutDiscount({
+    profileId: user.id,
+    category: "pack",
+    priceCents: price,
+    couponRaw: typeof raw === "string" ? raw : "",
+  });
+  if ("error" in result) {
+    return { error: result.error };
+  }
+  return {
+    ok: true,
+    code: result.code,
+    discountCents: result.discountCents,
+    finalCents: result.finalCents,
+    offerWins: result.offerWins,
+  };
 }
 
 const paymentMethodSchema = z.enum(["pix", "card"]).default("pix");
@@ -77,6 +134,10 @@ export interface SubscribeState extends CreditsCheckoutState {
   success?: boolean;
   /** Assinatura recorrente: fatura hospedada do 1º ciclo (Pix ou cartão de crédito). */
   invoiceUrl?: string;
+  /** Desconto aplicado SÓ na 1ª fatura (as próximas têm o valor cheio). */
+  applied?: AppliedDiscount;
+  /** Aviso honesto quando o desconto da 1ª fatura não pôde ser aplicado. */
+  notice?: string;
 }
 
 const subscribeSchema = z.object({
@@ -154,8 +215,23 @@ export async function subscribeToPlanAction(
     return { error: "Cadastre o CPF no Perfil antes de assinar." };
   }
 
+  let claimedOfferId: string | null = null;
   try {
     const admin = getSupabaseAdmin();
+
+    const couponEntry = formData.get("coupon");
+    const resolved = await resolveCheckoutDiscount({
+      profileId: user.id,
+      category: "pack",
+      priceCents: plan.priceCents,
+      couponRaw: typeof couponEntry === "string" ? couponEntry : "",
+      eventId: null,
+    });
+    if (resolved.kind === "error") {
+      return { error: resolved.error };
+    }
+    const applied = resolved.kind === "applied" ? resolved : null;
+    claimedOfferId = applied?.offerId ?? null;
 
     let customerId = profile.asaas_customer_id;
     if (customerId === null) {
@@ -188,6 +264,67 @@ export async function subscribeToPlanAction(
       return { error: "Assinatura criada no Asaas, mas o registro local falhou." };
     }
 
+    // Desconto (oferta/cupom) somente na 1ª fatura da franquia.
+    let firstInvoice: AppliedDiscount | undefined;
+    let notice: string | undefined;
+    if (applied !== null && applied.discountCents > 0) {
+      const finalCents = plan.priceCents - applied.discountCents;
+      try {
+        const { paymentId } = await discountFirstSubscriptionPayment({
+          subscriptionId: subscription.subscriptionId,
+          amountCents: finalCents,
+        });
+        const local = {
+          amount_cents: finalCents,
+          coupon_code: applied.code,
+          discount_cents: applied.discountCents,
+        };
+        // O webhook PAYMENT_CREATED pode ter chegado antes: atualiza só valores, nunca o status.
+        const { data: inserted } = await admin
+          .from("payments")
+          .insert({
+            profile_id: user.id,
+            purpose: "subscription_invoice",
+            workspace_id: workspace.id,
+            asaas_payment_id: paymentId,
+            billing_type: parsed.data.method === "card" ? "CREDIT_CARD" : "PIX",
+            status: "pending",
+            ...local,
+          })
+          .select("id")
+          .maybeSingle();
+        let localId = inserted?.id ?? null;
+        if (localId === null) {
+          const { data: updated } = await admin
+            .from("payments")
+            .update(local)
+            .eq("asaas_payment_id", paymentId)
+            .select("id")
+            .maybeSingle();
+          localId = updated?.id ?? null;
+        }
+        if (localId !== null) {
+          if (applied.offerId !== null) await attachUserOffer(applied.offerId, localId);
+          if (applied.reservationId !== null) {
+            await admin.rpc("attach_coupon_reservation", {
+              p_reservation_id: applied.reservationId,
+              p_payment_id: localId,
+            });
+          }
+        }
+        firstInvoice = { code: applied.code, discountCents: applied.discountCents, finalCents };
+      } catch (caught) {
+        logger.warn(
+          { reason: caught instanceof Error ? caught.message : "desconhecido" },
+          "desconto da 1ª fatura não aplicado",
+        );
+        if (applied.offerId !== null) await releaseUserOffer(applied.offerId);
+        notice =
+          "Não conseguimos aplicar o desconto na 1ª fatura — ela veio com o valor cheio e sua oferta/cupom continua disponível.";
+      }
+    }
+    claimedOfferId = null;
+
     try {
       await emitFeed(admin, {
         type: "subscription.created",
@@ -211,8 +348,16 @@ export async function subscribeToPlanAction(
     }
 
     revalidatePath("/creditos");
-    return invoiceUrl !== null ? { success: true, invoiceUrl } : { success: true };
+    return {
+      success: true,
+      ...(invoiceUrl !== null ? { invoiceUrl } : {}),
+      ...(firstInvoice !== undefined ? { applied: firstInvoice } : {}),
+      ...(notice !== undefined ? { notice } : {}),
+    };
   } catch (caught) {
+    if (claimedOfferId !== null) {
+      await releaseUserOffer(claimedOfferId);
+    }
     if (caught instanceof AsaasNotConfiguredError) {
       return { error: "Pagamentos não configurados neste ambiente (ASAAS_API_KEY)." };
     }
@@ -317,8 +462,27 @@ export async function buyCreditsAction(
     return { error: "Cadastre o CPF no Perfil antes de comprar créditos." };
   }
 
+  let claimedOfferId: string | null = null;
   try {
     const admin = getSupabaseAdmin();
+
+    // Cupom digitado vs. oferta pessoal: o MAIOR, sem acumular (servidor).
+    const couponEntry = formData.get("coupon");
+    const resolved = await resolveCheckoutDiscount({
+      profileId: user.id,
+      category: "pack",
+      priceCents: pack.priceCents,
+      couponRaw: typeof couponEntry === "string" ? couponEntry : "",
+      eventId: null,
+    });
+    if (resolved.kind === "error") {
+      return { error: resolved.error };
+    }
+    const applied = resolved.kind === "applied" ? resolved : null;
+    claimedOfferId = applied?.offerId ?? null;
+    const discount = applied?.discountCents ?? 0;
+    const finalCents = pack.priceCents - discount;
+
     let customerId = profile.asaas_customer_id;
 
     if (customerId === null) {
@@ -334,9 +498,12 @@ export async function buyCreditsAction(
 
     const chargeInput = {
       customerId,
-      amountCents: pack.priceCents,
+      amountCents: finalCents,
       externalReference: `topup:${workspace.id}:${pack.code}`,
-      description: `EventeIA — ${pack.name} (${String(pack.credits)} créditos)`,
+      description:
+        applied === null
+          ? `EventeIA — ${pack.name} (${String(pack.credits)} créditos)`
+          : `EventeIA — ${pack.name} (${String(pack.credits)} créditos, cupom ${applied.code})`,
       dueDate,
     };
     const pixPayment = billingType === "PIX" ? await createAsaasPixPayment(chargeInput) : null;
@@ -344,22 +511,42 @@ export async function buyCreditsAction(
       billingType === "CREDIT_CARD" ? await createAsaasCardPayment(chargeInput) : null;
     const asaasPaymentId = pixPayment?.paymentId ?? cardPayment?.paymentId ?? "";
 
-    const { error: paymentError } = await supabase.from("payments").insert({
-      profile_id: user.id,
-      purpose: "credit_topup",
-      event_id: null,
-      workspace_id: workspace.id,
-      credits_granted: pack.credits,
-      asaas_payment_id: asaasPaymentId,
-      billing_type: billingType,
-      amount_cents: pack.priceCents,
-      status: "pending",
-    });
+    const { data: paymentRow, error: paymentError } = await supabase
+      .from("payments")
+      .insert({
+        profile_id: user.id,
+        purpose: "credit_topup",
+        event_id: null,
+        workspace_id: workspace.id,
+        credits_granted: pack.credits,
+        asaas_payment_id: asaasPaymentId,
+        billing_type: billingType,
+        amount_cents: finalCents,
+        coupon_code: applied?.code ?? null,
+        discount_cents: discount,
+        status: "pending",
+      })
+      .select("id")
+      .single();
 
-    if (paymentError !== null) {
-      logger.error({ code: paymentError.code }, "falha ao registrar top-up");
+    if (paymentError !== null || paymentRow === null) {
+      logger.error({ code: paymentError?.code }, "falha ao registrar top-up");
       return { error: "Pagamento criado, mas o registro local falhou." };
     }
+    claimedOfferId = null;
+    if (applied !== null && applied.offerId !== null) {
+      await attachUserOffer(applied.offerId, paymentRow.id);
+    }
+    if (applied !== null && applied.reservationId !== null) {
+      await admin.rpc("attach_coupon_reservation", {
+        p_reservation_id: applied.reservationId,
+        p_payment_id: paymentRow.id,
+      });
+    }
+    const appliedState =
+      applied === null
+        ? {}
+        : { applied: { code: applied.code, discountCents: discount, finalCents } };
 
     try {
       await emitFeed(admin, {
@@ -369,7 +556,7 @@ export async function buyCreditsAction(
         aggregateType: "payment",
         aggregateId: asaasPaymentId,
         payload: {
-          amount_cents: pack.priceCents,
+          amount_cents: finalCents,
           credits_granted: pack.credits,
           billing_type: billingType,
           purpose: "credit_topup",
@@ -382,9 +569,10 @@ export async function buyCreditsAction(
     }
 
     if (cardPayment !== null) {
-      return { card: { invoiceUrl: cardPayment.invoiceUrl } };
+      return { card: { invoiceUrl: cardPayment.invoiceUrl }, ...appliedState };
     }
     return {
+      ...appliedState,
       pix: {
         payload: pixPayment?.pix.payload ?? "",
         invoiceUrl: pixPayment?.invoiceUrl,
@@ -392,6 +580,9 @@ export async function buyCreditsAction(
       },
     };
   } catch (caught) {
+    if (claimedOfferId !== null) {
+      await releaseUserOffer(claimedOfferId);
+    }
     if (caught instanceof AsaasNotConfiguredError) {
       return { error: "Pagamentos não configurados neste ambiente (ASAAS_API_KEY)." };
     }

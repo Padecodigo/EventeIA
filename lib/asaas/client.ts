@@ -244,3 +244,31 @@ export async function cancelAsaasSubscription(subscriptionId: string): Promise<v
     z.object({ deleted: z.boolean().optional() }).passthrough(),
   );
 }
+
+/**
+ * Desconto só na 1ª fatura da assinatura: localiza a cobrança inicial gerada pelo
+ * Asaas e altera apenas o valor dela (as próximas seguem o valor cheio).
+ */
+export async function discountFirstSubscriptionPayment(input: {
+  subscriptionId: string;
+  amountCents: number;
+}): Promise<{ paymentId: string }> {
+  if (!Number.isInteger(input.amountCents) || input.amountCents <= 0) {
+    throw new Error("amountCents inválido para a 1ª fatura");
+  }
+  const list = await request(
+    `/subscriptions/${encodeURIComponent(input.subscriptionId)}/payments`,
+    { method: "GET" },
+    z.object({ data: z.array(z.object({ id: z.string() })) }),
+  );
+  const first = list.data[0];
+  if (first === undefined) {
+    throw new Error("assinatura sem fatura inicial");
+  }
+  await request(
+    `/payments/${encodeURIComponent(first.id)}`,
+    { method: "POST", body: JSON.stringify({ value: input.amountCents / 100 }) },
+    z.object({ id: z.string() }),
+  );
+  return { paymentId: first.id };
+}

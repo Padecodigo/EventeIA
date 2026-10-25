@@ -7,6 +7,8 @@ import { SubscribePlanForm } from "@/components/domain/subscribe-plan-form";
 import { requireUser } from "@/lib/auth";
 import { currentBalanceCents } from "@/lib/credits";
 import { formatBRL, roundHalfUpDiv } from "@/lib/money";
+import { offerDiscountCents, offerHeadline } from "@/lib/offers/pure";
+import { activeUserOffer } from "@/lib/offers/server";
 import { PLANS } from "@/lib/plans";
 import { ticketPriceCents } from "@/lib/seo/pricing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -85,6 +87,17 @@ export default async function CreditsPage() {
       .limit(1)
       .maybeSingle(),
   ]);
+
+  const activeOffer = await activeUserOffer(user.id);
+  const packOffer =
+    activeOffer === null
+      ? null
+      : {
+          headline: offerHeadline(activeOffer.kind, activeOffer),
+          remainingMs: activeOffer.remainingMs,
+          avulsoOffCents: activeOffer.avulsoOffCents,
+          packPercent: activeOffer.packPercent,
+        };
 
   const ledger = (entriesResult.data ?? []).filter((entry) => entry.amount_cents !== 0);
   const balance = currentBalanceCents(entriesResult.data ?? []);
@@ -169,6 +182,11 @@ export default async function CreditsPage() {
                     planName={plan.name}
                     credits={plan.credits}
                     priceFormatted={formatBRL(plan.priceCents)}
+                    firstMonthCents={
+                      activeOffer === null
+                        ? null
+                        : plan.priceCents - offerDiscountCents(activeOffer, "pack", plan.priceCents)
+                    }
                   />
                 </div>
               </article>
@@ -185,7 +203,7 @@ export default async function CreditsPage() {
         </p>
 
         <div className="mt-6 max-w-xl">
-          <CreditSliderForm />
+          <CreditSliderForm offer={packOffer} />
         </div>
       </section>
 

@@ -477,6 +477,32 @@ export interface Database {
     };
     Views: { [_ in never]: never };
     Functions: {
+      user_offer_current: {
+        Args: { p_profile_id: string };
+        Returns: {
+          id: string;
+          kind: "welcome" | "personal";
+          code: string;
+          avulso_off_cents: number;
+          pack_percent: number;
+          created_at: string;
+          expires_at: string;
+          status: "active" | "used" | "expired";
+          server_now: string;
+        }[];
+      };
+      user_offer_start_welcome: { Args: { p_profile_id: string }; Returns: undefined };
+      user_offer_request: {
+        Args: { p_profile_id: string; p_cooldown_days: number };
+        Returns: {
+          status: "active" | "created" | "cooldown";
+          offer_id: string | null;
+          next_at: string | null;
+        }[];
+      };
+      user_offer_claim: { Args: { p_profile_id: string; p_offer_id: string }; Returns: boolean };
+      user_offer_attach: { Args: { p_offer_id: string; p_payment_id: string }; Returns: undefined };
+      user_offer_release: { Args: { p_offer_id: string }; Returns: undefined };
       reserve_coupon: {
         Args: { p_code: string; p_profile_id: string; p_event_id: string | null };
         Returns: {

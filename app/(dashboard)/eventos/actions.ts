@@ -12,13 +12,7 @@ import {
   createAsaasPixPayment,
 } from "@/lib/asaas/client";
 import { requireUser } from "@/lib/auth";
-import {
-  discountCents,
-  finalPriceCents,
-  isCouponRedeemable,
-  isCourtesyCoupon,
-  normalizeCouponCode,
-} from "@/lib/coupons/pure";
+import { finalPriceCents, normalizeCouponCode } from "@/lib/coupons/pure";
 import { kickoffDiscovery } from "@/lib/discovery/kickoff-runtime";
 import { ENGINE_VERSION } from "@/lib/engine";
 import { serverEnv } from "@/lib/env";
@@ -28,6 +22,12 @@ import { logger } from "@/lib/logger";
 import { luckyDiscountCents } from "@/lib/lucky/pure";
 import { reserveLuckyCoupon } from "@/lib/lucky/server";
 import { formatBRL, parseBRLToCents } from "@/lib/money";
+import {
+  COUPON_REFUSAL,
+  previewCheckoutDiscount,
+  resolveCheckoutDiscount,
+} from "@/lib/offers/checkout";
+import { attachUserOffer, releaseUserOffer } from "@/lib/offers/server";
 import { normalizePhoneE164 } from "@/lib/phone";
 import { enqueue, QUEUE_NAMES } from "@/lib/queue";
 import { prospectingJobSchema } from "@/lib/schemas/whatsapp";
@@ -149,20 +149,14 @@ export async function createEventAction(
   redirect(`/eventos/${data.id}/entrevista`);
 }
 
-const COUPON_REFUSAL: Record<string, string> = {
-  already_used: "Você já usou este cupom — cada cupom vale uma vez por conta.",
-  exhausted: "Cupom esgotado.",
-  invalid: "Cupom inválido, expirado ou esgotado.",
-  already_active: "Este evento já está ativo — o orçamento está liberado.",
-  event_not_found: "Evento não encontrado.",
-};
-
 export interface CouponCheckState {
   error?: string;
   ok?: boolean;
   code?: string;
   finalCents?: number;
   discountCents?: number;
+  /** A oferta pessoal ativa dá mais desconto que o cupom (sem acumular). */
+  offerWins?: boolean;
 }
 
 /**
@@ -174,44 +168,22 @@ export async function applyCouponAction(
   formData: FormData,
 ): Promise<CouponCheckState> {
   const user = await requireUser();
-
   const rawEntry = formData.get("code");
-  const raw = typeof rawEntry === "string" ? normalizeCouponCode(rawEntry) : "";
-
-  if (raw.length < 2) {
-    return { error: "Digite o código do cupom." };
+  const result = await previewCheckoutDiscount({
+    profileId: user.id,
+    category: "avulso",
+    priceCents: serverEnv().B2C_TICKET_PRICE_CENTS,
+    couponRaw: typeof rawEntry === "string" ? rawEntry : "",
+  });
+  if ("error" in result) {
+    return { error: result.error };
   }
-
-  const { data: coupon } = await getSupabaseAdmin()
-    .from("coupons")
-    .select("*")
-    .eq("code", raw)
-    .maybeSingle();
-
-  if (coupon === null || !isCouponRedeemable(coupon)) {
-    return { error: "Cupom inválido, expirado ou esgotado." };
-  }
-
-  // Uso único por conta (a garantia real é o índice único + reserve_coupon).
-  const { data: used } = await getSupabaseAdmin()
-    .from("coupon_redemptions")
-    .select("id")
-    .eq("coupon_id", coupon.id)
-    .eq("profile_id", user.id)
-    .eq("status", "redeemed")
-    .maybeSingle();
-  if (used !== null) {
-    return { error: COUPON_REFUSAL.already_used };
-  }
-
-  const price = serverEnv().B2C_TICKET_PRICE_CENTS;
-  const discount = discountCents(coupon, price);
-
   return {
     ok: true,
-    code: raw,
-    finalCents: price - discount,
-    discountCents: discount,
+    code: result.code,
+    finalCents: result.finalCents,
+    discountCents: result.discountCents,
+    offerWins: result.offerWins,
   };
 }
 
@@ -289,6 +261,8 @@ export async function buyTicketAction(
     return { error: "Perfil não encontrado. Saia e entre novamente." };
   }
 
+  let claimedOfferId: string | null = null;
+
   try {
     const admin = getSupabaseAdmin();
     const env = serverEnv();
@@ -298,7 +272,7 @@ export async function buyTicketAction(
       .update({ document_number: parsed.data.cpf, document_type: "cpf" })
       .eq("id", user.id);
 
-    // Cupom (opcional): validação e desconto SEMPRE no servidor (0010).
+    // Cupom digitado vs. oferta pessoal (0036): o MAIOR, sem acumular — tudo no servidor.
     const couponRawEntry = formData.get("coupon");
     const couponRaw = typeof couponRawEntry === "string" ? normalizeCouponCode(couponRawEntry) : "";
 
@@ -306,65 +280,51 @@ export async function buyTicketAction(
     let couponCode: string | null = null;
     let reservationId: string | null = null;
 
-    if (couponRaw.length > 0) {
-      const { data: coupon } = await admin
-        .from("coupons")
-        .select("*")
-        .eq("code", couponRaw)
-        .maybeSingle();
+    const resolved = await resolveCheckoutDiscount({
+      profileId: user.id,
+      category: "avulso",
+      priceCents: env.B2C_TICKET_PRICE_CENTS,
+      couponRaw,
+      eventId: event.id,
+    });
 
-      if (coupon === null || !isCouponRedeemable(coupon)) {
-        return { error: "Cupom inválido, expirado ou esgotado." };
-      }
+    if (resolved.kind === "error") {
+      return { error: resolved.error };
+    }
 
-      if (isCourtesyCoupon(coupon)) {
-        // Cortesia: total 0, SEM Asaas. Reserva + pagamento 'COURTESY' pago +
-        // tíquete ativo numa única transação no banco (0033), idempotente.
-        const { data: outcome, error: rpcError } = await admin.rpc("redeem_courtesy_coupon", {
-          p_code: couponRaw,
-          p_profile_id: user.id,
-          p_event_id: event.id,
-        });
-        if (rpcError !== null) {
-          logger.error({ code: rpcError.code }, "falha no resgate de cortesia");
-          return { error: "Não foi possível aplicar a cortesia. Tente novamente." };
-        }
-        if (outcome !== "activated") {
-          return {
-            error: COUPON_REFUSAL[String(outcome)] ?? "Cupom inválido, expirado ou esgotado.",
-          };
-        }
-        // Cortesia não passa pelo webhook do Asaas: inicia a descoberta aqui.
-        await kickoffDiscovery(event.id);
-        revalidatePath(`/eventos/${event.id}`);
-        return {
-          courtesy: { activated: true },
-          applied: { code: couponRaw, finalCents: 0, discountCents: env.B2C_TICKET_PRICE_CENTS },
-        };
-      }
-
-      // Reserva atômica no início do checkout (uso único por usuário + limite global).
-      const { data: reserved, error: reserveError } = await admin.rpc("reserve_coupon", {
-        p_code: couponRaw,
+    if (resolved.kind === "courtesy") {
+      // Cortesia: total 0, SEM Asaas. Reserva + pagamento 'COURTESY' pago +
+      // tíquete ativo numa única transação no banco (0033), idempotente.
+      const { data: outcome, error: rpcError } = await admin.rpc("redeem_courtesy_coupon", {
+        p_code: resolved.code,
         p_profile_id: user.id,
         p_event_id: event.id,
       });
-      const reservation = reserved?.[0];
-      if (reserveError !== null || reservation === undefined) {
-        logger.error({ code: reserveError?.code }, "falha ao reservar cupom");
-        return { error: "Não foi possível validar o cupom. Tente novamente." };
+      if (rpcError !== null) {
+        logger.error({ code: rpcError.code }, "falha no resgate de cortesia");
+        return { error: "Não foi possível aplicar a cortesia. Tente novamente." };
       }
-      if (reservation.status !== "ok") {
+      if (outcome !== "activated") {
         return {
-          error: COUPON_REFUSAL[reservation.status] ?? "Cupom inválido, expirado ou esgotado.",
+          error: COUPON_REFUSAL[String(outcome)] ?? "Cupom inválido, expirado ou esgotado.",
         };
       }
-      reservationId = reservation.reservation_id;
+      // Cortesia não passa pelo webhook do Asaas: inicia a descoberta aqui.
+      await kickoffDiscovery(event.id);
+      revalidatePath(`/eventos/${event.id}`);
+      return {
+        courtesy: { activated: true },
+        applied: { code: resolved.code, finalCents: 0, discountCents: env.B2C_TICKET_PRICE_CENTS },
+      };
+    }
 
-      discount = discountCents(coupon, env.B2C_TICKET_PRICE_CENTS);
-      couponCode = couponRaw;
+    if (resolved.kind === "applied") {
+      discount = resolved.discountCents;
+      couponCode = resolved.code;
+      reservationId = resolved.reservationId;
+      claimedOfferId = resolved.offerId;
     } else {
-      // Oferta de boas-vindas: auto-aplicada, validada no BANCO (prazo, conta, 1 evento).
+      // Sem cupom e sem oferta pessoal: ofertas legadas do visitante (0022/0025).
       await bindWelcomeOfferToUser(user.id);
       const welcome = await reserveWelcomeOffer(user.id, event.id);
       if (welcome !== null) {
@@ -430,6 +390,10 @@ export async function buyTicketAction(
     if (paymentError !== null || paymentRow === null) {
       logger.error({ code: paymentError?.code }, "falha ao registrar pagamento local");
       return { error: "Pagamento criado, mas o registro local falhou. Nossa equipe foi avisada." };
+    }
+
+    if (claimedOfferId !== null) {
+      await attachUserOffer(claimedOfferId, paymentRow.id);
     }
 
     if (reservationId !== null) {
@@ -498,6 +462,9 @@ export async function buyTicketAction(
         : {}),
     };
   } catch (caught) {
+    if (claimedOfferId !== null) {
+      await releaseUserOffer(claimedOfferId);
+    }
     if (caught instanceof AsaasNotConfiguredError) {
       return {
         error:
