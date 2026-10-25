@@ -81,3 +81,23 @@ export function isCollectionComplete(
   if (categories.length === 0) return false;
   return categories.every((category) => (quotesByCategory[category] ?? 0) >= target);
 }
+
+/**
+ * A conexão do WhatsApp do cliente ainda é necessária? Regra conservadora:
+ * só deixa de ser quando a coleta do evento vinculado JÁ terminou
+ * (`events.collection_ended_at` preenchido = cotações entregues) e a sessão
+ * não está em coleta (active/draining). Sem evento vinculado, ou evento ainda
+ * em coleta/aguardando, a conexão é mantida. Reparear para outro evento
+ * revincula a instância (event_id novo, coleta em aberto) ⇒ mantida.
+ */
+export function shouldReleaseConnection(input: {
+  evolutionState: "open" | "connecting" | "close";
+  dbStatus: string;
+  eventId: string | null;
+  collectionEndedAt: string | null;
+}): boolean {
+  if (input.evolutionState !== "open") return false;
+  if (input.eventId === null || input.collectionEndedAt === null) return false;
+  // Status cru: "connected" (legado/varredura) NÃO é coleta em andamento.
+  return input.dbStatus !== "active" && input.dbStatus !== "draining";
+}

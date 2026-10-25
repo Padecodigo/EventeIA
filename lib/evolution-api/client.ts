@@ -124,7 +124,9 @@ export async function sendText(
 }
 
 /** Estado da conexão da instância (open = conectada). */
-export async function getConnectionState(instance: string): Promise<"open" | "connecting" | "close"> {
+export async function getConnectionState(
+  instance: string,
+): Promise<"open" | "connecting" | "close"> {
   const { baseUrl, apiKey } = requireEnv();
 
   const response = await fetch(`${baseUrl}/instance/connectionState/${instance}`, {
@@ -206,14 +208,48 @@ export async function logoutInstance(instance: string): Promise<void> {
   await parseResponse(response);
 }
 
+/** Erro de pareamento com detalhe técnico para o log (nunca vai para a tela). */
+export class EvolutionPairingError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "EvolutionPairingError";
+  }
+}
+
+export interface ConnectOptions {
+  /** Injetável nos testes. */
+  sleep?: (ms: number) => Promise<void>;
+  /** Quantas vezes reconsultar enquanto o QR/código ainda não ficou pronto. */
+  attempts?: number;
+  intervalMs?: number;
+}
+
+const realSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 /**
  * GET /instance/connect/{instance}?number=… — QR code + pairing code (Evolution v2).
- * Se a instância ainda não existe na Evolution, cria (Baileys) e tenta de novo.
+ *
+ * Detalhes da Evolution v2.3 que este fluxo trata:
+ * - Instância inexistente (404) ⇒ cria (Baileys) e tenta de novo.
+ * - Erros podem vir com HTTP 200 e corpo `{ error: true, message }`.
+ * - O QR/código fica pronto alguns segundos depois do connect ⇒ reconsulta.
+ * - Com a sessão em `connecting` (um QR já gerado), o `?number=` é IGNORADO e
+ *   volta o QR em cache sem `pairingCode`. Para gerar o código, a tentativa de
+ *   pareamento pendente (ainda NÃO conectada) é encerrada e reiniciada com o
+ *   número. Uma sessão `open` nunca é tocada.
  * A apikey nunca sai do servidor.
  */
-export async function connectInstance(instance: string, numberDigits: string): Promise<ConnectPayload> {
+export async function connectInstance(
+  instance: string,
+  numberDigits: string,
+  options: ConnectOptions = {},
+): Promise<ConnectPayload> {
   const { baseUrl, apiKey } = requireEnv();
-  const query = numberDigits.length > 0 ? `?number=${encodeURIComponent(numberDigits)}` : "";
+  const sleep = options.sleep ?? realSleep;
+  const attempts = options.attempts ?? 6;
+  const intervalMs = options.intervalMs ?? 1_500;
+  const wantsCode = numberDigits.length > 0;
+  const query = wantsCode ? `?number=${encodeURIComponent(numberDigits)}` : "";
   const url = `${baseUrl}/instance/connect/${encodeURIComponent(instance)}${query}`;
   const doConnect = () =>
     fetch(url, {
@@ -223,25 +259,80 @@ export async function connectInstance(instance: string, numberDigits: string): P
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
 
-  let response = await doConnect();
-  if (response.status === 404) {
-    const created = await fetch(`${baseUrl}/instance/create`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", apikey: apiKey },
-      body: JSON.stringify({ instanceName: instance, integration: "WHATSAPP-BAILEYS", qrcode: true }),
-      cache: "no-store",
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    });
-    await parseResponse(created);
-    response = await doConnect();
+  if (wantsCode) {
+    await resetPendingPairing(instance, sleep);
   }
-  const text = await response.text();
-  if (!response.ok) {
-    throw new EvolutionSendError(`Evolution HTTP ${String(response.status)}: ${text.slice(0, 180)}`);
+
+  const connectOnce = async (): Promise<ConnectPayload> => {
+    let response = await doConnect();
+    if (response.status === 404) {
+      const created = await fetch(`${baseUrl}/instance/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: apiKey },
+        body: JSON.stringify({
+          instanceName: instance,
+          integration: "WHATSAPP-BAILEYS",
+          qrcode: true,
+        }),
+        cache: "no-store",
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+      await parseResponse(created);
+      response = await doConnect();
+    }
+    const text = await response.text();
+    if (!response.ok) {
+      throw new EvolutionPairingError(
+        `Evolution HTTP ${String(response.status)}: ${text.slice(0, 180)}`,
+      );
+    }
+    let body: unknown;
+    try {
+      body = JSON.parse(text) as unknown;
+    } catch {
+      throw new EvolutionPairingError("Resposta da Evolution não é JSON válido.");
+    }
+    if (typeof body === "object" && body !== null && (body as { error?: unknown }).error === true) {
+      const raw = (body as { message?: unknown }).message;
+      const message = typeof raw === "string" ? raw : JSON.stringify(raw ?? "erro sem mensagem");
+      throw new EvolutionPairingError(`Evolution connect: ${message.slice(0, 180)}`);
+    }
+    return parseConnectResponse(body);
+  };
+
+  const ready = (p: ConnectPayload) =>
+    p.alreadyConnected || (wantsCode ? p.pairingCode !== null : p.qrDataUrl !== null);
+
+  let payload = await connectOnce();
+  for (let i = 1; i < attempts && !ready(payload); i += 1) {
+    await sleep(intervalMs);
+    payload = await connectOnce();
   }
+  return payload;
+}
+
+/**
+ * Se há uma tentativa de pareamento pendente (estado `connecting`), encerra-a
+ * para que o próximo connect aceite o número. Nunca mexe em sessão `open`.
+ */
+async function resetPendingPairing(
+  instance: string,
+  sleep: (ms: number) => Promise<void>,
+): Promise<void> {
+  let state: "open" | "connecting" | "close";
   try {
-    return parseConnectResponse(JSON.parse(text) as unknown);
+    state = await getConnectionState(instance);
   } catch {
-    throw new EvolutionSendError("Resposta da Evolution não é JSON válido.");
+    return; // instância ainda não existe (ou estado ilegível): segue o fluxo normal
+  }
+  if (state !== "connecting") return;
+  await logoutInstance(instance);
+  for (let i = 0; i < 10; i += 1) {
+    await sleep(500);
+    try {
+      if ((await getConnectionState(instance)) !== "connecting") return;
+    } catch {
+      return;
+    }
   }
 }

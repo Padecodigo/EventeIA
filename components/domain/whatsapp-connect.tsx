@@ -30,7 +30,13 @@ interface Pairing {
  *   escanear um QR no próprio aparelho).
  * Detecção por user agent; antes da hidratação, fallback responsivo (CSS).
  */
-export function WhatsappConnect({ eventId, autoStart = false }: { eventId: string; autoStart?: boolean }) {
+export function WhatsappConnect({
+  eventId,
+  autoStart = false,
+}: {
+  eventId: string;
+  autoStart?: boolean;
+}) {
   const [phone, setPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pairing, setPairing] = useState<Pairing | null>(null);
@@ -124,7 +130,10 @@ export function WhatsappConnect({ eventId, autoStart = false }: { eventId: strin
   if (connected) {
     if (proceeded) return <QuotePreparingNotice />;
     return (
-      <div role="status" className="flex flex-wrap items-center gap-3 rounded-xl bg-champagne-claro/70 px-4 py-3">
+      <div
+        role="status"
+        className="flex flex-wrap items-center gap-3 rounded-xl bg-champagne-claro/70 px-4 py-3"
+      >
         <p className="text-sm font-medium text-vinho">Conectado! Podemos prosseguir?</p>
         <Button type="button" onClick={() => setProceeded(true)}>
           Prosseguir
@@ -142,7 +151,7 @@ export function WhatsappConnect({ eventId, autoStart = false }: { eventId: strin
       <form onSubmit={onSubmit} className="flex flex-col gap-2 sm:flex-row sm:items-end" noValidate>
         <label className="flex flex-1 flex-col gap-1 text-sm text-vinho">
           {autoStart && mobile === false
-            ? "Prefere o código de pareamento? Informe o número do WhatsApp"
+            ? "Conectar com código: informe o número do WhatsApp que será conectado"
             : "Número do WhatsApp que será conectado"}
           <input
             type="tel"
@@ -156,7 +165,7 @@ export function WhatsappConnect({ eventId, autoStart = false }: { eventId: strin
           />
         </label>
         <Button type="submit" disabled={pending}>
-          {pending ? "Gerando…" : pairing === null ? "Gerar código" : "Gerar novo código"}
+          {pending ? "Gerando…" : pairing?.pairingCode ? "Gerar novo código" : "Gerar código"}
         </Button>
       </form>
 
@@ -190,7 +199,7 @@ export function WhatsappConnect({ eventId, autoStart = false }: { eventId: strin
                 <div className="flex items-center gap-3">
                   <code
                     data-testid="pairing-code"
-                    className="rounded-xl bg-areia-quente px-4 py-2 font-mono text-2xl tracking-[0.2em] text-vinho"
+                    className="rounded-xl bg-areia-quente px-4 py-2 font-mono text-4xl font-semibold tracking-[0.2em] text-vinho"
                   >
                     {pairing.pairingCode}
                   </code>
