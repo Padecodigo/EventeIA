@@ -4,7 +4,10 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/app/(dashboard)/creditos/actions", () => ({ subscribeToPlanAction: vi.fn() }));
+vi.mock("@/app/(dashboard)/creditos/actions", () => ({
+  subscribeToPlanAction: vi.fn(),
+  applyPackCouponAction: vi.fn(),
+}));
 
 import { SubscribePlanForm } from "@/components/domain/subscribe-plan-form";
 

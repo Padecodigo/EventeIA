@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createFakeDb, fakeClient, type FakeDb } from "./helpers/fake-supabase";
 
@@ -12,7 +12,9 @@ vi.mock("@/lib/auth", () => ({
   requireAdmin: async () => ({ id: "admin-1" }),
 }));
 vi.mock("@/lib/supabase/admin", () => ({ getSupabaseAdmin: () => fakeClient(db) }));
-vi.mock("@/lib/supabase/server", () => ({ createSupabaseServerClient: async () => fakeClient(db) }));
+vi.mock("@/lib/supabase/server", () => ({
+  createSupabaseServerClient: async () => fakeClient(db),
+}));
 vi.mock("@/lib/welcome/server", () => ({
   bindWelcomeOfferToUser: async () => undefined,
   reserveWelcomeOffer: async () => null,
@@ -40,15 +42,34 @@ beforeEach(() => {
     ],
     payments: [],
     coupons: [
-      { id: "c-free", code: "EVENTEIA-FREE-277560", discount_type: "free", value: 9700, active: true, expires_at: null, max_redemptions: 1, redemptions: 0 },
-      { id: "c-pct", code: "TUDO100", discount_type: "percent", value: 100, active: true, expires_at: null, max_redemptions: null, redemptions: 0 },
+      {
+        id: "c-free",
+        code: "EVENTEIA-FREE-277560",
+        discount_type: "free",
+        value: 9700,
+        active: true,
+        expires_at: null,
+        max_redemptions: 1,
+        redemptions: 0,
+      },
+      {
+        id: "c-pct",
+        code: "TUDO100",
+        discount_type: "percent",
+        value: 100,
+        active: true,
+        expires_at: null,
+        max_redemptions: null,
+        redemptions: 0,
+      },
     ],
     coupon_redemptions: [],
   });
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string, init?: RequestInit) => {
-      const body = typeof init?.body === "string" ? (JSON.parse(init.body) as Record<string, unknown>) : null;
+      const body =
+        typeof init?.body === "string" ? (JSON.parse(init.body) as Record<string, unknown>) : null;
       calls.push({ url, body });
       if (url.endsWith("/pixQrCode")) {
         return new Response(JSON.stringify({ encodedImage: "img", payload: "000201PIX" }));
@@ -73,11 +94,20 @@ beforeEach(() => {
   reserveStatus = "ok";
   courtesyOutcome = "activated";
   db.rpc = async (fn, args) => {
+    // Consulta da oferta pessoal (0036) não é efeito: sem oferta neste arquivo.
+    if (fn === "user_offer_current") return { data: [], error: null };
     rpcCalls.push({ fn, args });
     if (fn === "redeem_courtesy_coupon") return { data: courtesyOutcome, error: null };
     if (fn === "reserve_coupon") {
       return {
-        data: [{ status: reserveStatus, reservation_id: reserveStatus === "ok" ? "res-1" : null, discount_type: "percent", value: 100 }],
+        data: [
+          {
+            status: reserveStatus,
+            reservation_id: reserveStatus === "ok" ? "res-1" : null,
+            discount_type: "percent",
+            value: 100,
+          },
+        ],
         error: null,
       };
     }
@@ -95,6 +125,11 @@ function form(coupon: string, method = "pix"): FormData {
 }
 
 describe("checkout com cupom", () => {
+  // Aquece o import pesado da action (evita timeout do 1º teste sob carga no CI).
+  beforeAll(async () => {
+    await import("@/app/(dashboard)/eventos/actions");
+  }, 60_000);
+
   it("cortesia ⇒ ativa via RPC atômica, total 0, NENHUMA chamada ao Asaas", async () => {
     const { buyTicketAction } = await import("@/app/(dashboard)/eventos/actions");
     const state = await buyTicketAction({}, form("eventeia-free-277560"));
@@ -105,7 +140,11 @@ describe("checkout com cupom", () => {
     expect(rpcCalls).toEqual([
       {
         fn: "redeem_courtesy_coupon",
-        args: { p_code: "EVENTEIA-FREE-277560", p_profile_id: "user-1", p_event_id: "11111111-1111-4111-8111-111111111111" },
+        args: {
+          p_code: "EVENTEIA-FREE-277560",
+          p_profile_id: "user-1",
+          p_event_id: "11111111-1111-4111-8111-111111111111",
+        },
       },
     ]);
     expect(db.tables.payments).toHaveLength(0);

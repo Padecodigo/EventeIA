@@ -52,6 +52,9 @@ export function fakeClient(db: FakeDb) {
       };
       const builder = {
         select: () => builder,
+        limit: () => builder,
+        order: () => builder,
+        in: () => builder,
         eq: (k: string, v: unknown) => {
           filters.push([k, v]);
           return builder;

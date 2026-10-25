@@ -18,6 +18,8 @@ import { serverEnv } from "@/lib/env";
 import { luckyDiscountCents } from "@/lib/lucky/pure";
 import { lookupLuckyCoupon } from "@/lib/lucky/server";
 import { formatBRL } from "@/lib/money";
+import { offerDiscountCents } from "@/lib/offers/pure";
+import { activeUserOffer } from "@/lib/offers/server";
 import { latestScenarios } from "@/lib/quotes/scenarios";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -52,10 +54,31 @@ const statusLabels: Record<string, string> = {
 };
 
 /** Oferta de boas-vindas da conta (vincula a do aparelho, se houver). Prazo vem do banco. */
-async function welcomeForCheckout(
-  profileId: string,
-): Promise<{ remainingMs: number; fullCents: number; finalCents: number; label?: string } | null> {
+async function welcomeForCheckout(profileId: string): Promise<{
+  remainingMs: number;
+  fullCents: number;
+  finalCents: number;
+  label?: string;
+  countdownFormat?: "hms" | "dhms";
+} | null> {
   const fullCents = serverEnv().B2C_TICKET_PRICE_CENTS;
+  // Oferta pessoal da conta (0036) tem prioridade — mesma regra do checkout.
+  const personal = await activeUserOffer(profileId);
+  if (personal !== null) {
+    const off = offerDiscountCents(personal, "avulso", fullCents);
+    if (off > 0) {
+      return {
+        remainingMs: personal.remainingMs,
+        fullCents,
+        finalCents: fullCents - off,
+        label:
+          personal.kind === "welcome"
+            ? `Oferta de boas-vindas: ${formatBRL(off)} de desconto no evento avulso`
+            : `Seu cupom pessoal: ${formatBRL(off)} de desconto no evento avulso`,
+        countdownFormat: "dhms",
+      };
+    }
+  }
   const offer = await lookupWelcomeOffer({ claim: false, source: "new_ip", profileId }).catch(
     () => null,
   );

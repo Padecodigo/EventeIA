@@ -48,9 +48,12 @@ function chain(table: string) {
   const q: Record<string, unknown> = {};
   for (const m of ["select", "eq", "limit", "in"]) q[m] = () => q;
   q.maybeSingle = single;
-  q.insert = async (row: Record<string, unknown>) => {
+  q.insert = (row: Record<string, unknown>) => {
     payments.push(row);
-    return { error: null };
+    const id = `p-${String(payments.length)}`;
+    return {
+      select: () => ({ single: async () => ({ data: { id }, error: null }) }),
+    };
   };
   return q;
 }

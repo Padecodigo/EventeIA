@@ -4,9 +4,12 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { DashboardNav } from "@/components/dashboard-nav";
+import { OfferBanner } from "@/components/domain/offer-banner";
 import { NotificationsPoller } from "@/components/notifications/notifications-poller";
 import { SupportButton } from "@/components/support/support-button";
 import { isAdminUser, requireUser } from "@/lib/auth";
+import { offerHeadline } from "@/lib/offers/pure";
+import { activeUserOffer, startWelcomeOffer } from "@/lib/offers/server";
 import { bindWelcomeOfferToUser } from "@/lib/welcome/server";
 
 import { signOutAction } from "./actions";
@@ -21,6 +24,10 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   // (/auth/callback redireciona para cá) sem depender do caminho de criação do perfil.
   await bindWelcomeOfferToUser(user.id);
   const isAdmin = await isAdminUser(user.id);
+  // 1º acesso logado inicia a janela de 48h no BANCO (idempotente; contas antigas
+  // começam agora, no próximo acesso). Recarregar/trocar de aparelho não reinicia.
+  await startWelcomeOffer(user.id);
+  const offer = await activeUserOffer(user.id);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(60%_40%_at_100%_0%,#F3E6DD,transparent)] bg-areia-quente text-vinho">
@@ -54,6 +61,14 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         </div>
       </header>
 
+      {offer !== null ? (
+        <div className="mx-auto w-full max-w-6xl px-6 pt-6">
+          <OfferBanner
+            headline={offerHeadline(offer.kind, offer)}
+            remainingMs={offer.remainingMs}
+          />
+        </div>
+      ) : null}
       <main className="mx-auto w-full max-w-6xl px-6 py-10">{children}</main>
       <footer className="border-t border-line-subtle py-6 text-center text-[11px] text-vinho/60">
         © {new Date().getFullYear()} EventeIA · Pagamentos via Pix e cartão · Dados protegidos
