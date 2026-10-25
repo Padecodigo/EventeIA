@@ -28,7 +28,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               Admin
             </span>
           </div>
-          <nav className="flex items-center gap-5 text-sm text-ink-inverse/80">
+          <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-ink-inverse/80">
             <Link href="/admin" className="transition hover:text-ink-inverse">
               Início
             </Link>
@@ -43,6 +43,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <Link href="/" className="transition hover:text-ink-inverse">
               Ver site
             </Link>
+            <form action="/admin/busca" method="get" role="search">
+              <input name="q" placeholder="Buscar…" aria-label="Busca geral do admin" className="w-32 rounded-full bg-white/10 px-3 py-1 text-sm text-ink-inverse placeholder:text-ink-inverse/50" />
+            </form>
             <ThemeToggle initial={pref} targetId="admin-root" />
             <span className="hidden text-caption text-ink-inverse/50 sm:inline">
               <EmailText email={user.email} />

@@ -446,6 +446,7 @@ export interface Database {
         updated_at: string;
         renewal_date?: string | null;
         monthly_cost_brl_cents?: number | null;
+        renewal_alerted_for?: string | null;
       }>;
       finance_alerts: Table<{
         id: string;

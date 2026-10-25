@@ -41,36 +41,38 @@ export interface FinanceData {
 }
 
 /** Somente admin: checagem no servidor (requireAdmin) + RLS is_admin() nas tabelas. */
-export async function loadFinance(period: { from: string; to: string }): Promise<FinanceData> {
+export async function loadFinance(period: { from: string; to: string }, opts: { eventId?: string } = {}): Promise<FinanceData> {
   await requireAdmin();
   const supabase = await createSupabaseServerClient();
   const start = `${period.from}T00:00:00Z`;
   const end = `${period.to}T23:59:59.999Z`;
 
+  // Filtro opcional por evento (CSV/tela do evento).
+  const byEvent = <Q extends { eq: (c: "event_id", v: string) => Q }>(q: Q): Q => (opts.eventId ? q.eq("event_id", opts.eventId) : q);
   const [llm, entries, pays] = await Promise.all([
-    supabase
+    byEvent(supabase
       .from("llm_usage_events")
       .select("id,created_at,provider,task,reason,event_id,input_tokens,output_tokens,cache_hit_tokens,cost_micro_usd,cost_brl_cents,fx_brl_per_usd_micro,peak,outcome")
       .is("deleted_at", null)
       .gte("created_at", start)
       .lte("created_at", end)
       .order("created_at", { ascending: false })
-      .limit(MAX_ROWS),
-    supabase
+      .limit(MAX_ROWS)),
+    byEvent(supabase
       .from("cost_entries")
       .select("id,occurred_at,provider,kind,reason,event_id,quantity,cost_micro_usd,cost_brl_cents,note,is_estimate")
       .is("deleted_at", null)
       .gte("occurred_at", start)
       .lte("occurred_at", end)
       .order("occurred_at", { ascending: false })
-      .limit(MAX_ROWS),
-    supabase
+      .limit(MAX_ROWS)),
+    byEvent(supabase
       .from("payments")
       .select("id,profile_id,purpose,event_id,amount_cents,asaas_fee_cents,net_cents,status,created_at,confirmed_at,refunded_at,billing_type")
       .gte("created_at", start)
       .lte("created_at", end)
       .order("created_at", { ascending: false })
-      .limit(MAX_ROWS),
+      .limit(MAX_ROWS)),
   ]);
 
   const costs: CostRow[] = [

@@ -162,6 +162,7 @@ export default async function CustosPage({ searchParams }: { searchParams?: Prom
                     <span className="tabular-nums">Receita {formatBRL(e.revenueCents)}</span>
                     <span className={`tabular-nums ${e.marginCents < 0 ? "text-semantic-error" : ""}`}>Margem {formatBRL(e.marginCents)}{e.marginBps === null ? "" : ` (${pct(e.marginBps)})`}</span>
                   </summary>
+                  <p className="text-caption"><Link className="underline" href={`/admin/eventos/${e.eventId}`}>Abrir evento</Link> · <a className="underline" href={`/admin/eventos/${e.eventId}/csv`}>Exportar CSV</a></p>
                   <div className="overflow-x-auto pb-3">
                     <table className="w-full text-sm">
                       <thead className="text-left text-caption text-vinho/60"><tr><th>Ferramenta</th><th>Chamadas</th><th>Valor</th><th>Tipo</th></tr></thead>
