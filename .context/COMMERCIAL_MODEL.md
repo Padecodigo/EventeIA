@@ -209,14 +209,14 @@ Visitante novo (novo IP, link `?convite=`, ou promo `utm_source`/`utm_campaign`/
 - **Um sorteio a cada 48h** (`LUCKY_REDRAW_WINDOW_HOURS`): dentro da janela, tentar de novo devolve o mesmo cupom. Depois dela, novo sorteio invalida o anterior. Validade do cupom: 24h (`LUCKY_VALIDITY_HOURS`, nunca maior que a janela).
 - Checkout aplica o percentual **gravado no banco** (`lucky_coupon_reserve`). As duas ofertas nunca aparecem juntas.
 
-## Cupom de cortesia e uso único (0030, out/2026)
+## Cupom de cortesia e uso único (0033, out/2026)
 
 - `discount_type = 'free'` (cortesia): total **R$ 0**, sem Asaas. Única exceção ao piso de R$ 9; percentual segue com teto de 90% e fixo nunca zera.
 - Só admins criam (`/admin/cupons`, `requireAdmin`); sem limite informado, cortesia nasce com `max_redemptions = 1`.
 - Resgate: `redeem_courtesy_coupon` (security definer, só `service_role`) numa transação: lock do evento e do cupom, uso único, limite global, pagamento `billing_type='COURTESY'`/`amount_cents=0` pago, tíquete ativo (0014 ativa o evento), redenção contada (0010). Idempotente (`already_active`).
 - **Todo cupom vale 1× por conta**: `coupon_redemptions` com índice único parcial `(coupon_id, profile_id)` em `reserved|redeemed`. A reserva (`reserve_coupon`) acontece no INÍCIO do checkout com `select … for update` no cupom ⇒ `max_redemptions` não estoura sob concorrência. Reservas de Pix/cartão vencidos/estornados ou sem pagamento após 15 min são liberadas.
 
-### Autoavaliação Supabase + segurança (0030)
+### Autoavaliação Supabase + segurança (0033)
 - Aditiva: só amplia CHECKs (`'free'`, `'COURTESY'`, `amount_cents = 0` apenas com `COURTESY`), cria tabela/funções/trigger; nenhum dado apagado. Backfill insere redenções a partir de pagamentos já pagos.
 - RLS habilitada e forçada em `coupon_redemptions` sem políticas; `revoke` para `anon/authenticated`.
 - Funções `security definer` com `search_path = public`, `execute` revogado de `public/anon/authenticated` e concedido só a `service_role`.
