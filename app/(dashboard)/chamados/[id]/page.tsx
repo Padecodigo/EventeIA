@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { replySupportTicketAction } from "@/app/actions/support";
 import { ReplyForm } from "@/components/support/reply-form";
 import { StatusBadge, TicketThread } from "@/components/support/ticket-thread";
-import { requireUser } from "@/lib/auth";
+import { isAdminUser, requireUser } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { TYPE_LABELS, shortId, userCanReply } from "@/lib/support/pure";
 
@@ -19,7 +19,10 @@ export default async function MyTicketPage({ params }: { params: Promise<{ id: s
     .select("id,user_id,type,subject,message,status,created_at")
     .eq("id", id)
     .maybeSingle();
-  if (ticket === null || ticket.user_id !== user.id) notFound();
+  if (ticket === null) notFound();
+  const isOwner = ticket.user_id === user.id;
+  // Admin (superusuário) visualiza qualquer chamado; responde pela tela /admin/chamados.
+  if (!isOwner && !(await isAdminUser(user.id))) notFound();
   const { data: messages } = await supabase
     .from("support_ticket_messages")
     .select("id,author_role,body,created_at")
@@ -41,7 +44,7 @@ export default async function MyTicketPage({ params }: { params: Promise<{ id: s
         <StatusBadge status={ticket.status} />
       </header>
       <TicketThread original={ticket} messages={messages ?? []} viewer="user" />
-      {userCanReply(ticket.status) ? (
+      {isOwner && userCanReply(ticket.status) ? (
         <ReplyForm ticketId={ticket.id} action={replySupportTicketAction} />
       ) : (
         <p className="text-sm text-vinho/70">Este chamado foi fechado. Abra um novo se precisar.</p>

@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import { DashboardNav } from "@/components/dashboard-nav";
 import { NotificationsPoller } from "@/components/notifications/notifications-poller";
 import { SupportButton } from "@/components/support/support-button";
-import { requireUser } from "@/lib/auth";
+import { isAdminUser, requireUser } from "@/lib/auth";
 import { bindWelcomeOfferToUser } from "@/lib/welcome/server";
 
 import { signOutAction } from "./actions";
@@ -20,17 +20,25 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   // Vínculo da oferta de boas-vindas no 1º acesso autenticado — cobre cadastro via Google OAuth
   // (/auth/callback redireciona para cá) sem depender do caminho de criação do perfil.
   await bindWelcomeOfferToUser(user.id);
+  const isAdmin = await isAdminUser(user.id);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(60%_40%_at_100%_0%,#F3E6DD,transparent)] bg-areia-quente text-vinho">
       <header className="sticky top-0 z-40 border-b border-line-subtle bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
           <Link href="/painel" className="flex items-center gap-3">
-            <Image src="/logo-e.png" alt="EventeIA" width={120} height={67} priority className="h-9 w-auto object-contain" />
+            <Image
+              src="/logo-e.png"
+              alt="EventeIA"
+              width={120}
+              height={67}
+              priority
+              className="h-9 w-auto object-contain"
+            />
             <span className="font-brand text-xl leading-none text-vinho sm:text-2xl">EventeIA</span>
           </Link>
 
-          <DashboardNav />
+          <DashboardNav isAdmin={isAdmin} />
 
           <div className="flex items-center gap-4">
             <span className="hidden text-caption text-vinho/70 sm:inline">{user.email ?? ""}</span>
@@ -48,7 +56,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
       <main className="mx-auto w-full max-w-6xl px-6 py-10">{children}</main>
       <footer className="border-t border-line-subtle py-6 text-center text-[11px] text-vinho/60">
-        © {new Date().getFullYear()} EventeIA · Pagamentos via Pix e cartão · Dados protegidos (LGPD)
+        © {new Date().getFullYear()} EventeIA · Pagamentos via Pix e cartão · Dados protegidos
+        (LGPD)
       </footer>
       <NotificationsPoller />
       <SupportButton />

@@ -2,6 +2,7 @@ import "server-only";
 
 import { redirect } from "next/navigation";
 
+import { isAdminRole } from "./admin/nav";
 import { createSupabaseServerClient } from "./supabase/server";
 
 export interface SessionUser {
@@ -39,24 +40,21 @@ export async function requireUser(): Promise<SessionUser> {
   return user;
 }
 
+/** Verdadeiro quando o usuário tem profiles.role = 'admin' (superusuário). Nunca lança. */
+export async function isAdminUser(userId: string): Promise<boolean> {
+  const supabase = await createSupabaseServerClient().catch(() => null);
+  if (supabase === null) {
+    return false;
+  }
+  const { data } = await supabase.from("profiles").select("role").eq("id", userId).maybeSingle();
+  return isAdminRole(data?.role);
+}
+
 /** Garante sessão + papel admin; caso contrário volta ao painel. */
 export async function requireAdmin(): Promise<SessionUser> {
   const user = await requireUser();
-  const supabase = await createSupabaseServerClient().catch(() => null);
-
-  if (supabase === null) {
+  if (!(await isAdminUser(user.id))) {
     redirect("/painel");
   }
-
-  const { data } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (data?.role !== "admin") {
-    redirect("/painel");
-  }
-
   return user;
 }
