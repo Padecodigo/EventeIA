@@ -1,6 +1,7 @@
 import Link from "next/link";
 
-import { evaluateBalance } from "@/lib/finance/balances";
+import { readSearchStatus } from "@/lib/discovery/search-status";
+import { evaluateBalance, hasAutomaticFallback } from "@/lib/finance/balances";
 import { buildCostsPanel, lastMonths } from "@/lib/finance/costs-panel";
 import { buildEventCosts, parseEventCostSort, type EventCostSort } from "@/lib/finance/event-costs";
 import { brDate, placesMonth, renewalStatus, VPS_DEFAULT_MONTHLY_CENTS } from "@/lib/finance/fixed-extras";
@@ -65,6 +66,8 @@ export default async function CustosPage({ searchParams }: { searchParams?: Prom
   const [finance, supabase] = await Promise.all([loadFinance({ from, to }), createSupabaseServerClient()]);
   const panel = buildCostsPanel(finance.costs, finance.revenue, now);
   const curMonth = brDate(now).slice(0, 7);
+  const hasDeepseekKey = Boolean(process.env.DEEPSEEK_API_KEY);
+  const searchStatus = await readSearchStatus();
   const [{ data: balances }, { data: fixed }, { data: alerts }, { data: allAlerts }, { data: placesRows }, prices, fxMicro] = await Promise.all([
     supabase.from("provider_balances").select("*").order("provider"),
     supabase
@@ -185,6 +188,15 @@ export default async function CustosPage({ searchParams }: { searchParams?: Prom
 
       <section className="rounded-card border border-line-subtle bg-off-white p-5 shadow-soft">
         <h3 className="font-serif text-title-3">Saldos dos provedores</h3>
+        <p data-testid="search-provider-status" className="mt-1 text-sm">
+          <span className="font-semibold">Busca de fornecedores:</span>{" "}
+          {searchStatus === null ? (hasDeepseekKey ? "Serper (troca automática para DeepSeek Search quando os créditos acabarem)" : "Serper") : (
+            <>
+              {searchStatus.active === "serper" ? "Serper" : "DeepSeek Search"} — {searchStatus.reason}
+              <span className="text-caption text-vinho/60"> (desde {new Date(searchStatus.at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })})</span>
+            </>
+          )}
+        </p>
         <p className="text-caption text-vinho/60">
           DeepSeek, Asaas e Serper são consultados pela API (diário às 08:00 e no botão acima). Google Places não tem API de saldo: defina um orçamento mensal e o saldo = orçamento − gasto do mês. Os demais: informe o saldo manualmente.
           Alerta (banner + e-mail) quando o saldo fica abaixo do limite ou o fôlego projetado é menor que os dias definidos.
@@ -204,7 +216,9 @@ export default async function CustosPage({ searchParams }: { searchParams?: Prom
                 <div className="text-sm">
                   <p className="font-semibold">
                     {b.label} <span className="text-caption font-normal text-vinho/60">({b.source === "api" ? "API" : b.source === "budget" ? `orçamento ${b.monthly_budget_brl_cents === null ? "não definido" : formatBRL(b.monthly_budget_brl_cents)}/mês` : "manual"})</span>
-                    {ev.kind !== null ? <span title="Saldo abaixo do limite de alerta ou fôlego menor que o mínimo definido" className="ml-2 rounded-full bg-semantic-error/15 px-2 text-caption text-semantic-error">baixo</span> : null}
+                    {ev.kind !== null && hasAutomaticFallback(b.provider, hasDeepseekKey) ? (
+                      <span data-testid="auto-fallback-badge" title="Sem urgência: quando os créditos acabarem a busca troca sozinha para a DeepSeek Search" className="ml-2 rounded-full bg-vinho/10 px-2 text-caption text-vinho/70">baixo · troca automática p/ DeepSeek</span>
+                    ) : ev.kind !== null ? <span title="Saldo abaixo do limite de alerta ou fôlego menor que o mínimo definido" className="ml-2 rounded-full bg-semantic-error/15 px-2 text-caption text-semantic-error">baixo</span> : null}
                   </p>
                   <p className="text-caption text-vinho/70 tabular-nums">
                     Saldo {b.balance_brl_cents === null ? "—" : formatBRL(b.balance_brl_cents)}

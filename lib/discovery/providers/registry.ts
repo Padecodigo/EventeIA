@@ -5,6 +5,7 @@ import { createMockProvider } from "./mock";
 import { createNimProvider } from "./nim";
 import { createOverpassProvider } from "./overpass";
 import { createGooglePlacesProvider, createSerperProvider } from "./paid-places";
+import { createDeepseekSearchProvider, createMemorySearchStatusStore, createSearchFallbackProvider, type SearchStatus, type SearchStatusStore } from "./search-fallback";
 import { createSocialProvider } from "./social";
 import type { DiscoveryProvider, FetchLike } from "./types";
 
@@ -24,6 +25,14 @@ export interface ProviderEnv {
   /** Opcionais (pagos): entram DEPOIS do OSM+DeepSeek só quando a chave existe. */
   SERPER_API_KEY?: string;
   GOOGLE_PLACES_API_KEY?: string;
+  /** Abaixo deste nº de créditos do Serper, a busca passa para a DeepSeek Search API. */
+  SERPER_MIN_CREDITS?: number;
+}
+
+export interface SearchFallbackDeps {
+  store?: SearchStatusStore;
+  serperCredits?: () => Promise<number | null>;
+  onSwitch?: (status: SearchStatus) => void;
 }
 
 /**
@@ -36,7 +45,8 @@ export function resolveProviders(
   env: ProviderEnv,
   fetchImpl?: FetchLike,
   usage: LlmUsageStore = createMemoryUsageStore(),
-  onPaidRequest?: (provider: "serper" | "google_places") => void,
+  onPaidRequest?: (provider: "serper" | "google_places" | "search") => void,
+  searchDeps: SearchFallbackDeps = {},
 ): DiscoveryProvider[] {
   const hasXai = env.XAI_API_KEY !== undefined && env.XAI_API_KEY.length > 0;
   const hasNim = env.NVIDIA_NIM_API_KEY !== undefined && env.NVIDIA_NIM_API_KEY.length > 0;
@@ -62,6 +72,22 @@ export function resolveProviders(
     env.DEEPSEEK_API_KEY !== undefined && env.DEEPSEEK_API_KEY.length > 0
       ? createDeepseekRefinedProvider({ apiKey: env.DEEPSEEK_API_KEY, baseUrl: env.DEEPSEEK_BASE_URL, model: env.DEEPSEEK_MODEL, source: p, fetchImpl })
       : p;
+  // Serper com fallback automático para a DeepSeek Search API (quando há DEEPSEEK_API_KEY).
+  const serperSearch = (apiKey: string): DiscoveryProvider => {
+    const serper = createSerperProvider({ apiKey, fetchImpl, onRequest: onPaidRequest });
+    if (env.DEEPSEEK_API_KEY === undefined || env.DEEPSEEK_API_KEY.length === 0) return refine(serper);
+    const deepseek = createDeepseekSearchProvider({ apiKey: env.DEEPSEEK_API_KEY, baseUrl: env.DEEPSEEK_BASE_URL, fetchImpl, onRequest: () => onPaidRequest?.("search") });
+    return refine(
+      createSearchFallbackProvider({
+        serper,
+        deepseek,
+        store: searchDeps.store ?? createMemorySearchStatusStore(),
+        serperCredits: searchDeps.serperCredits,
+        minCredits: env.SERPER_MIN_CREDITS,
+        onSwitch: searchDeps.onSwitch,
+      }),
+    );
+  };
   const out: DiscoveryProvider[] = [];
   const added = new Set<string>();
   const add = (p: DiscoveryProvider) => {
@@ -88,7 +114,7 @@ export function resolveProviders(
     else if (name === "social" && hasXai && env.XAI_API_KEY !== undefined)
       add(createSocialProvider({ apiKey: env.XAI_API_KEY, model: env.XAI_MODEL, fetchImpl }));
     else if (name === "overpass") add(overpass);
-    else if (name === "serper" && env.SERPER_API_KEY) add(refine(createSerperProvider({ apiKey: env.SERPER_API_KEY, fetchImpl, onRequest: onPaidRequest })));
+    else if (name === "serper" && env.SERPER_API_KEY) add(serperSearch(env.SERPER_API_KEY));
     else if (name === "google_places" && env.GOOGLE_PLACES_API_KEY)
       add(refine(createGooglePlacesProvider({ apiKey: env.GOOGLE_PLACES_API_KEY, fetchImpl, onRequest: onPaidRequest })));
     else if (name === "mock") add(createMockProvider());
@@ -96,7 +122,7 @@ export function resolveProviders(
   // Sem DISCOVERY_PROVIDERS explícito: provedores pagos com chave entram após o OSM (antes do mock).
   if (env.DISCOVERY_PROVIDERS === undefined || env.DISCOVERY_PROVIDERS.trim().length === 0) {
     const paid: DiscoveryProvider[] = [];
-    if (env.SERPER_API_KEY) paid.push(refine(createSerperProvider({ apiKey: env.SERPER_API_KEY, fetchImpl, onRequest: onPaidRequest })));
+    if (env.SERPER_API_KEY) paid.push(serperSearch(env.SERPER_API_KEY));
     if (env.GOOGLE_PLACES_API_KEY) paid.push(refine(createGooglePlacesProvider({ apiKey: env.GOOGLE_PLACES_API_KEY, fetchImpl, onRequest: onPaidRequest })));
     const mockIdx = out.findIndex((p) => p.name === "mock");
     for (const p of paid) {

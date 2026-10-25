@@ -19,7 +19,7 @@ export const PROVIDER_LABELS: Record<string, string> = {
   grok: "xAI (Grok)",
   xai: "xAI (Grok)",
   nim: "NVIDIA NIM",
-  search: "Search API",
+  search: "DeepSeek Search",
   fetch: "Fetch API",
   whatsapp: "WhatsApp",
   asaas: "Asaas",

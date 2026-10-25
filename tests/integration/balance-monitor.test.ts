@@ -87,3 +87,22 @@ describe("cheque diário de saldos", () => {
     expect(r2.alerts).toBe(2);
   });
 });
+
+describe("Serper com fallback DeepSeek: saldo baixo não é emergência", () => {
+  it("regressão: Serper abaixo do limite NÃO gera e-mail nem alerta quando há chave DeepSeek", async () => {
+    sent.length = 0;
+    tables.finance_alerts = [];
+    tables.llm_usage_events = [];
+    tables.cost_entries = [];
+    tables.provider_balances = [
+      { provider: "serper", label: "Serper", source: "api", balance_brl_cents: null, threshold_brl_cents: 50_000, runway_alert_days: 7, daily_burn_brl_cents: null, last_alert_at: null, monthly_budget_brl_cents: null },
+    ];
+    process.env.DEEPSEEK_API_KEY = "test";
+    process.env.SERPER_API_KEY = "test";
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify({ balance: 10 }), { status: 200 }));
+    const r = await runBalanceCheck({ fetchImpl, now: new Date("2026-10-25T12:00:00Z") });
+    expect(r.alerts).toBe(0);
+    expect(sent).toHaveLength(0);
+    expect(tables.provider_balances[0]?.raw_balance).toBe(10);
+  });
+});

@@ -8,6 +8,7 @@ import { createRouterUsageStore, getRouter } from "@/lib/ai/runtime";
 import { runDiscoveryRound } from "@/lib/discovery/engine";
 import { resolveProviders } from "@/lib/discovery/providers/registry";
 import { createDiscoveryDeps, createRedisLlmUsage } from "@/lib/discovery/runtime";
+import { createRedisSearchStatusStore, logSearchSwitch, serperCreditsFromBalances, serperMinCredits } from "@/lib/discovery/search-status";
 import { serverEnv } from "@/lib/env";
 import { meterUsage } from "@/lib/finance/metering";
 import { logger } from "@/lib/logger";
@@ -62,10 +63,12 @@ export function createDiscoveryWorker(connection: Redis): Worker {
       const usage = router !== null ? createRouterUsageStore(router, env.AI_GROK_SEARCH_CALL_MICROUSD) : createRedisLlmUsage();
       const providers = resolveProviders(
         { ...env, DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL: process.env.DEEPSEEK_BASE_URL, DEEPSEEK_MODEL: process.env.DEEPSEEK_MODEL,
-          SERPER_API_KEY: process.env.SERPER_API_KEY, GOOGLE_PLACES_API_KEY: process.env.GOOGLE_PLACES_API_KEY },
+          SERPER_API_KEY: process.env.SERPER_API_KEY, GOOGLE_PLACES_API_KEY: process.env.GOOGLE_PLACES_API_KEY,
+          SERPER_MIN_CREDITS: serperMinCredits() },
         undefined,
         usage,
         (provider) => meterUsage(provider, "discovery", { eventId: data.eventId }),
+        { store: createRedisSearchStatusStore(), serperCredits: serperCreditsFromBalances, onSwitch: logSearchSwitch },
       );
       const summary = await runDiscoveryRound(createDiscoveryDeps(), providers, data);
       logger.info(
