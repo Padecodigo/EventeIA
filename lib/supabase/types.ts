@@ -63,6 +63,8 @@ export interface Database {
         guest_count: number;
         status: "draft" | "awaiting_payment" | "active" | "completed" | "canceled";
         city: string | null;
+        city_uf: string | null;
+        city_ibge_code: number | null;
         interview_answers: Json | null;
         interview_completed_at: string | null;
         discovery_started_at: string | null;

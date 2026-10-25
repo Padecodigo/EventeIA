@@ -21,6 +21,7 @@ import {
 import { ENGINE_VERSION } from "@/lib/engine";
 import { serverEnv } from "@/lib/env";
 import { emitFeed } from "@/lib/feeds";
+import { findMunicipioByCode, regionForUf } from "@/lib/geo/municipios";
 import { logger } from "@/lib/logger";
 import { luckyDiscountCents } from "@/lib/lucky/pure";
 import { reserveLuckyCoupon } from "@/lib/lucky/server";
@@ -50,9 +51,15 @@ const createEventSchema = z.object({
     "formatura",
   ]),
   eventDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  region: z.enum(["sp", "rj", "mg", "outros"]),
+  /** Legado (formulário antigo): só a faixa regional. Novo: município IBGE. */
+  region: z.enum(["sp", "rj", "mg", "outros"]).optional(),
+  cityCode: z.coerce.number().int().min(1000000).max(9999999).optional(),
   guestCount: z.coerce.number().int().min(1).max(5000),
 });
+
+function emptyToUndefined(value: FormDataEntryValue | null): FormDataEntryValue | undefined {
+  return value === null || value === "" ? undefined : value;
+}
 
 export async function createEventAction(
   _previous: ActionState,
@@ -64,13 +71,23 @@ export async function createEventAction(
     title: formData.get("title"),
     eventType: formData.get("eventType"),
     eventDate: formData.get("eventDate"),
-    region: formData.get("region"),
+    region: formData.get("region") ?? undefined,
+    cityCode: emptyToUndefined(formData.get("cityCode")),
     guestCount: formData.get("guestCount"),
   });
 
   if (!parsed.success) {
     return { error: "Confira os dados do evento e tente novamente." };
   }
+
+  const municipio = parsed.data.cityCode === undefined ? null : findMunicipioByCode(parsed.data.cityCode);
+  if (parsed.data.cityCode !== undefined && municipio === null) {
+    return { error: "Escolha a cidade do evento na lista." };
+  }
+  if (municipio === null && parsed.data.region === undefined) {
+    return { error: "Escolha a cidade do evento." };
+  }
+  const regionCode = municipio !== null ? regionForUf(municipio.uf) : (parsed.data.region ?? "outros");
 
   const supabase = await createSupabaseServerClient();
   const { data: workspace } = await supabase
@@ -88,7 +105,10 @@ export async function createEventAction(
       title: parsed.data.title,
       event_type: parsed.data.eventType,
       event_date: parsed.data.eventDate,
-      region_code: parsed.data.region,
+      region_code: regionCode,
+      ...(municipio !== null
+        ? { city: municipio.name, city_uf: municipio.uf, city_ibge_code: municipio.code }
+        : {}),
       guest_count: parsed.data.guestCount,
       status: "draft",
     })
@@ -766,7 +786,7 @@ export async function addVendorProspectAction(
   const supabase = await createSupabaseServerClient();
   const { data: event } = await supabase
     .from("events")
-    .select("id,title,event_type,event_date,region_code,guest_count,workspace_id")
+    .select("id,title,event_type,event_date,region_code,city,city_uf,guest_count,workspace_id")
     .eq("id", parsed.data.eventId)
     .maybeSingle();
 
@@ -835,7 +855,10 @@ export async function addVendorProspectAction(
     eventTitle: event.title,
     eventType: event.event_type,
     eventDateIso: event.event_date,
-    city: REGION_LABELS[event.region_code] ?? "",
+    city:
+      event.city !== null && event.city.length > 0
+        ? event.city_uf !== null ? `${event.city} (${event.city_uf})` : event.city
+        : (REGION_LABELS[event.region_code] ?? ""),
     guestCount: event.guest_count,
   });
 
