@@ -1,5 +1,8 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+
+import { createServerClient } from "@supabase/ssr";
+
+import { publicOrigin } from "@/lib/auth/oauth";
 
 const PROTECTED_PREFIXES = ["/painel", "/eventos", "/creditos", "/chamados", "/admin"];
 
@@ -47,9 +50,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const pathname = request.nextUrl.pathname;
 
   if (isProtected(pathname) && user === null) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/entrar";
-    redirectUrl.search = "";
+    const redirectUrl = new URL("/entrar", publicOrigin(request.headers, request.url));
     return NextResponse.redirect(redirectUrl);
   }
 

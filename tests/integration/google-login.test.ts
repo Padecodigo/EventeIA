@@ -41,6 +41,9 @@ function req(url: string): NextRequest {
 beforeEach(() => {
   vi.clearAllMocks();
   delete process.env.NEXT_PUBLIC_APP_URL;
+  delete process.env.NEXT_PUBLIC_SITE_URL;
+  delete process.env.APP_URL;
+  delete process.env.SITE_URL;
 });
 
 describe("signInWithGoogleAction", () => {
@@ -74,6 +77,24 @@ describe("signInWithGoogleAction", () => {
 });
 
 describe("GET /auth/callback", () => {
+  it("regressão: atrás do proxy nunca redireciona para o bind host 0.0.0.0", async () => {
+    process.env.NEXT_PUBLIC_APP_URL = "https://eventeia.com.br";
+    exchangeCodeForSession.mockResolvedValue({ data: { user: { id: "u1" } }, error: null });
+    const res = await GET(req("http://0.0.0.0:3000/auth/callback?code=x"));
+    expect(res.headers.get("location")).toBe("https://eventeia.com.br/painel");
+    const evil = await GET(req("http://0.0.0.0:3000/auth/callback?code=x&next=//evil.com/painel"));
+    expect(evil.headers.get("location")).toBe("https://eventeia.com.br/painel");
+  });
+
+  it("sem env, usa x-forwarded-host/proto em vez do bind host", async () => {
+    exchangeCodeForSession.mockResolvedValue({ data: { user: { id: "u1" } }, error: null });
+    const r = new NextRequest("http://0.0.0.0:3000/auth/callback?code=x", {
+      headers: { "x-forwarded-host": "eventeia.com.br", "x-forwarded-proto": "https", host: "0.0.0.0:3000" },
+    });
+    const res = await GET(r);
+    expect(res.headers.get("location")).toBe("https://eventeia.com.br/painel");
+  });
+
   it("troca o code por sessão e vai ao painel", async () => {
     exchangeCodeForSession.mockResolvedValue({
       data: { user: { id: "u1", email: "ana@gmail.com" } },

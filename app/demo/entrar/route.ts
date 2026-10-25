@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { publicOrigin } from "@/lib/auth/oauth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -36,6 +37,6 @@ export async function GET(request: Request): Promise<NextResponse> {
   }
 
   return NextResponse.redirect(
-    new URL(isAdmin ? "/admin/depoimentos" : "/painel", url.origin),
+    new URL(isAdmin ? "/admin/depoimentos" : "/painel", publicOrigin(request.headers, request.url)),
   );
 }

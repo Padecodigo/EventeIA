@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { z } from "zod";
 
-import { buildCallbackUrl } from "@/lib/auth/oauth";
+import { buildCallbackUrl, publicOrigin } from "@/lib/auth/oauth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { bindWelcomeOfferToUser } from "@/lib/welcome/server";
 
@@ -118,9 +118,7 @@ export async function signUpAction(
 /** Login/cadastro em um clique com Google (Supabase Auth OAuth, fluxo PKCE). */
 export async function signInWithGoogleAction(): Promise<AuthActionState> {
   const h = await headers();
-  const origin =
-    process.env.NEXT_PUBLIC_APP_URL ??
-    `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host") ?? "localhost:3000"}`;
+  const origin = publicOrigin(h, "http://localhost:3000");
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
