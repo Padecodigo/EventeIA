@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { EmailText } from "@/components/ui/email-text";
 import { ADMIN_NAV } from "@/lib/admin/nav";
 import { requireAdmin } from "@/lib/auth";
 import { THEME_COOKIE, parseThemePreference, themeClass } from "@/lib/theme/palette";
@@ -41,7 +42,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </Link>
             <ThemeToggle initial={pref} targetId="admin-root" />
             <span className="hidden text-caption text-ink-inverse/50 sm:inline">
-              {user.email ?? ""}
+              <EmailText email={user.email} />
             </span>
           </nav>
         </div>

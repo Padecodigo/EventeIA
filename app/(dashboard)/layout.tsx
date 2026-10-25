@@ -7,6 +7,7 @@ import { DashboardNav } from "@/components/dashboard-nav";
 import { OfferBanner } from "@/components/domain/offer-banner";
 import { NotificationsPoller } from "@/components/notifications/notifications-poller";
 import { SupportButton } from "@/components/support/support-button";
+import { EmailText } from "@/components/ui/email-text";
 import { isAdminUser, requireUser } from "@/lib/auth";
 import { offerHeadline } from "@/lib/offers/pure";
 import { activeUserOffer, startWelcomeOffer } from "@/lib/offers/server";
@@ -48,7 +49,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           <DashboardNav isAdmin={isAdmin} />
 
           <div className="flex items-center gap-4">
-            <span className="hidden text-caption text-vinho/70 sm:inline">{user.email ?? ""}</span>
+            <span className="hidden text-caption text-vinho/70 sm:inline"><EmailText email={user.email} /></span>
             <form action={signOutAction}>
               <button
                 type="submit"

@@ -1,5 +1,6 @@
 import { PasswordForm } from "@/components/domain/password-form";
 import { ProfileForm } from "@/components/domain/profile-form";
+import { EmailText } from "@/components/ui/email-text";
 import { requireUser } from "@/lib/auth";
 import { userHasPassword } from "@/lib/auth/password";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -61,7 +62,11 @@ export default async function ProfilePage() {
             : hasGoogle
               ? "Você entra com o Google. Se quiser, crie uma senha para também entrar com e-mail e senha — o Google continua funcionando."
               : "Crie uma senha para entrar com e-mail e senha."}
-          {user.email ? ` E-mail de acesso: ${user.email}.` : null}
+          {user.email ? (
+            <>
+              {" "}E-mail de acesso: <EmailText email={user.email} />.
+            </>
+          ) : null}
         </p>
         <PasswordForm hasPassword={hasPassword} />
       </section>
