@@ -14,7 +14,7 @@ vi.mock("next/navigation", () => ({
   },
 }));
 vi.mock("@/lib/auth", () => ({ requireUser: async () => ({ id: "u" }) }));
-vi.mock("@/lib/discovery/runtime", () => ({ startDiscovery }));
+vi.mock("@/lib/discovery/kickoff-runtime", () => ({ kickoffDiscovery: startDiscovery }));
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: async () => ({
     from: (table: string) => {
