@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { requestIsSameOrigin } from "@/lib/http/same-origin";
 import { luckyDiscountCents } from "@/lib/lucky/pure";
 import { LuckyRateLimitedError, lookupLuckyCoupon, type LuckyCouponView } from "@/lib/lucky/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -39,8 +40,7 @@ function respond(view: LuckyCouponView): NextResponse {
 }
 
 function sameOrigin(request: NextRequest): boolean {
-  const origin = request.headers.get("origin");
-  return origin === null || origin === request.nextUrl.origin;
+  return requestIsSameOrigin(request);
 }
 
 async function handle(draw: boolean): Promise<NextResponse> {

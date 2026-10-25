@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { ReplyForm } from "@/components/support/reply-form";
 import { StatusBadge, TicketThread, formatTicketDate } from "@/components/support/ticket-thread";
+import { EmailText } from "@/components/ui/email-text";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { PRIORITY_LABELS, TYPE_LABELS, shortId } from "@/lib/support/pure";
 import { signedAttachmentUrl } from "@/lib/support/runtime";
@@ -35,7 +36,7 @@ export default async function AdminTicketPage({ params }: { params: Promise<{ id
           <p className="eyebrow">#{shortId(ticket.id)} · {TYPE_LABELS[ticket.type]} · {PRIORITY_LABELS[ticket.priority]}</p>
           <h1 className="mt-2 font-serif text-2xl text-vinho">{ticket.subject}</h1>
           <p className="mt-2 text-caption text-vinho/70">
-            {profileRes.data?.display_name ?? (ticket.user_id === null ? "Visitante" : "Usuário")} · {contact} · {formatTicketDate(ticket.created_at)}
+            {profileRes.data?.display_name ?? (ticket.user_id === null ? "Visitante" : "Usuário")} · <EmailText email={contact} /> · {formatTicketDate(ticket.created_at)}
           </p>
           <p className="text-caption text-vinho/60">
             Página: {ticket.page_url ?? "—"}
