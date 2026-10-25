@@ -7,7 +7,7 @@ import { getEmailAdapter } from "@/lib/notifications/email";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/types";
 
-import { alertEmailText, budgetRemaining, dailyBurn, evaluateBalance, parseAsaasBalance, parseDeepseekBalance, parseSerperBalance } from "./balances";
+import { alertEmailText, budgetRemaining, hasAutomaticFallback, dailyBurn, evaluateBalance, parseAsaasBalance, parseDeepseekBalance, parseSerperBalance } from "./balances";
 import { brDate, recurringDue, type RecurringRow } from "./fixed-extras";
 import { currentFxMicro, currentPrices } from "./runtime";
 import { renewalEmailText, renewalNotice } from "./vps-renewal";
@@ -110,7 +110,9 @@ export async function runBalanceCheck(opts: { fetchImpl?: FetchLike; now?: Date 
       },
       now,
     );
-    if (ev.alert && ev.kind !== null && balance !== null) {
+    // Serper com fallback automático (DeepSeek Search): saldo baixo não é emergência — sem e-mail/alerta.
+    const autoFallback = hasAutomaticFallback(row.provider, Boolean(process.env.DEEPSEEK_API_KEY));
+    if (ev.alert && ev.kind !== null && balance !== null && !autoFallback) {
       toAlert.push({ provider: row.provider, label: row.label, balanceBrlCents: balance, runwayDays: ev.runwayDays, kind: ev.kind });
       patch.last_alert_at = now.toISOString();
     }

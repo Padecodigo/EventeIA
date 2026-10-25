@@ -33,6 +33,14 @@ export function evaluateBalance(s: BalanceState, now: Date = new Date()): Balanc
   return { low, lowRunway, runwayDays, alert: kind !== null && cooled, kind };
 }
 
+/**
+ * Provedores com troca automática: saldo baixo NÃO é emergência (sem e-mail/alerta vermelho).
+ * Serper → DeepSeek Search API quando há chave DeepSeek.
+ */
+export function hasAutomaticFallback(provider: string, hasDeepseekKey: boolean): boolean {
+  return provider === "serper" && hasDeepseekKey;
+}
+
 /** Média diária (centavos) dos últimos N dias a partir das linhas de custo do provedor. */
 export function dailyBurn(costBrlCents: readonly number[], days: number): number {
   if (days <= 0) return 0;
