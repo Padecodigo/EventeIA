@@ -2,7 +2,7 @@ import { PasswordForm } from "@/components/domain/password-form";
 import { ProfileForm } from "@/components/domain/profile-form";
 import { EmailText } from "@/components/ui/email-text";
 import { requireUser } from "@/lib/auth";
-import { userHasPassword } from "@/lib/auth/password";
+import { accountHasPassword } from "@/lib/auth/password-server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Perfil" };
@@ -28,7 +28,7 @@ export default async function ProfilePage() {
       : { data: null };
 
   const { data: authData } = await supabase.auth.getUser();
-  const hasPassword = userHasPassword(authData.user);
+  const hasPassword = await accountHasPassword(authData.user);
   const hasGoogle = (authData.user?.identities ?? []).some((i) => i.provider === "google");
 
   return (

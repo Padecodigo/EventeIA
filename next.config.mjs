@@ -17,11 +17,12 @@ const securityHeaders = [
 /** CSP estrita em produção; relaxada em dev para o HMR do Next. */
 const cspProduction = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://*.supabase.co",
+  // Cloudflare Web Analytics (beacon injetado pelo proxy da Cloudflare).
+  "script-src 'self' 'unsafe-inline' https://*.supabase.co https://static.cloudflareinsights.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https://*.supabase.co",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co https://*.asaas.com",
+  "connect-src 'self' https://*.supabase.co https://*.asaas.com https://cloudflareinsights.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

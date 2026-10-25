@@ -76,3 +76,21 @@ export function userHasPassword(user: UserLike | null | undefined): boolean {
   if (user.app_metadata?.has_password === true) return true;
   return (user.identities ?? []).some((i) => i.provider === "email");
 }
+
+/** Resultado do banco (booleano) vence; sem ele, usa a heurística por identidade. */
+export function resolveHasPassword(
+  fromDb: unknown,
+  user: UserLike | null | undefined,
+): boolean {
+  if (user?.app_metadata?.has_password === true) return true;
+  if (typeof fromDb === "boolean") return fromDb;
+  return userHasPassword(user);
+}
+
+/** Mensagem após salvar a senha: só cita o Google para quem tem identidade Google. */
+export function passwordSavedMessage(user: UserLike | null | undefined): string {
+  const google = (user?.identities ?? []).some((i) => i.provider === "google");
+  return google
+    ? "Senha salva! Agora você pode entrar com e-mail e senha ou com o Google."
+    : "Senha salva! Agora você pode entrar com e-mail e senha.";
+}

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import {
   friendlyPasswordError,
   needsReauthentication,
+  passwordSavedMessage,
   validateNewPassword,
 } from "@/lib/auth/password";
 import { logger } from "@/lib/logger";
@@ -72,6 +73,6 @@ export async function setPasswordAction(
 
   revalidatePath("/perfil");
   return {
-    success: "Senha salva! Agora você pode entrar com e-mail e senha ou com o Google.",
+    success: passwordSavedMessage(current.user),
   };
 }

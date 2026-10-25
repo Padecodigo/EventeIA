@@ -493,6 +493,7 @@ export interface Database {
         }[];
       };
       user_offer_start_welcome: { Args: { p_profile_id: string }; Returns: undefined };
+      auth_user_has_password: { Args: { p_user_id: string }; Returns: boolean };
       user_offer_request: {
         Args: { p_profile_id: string; p_cooldown_days: number };
         Returns: {

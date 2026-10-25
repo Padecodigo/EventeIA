@@ -23,8 +23,6 @@ import { activeUserOffer } from "@/lib/offers/server";
 import { latestScenarios } from "@/lib/quotes/scenarios";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { WELCOME_FINAL_PRICE_CENTS } from "@/lib/welcome/pure";
-import { lookupWelcomeOffer } from "@/lib/welcome/server";
 
 const eventTypeSchema = z.enum([
   "festa_infantil",
@@ -78,16 +76,6 @@ async function welcomeForCheckout(profileId: string): Promise<{
         countdownFormat: "dhms",
       };
     }
-  }
-  const offer = await lookupWelcomeOffer({ claim: false, source: "new_ip", profileId }).catch(
-    () => null,
-  );
-  if (
-    offer?.status === "active" &&
-    offer.remainingMs > 0 &&
-    fullCents > WELCOME_FINAL_PRICE_CENTS
-  ) {
-    return { remainingMs: offer.remainingMs, fullCents, finalCents: WELCOME_FINAL_PRICE_CENTS };
   }
   // Nunca as duas ofertas juntas: o cupom sorteado só entra sem boas-vindas ativa.
   const lucky = await lookupLuckyCoupon({ draw: false, profileId }).catch(() => null);
