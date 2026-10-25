@@ -11,6 +11,7 @@ Fotos sob a [Unsplash License](https://unsplash.com/license) ou a [Pexels Licens
 | `festa-infantil-velas.jpg` | Nathan Dumlao (@nate_dumlao) — Unsplash | https://unsplash.com/photos/As8zq82LBpw |
 | `casamento.jpg` | Kari Bjorn Photography (@karibjorn) — Unsplash | https://unsplash.com/photos/G3O5fc5_r4s |
 | `formatura-familia.jpg` | Ulises Peña — Pexels (não usada desde a v3.1) | https://www.pexels.com/photo/17615677/ |
-| `festa-formatura.jpg` | Andrea Prochilo — Pexels | https://www.pexels.com/photo/34311548/ |
+| `festa-formatura-baile.jpg` | Pavel Danilyuk — Pexels (1000×667, hero desde out/2026) | https://www.pexels.com/photo/7944235/ |
+| `festa-formatura.jpg` | Andrea Prochilo — Pexels (não usada desde out/2026) | https://www.pexels.com/photo/34311548/ |
 
 As três primeiras foram recortadas para 1000×1250 (4:5); as demais redimensionadas para no máx. 1000 px de largura. Demais imagens em `public/` já faziam parte do projeto.
