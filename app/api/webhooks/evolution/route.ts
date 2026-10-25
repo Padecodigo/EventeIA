@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { verifyEvolutionWebhookToken } from "@/lib/security";
+import { readEvolutionWebhookToken, verifyEvolutionWebhookToken } from "@/lib/security";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/types";
 import { processInboundEvents, type InboundEvent } from "@/lib/whatsapp/inbound";
@@ -63,10 +63,10 @@ function digitsToE164(remoteJid: string | undefined): string | null {
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const url = new URL(request.url);
-  const token = request.headers.get("x-evolution-token") ?? url.searchParams.get("token");
+  const { token, via } = readEvolutionWebhookToken(request.headers, url);
 
   if (!verifyEvolutionWebhookToken(token)) {
-    logger.warn("webhook evolution rejeitado (token)");
+    logger.warn({ via }, "webhook evolution rejeitado (token)");
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
