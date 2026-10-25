@@ -55,6 +55,7 @@ export default async function AdminTestimonialsPage() {
           em <code className="rounded bg-areia-secundaria px-1.5 py-0.5">/para-planners</code> —
           despublicar remove na hora.
         </p>
+        <p className="mt-2 text-caption text-vinho/60">Depoimentos chegam dos clientes pelo convite automático no WhatsApp. Selos: Pendente = aguardando sua revisão; Aprovado/Publicado = visível no site; Rejeitado = não será publicado.</p>
         <div className="mt-5 flex flex-wrap gap-3 text-caption">
           <span className="rounded-full bg-areia-secundaria px-3 py-1 text-vinho/75">
             {pendingCount} pendente(s)

@@ -46,6 +46,7 @@ export default async function AdminTicketPage({ params }: { params: Promise<{ id
         </div>
         <StatusBadge status={ticket.status} />
       </header>
+      <p className="text-caption text-vinho/60">Detalhe do chamado: quem abriu, de qual página e a conversa. Mude o status/prioridade abaixo e responda no fim da página; a resposta é enviada ao usuário.</p>
       <TicketControls ticketId={ticket.id} status={ticket.status} priority={ticket.priority} />
       {attachmentUrl !== null && (
         <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-primaria-escura underline">

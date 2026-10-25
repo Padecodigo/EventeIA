@@ -97,3 +97,30 @@ export async function updateFixedCostAction(_prev: CostsActionState, form: FormD
   revalidatePath("/admin/financeiro");
   return { success: "Custo atualizado." };
 }
+
+const deleteSchema = z.object({
+  target: z.enum(["fixed", "alert"]),
+  ids: z.array(z.string().uuid()).min(1).max(200),
+});
+
+/**
+ * Exclusão RECUPERÁVEL (soft delete: deleted_at) de custos fixos e alertas. Só admin (requireAdmin + RLS).
+ * Recebe exatamente os IDs mostrados no modal de confirmação ("Excluir" = 1; "Limpar histórico" = todos da seção).
+ * Nunca toca em custos variáveis, eventos, pagamentos ou dados de clientes.
+ */
+export async function softDeleteAction(_prev: CostsActionState, form: FormData): Promise<CostsActionState> {
+  const user = await requireAdmin();
+  const parsed = deleteSchema.safeParse({ target: form.get("target"), ids: form.getAll("id") });
+  if (!parsed.success) return { error: "Pedido inválido." };
+  const { target, ids } = parsed.data;
+  const marks = { deleted_at: new Date().toISOString(), deleted_by: user.id };
+  const supabase = await createSupabaseServerClient();
+  const { error } =
+    target === "fixed"
+      ? await supabase.from("cost_entries").update(marks).in("id", ids).eq("kind", "fixed").is("deleted_at", null)
+      : await supabase.from("finance_alerts").update(marks).in("id", ids).is("deleted_at", null);
+  if (error !== null) return { error: "Não foi possível excluir." };
+  revalidatePath("/admin/custos");
+  revalidatePath("/admin/financeiro");
+  return { success: ids.length === 1 ? "Item excluído (pode ser recuperado)." : `${String(ids.length)} itens excluídos (podem ser recuperados).` };
+}

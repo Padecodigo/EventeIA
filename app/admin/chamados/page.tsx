@@ -56,6 +56,10 @@ export default async function AdminTicketsPage({
       <header>
         <p className="eyebrow">Admin</p>
         <h1 className="mt-3 font-serif text-display-2 font-display">Central de atendimento.</h1>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-vinho/75">
+          Pedidos de ajuda, erros e sugestões enviados pelos usuários e visitantes pelo botão de suporte do site. Abra um chamado para responder e mudar o status.
+        </p>
+        <p className="mt-2 text-caption text-vinho/60">Os números abaixo contam todos os chamados (até 5 mil), sem filtro: primeiro por tipo, depois por status.</p>
         <div className="mt-5 flex flex-wrap gap-2 text-caption">
           {TICKET_TYPES.map((t) => (
             <span key={t} className="rounded-full bg-areia-secundaria px-3 py-1 text-vinho/75">
@@ -73,30 +77,32 @@ export default async function AdminTicketsPage({
       </header>
 
       <form className="flex flex-wrap items-end gap-3" method="get">
-        <select name="type" defaultValue={filters.type ?? ""} className={selectClass} aria-label="Tipo">
+        <label className="flex flex-col gap-1 text-caption font-semibold text-vinho/80">Tipo<select name="type" defaultValue={filters.type ?? ""} className={selectClass} aria-label="Tipo">
           <option value="">Todos os tipos</option>
           {TICKET_TYPES.map((t) => (
             <option key={t} value={t}>{TYPE_LABELS[t]}</option>
           ))}
-        </select>
-        <select name="status" defaultValue={filters.status ?? ""} className={selectClass} aria-label="Status">
+        </select></label>
+        <label className="flex flex-col gap-1 text-caption font-semibold text-vinho/80">Status<select name="status" defaultValue={filters.status ?? ""} className={selectClass} aria-label="Status">
           <option value="">Todos os status</option>
           {TICKET_STATUSES.map((s) => (
             <option key={s} value={s}>{STATUS_LABELS[s]}</option>
           ))}
-        </select>
-        <select name="priority" defaultValue={filters.priority ?? ""} className={selectClass} aria-label="Prioridade">
+        </select></label>
+        <label className="flex flex-col gap-1 text-caption font-semibold text-vinho/80">Prioridade<select name="priority" defaultValue={filters.priority ?? ""} className={selectClass} aria-label="Prioridade">
           <option value="">Todas as prioridades</option>
           {TICKET_PRIORITIES.map((p) => (
             <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>
           ))}
-        </select>
-        <input type="date" name="from" defaultValue={filters.from ?? ""} className={selectClass} aria-label="De" />
-        <input type="date" name="to" defaultValue={filters.to ?? ""} className={selectClass} aria-label="Até" />
+        </select></label>
+        <label className="flex flex-col gap-1 text-caption font-semibold text-vinho/80">De<input type="date" name="from" defaultValue={filters.from ?? ""} className={selectClass} aria-label="De" /><span className="font-normal text-vinho/60">data de abertura (início)</span></label>
+        <label className="flex flex-col gap-1 text-caption font-semibold text-vinho/80">Até<input type="date" name="to" defaultValue={filters.to ?? ""} className={selectClass} aria-label="Até" /><span className="font-normal text-vinho/60">data de abertura (fim)</span></label>
         <button type="submit" className="rounded-full bg-vinho px-5 py-2 text-sm font-semibold text-off-white">
           Filtrar
         </button>
       </form>
+
+      <p className="-mt-4 text-caption text-vinho/60">Filtre a lista por tipo, status, prioridade ou data de abertura (horário de Brasília). O selo à direita de cada chamado é o status atual.</p>
 
       {items.length === 0 ? (
         <p className="text-sm text-vinho/70">Nenhum chamado com esses filtros.</p>

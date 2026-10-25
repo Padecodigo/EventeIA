@@ -29,6 +29,7 @@ export function TicketControls({
       <input type="hidden" name="ticketId" value={ticketId} />
       <label className="flex flex-col gap-1">
         <span className="font-semibold">Status</span>
+        <span className="text-caption text-vinho/60">Em que pé está o atendimento (só mostra as mudanças permitidas).</span>
         <select name="status" defaultValue={status} className="rounded-xl border border-vinho/15 bg-white px-3 py-2">
           {TICKET_STATUSES.filter((s) => canTransition(status, s)).map((s) => (
             <option key={s} value={s}>{STATUS_LABELS[s]}</option>
@@ -37,6 +38,7 @@ export function TicketControls({
       </label>
       <label className="flex flex-col gap-1">
         <span className="font-semibold">Prioridade</span>
+        <span className="text-caption text-vinho/60">Urgência para a equipe; não aparece para o usuário.</span>
         <select name="priority" defaultValue={priority} className="rounded-xl border border-vinho/15 bg-white px-3 py-2">
           {TICKET_PRIORITIES.map((p) => (
             <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>

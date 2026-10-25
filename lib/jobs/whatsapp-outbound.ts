@@ -65,6 +65,7 @@ export async function handleWhatsappOutboundJob(data: WhatsappOutboundJob): Prom
       instance: serverEnv().EVOLUTION_INSTANCE ?? "eventeia",
       to: message.to_number_e164,
       text: message.body,
+      eventId: message.event_id,
       lastInboundAt: channel === "cloud" ? await lastInboundAt(message.to_number_e164) : null,
     });
   } catch (error) {

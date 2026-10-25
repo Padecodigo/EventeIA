@@ -195,6 +195,7 @@ export async function processProspectingJob(
       instance: data.instance,
       to: data.phoneE164,
       text: message,
+      eventId: data.eventId,
     }));
   } catch (error) {
     if (error instanceof EvolutionSessionError) {

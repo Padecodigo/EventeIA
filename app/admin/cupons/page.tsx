@@ -56,6 +56,7 @@ export default async function AdminCouponsPage() {
           Cupons aplicam-se ao tíquete B2C (R$ 97). Redenção só conta quando o Pix é confirmado; o
           preço final nunca fica abaixo do piso de R$ 47 (exceto cortesia).
         </p>
+        <p className="mt-2 text-caption text-vinho/60">Crie cupons, acompanhe quantas vezes foram usados e ative/desative. Os selos contam os cupons ativos e o total.</p>
         <div className="mt-4 flex flex-wrap gap-3 text-caption">
           <span className="rounded-full bg-vinho px-3 py-1 text-off-white">
             {String(activeCount)} ativo(s)
@@ -76,6 +77,7 @@ export default async function AdminCouponsPage() {
 
       <section className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
         <h2 className="font-serif text-title-2">Novo cupom</h2>
+        <p className="mt-1 text-caption text-vinho/60">Cadastro manual. O cupom vale assim que for criado como ativo.</p>
         <div className="mt-5">
           <CreateCouponForm />
         </div>
@@ -84,6 +86,7 @@ export default async function AdminCouponsPage() {
       <section className="rounded-card border border-line-subtle bg-off-white shadow-soft">
         <header className="border-b border-line-subtle px-6 py-5">
           <h2 className="font-serif text-title-2">Catálogo</h2>
+          <p className="mt-1 text-caption text-vinho/60">Todos os cupons. Usos = Pix confirmados / limite (se houver). Status “Ativo” = pode ser usado agora; “Inativo” = desativado à mão (não apaga o histórico).</p>
         </header>
 
         {coupons.length === 0 ? (
