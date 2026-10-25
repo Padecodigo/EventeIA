@@ -303,6 +303,7 @@ describe("pacotes, slider e franquia", () => {
     const { subscribeToPlanAction } = await import("@/app/(dashboard)/creditos/actions");
     const f = new FormData();
     f.set("planCode", "atelier");
+    f.set("renew", "yes");
     const state = await subscribeToPlanAction({}, f);
     expect(state.success).toBe(true);
     expect(state.applied).toEqual({

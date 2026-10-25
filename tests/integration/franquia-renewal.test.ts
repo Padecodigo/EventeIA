@@ -55,7 +55,13 @@ function tableApi(table: string) {
   };
   q.insert = (row: Record<string, unknown>) => {
     inserts.push({ table, row });
-    return Promise.resolve({ error: null });
+    const done = { data: { id: "pay-local-1" }, error: null };
+    const r: Record<string, unknown> = {};
+    r.select = () => r;
+    r.single = () => Promise.resolve(done);
+    r.maybeSingle = () => Promise.resolve(done);
+    r.then = (resolve: (v: unknown) => unknown) => resolve({ error: null });
+    return r;
   };
   q.update = (row: Record<string, unknown>) => {
     updates.push({ table, row });
@@ -69,7 +75,13 @@ function tableApi(table: string) {
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: () => Promise.resolve({ from: tableApi }),
 }));
-vi.mock("@/lib/supabase/admin", () => ({ getSupabaseAdmin: () => ({ from: tableApi }) }));
+// Sem oferta pessoal (0036) nem cupom neste arquivo.
+vi.mock("@/lib/supabase/admin", () => ({
+  getSupabaseAdmin: () => ({
+    from: tableApi,
+    rpc: () => Promise.resolve({ data: [], error: null }),
+  }),
+}));
 
 const { subscribeToPlanAction, cancelSubscriptionAction } =
   await import("@/app/(dashboard)/creditos/actions");
