@@ -22,7 +22,7 @@ describe("buildPaymentPayload", () => {
     });
   });
 
-  it("Cartão: CREDIT_CARD SEM dados de cartão (Fatura hospedada, crédito/débito)", () => {
+  it("Cartão: CREDIT_CARD SEM dados de cartão (Fatura hospedada, crédito)", () => {
     const payload = buildPaymentPayload({ ...base, billingType: "CREDIT_CARD" });
     expect(payload.billingType).toBe("CREDIT_CARD");
     expect(payload).not.toHaveProperty("creditCard");
@@ -31,7 +31,9 @@ describe("buildPaymentPayload", () => {
 
   it("nunca oferece boleto nem UNDEFINED", () => {
     for (const t of ["PIX", "CREDIT_CARD"] as const) {
-      expect(["BOLETO", "UNDEFINED"]).not.toContain(buildPaymentPayload({ ...base, billingType: t }).billingType);
+      expect(["BOLETO", "UNDEFINED"]).not.toContain(
+        buildPaymentPayload({ ...base, billingType: t }).billingType,
+      );
     }
   });
 

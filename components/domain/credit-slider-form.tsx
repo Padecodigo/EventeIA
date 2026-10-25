@@ -27,8 +27,8 @@ export function CreditSliderForm({ defaultCredits = 7 }: { defaultCredits?: numb
           Cobrança no cartão gerada — {String(credits)} créditos
         </p>
         <p className="mt-2 text-sm text-vinho/75">
-          Conclua com cartão de crédito ou débito na página segura do Asaas. Os dados do cartão são
-          digitados lá — a EventeIA não os recebe.
+          Conclua com cartão de crédito na página segura do Asaas. Os dados do cartão são digitados
+          lá — a EventeIA não os recebe.
         </p>
         <a
           href={state.card.invoiceUrl}
@@ -119,15 +119,15 @@ export function CreditSliderForm({ defaultCredits = 7 }: { defaultCredits?: numb
         </div>
       </dl>
       <p className="mt-5 text-caption text-vinho/70">
-        {`Comprar ${String(credits)} por ${formatBRL(quote.priceCents)}`} — Pix, cartão de crédito
-        ou cartão de débito.
+        {`Comprar ${String(credits)} por ${formatBRL(quote.priceCents)}`} — Pix ou cartão de
+        crédito.
       </p>
       <div className="mt-2 flex flex-col gap-2 sm:flex-row">
         <Button type="submit" name="method" value="pix" disabled={pending}>
           {pending ? "Gerando cobrança…" : "Pagar com Pix"}
         </Button>
         <Button type="submit" name="method" value="card" variant="secondary" disabled={pending}>
-          Cartão de crédito ou débito
+          Cartão de crédito
         </Button>
       </div>
       {state.error !== undefined ? (

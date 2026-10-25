@@ -85,14 +85,16 @@ export async function createEventAction(
     return { error: "Confira os dados do evento e tente novamente." };
   }
 
-  const municipio = parsed.data.cityCode === undefined ? null : findMunicipioByCode(parsed.data.cityCode);
+  const municipio =
+    parsed.data.cityCode === undefined ? null : findMunicipioByCode(parsed.data.cityCode);
   if (parsed.data.cityCode !== undefined && municipio === null) {
     return { error: "Escolha a cidade do evento na lista." };
   }
   if (municipio === null && parsed.data.region === undefined) {
     return { error: "Escolha a cidade do evento." };
   }
-  const regionCode = municipio !== null ? regionForUf(municipio.uf) : (parsed.data.region ?? "outros");
+  const regionCode =
+    municipio !== null ? regionForUf(municipio.uf) : (parsed.data.region ?? "outros");
 
   const supabase = await createSupabaseServerClient();
   const { data: workspace } = await supabase
@@ -222,7 +224,7 @@ export interface CheckoutState {
   };
   /** Cortesia (cupom gratuito): evento ativado sem cobrança. */
   courtesy?: { activated: true };
-  /** Cartão (crédito/débito): o pagador conclui na Fatura hospedada do Asaas. */
+  /** Cartão de crédito: o pagador conclui na Fatura hospedada do Asaas. */
   card?: { invoiceUrl: string };
   applied?: {
     code: string;
@@ -328,7 +330,9 @@ export async function buyTicketAction(
           return { error: "Não foi possível aplicar a cortesia. Tente novamente." };
         }
         if (outcome !== "activated") {
-          return { error: COUPON_REFUSAL[String(outcome)] ?? "Cupom inválido, expirado ou esgotado." };
+          return {
+            error: COUPON_REFUSAL[String(outcome)] ?? "Cupom inválido, expirado ou esgotado.",
+          };
         }
         // Cortesia não passa pelo webhook do Asaas: inicia a descoberta aqui.
         await kickoffDiscovery(event.id);
@@ -351,7 +355,9 @@ export async function buyTicketAction(
         return { error: "Não foi possível validar o cupom. Tente novamente." };
       }
       if (reservation.status !== "ok") {
-        return { error: COUPON_REFUSAL[reservation.status] ?? "Cupom inválido, expirado ou esgotado." };
+        return {
+          error: COUPON_REFUSAL[reservation.status] ?? "Cupom inválido, expirado ou esgotado.",
+        };
       }
       reservationId = reservation.reservation_id;
 
@@ -887,12 +893,22 @@ export async function addVendorProspectAction(
   // Instância do próprio cliente (Regra: WhatsApp do usuário envia), vinculada a ESTE evento.
   let instance: string;
   try {
-    ({ instance } = await ensureUserInstance(supabaseInstanceStore(), { userId: user.id, eventId: event.id, onBusy: "throw" }));
+    ({ instance } = await ensureUserInstance(supabaseInstanceStore(), {
+      userId: user.id,
+      eventId: event.id,
+      onBusy: "throw",
+    }));
   } catch (caught) {
     if (caught instanceof InstanceBusyError) {
-      return { error: "Seu WhatsApp ainda está coletando orçamentos de outro evento. Aguarde essa coleta terminar." };
+      return {
+        error:
+          "Seu WhatsApp ainda está coletando orçamentos de outro evento. Aguarde essa coleta terminar.",
+      };
     }
-    logger.error({ reason: caught instanceof Error ? caught.message : "?" }, "falha ao preparar instância");
+    logger.error(
+      { reason: caught instanceof Error ? caught.message : "?" },
+      "falha ao preparar instância",
+    );
     return { error: "Não foi possível preparar sua instância do WhatsApp." };
   }
 
@@ -925,7 +941,9 @@ export async function addVendorProspectAction(
     eventDateIso: event.event_date,
     city:
       event.city !== null && event.city.length > 0
-        ? event.city_uf !== null ? `${event.city} (${event.city_uf})` : event.city
+        ? event.city_uf !== null
+          ? `${event.city} (${event.city_uf})`
+          : event.city
         : (REGION_LABELS[event.region_code] ?? ""),
     guestCount: event.guest_count,
   });

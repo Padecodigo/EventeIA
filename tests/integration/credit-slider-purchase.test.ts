@@ -122,7 +122,7 @@ describe("compra pelo slider", () => {
   });
 });
 
-describe("créditos — Pix ou cartão (crédito/débito)", () => {
+describe("créditos — Pix ou cartão de crédito", () => {
   function fd(entries: Record<string, string>): FormData {
     const f = new FormData();
     for (const [k, v] of Object.entries(entries)) f.set(k, v);

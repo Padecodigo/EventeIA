@@ -65,7 +65,7 @@ export interface CreditsCheckoutState {
     invoiceUrl?: string;
     expirationDate?: string;
   };
-  /** Cartão (crédito/débito): o pagador conclui na Fatura hospedada do Asaas. */
+  /** Cartão de crédito: o pagador conclui na Fatura hospedada do Asaas. */
   card?: { invoiceUrl: string };
 }
 
