@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createFakeDb, fakeClient, type FakeDb } from "./helpers/fake-supabase";
 
@@ -162,6 +162,11 @@ const fns = () => rpcCalls.map((c) => c.fn);
 const asaasValue = () => calls.find((c) => c.body?.value !== undefined)?.body?.value;
 
 describe("evento avulso", () => {
+  // Aquece o import pesado da action (evita timeout do 1º teste sob carga no CI).
+  beforeAll(async () => {
+    await import("@/app/(dashboard)/eventos/actions");
+  }, 60_000);
+
   it("boas-vindas ativa ⇒ R$ 97 − R$ 40 = R$ 57, resgata e vincula ao pagamento", async () => {
     const { buyTicketAction } = await import("@/app/(dashboard)/eventos/actions");
     const state = await buyTicketAction({}, ticketForm());

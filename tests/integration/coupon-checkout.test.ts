@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createFakeDb, fakeClient, type FakeDb } from "./helpers/fake-supabase";
 
@@ -125,6 +125,11 @@ function form(coupon: string, method = "pix"): FormData {
 }
 
 describe("checkout com cupom", () => {
+  // Aquece o import pesado da action (evita timeout do 1º teste sob carga no CI).
+  beforeAll(async () => {
+    await import("@/app/(dashboard)/eventos/actions");
+  }, 60_000);
+
   it("cortesia ⇒ ativa via RPC atômica, total 0, NENHUMA chamada ao Asaas", async () => {
     const { buyTicketAction } = await import("@/app/(dashboard)/eventos/actions");
     const state = await buyTicketAction({}, form("eventeia-free-277560"));
