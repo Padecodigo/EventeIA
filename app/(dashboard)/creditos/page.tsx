@@ -166,7 +166,7 @@ export default async function CreditsPage() {
       <section>
         <h2 className="font-serif text-title-1">Precisa de créditos extras agora?</h2>
         <p className="mt-1 text-sm text-vinho/75">
-          Arraste para escolher de 3 a 20 eventos. Pix, sem assinatura e sem validade.
+          Arraste para escolher de 3 a 20 eventos. Pix ou cartão (crédito/débito), sem assinatura e sem validade.
         </p>
 
         <div className="mt-6 max-w-xl">

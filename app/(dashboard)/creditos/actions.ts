@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import {
   AsaasNotConfiguredError,
+  createAsaasCardPayment,
   createAsaasCustomer,
   createAsaasPixPayment,
   createAsaasSubscription,
@@ -64,7 +65,11 @@ export interface CreditsCheckoutState {
     invoiceUrl?: string;
     expirationDate?: string;
   };
+  /** Cartão (crédito/débito): o pagador conclui na Fatura hospedada do Asaas. */
+  card?: { invoiceUrl: string };
 }
+
+const paymentMethodSchema = z.enum(["pix", "card"]).default("pix");
 
 export interface SubscribeState {
   error?: string;
@@ -245,6 +250,12 @@ export async function buyCreditsAction(
     return { error: "Pacote inválido." };
   }
 
+  const method = paymentMethodSchema.safeParse(formData.get("method") ?? undefined);
+  if (!method.success) {
+    return { error: "Forma de pagamento inválida." };
+  }
+  const billingType = method.data === "card" ? "CREDIT_CARD" : "PIX";
+
   const supabase = await createSupabaseServerClient();
   const { data: workspace } = await supabase
     .from("workspaces")
@@ -286,13 +297,17 @@ export async function buyCreditsAction(
 
     const dueDate = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
 
-    const asaasPayment = await createAsaasPixPayment({
+    const chargeInput = {
       customerId,
       amountCents: pack.priceCents,
       externalReference: `topup:${workspace.id}:${pack.code}`,
       description: `EventeIA — ${pack.name} (${String(pack.credits)} créditos)`,
       dueDate,
-    });
+    };
+    const pixPayment = billingType === "PIX" ? await createAsaasPixPayment(chargeInput) : null;
+    const cardPayment =
+      billingType === "CREDIT_CARD" ? await createAsaasCardPayment(chargeInput) : null;
+    const asaasPaymentId = pixPayment?.paymentId ?? cardPayment?.paymentId ?? "";
 
     const { error: paymentError } = await supabase.from("payments").insert({
       profile_id: user.id,
@@ -300,8 +315,8 @@ export async function buyCreditsAction(
       event_id: null,
       workspace_id: workspace.id,
       credits_granted: pack.credits,
-      asaas_payment_id: asaasPayment.paymentId,
-      billing_type: "PIX",
+      asaas_payment_id: asaasPaymentId,
+      billing_type: billingType,
       amount_cents: pack.priceCents,
       status: "pending",
     });
@@ -317,25 +332,28 @@ export async function buyCreditsAction(
         actorType: "user",
         actorId: user.id,
         aggregateType: "payment",
-        aggregateId: asaasPayment.paymentId,
+        aggregateId: asaasPaymentId,
         payload: {
           amount_cents: pack.priceCents,
           credits_granted: pack.credits,
-          billing_type: "PIX",
+          billing_type: billingType,
           purpose: "credit_topup",
         },
-        correlationId: asaasPayment.paymentId,
+        correlationId: asaasPaymentId,
         source: "app",
       });
     } catch {
       // feed não bloqueia o checkout
     }
 
+    if (cardPayment !== null) {
+      return { card: { invoiceUrl: cardPayment.invoiceUrl } };
+    }
     return {
       pix: {
-        payload: asaasPayment.pix.payload,
-        invoiceUrl: asaasPayment.invoiceUrl,
-        expirationDate: asaasPayment.pix.expirationDate,
+        payload: pixPayment?.pix.payload ?? "",
+        invoiceUrl: pixPayment?.invoiceUrl,
+        expirationDate: pixPayment?.pix.expirationDate,
       },
     };
   } catch (caught) {

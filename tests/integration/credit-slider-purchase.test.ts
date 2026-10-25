@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  */
 const pixCalls: { amountCents: number; externalReference: string }[] = [];
 const payments: Record<string, unknown>[] = [];
+const cardCalls: { amountCents: number; externalReference: string }[] = [];
 
 vi.mock("@/lib/auth", () => ({ requireUser: async () => ({ id: "user-1", email: "a@b.com" }) }));
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined }));
@@ -16,6 +17,13 @@ vi.mock("@/lib/asaas/client", () => ({
   AsaasNotConfiguredError: class extends Error {},
   createAsaasCustomer: async () => "cus_1",
   createAsaasSubscription: async () => ({ subscriptionId: "sub_1" }),
+  createAsaasCardPayment: async (input: { amountCents: number; externalReference: string }) => {
+    cardCalls.push(input);
+    return {
+      paymentId: `card_${String(cardCalls.length)}`,
+      invoiceUrl: "https://www.asaas.com/i/card",
+    };
+  },
   createAsaasPixPayment: async (input: { amountCents: number; externalReference: string }) => {
     pixCalls.push(input);
     return {
@@ -111,5 +119,42 @@ describe("compra pelo slider", () => {
     expect(await buyCreditsAction({}, form({ packageCode: "pacote-99" }))).toEqual({
       error: "Pacote inválido.",
     });
+  });
+});
+
+describe("créditos — Pix ou cartão (crédito/débito)", () => {
+  function fd(entries: Record<string, string>): FormData {
+    const f = new FormData();
+    for (const [k, v] of Object.entries(entries)) f.set(k, v);
+    return f;
+  }
+
+  it("cartão ⇒ cobrança CREDIT_CARD via Fatura, payment pendente com o preço do servidor", async () => {
+    payments.length = 0;
+    cardCalls.length = 0;
+    const before = pixCalls.length;
+    const state = await buyCreditsAction({}, fd({ credits: "10", method: "card" }));
+    expect(state).toEqual({ card: { invoiceUrl: "https://www.asaas.com/i/card" } });
+    expect(pixCalls.length).toBe(before);
+    expect(cardCalls[0]?.amountCents).toBe(customCreditsPriceCents(10));
+    expect(payments[0]).toMatchObject({
+      billing_type: "CREDIT_CARD",
+      credits_granted: 10,
+      status: "pending",
+      asaas_payment_id: "card_1",
+    });
+  });
+
+  it("regressão: sem método ⇒ Pix; método inválido (boleto) recusado sem cobrança", async () => {
+    payments.length = 0;
+    cardCalls.length = 0;
+    const pix = await buyCreditsAction({}, fd({ credits: "5" }));
+    expect(pix.pix?.payload).toBe("PIX");
+    expect(payments[0]).toMatchObject({ billing_type: "PIX" });
+    const before = pixCalls.length;
+    const bad = await buyCreditsAction({}, fd({ credits: "5", method: "boleto" }));
+    expect(bad.error).toBeDefined();
+    expect(pixCalls.length).toBe(before);
+    expect(cardCalls).toHaveLength(0);
   });
 });

@@ -20,6 +20,31 @@ export function CreditSliderForm({ defaultCredits = 7 }: { defaultCredits?: numb
   const quote = quoteCustomCredits(credits);
   const valueText = `${String(credits)} eventos por ${formatBRL(quote.priceCents)}`;
 
+  if (state.card !== undefined) {
+    return (
+      <div className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
+        <p className="text-caption font-semibold uppercase tracking-[0.12em] text-vinho/70">
+          Cobrança no cartão gerada — {String(credits)} créditos
+        </p>
+        <p className="mt-2 text-sm text-vinho/75">
+          Conclua com cartão de crédito ou débito na página segura do Asaas. Os dados do cartão são
+          digitados lá — a EventeIA não os recebe.
+        </p>
+        <a
+          href={state.card.invoiceUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-3 inline-flex rounded-xl bg-vinho px-5 py-3 text-sm font-medium text-off-white"
+        >
+          Pagar com cartão
+        </a>
+        <p className="mt-2 text-caption text-vinho/70">
+          Créditos liberados automaticamente após a confirmação.
+        </p>
+      </div>
+    );
+  }
+
   if (state.pix !== undefined) {
     return (
       <div className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
@@ -93,11 +118,16 @@ export function CreditSliderForm({ defaultCredits = 7 }: { defaultCredits?: numb
           <dd className="tabular-nums">{formatBRL(quote.savingsCents)}</dd>
         </div>
       </dl>
-      <div className="mt-5">
-        <Button type="submit" disabled={pending}>
-          {pending
-            ? "Gerando Pix…"
-            : `Comprar ${String(credits)} por ${formatBRL(quote.priceCents)}`}
+      <p className="mt-5 text-caption text-vinho/70">
+        {`Comprar ${String(credits)} por ${formatBRL(quote.priceCents)}`} — Pix, cartão de crédito
+        ou cartão de débito.
+      </p>
+      <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+        <Button type="submit" name="method" value="pix" disabled={pending}>
+          {pending ? "Gerando cobrança…" : "Pagar com Pix"}
+        </Button>
+        <Button type="submit" name="method" value="card" variant="secondary" disabled={pending}>
+          Cartão de crédito ou débito
         </Button>
       </div>
       {state.error !== undefined ? (
