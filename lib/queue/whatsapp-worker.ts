@@ -91,7 +91,7 @@ async function processProspectingJob(
     logger.info({ prospectId: data.prospectId }, "dry-run: envio suprimido");
     return;
   }
-  // Horário comercial 8h–20h (Brasília).
+  // Dia útil (seg–sex, sem feriados nacionais), 9h–18h (Brasília): fora disso, adia — nunca descarta.
   const waitBusiness = msUntilBusinessHours(new Date());
   if (waitBusiness > 0) {
     await delay(job, Date.now() + waitBusiness, token);

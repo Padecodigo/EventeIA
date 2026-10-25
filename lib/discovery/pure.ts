@@ -1,7 +1,9 @@
+import { z } from "zod";
+
+import { msUntilBusinessWindow, OUTREACH_WINDOW } from "@/lib/business-days";
 /**
  * Regras puras da descoberta automática de fornecedores (sem I/O, testáveis).
  */
-import { z } from "zod";
 
 import { CATEGORY_LABELS, type CategoryCode, type Unit } from "@/lib/catalog/v1";
 import { firstContactMessageSchema } from "@/lib/schemas/whatsapp";
@@ -16,7 +18,7 @@ export const MAX_PROSPECTS_PER_CATEGORY = 12;
 export const MAX_PROSPECTS_PER_EVENT_AUTO = 120;
 export const DAILY_FIRST_CONTACTS_PER_INSTANCE = 50;
 export const RECONTACT_MIN_DAYS = 15;
-export const BUSINESS_HOURS = { startHour: 8, endHour: 20, timeZone: "America/Sao_Paulo" } as const;
+export const BUSINESS_HOURS = { startHour: 9, endHour: 18, timeZone: "America/Sao_Paulo" } as const;
 export const OPT_OUT_PAUSE = { minContacted: 10, maxRate: 0.2 } as const;
 export const ROUND_INTERVAL_MS = 2 * 60 * 60 * 1000;
 
@@ -74,13 +76,8 @@ export function localDateKey(date: Date, timeZone: string = BUSINESS_HOURS.timeZ
  * Varre de 15 em 15 min (sem lib de fuso), suficiente para agendar o retry.
  */
 export function msUntilBusinessHours(now: Date): number {
-  const { startHour, endHour, timeZone } = BUSINESS_HOURS;
-  const step = 15 * 60 * 1000;
-  for (let t = 0; t <= 26 * 60 * 60 * 1000; t += step) {
-    const { hour } = localParts(new Date(now.getTime() + t), timeZone);
-    if (hour >= startHour && hour < endHour) return t;
-  }
-  return step;
+  // Contato com fornecedores só em dia útil (seg–sex, sem feriados nacionais), 9h–18h de Brasília.
+  return msUntilBusinessWindow(now, OUTREACH_WINDOW);
 }
 
 export function collectionEnded(input: {

@@ -19,6 +19,7 @@ export const QUEUE_NAMES = {
   testimonialInvites: "testimonial-invites",
   supplierDiscovery: "supplier-discovery-queue",
   quoteExtraction: "quote-extraction-queue",
+  financeBalanceCheck: "finance-balance-check",
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];

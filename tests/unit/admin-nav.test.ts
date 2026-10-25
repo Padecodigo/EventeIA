@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import { ADMIN_NAV, isAdminRole } from "@/lib/admin/nav";
@@ -7,6 +8,7 @@ describe("menu admin (superusuário)", () => {
   it("lista todas as páginas administrativas", () => {
     expect(ADMIN_NAV.map((i) => i.href)).toEqual([
       "/admin/financeiro",
+      "/admin/custos",
       "/admin/consumo",
       "/admin/depoimentos",
       "/admin/cupons",

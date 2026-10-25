@@ -75,9 +75,13 @@ describe("regras de coleta", () => {
     expect(shouldAutoPause({ contacted: 10, optOuts: 3 })).toBe(true);
     expect(shouldAutoPause({ contacted: 10, optOuts: 2 })).toBe(false);
   });
-  it("horário comercial 8–20h de Brasília", () => {
-    expect(msUntilBusinessHours(new Date("2026-10-24T13:00:00Z"))).toBe(0); // 10h SP
-    expect(msUntilBusinessHours(new Date("2026-10-24T23:30:00Z"))).toBeGreaterThan(0); // 20h30 SP
+  it("contato só em dia útil 9–18h de Brasília", () => {
+    expect(msUntilBusinessHours(new Date("2026-10-23T13:00:00Z"))).toBe(0); // sex 10h SP
+    expect(msUntilBusinessHours(new Date("2026-10-23T21:30:00Z"))).toBeGreaterThan(0); // sex 18h30 SP
+    // Regressão: sábado 10h antes era liberado; agora adia até segunda 9h.
+    expect(msUntilBusinessHours(new Date("2026-10-24T13:00:00Z"))).toBe(
+      Date.parse("2026-10-26T12:00:00Z") - Date.parse("2026-10-24T13:00:00Z"),
+    );
     expect(localDateKey(new Date("2026-10-25T01:00:00Z"))).toBe("2026-10-24");
   });
 });

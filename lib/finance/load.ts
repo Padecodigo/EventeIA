@@ -26,6 +26,10 @@ export const PROVIDER_LABELS: Record<string, string> = {
   vps: "VPS",
   supabase: "Supabase",
   domain: "Domínio",
+  serper: "Serper",
+  google_places: "Google Places",
+  resend: "Resend (e-mail)",
+  evolution: "Evolution (WhatsApp)",
   other: "Outros",
 };
 
