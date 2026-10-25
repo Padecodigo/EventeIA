@@ -1,11 +1,11 @@
 import Link from "next/link";
 
-import { CreditPackageForm } from "@/components/domain/credit-package-form";
+import { CreditSliderForm } from "@/components/domain/credit-slider-form";
 import { SubscribePlanForm } from "@/components/domain/subscribe-plan-form";
 import { requireUser } from "@/lib/auth";
 import { currentBalanceCents } from "@/lib/credits";
 import { formatBRL, roundHalfUpDiv } from "@/lib/money";
-import { CREDIT_PACKAGES, PLANS } from "@/lib/plans";
+import { PLANS } from "@/lib/plans";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import { createWorkspaceAction } from "./actions";
@@ -96,8 +96,7 @@ export default async function CreditsPage() {
         <div className="rounded-card border border-line-subtle bg-off-white px-6 py-4 shadow-soft">
           <p className="text-caption text-vinho/70">Saldo disponível</p>
           <p className="font-serif text-display-2 tabular-nums">
-            {String(Math.trunc(balance / 100))}{" "}
-            <span className="text-title-3">créditos</span>
+            {String(Math.trunc(balance / 100))} <span className="text-title-3">créditos</span>
           </p>
           <p className="text-caption text-vinho/70">{formatBRL(balance)} em valor de evento</p>
         </div>
@@ -116,12 +115,19 @@ export default async function CreditsPage() {
               Assinatura {subscription.status === "active" ? "ativa" : "pendente de confirmação"}
             </p>
             <p className="mt-2 font-serif text-title-1">
-              Plano {subscription.plan_code === "atelier" ? "Atelier" : subscription.plan_code === "essencial" ? "Essencial" : "Maison"}
+              Plano{" "}
+              {subscription.plan_code === "atelier"
+                ? "Atelier"
+                : subscription.plan_code === "essencial"
+                  ? "Essencial"
+                  : "Maison"}
             </p>
             {subscription.current_period_end !== null ? (
               <p className="mt-1 text-caption text-off-white/75">
                 Ciclo atual até{" "}
-                {new Date(`${subscription.current_period_end}T12:00:00Z`).toLocaleDateString("pt-BR")}
+                {new Date(`${subscription.current_period_end}T12:00:00Z`).toLocaleDateString(
+                  "pt-BR",
+                )}
               </p>
             ) : null}
           </div>
@@ -160,41 +166,18 @@ export default async function CreditsPage() {
       <section>
         <h2 className="font-serif text-title-1">Precisa de créditos extras agora?</h2>
         <p className="mt-1 text-sm text-vinho/75">
-          Pacotes avulsos via Pix, sem assinatura e sem validade.
+          Arraste para escolher de 3 a 20 eventos. Pix, sem assinatura e sem validade.
         </p>
 
-        <div className="mt-6 grid gap-6 md:grid-cols-3">
-          {CREDIT_PACKAGES.map((pack) => (
-            <article
-              key={pack.code}
-              className="flex flex-col rounded-card border border-line-subtle bg-off-white p-6 shadow-soft"
-            >
-              <h3 className="font-serif text-title-2">{pack.name}</h3>
-              <p className="mt-2 text-sm text-vinho/75">{pack.description}</p>
-              <p className="mt-4 font-serif text-title-1">{formatBRL(pack.priceCents)}</p>
-              <p className="text-caption text-vinho/70">
-                {String(pack.credits)} créditos · {formatBRL(roundHalfUpDiv(pack.priceCents, pack.credits))} por
-                evento
-              </p>
-              <div className="mt-5">
-                <CreditPackageForm
-                  code={pack.code}
-                  name={pack.name}
-                  credits={pack.credits}
-                  priceFormatted={formatBRL(pack.priceCents)}
-                />
-              </div>
-            </article>
-          ))}
+        <div className="mt-6 max-w-xl">
+          <CreditSliderForm />
         </div>
       </section>
 
       <section className="rounded-card border border-line-subtle bg-off-white shadow-soft">
         <header className="border-b border-line-subtle px-6 py-5">
           <h2 className="font-serif text-title-1">Extrato de créditos</h2>
-          <p className="mt-1 text-caption text-vinho/70">
-            Cada lançamento é imutável e auditável.
-          </p>
+          <p className="mt-1 text-caption text-vinho/70">Cada lançamento é imutável e auditável.</p>
         </header>
 
         {ledger.length > 0 ? (
@@ -210,7 +193,10 @@ export default async function CreditsPage() {
               </thead>
               <tbody>
                 {ledger.map((entry) => (
-                  <tr key={entry.id} className="border-t border-line-subtle even:bg-areia-quente/60">
+                  <tr
+                    key={entry.id}
+                    className="border-t border-line-subtle even:bg-areia-quente/60"
+                  >
                     <td className="px-6 py-3 text-vinho">
                       {entryLabels[entry.entry_type] ?? entry.entry_type}
                     </td>
