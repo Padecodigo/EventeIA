@@ -48,7 +48,9 @@ export function createSessionDeps(): SessionDeps {
           ...(extra?.windowMinutes !== undefined
             ? { collection_window_minutes: extra.windowMinutes, activated_at: nowIso }
             : {}),
-          ...(extra?.drainAtMs !== undefined ? { drain_at: new Date(extra.drainAtMs).toISOString() } : {}),
+          ...(extra?.drainAtMs !== undefined
+            ? { drain_at: new Date(extra.drainAtMs).toISOString() }
+            : {}),
           ...(state === "disconnected" ? { disconnected_at: nowIso } : {}),
         })
         .eq("instance_name", instance);
@@ -57,6 +59,7 @@ export function createSessionDeps(): SessionDeps {
     async pauseEventJobs(eventId) {
       await getRedisConnection().set(eventPausedKey(eventId), "1", "EX", EVENT_PAUSE_TTL_SECONDS);
     },
+    resumeEventJobs,
     async scheduleWindowEnd(instance, eventId, delayMs) {
       await enqueue(
         QUEUE_NAMES.whatsappSessionLifecycle,
@@ -103,7 +106,10 @@ export async function findEventInstance(eventId: string): Promise<string | null>
 }
 
 /** Prazo máximo da coleta (48h por padrão), agendado ao iniciar a descoberta. */
-export async function scheduleCollectionDeadline(eventId: string, delayMs: number): Promise<boolean> {
+export async function scheduleCollectionDeadline(
+  eventId: string,
+  delayMs: number,
+): Promise<boolean> {
   return enqueue(
     QUEUE_NAMES.whatsappSessionLifecycle,
     "collection-deadline",

@@ -100,6 +100,8 @@ export async function runInstanceHealthSweep(): Promise<number> {
 
       if (state === "open") {
         anyConnected = true;
+        // Sessão aberta: garante que a fila do evento não ficou pausada (idempotente).
+        if (instance.event_id !== null) await resumeEventJobs(instance.event_id);
       }
 
       if (status !== instance.status) {

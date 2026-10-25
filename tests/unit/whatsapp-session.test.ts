@@ -75,7 +75,9 @@ describe("reservePacingSlot", () => {
     const now = { ms: 0 };
     const store = fakeStore(now);
     const results = await Promise.all(
-      Array.from({ length: 100 }, (_, i) => reservePacingSlot(store, `inst-${String(i)}`, 0, () => 0.3)),
+      Array.from({ length: 100 }, (_, i) =>
+        reservePacingSlot(store, `inst-${String(i)}`, 0, () => 0.3),
+      ),
     );
     expect(results.every((r) => r.allowed)).toBe(true);
   });
@@ -94,21 +96,35 @@ describe("reservePacingSlot", () => {
 describe("firstContactPayloadSchema", () => {
   const text = "Olá, tudo bem? Gostaria de um orçamento para uma festa infantil em maio.";
   it("aceita apenas número + texto puro", () => {
-    expect(firstContactPayloadSchema.safeParse({ number: "+5512999999999", text }).success).toBe(true);
+    expect(firstContactPayloadSchema.safeParse({ number: "+5512999999999", text }).success).toBe(
+      true,
+    );
   });
   it("rejeita anexos/mídia e URLs", () => {
     expect(
-      firstContactPayloadSchema.safeParse({ number: "+5512999999999", text, media: "x.jpg" }).success,
+      firstContactPayloadSchema.safeParse({ number: "+5512999999999", text, media: "x.jpg" })
+        .success,
     ).toBe(false);
     expect(
-      firstContactPayloadSchema.safeParse({ number: "+5512999999999", text: `${text} https://x.co` }).success,
+      firstContactPayloadSchema.safeParse({
+        number: "+5512999999999",
+        text: `${text} https://x.co`,
+      }).success,
     ).toBe(false);
   });
 });
 
 describe("detectOptOut (palavras inteiras, sem acento)", () => {
   it("detecta variantes", () => {
-    for (const t of ["Sair", "PARAR", "pare por favor", "Não tenho interesse", "nao tenho interesse.", "sem interesse, obrigado", "Não quero mais"]) {
+    for (const t of [
+      "Sair",
+      "PARAR",
+      "pare por favor",
+      "Não tenho interesse",
+      "nao tenho interesse.",
+      "sem interesse, obrigado",
+      "Não quero mais",
+    ]) {
       expect(detectOptOut(t)).toBe(true);
     }
   });
@@ -146,7 +162,9 @@ describe("session-lifecycle", () => {
   });
 });
 
-function fakeSessionDeps(initial: string | null): SessionDeps & { calls: string[]; status: string | null } {
+function fakeSessionDeps(
+  initial: string | null,
+): SessionDeps & { calls: string[]; status: string | null } {
   const deps = {
     calls: [] as string[],
     status: initial,
@@ -217,7 +235,9 @@ describe("session-manager", () => {
   it("entrega falha: NÃO desconecta (fica em draining) e o erro sobe para retry", async () => {
     const deps = fakeSessionDeps("active");
     deps.deliverQuotes = () => Promise.reject(new Error("cenários"));
-    await expect(endCollectionWindow(deps, { instance: "i", eventId: "e" })).rejects.toThrow("cenários");
+    await expect(endCollectionWindow(deps, { instance: "i", eventId: "e" })).rejects.toThrow(
+      "cenários",
+    );
     expect(deps.status).toBe("draining");
     expect(deps.calls).not.toContain("logout");
   });
@@ -225,17 +245,20 @@ describe("session-manager", () => {
   it("meta de 5 cotações por categoria dispara o encerramento antecipado", async () => {
     const deps = fakeSessionDeps("active");
     const base = { instance: "i", eventId: "e", categories: ["buffet", "doces"] };
-    expect(await completeCollectionIfReady(deps, { ...base, quotesByCategory: { buffet: 5, doces: 4 } })).toBe(
-      "pending",
-    );
-    expect(await completeCollectionIfReady(deps, { ...base, quotesByCategory: { buffet: 6, doces: 5 } })).toBe(
-      "triggered",
-    );
+    expect(
+      await completeCollectionIfReady(deps, { ...base, quotesByCategory: { buffet: 5, doces: 4 } }),
+    ).toBe("pending");
+    expect(
+      await completeCollectionIfReady(deps, { ...base, quotesByCategory: { buffet: 6, doces: 5 } }),
+    ).toBe("triggered");
     expect(deps.calls).toEqual(["trigger:e"]);
     const closed = fakeSessionDeps("disconnected");
-    expect(await completeCollectionIfReady(closed, { ...base, quotesByCategory: { buffet: 5, doces: 5 } })).toBe(
-      "not_active",
-    );
+    expect(
+      await completeCollectionIfReady(closed, {
+        ...base,
+        quotesByCategory: { buffet: 5, doces: 5 },
+      }),
+    ).toBe("not_active");
   });
 
   it("encerramento por meta notifica com motivo collection_complete", async () => {
@@ -253,16 +276,18 @@ describe("session-manager", () => {
 
   it("finishCollection: sem sessão entrega e notifica direto; com sessão ativa faz logout", async () => {
     const none = fakeSessionDeps(null);
-    expect(await finishCollection(none, { instance: null, eventId: "e", reason: "collection_complete" })).toBe(
-      "delivered_without_session",
-    );
+    expect(
+      await finishCollection(none, { instance: null, eventId: "e", reason: "collection_complete" }),
+    ).toBe("delivered_without_session");
     expect(none.calls).toEqual(["deliver:e", "notify:e:collection_complete"]);
     const lost = fakeSessionDeps("disconnected");
-    expect(await finishCollection(lost, { instance: "i", eventId: "e", reason: "window_closed" })).toBe(
-      "delivered_without_session",
-    );
+    expect(
+      await finishCollection(lost, { instance: "i", eventId: "e", reason: "window_closed" }),
+    ).toBe("delivered_without_session");
     const active = fakeSessionDeps("active");
-    expect(await finishCollection(active, { instance: "i", eventId: "e", reason: "window_closed" })).toBe("closed");
+    expect(
+      await finishCollection(active, { instance: "i", eventId: "e", reason: "window_closed" }),
+    ).toBe("closed");
     expect(active.calls).toContain("logout");
   });
 
@@ -287,7 +312,12 @@ function fakeNotificationDeps(sink: EmailMessage[]): NotificationDeps & { rows: 
   return {
     rows,
     getOwnerContact: () =>
-      Promise.resolve({ profileId: "p", email: "ana@example.com", displayName: "Ana", eventTitle: "Festa da Lia" }),
+      Promise.resolve({
+        profileId: "p",
+        email: "ana@example.com",
+        displayName: "Ana",
+        eventTitle: "Festa da Lia",
+      }),
     insertNotification: (row) => {
       if (rows.has(row.idempotencyKey)) return Promise.resolve(null);
       rows.add(row.idempotencyKey);
@@ -303,8 +333,12 @@ describe("quotations_ready", () => {
   it("cria notificação + e-mail uma única vez (idempotente)", async () => {
     const sink: EmailMessage[] = [];
     const deps = fakeNotificationDeps(sink);
-    expect(await recordQuotationsReady(deps, { eventId: "e", reason: "window_closed" })).toBe("created");
-    expect(await recordQuotationsReady(deps, { eventId: "e", reason: "session_lost" })).toBe("duplicate");
+    expect(await recordQuotationsReady(deps, { eventId: "e", reason: "window_closed" })).toBe(
+      "created",
+    );
+    expect(await recordQuotationsReady(deps, { eventId: "e", reason: "session_lost" })).toBe(
+      "duplicate",
+    );
     expect(sink).toHaveLength(1);
     expect(deps.rows.has(quotationsReadyKey("e"))).toBe(true);
   });
@@ -312,11 +346,17 @@ describe("quotations_ready", () => {
   it("e-mail falho não desfaz a notificação", async () => {
     const deps = fakeNotificationDeps([]);
     deps.email = { mode: "mock", send: () => Promise.reject(new Error("smtp")) };
-    expect(await recordQuotationsReady(deps, { eventId: "e", reason: "window_closed" })).toBe("created");
+    expect(await recordQuotationsReady(deps, { eventId: "e", reason: "window_closed" })).toBe(
+      "created",
+    );
   });
 
   it("texto informa que o WhatsApp foi desconectado por segurança", () => {
-    const { text } = renderQuotationsReadyEmail({ displayName: "Ana", eventTitle: "X", reason: "window_closed" });
+    const { text } = renderQuotationsReadyEmail({
+      displayName: "Ana",
+      eventTitle: "X",
+      reason: "window_closed",
+    });
     expect(text).toMatch(/conexão com o seu WhatsApp foi encerrada/);
   });
 
@@ -324,9 +364,38 @@ describe("quotations_ready", () => {
     expect(getEmailAdapter({ NODE_ENV: "development", RESEND_API_KEY: "k" }).mode).toBe("mock");
     expect(getEmailAdapter({ NODE_ENV: "production" }).mode).toBe("mock");
     expect(getEmailAdapter({ NODE_ENV: "production", RESEND_API_KEY: "k" }).mode).toBe("resend");
-    const fetchImpl = vi.fn(() => Promise.resolve(new Response(JSON.stringify({ id: "r1" }), { status: 200 })));
-    const adapter = createResendAdapter({ apiKey: "k", from: "a@b.c", fetchImpl: fetchImpl as unknown as typeof fetch });
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(new Response(JSON.stringify({ id: "r1" }), { status: 200 })),
+    );
+    const adapter = createResendAdapter({
+      apiKey: "k",
+      from: "a@b.c",
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
     expect(await adapter.send({ to: "x@y.z", subject: "s", text: "t" })).toEqual({ id: "r1" });
     expect(maskEmail("ana@example.com")).toBe("an***@example.com");
+  });
+});
+
+describe("regressão: reconectar retoma a fila do evento", () => {
+  it("activateSession remove a pausa do evento", async () => {
+    const resumed: string[] = [];
+    const deps = {
+      now: () => 0,
+      getStatus: async () => "connecting",
+      setStatus: async () => {},
+      logout: async () => {},
+      pauseEventJobs: async () => {},
+      resumeEventJobs: async (id: string) => {
+        resumed.push(id);
+      },
+      scheduleWindowEnd: async () => {},
+      triggerCollectionEnd: async () => {},
+      deliverQuotes: async () => {},
+      notifyQuotationsReady: async () => {},
+      warn: () => {},
+    };
+    await activateSession(deps, { instance: "i", eventId: "ev" });
+    expect(resumed).toEqual(["ev"]);
   });
 });

@@ -26,6 +26,8 @@ export interface SessionDeps {
   logout(instance: string): Promise<void>;
   /** Pausa apenas os jobs pendentes DESTE evento (não a fila global). */
   pauseEventJobs(eventId: string): Promise<void>;
+  /** Retoma os jobs DESTE evento (remove a pausa deixada por uma queda anterior). */
+  resumeEventJobs?(eventId: string): Promise<void>;
   scheduleWindowEnd(instance: string, eventId: string, delayMs: number): Promise<void>;
   /** Encerra a coleta já (meta atingida). Job distinto do agendado para 48h. */
   triggerCollectionEnd(instance: string | null, eventId: string): Promise<void>;
@@ -52,8 +54,14 @@ export async function activateSession(
   const nowMs = deps.now();
   const drainAtMs = computeDrainAtMs(nowMs, windowMinutes);
 
-  await deps.setStatus(input.instance, "active", { eventId: input.eventId, windowMinutes, drainAtMs });
+  await deps.setStatus(input.instance, "active", {
+    eventId: input.eventId,
+    windowMinutes,
+    drainAtMs,
+  });
   await deps.scheduleWindowEnd(input.instance, input.eventId, drainAtMs - nowMs);
+  // Reconectou: a fila do evento não pode continuar pausada por uma queda anterior.
+  await deps.resumeEventJobs?.(input.eventId);
   return { drainAtMs, windowMinutes };
 }
 
@@ -135,12 +143,22 @@ export async function completeCollectionIfReady(
  */
 export async function finishCollection(
   deps: SessionDeps,
-  input: { instance: string | null; eventId: string; reason: "window_closed" | "collection_complete" },
+  input: {
+    instance: string | null;
+    eventId: string;
+    reason: "window_closed" | "collection_complete";
+  },
 ): Promise<"closed" | "delivered_without_session"> {
   const state =
-    input.instance === null ? "disconnected" : toSessionState((await deps.getStatus(input.instance)) ?? "disconnected");
+    input.instance === null
+      ? "disconnected"
+      : toSessionState((await deps.getStatus(input.instance)) ?? "disconnected");
   if (input.instance !== null && state !== "disconnected") {
-    await endCollectionWindow(deps, { instance: input.instance, eventId: input.eventId, reason: input.reason });
+    await endCollectionWindow(deps, {
+      instance: input.instance,
+      eventId: input.eventId,
+      reason: input.reason,
+    });
     return "closed";
   }
   await deps.deliverQuotes(input.eventId);

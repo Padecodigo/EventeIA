@@ -20,9 +20,10 @@ vi.mock("@/lib/queue", () => ({
   QUEUE_NAMES: { quotationProspecting: "q" },
   getQueue: () => ({ name: "q", isPaused: async () => false, resume: vi.fn() }),
 }));
+const resumeMock = vi.fn();
 vi.mock("@/lib/whatsapp/session-runtime", () => ({
   createSessionDeps: vi.fn(),
-  resumeEventJobs: vi.fn(),
+  resumeEventJobs: (id: string) => resumeMock(id),
 }));
 vi.mock("@/lib/whatsapp/session-manager", () => ({ handleSessionLost: vi.fn() }));
 
@@ -80,6 +81,17 @@ describe("varredura: encerrar conexão não mais necessária", () => {
     ];
     events = { ev1: "2026-10-20T00:00:00Z", ev2: null };
     await runInstanceHealthSweep();
+    expect(logout).not.toHaveBeenCalled();
+  });
+});
+
+describe("regressão: sessão aberta não deixa a fila do evento pausada", () => {
+  it("open + coleta ativa ⇒ retoma os jobs do evento, sem logout", async () => {
+    resumeMock.mockClear();
+    instances = [{ id: "1", instance_name: "a", status: "active", event_id: "ev1" }];
+    events = { ev1: null };
+    await runInstanceHealthSweep();
+    expect(resumeMock).toHaveBeenCalledWith("ev1");
     expect(logout).not.toHaveBeenCalled();
   });
 });
