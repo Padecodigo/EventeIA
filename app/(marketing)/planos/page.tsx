@@ -101,11 +101,7 @@ export default function PlansPage() {
 
       <div className="mt-10 flex flex-wrap items-center justify-between gap-4">
         <p className="text-caption text-vinho/70">
-          Seus créditos não expiram: use quando quiser. Regras e economia unitária em{" "}
-          <code className="rounded bg-areia-secundaria px-1.5 py-0.5 text-vinho/70">
-            .context/COMMERCIAL_MODEL.md
-          </code>
-          .
+          Seus créditos não expiram: use quando quiser.
         </p>
         <Link
           prefetch={false}
