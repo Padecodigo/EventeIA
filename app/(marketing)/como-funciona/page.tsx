@@ -82,7 +82,7 @@ export default function ComoFuncionaPage() {
           recebe clareza para tomar a decisão certa — sem planilhas e sem achismo.
         </p>
 
-        <div className="mt-16 grid gap-10 border-t border-line-subtle pt-8 md:grid-cols-3">
+        <div className="mt-16 grid grid-cols-1 gap-10 border-t border-line-subtle pt-8 md:grid-cols-3">
           {STEPS.map((step) => (
             <article key={step.number} className="border-t border-champagne/60 pt-5">
               <span className="text-xs font-semibold tracking-[0.16em] text-vinho/70">
@@ -114,7 +114,7 @@ export default function ComoFuncionaPage() {
           Clareza para decidir. Efetividade para acontecer.
         </h2>
 
-        <div className="mt-10 grid gap-6 sm:grid-cols-2">
+        <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2">
           {DELIVERABLES.map((item) => (
             <article key={item.title} className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
               <h3 className="font-serif text-title-2">{item.title}</h3>
@@ -125,7 +125,7 @@ export default function ComoFuncionaPage() {
       </section>
 
       <section className="border-t border-line-subtle bg-off-white py-20">
-        <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+        <div className="mx-auto grid grid-cols-1 w-full max-w-7xl gap-10 px-4 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div>
             <p className="eyebrow">Histórias de clareza</p>
             <h2 className="mt-3 font-serif text-display-2 font-display leading-tight">

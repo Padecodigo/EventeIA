@@ -15,7 +15,7 @@ export function QuotationForm({ eventId }: { eventId: string }) {
   const [state, formAction, pending] = useActionState(createQuotationAction, initialState);
 
   return (
-    <form action={formAction} className="mt-6 grid gap-4 md:grid-cols-2">
+    <form action={formAction} className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
       <input type="hidden" name="eventId" value={eventId} />
 
       <div className="flex flex-col gap-1.5">

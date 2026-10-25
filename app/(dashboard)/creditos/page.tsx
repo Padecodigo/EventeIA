@@ -159,7 +159,7 @@ export default async function CreditsPage() {
             <CancelSubscriptionForm />
           </div>
         ) : (
-          <div className="mt-6 grid gap-6 md:grid-cols-3">
+          <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
             {PLANS.map((plan) => (
               <article
                 key={plan.code}

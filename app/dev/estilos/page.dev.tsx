@@ -104,7 +104,7 @@ function Hero({ option }: { option: StyleOption }) {
         <span className="rounded-full bg-[var(--p)] px-4 py-1.5 font-semibold text-[color:var(--pi)]">Começar agora</span>
       </div>
 
-      <div className="mx-auto grid w-full max-w-7xl gap-10 px-8 pb-16 pt-10 lg:grid-cols-[1fr_1.05fr] lg:items-center">
+      <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-10 px-8 pb-16 pt-10 lg:grid-cols-[1fr_1.05fr] lg:items-center">
         <div>
           <p className="inline-flex rounded-full bg-[var(--as)] px-3 py-1 text-xs font-semibold">
             Festa infantil · Aniversário · 15 anos · Formatura · Casamento · Corporativo

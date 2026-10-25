@@ -79,7 +79,7 @@ export default async function DashboardPage() {
         </p>
       </section>
 
-      <section className="grid gap-6 sm:grid-cols-3">
+      <section className="grid grid-cols-1 gap-6 sm:grid-cols-3">
         <article className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
           <p className="text-caption text-vinho/75">Eventos criados</p>
           <p className="mt-2 font-serif text-display-2">{totalEvents}</p>

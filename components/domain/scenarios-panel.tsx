@@ -36,7 +36,7 @@ export function ScenariosPanel({
           Sem cotação aproveitável em: {uncovered.map(label).join(", ")}.
         </p>
       ) : null}
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
+      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
         {SCENARIO_KINDS.map((kind) => {
           const snap = scenarios[kind];
           const scenario = snap?.outcome.scenario ?? null;

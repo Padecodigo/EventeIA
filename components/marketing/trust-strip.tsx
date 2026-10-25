@@ -20,7 +20,7 @@ const TRUST_ITEMS = [
 export function TrustStrip() {
   return (
     <section className="border-y border-line-subtle bg-off-white">
-      <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-10 sm:grid-cols-2 sm:px-8 lg:grid-cols-4">
+      <div className="mx-auto grid grid-cols-1 w-full max-w-7xl gap-8 px-4 py-10 sm:grid-cols-2 sm:px-8 lg:grid-cols-4">
         {TRUST_ITEMS.map((item) => (
           <div key={item.title} className="flex gap-3">
             <span

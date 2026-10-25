@@ -203,7 +203,7 @@ export function WhatsappConnect({
       ) : null}
 
       {pairing !== null ? (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {pairing.qrDataUrl !== null ? (
             <div className={showQr} data-testid="qr-block">
               <p className="text-sm font-medium text-vinho">Escaneie o QR code</p>

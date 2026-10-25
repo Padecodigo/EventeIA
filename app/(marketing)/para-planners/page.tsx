@@ -42,7 +42,7 @@ export default async function ParaPlannersPage() {
   const featuredTestimonial = realPlannerTestimonials[0] ?? PLANNER_TESTIMONIAL;
   return (
     <>
-      <section className="mx-auto grid w-full max-w-7xl items-center gap-12 px-4 py-16 sm:px-8 sm:py-24 lg:grid-cols-[1fr_0.9fr] lg:gap-20">
+      <section className="mx-auto grid grid-cols-1 w-full max-w-7xl items-center gap-12 px-4 py-16 sm:px-8 sm:py-24 lg:grid-cols-[1fr_0.9fr] lg:gap-20">
         <div>
           <p className="eyebrow">Para planners e cerimonialistas</p>
           <h1 className="mt-5 font-serif text-[clamp(2.4rem,5vw,4.4rem)] font-display leading-[1.02] tracking-[-0.03em] text-vinho">
@@ -100,7 +100,7 @@ export default async function ParaPlannersPage() {
             Curadoria no centro. Burocracia nos bastidores.
           </h2>
 
-          <div className="mt-10 grid gap-6 sm:grid-cols-2">
+          <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2">
             {BENEFITS.map((benefit) => (
               <article
                 key={benefit.title}
@@ -131,7 +131,7 @@ export default async function ParaPlannersPage() {
           </Link>
         </div>
 
-        <div className="mt-10 grid gap-6 md:grid-cols-3">
+        <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3">
           {PLANS.map((plan) => {
             const perCreditCents = calculatePlanEconomics(
               plan.priceCents,
@@ -186,7 +186,7 @@ export default async function ParaPlannersPage() {
 
       {featuredTestimonial !== undefined ? (
         <section className="border-t border-line-subtle bg-areia-secundaria/40 py-20">
-          <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+          <div className="mx-auto grid grid-cols-1 w-full max-w-7xl gap-10 px-4 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
             <div>
               <p className="eyebrow">Histórias de clareza</p>
               <h2 className="mt-3 font-serif text-display-2 font-display leading-tight">

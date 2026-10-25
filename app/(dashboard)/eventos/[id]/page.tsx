@@ -193,9 +193,9 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <p className="text-overline uppercase tracking-[0.14em] text-vinho/75">Evento</p>
-          <h1 className="mt-2 font-serif text-display-2 font-display">{event.title}</h1>
+          <h1 className="mt-2 break-words font-serif text-title-1 font-display [overflow-wrap:anywhere] sm:text-display-2">{event.title}</h1>
           <p className="mt-2 text-sm text-vinho/75">
             {event.event_type} · {event.guest_count} convidados ·{" "}
             {new Date(`${event.event_date}T12:00:00Z`).toLocaleDateString("pt-BR")} ·{" "}
@@ -226,7 +226,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
         </Link>
       </section>
 
-      <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-start">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-start">
         <BudgetTable result={budget} unlocked={unlocked} />
 
         {unlocked ? (

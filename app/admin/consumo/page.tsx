@@ -103,7 +103,7 @@ export default async function UsagePage({ searchParams }: { searchParams: Promis
 
       {data.truncated ? <p role="alert" className="text-caption text-semantic-error">Período muito grande: limitado a 20 mil chamadas. Reduza o intervalo.</p> : null}
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card label="Chamadas" value={fmtInt(r.totals.calls)} />
         <Card label="Tokens de entrada" value={fmtInt(r.totals.inputTokens)} />
         <Card label="Tokens de saída" value={fmtInt(r.totals.outputTokens)} />
@@ -116,7 +116,7 @@ export default async function UsagePage({ searchParams }: { searchParams: Promis
         <h2 className="font-serif text-title-1">Por operação, usuário e estágio</h2>
         <p className="text-caption text-vinho/60">Cada linha soma as chamadas de IA com a mesma operação, usuário e etapa. “Tokens in” = texto enviado; “Tokens out” = texto gerado. Valor em US$ e convertido para R$ pelo câmbio do dia.</p>
         <div className="mt-3 overflow-x-auto rounded-card border border-line-subtle bg-off-white">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[36rem] text-sm [&_td]:px-2 [&_td]:py-2 [&_th]:px-2 [&_th]:py-2 [&_th]:font-medium">
             <thead>
               <tr className="text-left text-caption text-vinho/70">
                 <th className="px-3 py-2">Operação</th><th className="px-3 py-2">Usuário</th><th className="px-3 py-2">Estágio</th>

@@ -27,7 +27,7 @@ export default function PlansPage() {
         Anfitriões pagam por evento, sem mensalidade. Cada crédito equivale a um evento ativado.
       </p>
 
-      <div className="mt-12 grid gap-8 lg:grid-cols-4">
+      <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-4">
         {/* B2C */}
         <article className="flex flex-col rounded-card border border-line-subtle bg-off-white p-8 shadow-soft">
           <p className="eyebrow">Anfitriões</p>

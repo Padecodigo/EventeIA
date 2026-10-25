@@ -66,7 +66,7 @@ export function WhatsappSetup({
       <div
         role="radiogroup"
         aria-label="Qual WhatsApp o agente deve usar?"
-        className="grid gap-3 md:grid-cols-2"
+        className="grid grid-cols-1 gap-3 md:grid-cols-2"
       >
         {OPTIONS.map((option) => (
           <button

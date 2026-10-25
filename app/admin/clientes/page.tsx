@@ -41,7 +41,7 @@ export default async function AdminClientesPage({ searchParams }: { searchParams
       <Card testId="clients-list">
         {rows.length === 0 ? <p className="text-caption text-vinho/70">Nenhum cliente encontrado.</p> : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[36rem] text-sm [&_td]:px-2 [&_td]:py-2 [&_th]:px-2 [&_th]:py-2 [&_th]:font-medium">
               <thead className="text-left text-caption text-vinho/60"><tr><th>Nome</th><th>E-mail</th><th>Tipo</th><th>Desde</th></tr></thead>
               <tbody>{rows.map((r) => (
                 <tr key={r.id} className="border-t border-line-subtle">

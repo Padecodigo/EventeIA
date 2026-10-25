@@ -5,7 +5,7 @@ export default function DashboardLoading() {
       <span className="sr-only">Carregando…</span>
       <div className="h-3 w-24 rounded-full bg-vinho/10" />
       <div className="mt-4 h-10 w-2/3 max-w-md rounded-2xl bg-vinho/10" />
-      <div className="mt-10 grid gap-4 sm:grid-cols-3">
+      <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {[0, 1, 2].map((i) => (
           <div key={i} className="card h-32 bg-white/70" />
         ))}
