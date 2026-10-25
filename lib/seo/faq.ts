@@ -13,8 +13,8 @@ export function buildFaq(ticketPriceCents: number): FaqItem[] {
       a: "Para todos: festa infantil, aniversário, 15 anos, formatura, casamento, evento corporativo, chá de bebê, batizado e outras celebrações.",
     },
     {
-      q: "A EventeIA atende São José dos Campos, Taubaté e o Vale do Paraíba?",
-      a: "Sim. Buscamos fornecedores em São José dos Campos, Taubaté, Jacareí, Caçapava, Pindamonhangaba, Guaratinguetá e demais cidades do Vale do Paraíba.",
+      q: "Atende minha cidade?",
+      a: "Nosso foco hoje é o Vale do Paraíba (São José dos Campos, Taubaté, Jacareí, Caçapava, Pindamonhangaba, Guaratinguetá e região) e a cidade de São Paulo e Grande SP. Eventos em outras cidades também são bem-vindos, só que lá a quantidade de fornecedores encontrados pode ser menor.",
     },
     {
       q: "Como os fornecedores são contatados?",

@@ -30,7 +30,7 @@ const BENEFITS = [
 export const metadata = pageMetadata({
   title: "Para planners e cerimonialistas",
   description:
-    "Cerimonialistas e decoradores do Vale do Paraíba cotam buffet, decoração, som e foto de vários eventos ao mesmo tempo com a EventeIA.",
+    "Cerimonialistas e decoradores do Vale do Paraíba e de São Paulo cotam buffet, decoração, som e foto de vários eventos ao mesmo tempo com a EventeIA.",
   path: "/para-planners",
   keywords: ["cerimonialista", "assessoria de eventos", "planner de festas"],
 });
@@ -52,7 +52,7 @@ export default async function ParaPlannersPage() {
           <p className="mt-8 max-w-xl text-lg leading-8 text-vinho/70">
             A EventeIA amplia sua capacidade de prospecção: encontra fornecedores, coleta propostas
             e entrega tudo organizado para você cuidar da experiência — em festas infantis e em
-            todos os eventos que você assina.
+            todos os eventos que você assina. Hoje atendemos com mais força o Vale do Paraíba e São Paulo.
           </p>
 
           <div className="mt-9 flex flex-wrap items-center gap-4">

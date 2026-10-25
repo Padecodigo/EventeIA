@@ -26,7 +26,7 @@ export function GET(): ImageResponse {
           Cotamos fornecedores pelo WhatsApp e entregamos 3 opções: preço, custo-benefício e comodidade.
         </div>
         <div style={{ fontSize: 28, marginTop: 40, color: "#A3485A" }}>
-          São José dos Campos · Taubaté · Vale do Paraíba
+          Vale do Paraíba · São Paulo
         </div>
       </div>
     ),

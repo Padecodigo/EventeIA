@@ -105,7 +105,7 @@ export default async function LandingPage() {
               <span className="text-primaria">mais memórias.</span>
             </h1>
             <p className="mt-4 max-w-xl text-base leading-relaxed text-vinho/75 sm:mt-6 sm:text-lg">
-              A EventeIA cota pelo WhatsApp com os fornecedores da sua região e compara cada proposta por você. Do aniversário à formatura, você escolhe entre{" "}
+              A EventeIA cota pelo WhatsApp com os fornecedores da sua região — com foco no Vale do Paraíba e em São Paulo — e compara cada proposta por você. Do aniversário à formatura, você escolhe entre{" "}
               <strong className="font-semibold text-vinho">3 opções prontas</strong> — melhor preço, custo-benefício e comodidade — e aproveita o que importa.
             </p>
 
