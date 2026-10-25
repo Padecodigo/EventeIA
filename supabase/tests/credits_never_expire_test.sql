@@ -1,4 +1,4 @@
--- pgTAP: créditos nunca expiram (0034).
+-- pgTAP: créditos nunca expiram (0037).
 begin;
 create extension if not exists pgtap;
 select plan(3);

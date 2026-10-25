@@ -26,8 +26,8 @@ describe("regressão: créditos nunca expiram", () => {
     expect(QUEUE_NAMES).not.toHaveProperty("creditsExpire");
   });
 
-  it("migração 0034 força expires_at nulo e recusa 'expire'", () => {
-    const sql = read("supabase/migrations/0034_credits_never_expire.sql");
+  it("migração 0037 força expires_at nulo e recusa 'expire'", () => {
+    const sql = read("supabase/migrations/0037_credits_never_expire.sql");
     expect(sql).toMatch(/new\.expires_at := null/);
     expect(sql).toMatch(/entry_type = 'expire'/);
     expect(sql).not.toMatch(/\bdelete\b/i);

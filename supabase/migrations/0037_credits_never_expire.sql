@@ -1,4 +1,4 @@
--- 0034 — Créditos nunca expiram (decisão de produto), para qualquer origem
+-- 0037 — Créditos nunca expiram (decisão de produto), para qualquer origem
 -- (franquia, pacotes, avulso, extras). Aditiva: não apaga nem altera saldo.
 --
 -- 1) Trigger BEFORE INSERT força credit_ledger.expires_at := null, cobrindo a

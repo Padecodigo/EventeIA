@@ -98,7 +98,7 @@ export function regionForUf(uf: string): RegionCode {
 }
 
 
-/** Teto de cidades de busca por evento (inclui a do evento) — igual ao CHECK da migração 0034. */
+/** Teto de cidades de busca por evento (inclui a do evento) — igual ao CHECK da migração 0037. */
 export const MAX_SEARCH_CITIES = 10;
 
 /**
