@@ -141,6 +141,29 @@ describe("central de atendimento — server actions", () => {
     expect(tickets.size).toBe(5);
   });
 
+  it("regressão: confirmação anônima é genérica e não ecoa o texto enviado", async () => {
+    await createSupportTicketAction(null, form({ type: "elogio", subject: "Ganhe R$ 1000 em http://golpe.test", message: "Clique aqui http://golpe.test agora", email: "vitima@teste.com" }));
+    expect(sent).toHaveLength(1);
+    expect(sent[0]?.subject).not.toContain("golpe");
+    expect(sent[0]?.text).not.toContain("golpe");
+    expect(sent[0]?.text).toContain("Se não foi você");
+  });
+
+  it("regressão: no máximo 1 confirmação por e-mail e 3 chamados por e-mail a cada 10 min", async () => {
+    const fd = () => form({ type: "sugestao", subject: "Ideia", message: "Mais uma ideia legal", email: "Alvo@Teste.com" });
+    for (let i = 0; i < 3; i++) expect((await createSupportTicketAction(null, fd()))?.ok).toBe(true);
+    expect((await createSupportTicketAction(null, fd()))?.ok).toBe(false);
+    expect(sent.filter((m) => m.to === "alvo@teste.com")).toHaveLength(1);
+    expect(tickets.size).toBe(3);
+  });
+
+  it("teto global de confirmações anônimas: chamado é criado, e-mail não sai", async () => {
+    for (let i = 0; i < 20; i++) rateHits.set("confirm:anon:global", i + 1);
+    const r = await createSupportTicketAction(null, form({ type: "sugestao", subject: "Ideia", message: "Mais uma ideia legal", email: "novo@teste.com" }));
+    expect(r?.ok).toBe(true);
+    expect(sent).toHaveLength(0);
+  });
+
   it("thread: usuário responde só o próprio; admin responde, muda status e usuário é avisado", async () => {
     sessionUser = USER;
     await createSupportTicketAction(null, form({ type: "sugestao", subject: "Ideia", message: "Uma ideia muito boa" }));
