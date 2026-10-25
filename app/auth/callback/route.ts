@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { publicOrigin, safeNextPath } from "@/lib/auth/oauth";
+import { RESET_NEXT_COOKIE, publicOrigin, safeNextPath } from "@/lib/auth/oauth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { bindWelcomeOfferToUser } from "@/lib/welcome/server";
 
@@ -11,7 +11,8 @@ import { bindWelcomeOfferToUser } from "@/lib/welcome/server";
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const { searchParams } = request.nextUrl;
   const origin = publicOrigin(request.headers, request.url);
-  const next = safeNextPath(searchParams.get("next"));
+  const cookieNext = request.cookies.get(RESET_NEXT_COOKIE)?.value;
+  const next = safeNextPath(searchParams.get("next") ?? cookieNext);
   const code = searchParams.get("code");
 
   if (code === null) {
@@ -33,5 +34,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // layout do painel repete o vínculo de forma idempotente).
   await bindWelcomeOfferToUser(data.user.id);
 
-  return NextResponse.redirect(new URL(next, origin));
+  const response = NextResponse.redirect(new URL(next, origin));
+  if (cookieNext !== undefined)
+    response.cookies.delete({ name: RESET_NEXT_COOKIE, path: "/auth/callback" });
+  return response;
 }

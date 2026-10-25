@@ -89,7 +89,11 @@ describe("GET /auth/callback", () => {
   it("sem env, usa x-forwarded-host/proto em vez do bind host", async () => {
     exchangeCodeForSession.mockResolvedValue({ data: { user: { id: "u1" } }, error: null });
     const r = new NextRequest("http://0.0.0.0:3000/auth/callback?code=x", {
-      headers: { "x-forwarded-host": "eventeia.com.br", "x-forwarded-proto": "https", host: "0.0.0.0:3000" },
+      headers: {
+        "x-forwarded-host": "eventeia.com.br",
+        "x-forwarded-proto": "https",
+        host: "0.0.0.0:3000",
+      },
     });
     const res = await GET(r);
     expect(res.headers.get("location")).toBe("https://eventeia.com.br/painel");
@@ -112,6 +116,16 @@ describe("GET /auth/callback", () => {
     expect(ok.headers.get("location")).toBe("http://localhost:3100/creditos");
     const bad = await GET(req("http://localhost:3100/auth/callback?code=a&next=//mal.com"));
     expect(bad.headers.get("location")).toBe("http://localhost:3100/painel");
+  });
+
+  it("link de redefinição: cookie leva a /redefinir-senha e é apagado", async () => {
+    exchangeCodeForSession.mockResolvedValue({ data: { user: { id: "u1" } }, error: null });
+    const r = new NextRequest("http://localhost:3100/auth/callback?code=r", {
+      headers: { cookie: "eventeia_auth_next=/redefinir-senha" },
+    });
+    const res = await GET(r);
+    expect(res.headers.get("location")).toBe("http://localhost:3100/redefinir-senha");
+    expect(res.headers.get("set-cookie")).toMatch(/eventeia_auth_next=;/);
   });
 
   it("volta para /entrar com erro quando o usuário cancela ou o code é inválido", async () => {
