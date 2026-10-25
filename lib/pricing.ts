@@ -23,6 +23,13 @@ export interface PricingAssumptions {
   minMarginBps: number;
 }
 
+/**
+ * Piso de desconto: nenhum cupom/oferta deixa o valor final abaixo disto
+ * (decisão de produto 25/10/2026). Desacoplado de `costPerEventCents`
+ * (premissa de custo, usada só no planejamento). Cortesia (free) é a única exceção.
+ */
+export const DISCOUNT_FLOOR_CENTS = 4_700;
+
 export const PRICING_ASSUMPTIONS: PricingAssumptions = {
   costPerEventCents: 900,
   taxRateBps: 600, // 6%

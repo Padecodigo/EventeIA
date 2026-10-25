@@ -54,7 +54,7 @@ export default async function AdminCouponsPage() {
         <h1 className="mt-3 font-serif text-display-2 font-display">Cupons de desconto.</h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-vinho/75">
           Cupons aplicam-se ao tíquete B2C (R$ 97). Redenção só conta quando o Pix é confirmado; o
-          preço final nunca fica abaixo do custo operacional (R$ 9).
+          preço final nunca fica abaixo do piso de R$ 47 (exceto cortesia).
         </p>
         <div className="mt-4 flex flex-wrap gap-3 text-caption">
           <span className="rounded-full bg-vinho px-3 py-1 text-off-white">
