@@ -13,6 +13,11 @@ describe("menu admin (superusuário)", () => {
       "/admin/depoimentos",
       "/admin/cupons",
       "/admin/chamados",
+      "/admin/eventos",
+      "/admin/clientes",
+      "/admin/fornecedores",
+      "/admin/lixeira",
+      "/admin/busca",
     ]);
   });
   it("só 'admin' é superusuário", () => {

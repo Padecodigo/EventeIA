@@ -10,6 +10,7 @@ import type { Database } from "@/lib/supabase/types";
 import { alertEmailText, budgetRemaining, dailyBurn, evaluateBalance, parseAsaasBalance, parseDeepseekBalance, parseSerperBalance } from "./balances";
 import { brDate, recurringDue, type RecurringRow } from "./fixed-extras";
 import { currentFxMicro, currentPrices } from "./runtime";
+import { renewalEmailText, renewalNotice } from "./vps-renewal";
 
 const BURN_WINDOW_DAYS = 7;
 export const DEFAULT_ALERT_EMAIL = "padecodigo@gmail.com";
@@ -132,6 +133,7 @@ export async function runBalanceCheck(opts: { fetchImpl?: FetchLike; now?: Date 
       toAlert.map((a) => ({ provider: a.provider, kind: a.kind, balance_brl_cents: a.balanceBrlCents, runway_days: a.runwayDays, emailed })),
     );
   }
+  await sendRenewalNotices(rows ?? [], now);
   await copyRecurringFixed(now);
   logger.info({ checked: rows?.length ?? 0, alerts: toAlert.length }, "cheque de saldos concluído");
   return { checked: rows?.length ?? 0, alerts: toAlert.length };
@@ -168,5 +170,29 @@ export async function copyRecurringFixed(now: Date): Promise<number> {
       created_by: (src.created_by as string | null) ?? null,
     });
   }
+  return due.length;
+}
+
+/** Aviso de vencimento (VPS) por e-mail: mesmo limite de dias do alerta; 1 e-mail por data de vencimento. */
+export async function sendRenewalNotices(
+  rows: readonly { provider: string; label: string; runway_alert_days: number; renewal_date?: string | null; renewal_alerted_for?: string | null }[],
+  now: Date,
+): Promise<number> {
+  const due = rows
+    .map((r) => ({ r, n: renewalNotice(r, now) }))
+    .filter((x) => x.n.send && x.n.daysLeft !== null);
+  if (due.length === 0) return 0;
+  try {
+    await getEmailAdapter().send({
+      to: process.env.FINANCE_ALERT_EMAIL || DEFAULT_ALERT_EMAIL,
+      subject: `EventeIA: vencimento de ${due.map((d) => d.r.label).join(", ")}`,
+      text: renewalEmailText(due.map((d) => ({ label: d.r.label, renewalDate: d.r.renewal_date as string, daysLeft: d.n.daysLeft as number })), now),
+    });
+  } catch (e) {
+    logger.warn({ reason: e instanceof Error ? e.message : "?" }, "falha no e-mail de vencimento");
+    return 0;
+  }
+  const admin = getSupabaseAdmin();
+  for (const d of due) await admin.from("provider_balances").update({ renewal_alerted_for: d.r.renewal_date }).eq("provider", d.r.provider);
   return due.length;
 }
