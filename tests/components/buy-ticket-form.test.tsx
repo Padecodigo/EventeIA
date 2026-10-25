@@ -39,4 +39,15 @@ describe("BuyTicketForm — cupom com feedback imediato", () => {
     const couponForm = screen.getByLabelText("Possui cupom de desconto?").closest("form");
     expect(couponForm).not.toContainElement(pay);
   });
+
+  it("oferece Pix e cartão de crédito/débito (sem boleto)", () => {
+    render(<BuyTicketForm eventId="evt" priceFormatted="R$ 97,00" defaultCpf="" />);
+    const pix = screen.getByRole("button", { name: /pagar com pix/i });
+    const card = screen.getByRole("button", { name: /cartão de crédito ou débito/i });
+    expect(pix).toHaveAttribute("name", "method");
+    expect(pix).toHaveAttribute("value", "pix");
+    expect(card).toHaveAttribute("value", "card");
+    expect(screen.getByText(/Pix, cartão de crédito ou cartão de débito/)).toBeInTheDocument();
+    expect(screen.queryByText(/boleto/i)).toBeNull();
+  });
 });

@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import {
   AsaasNotConfiguredError,
+  createAsaasCardPayment,
   createAsaasCustomer,
   createAsaasPixPayment,
 } from "@/lib/asaas/client";
@@ -174,6 +175,8 @@ export interface CheckoutState {
     invoiceUrl?: string;
     expirationDate?: string;
   };
+  /** Cartão (crédito/débito): o pagador conclui na Fatura hospedada do Asaas. */
+  card?: { invoiceUrl: string };
   applied?: {
     code: string;
     finalCents: number;
@@ -184,6 +187,7 @@ export interface CheckoutState {
 const buyTicketSchema = z.object({
   eventId: z.string().uuid(),
   cpf: z.string().regex(/^\d{11}$/),
+  method: z.enum(["pix", "card"]).default("pix"),
 });
 
 export async function buyTicketAction(
@@ -197,6 +201,7 @@ export async function buyTicketAction(
   const parsed = buyTicketSchema.safeParse({
     eventId: formData.get("eventId"),
     cpf: rawCpf,
+    method: formData.get("method") ?? undefined,
   });
 
   if (!parsed.success) {
@@ -296,7 +301,8 @@ export async function buyTicketAction(
 
     const dueDate = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
 
-    const asaasPayment = await createAsaasPixPayment({
+    const billingType = parsed.data.method === "card" ? "CREDIT_CARD" : "PIX";
+    const chargeInput = {
       customerId,
       amountCents: finalPrice,
       externalReference: event.id,
@@ -305,7 +311,11 @@ export async function buyTicketAction(
           ? `EventeIA — tíquete do evento "${event.title}"`
           : `EventeIA — tíquete do evento "${event.title}" (cupom ${couponCode})`,
       dueDate,
-    });
+    };
+    const pixPayment = billingType === "PIX" ? await createAsaasPixPayment(chargeInput) : null;
+    const cardPayment =
+      billingType === "CREDIT_CARD" ? await createAsaasCardPayment(chargeInput) : null;
+    const asaasPaymentId = pixPayment?.paymentId ?? cardPayment?.paymentId ?? "";
 
     const { data: paymentRow, error: paymentError } = await supabase
       .from("payments")
@@ -313,8 +323,8 @@ export async function buyTicketAction(
         profile_id: user.id,
         purpose: "event_ticket",
         event_id: event.id,
-        asaas_payment_id: asaasPayment.paymentId,
-        billing_type: "PIX",
+        asaas_payment_id: asaasPaymentId,
+        billing_type: billingType,
         amount_cents: finalPrice,
         coupon_code: couponCode,
         discount_cents: discount,
@@ -349,8 +359,8 @@ export async function buyTicketAction(
         actorId: user.id,
         aggregateType: "payment",
         aggregateId: paymentRow.id,
-        payload: { amount_cents: finalPrice, billing_type: "PIX", discount_cents: discount },
-        correlationId: asaasPayment.paymentId,
+        payload: { amount_cents: finalPrice, billing_type: billingType, discount_cents: discount },
+        correlationId: asaasPaymentId,
         source: "app",
       });
     } catch (caught) {
@@ -363,11 +373,16 @@ export async function buyTicketAction(
     revalidatePath(`/eventos/${event.id}`);
 
     return {
-      pix: {
-        payload: asaasPayment.pix.payload,
-        invoiceUrl: asaasPayment.invoiceUrl,
-        expirationDate: asaasPayment.pix.expirationDate,
-      },
+      ...(pixPayment !== null
+        ? {
+            pix: {
+              payload: pixPayment.pix.payload,
+              invoiceUrl: pixPayment.invoiceUrl,
+              expirationDate: pixPayment.pix.expirationDate,
+            },
+          }
+        : {}),
+      ...(cardPayment !== null ? { card: { invoiceUrl: cardPayment.invoiceUrl } } : {}),
       ...(couponCode !== null
         ? {
             applied: {
