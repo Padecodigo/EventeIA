@@ -316,7 +316,7 @@ export async function buyTicketAction(
 
       if (isCourtesyCoupon(coupon)) {
         // Cortesia: total 0, SEM Asaas. Reserva + pagamento 'COURTESY' pago +
-        // tíquete ativo numa única transação no banco (0030), idempotente.
+        // tíquete ativo numa única transação no banco (0033), idempotente.
         const { data: outcome, error: rpcError } = await admin.rpc("redeem_courtesy_coupon", {
           p_code: couponRaw,
           p_profile_id: user.id,

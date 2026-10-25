@@ -1,4 +1,4 @@
--- pgTAP: cortesia (0030), uso único por usuário e reserva atômica. Rollback ao final.
+-- pgTAP: cortesia (0033), uso único por usuário e reserva atômica. Rollback ao final.
 begin;
 create extension if not exists pgtap;
 select plan(17);

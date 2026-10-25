@@ -1,4 +1,4 @@
--- 0030 — Cupom de cortesia (gratuidade) + cupom de uso único por usuário +
+-- 0033 — Cupom de cortesia (gratuidade) + cupom de uso único por usuário +
 -- reserva atômica de cupom no início do checkout (aditiva; não apaga dados).
 --
 -- 1) coupons.discount_type ganha 'free' (cortesia → total 0). Só admins criam
