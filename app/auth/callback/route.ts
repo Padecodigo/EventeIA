@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { safeNextPath } from "@/lib/auth/oauth";
+import { publicOrigin, safeNextPath } from "@/lib/auth/oauth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { bindWelcomeOfferToUser } from "@/lib/welcome/server";
 
@@ -9,7 +9,8 @@ import { bindWelcomeOfferToUser } from "@/lib/welcome/server";
  * garante o perfil com o e-mail do Google (usado na notificação "orçamento pronto").
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const { searchParams, origin } = request.nextUrl;
+  const { searchParams } = request.nextUrl;
+  const origin = publicOrigin(request.headers, request.url);
   const next = safeNextPath(searchParams.get("next"));
   const code = searchParams.get("code");
 
