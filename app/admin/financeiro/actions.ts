@@ -5,7 +5,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { requireAdmin } from "@/lib/auth";
+import { clearCostPeriod, softDeleteCostRows, type CostDb } from "@/lib/finance/cost-delete";
 import { microUsdToBrlCents, parseFxToMicro, PRICE_KEYS } from "@/lib/finance/pricing";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const FIXED_COST_PROVIDERS = ["vps", "supabase", "domain", "whatsapp", "evolution", "resend", "serper", "google_places", "deepseek", "other"] as const;
@@ -105,4 +107,31 @@ export async function setPriceAction(_prev: FinanceActionState, form: FormData):
   if (error !== null) return { error: "Não foi possível salvar o preço." };
   revalidatePath("/admin/financeiro");
   return { success: "Preço atualizado (vale para as próximas chamadas)." };
+}
+
+/** "Excluir" linhas do Detalhamento (soft delete). Só admin; grava pelo servidor após requireAdmin. */
+export async function deleteCostRowsAction(_prev: FinanceActionState, form: FormData): Promise<FinanceActionState> {
+  const user = await requireAdmin();
+  const r = await softDeleteCostRows(getSupabaseAdmin() as unknown as CostDb, form.getAll("ref"), user.id);
+  if (!r.ok) return { error: r.error };
+  revalidatePath("/admin/financeiro");
+  revalidatePath("/admin/custos");
+  revalidatePath("/admin/consumo");
+  return { success: "Excluído (dá para recuperar)." };
+}
+
+/** "Limpar" os custos de um período (e provedor, se escolhido). Nunca toca em pagamentos. */
+export async function clearCostPeriodAction(_prev: FinanceActionState, form: FormData): Promise<FinanceActionState> {
+  const user = await requireAdmin();
+  const provider = form.get("provider");
+  const r = await clearCostPeriod(
+    getSupabaseAdmin() as unknown as CostDb,
+    { from: form.get("from"), to: form.get("to"), ...(typeof provider === "string" && provider !== "" ? { provider } : {}) },
+    user.id,
+  );
+  if (!r.ok) return { error: r.error };
+  revalidatePath("/admin/financeiro");
+  revalidatePath("/admin/custos");
+  revalidatePath("/admin/consumo");
+  return { success: "Custos do período excluídos (dá para recuperar)." };
 }

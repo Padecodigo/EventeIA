@@ -50,14 +50,15 @@ export async function loadFinance(period: { from: string; to: string }): Promise
   const [llm, entries, pays] = await Promise.all([
     supabase
       .from("llm_usage_events")
-      .select("created_at,provider,task,reason,event_id,input_tokens,output_tokens,cache_hit_tokens,cost_micro_usd,cost_brl_cents,fx_brl_per_usd_micro,peak,outcome")
+      .select("id,created_at,provider,task,reason,event_id,input_tokens,output_tokens,cache_hit_tokens,cost_micro_usd,cost_brl_cents,fx_brl_per_usd_micro,peak,outcome")
+      .is("deleted_at", null)
       .gte("created_at", start)
       .lte("created_at", end)
       .order("created_at", { ascending: false })
       .limit(MAX_ROWS),
     supabase
       .from("cost_entries")
-      .select("occurred_at,provider,kind,reason,event_id,quantity,cost_micro_usd,cost_brl_cents,note,is_estimate")
+      .select("id,occurred_at,provider,kind,reason,event_id,quantity,cost_micro_usd,cost_brl_cents,note,is_estimate")
       .is("deleted_at", null)
       .gte("occurred_at", start)
       .lte("occurred_at", end)
@@ -74,6 +75,7 @@ export async function loadFinance(period: { from: string; to: string }): Promise
 
   const costs: CostRow[] = [
     ...(llm.data ?? []).map((r) => ({
+      ref: `l:${r.id}`,
       at: r.created_at,
       provider: r.provider === "grok" ? "xai" : r.provider,
       reason: r.reason ?? r.task,
@@ -86,6 +88,7 @@ export async function loadFinance(period: { from: string; to: string }): Promise
       detail: `${r.task} · ${r.outcome}${r.peak === true ? " · pico" : r.peak === false ? " · fora de pico" : ""}${r.cache_hit_tokens > 0 ? ` · cache ${String(r.cache_hit_tokens)}` : ""}`,
     })),
     ...(entries.data ?? []).map((r) => ({
+      ref: `c:${r.id}`,
       at: r.occurred_at,
       provider: r.provider,
       reason: r.reason,

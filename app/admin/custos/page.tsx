@@ -3,11 +3,14 @@ import Link from "next/link";
 import { evaluateBalance } from "@/lib/finance/balances";
 import { buildCostsPanel, lastMonths } from "@/lib/finance/costs-panel";
 import { buildEventCosts, parseEventCostSort, type EventCostSort } from "@/lib/finance/event-costs";
+import { brDate, placesMonth, renewalStatus, VPS_DEFAULT_MONTHLY_CENTS } from "@/lib/finance/fixed-extras";
 import { loadFinance, PROVIDER_LABELS } from "@/lib/finance/load";
+import { microUsdToBrlCents } from "@/lib/finance/pricing";
+import { currentFxMicro, currentPrices } from "@/lib/finance/runtime";
 import { formatBRL } from "@/lib/money";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-import { BalanceForm, CheckNowButton, ConfirmDelete, FixedCostEdit } from "./forms";
+import { AddFixedCost, BalanceForm, CheckNowButton, ConfirmDelete, FixedCostEdit } from "./forms";
 
 export const metadata = { title: "Custos" };
 export const dynamic = "force-dynamic";
@@ -61,18 +64,25 @@ export default async function CustosPage({ searchParams }: { searchParams?: Prom
   const to = new Date(now.getTime() + 86_400_000).toISOString().slice(0, 10);
   const [finance, supabase] = await Promise.all([loadFinance({ from, to }), createSupabaseServerClient()]);
   const panel = buildCostsPanel(finance.costs, finance.revenue, now);
-  const [{ data: balances }, { data: fixed }, { data: alerts }] = await Promise.all([
+  const curMonth = brDate(now).slice(0, 7);
+  const [{ data: balances }, { data: fixed }, { data: alerts }, { data: allAlerts }, { data: placesRows }, prices, fxMicro] = await Promise.all([
     supabase.from("provider_balances").select("*").order("provider"),
     supabase
       .from("cost_entries")
-      .select("id,occurred_at,provider,cost_brl_cents,note")
+      .select("id,occurred_at,provider,cost_brl_cents,note,recurring")
       .eq("kind", "fixed")
       .is("deleted_at", null)
       .gte("occurred_at", `${months[months.length - 2] ?? from}-01T00:00:00Z`)
       .order("occurred_at", { ascending: false })
       .limit(100),
     supabase.from("finance_alerts").select("id,provider,kind,balance_brl_cents,emailed,created_at").is("deleted_at", null).order("created_at", { ascending: false }).limit(10),
+    supabase.from("finance_alerts").select("id,provider,created_at").is("deleted_at", null).order("created_at", { ascending: false }).limit(200),
+    supabase.from("cost_entries").select("quantity").eq("provider", "google_places").eq("kind", "variable").is("deleted_at", null).gte("occurred_at", `${curMonth}-01T03:00:00Z`).limit(50_000),
+    currentPrices(),
+    currentFxMicro(),
   ]);
+  const placesUnitCents = microUsdToBrlCents(prices["google_places.per_1k"], fxMicro) / 1000;
+  const placesCalls = (placesRows ?? []).reduce((a, r) => a + (r.quantity ?? 0), 0);
   const m = panel.month;
   const eventCosts = buildEventCosts(finance.costs, finance.revenue, finance.eventTitles, sort);
 
@@ -203,8 +213,32 @@ export default async function CustosPage({ searchParams }: { searchParams?: Prom
                     {b.fetched_at ? ` · atualizado ${new Date(b.fetched_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}` : ""}
                     {b.last_error ? ` · erro: ${b.last_error}` : ""}
                   </p>
+                  {b.provider === "vps" ? (() => {
+                    const r = renewalStatus(b.renewal_date ?? null, now, b.runway_alert_days);
+                    return (
+                      <p data-testid="vps-renewal" className="text-caption text-vinho/70 tabular-nums">
+                        Plano {formatBRL(b.monthly_cost_brl_cents ?? VPS_DEFAULT_MONTHLY_CENTS)}/mês
+                        {" · "}{r.daysLeft === null ? "vencimento não informado" : r.daysLeft < 0 ? `venceu há ${-r.daysLeft} dia(s)` : `${r.daysLeft} dia(s) restantes (vence ${b.renewal_date?.split("-").reverse().join("/") ?? ""})`}
+                        {r.alert ? <span className="ml-2 rounded-full bg-semantic-error/15 px-2 text-semantic-error">renovar em breve</span> : null}
+                      </p>
+                    );
+                  })() : null}
+                  {b.provider === "google_places" ? (() => {
+                    const pm = placesMonth({ calls: placesCalls, unitCents: placesUnitCents, now, budgetCents: b.monthly_budget_brl_cents });
+                    return (
+                      <div data-testid="places-month" className="mt-1 text-caption text-vinho/70 tabular-nums">
+                        <p>
+                          Este mês: {pm.calls} chamada(s) · franquia grátis {pm.freeCalls.toLocaleString("pt-BR")}/mês descontada → {pm.billableCalls} cobrada(s) × {formatBRL(Math.round(placesUnitCents))} ≈ <strong>{formatBRL(pm.costCents)}</strong>
+                          {" · "}projeção fim do mês: {pm.projectedCalls} chamadas ≈ <strong>{formatBRL(pm.projectedCents)}</strong>
+                          {pm.budgetCents !== null ? ` · ${pm.budgetUsedPct ?? 0}% do orçamento de ${formatBRL(pm.budgetCents)}` : " · orçamento não definido"}
+                          {pm.overBudget ? <span className="ml-2 rounded-full bg-semantic-error/15 px-2 text-semantic-error">acima do orçamento</span> : null}
+                        </p>
+                        <p className="italic">Estimativa — confira na fatura do cartão. Google não tem API de saldo; preço por chamada = tabela configurada em Financeiro (~R$ 0,19). A franquia de 1.000/mês é uma aproximação: confira o limite gratuito do seu SKU no Google Cloud.</p>
+                      </div>
+                    );
+                  })() : null}
                 </div>
-                <BalanceForm provider={b.provider} manual={b.source === "manual"} budget={b.source === "budget"} budgetCents={b.monthly_budget_brl_cents} balanceCents={b.balance_brl_cents} thresholdCents={b.threshold_brl_cents} runwayDays={b.runway_alert_days} note={b.note} />
+                <BalanceForm renewal={b.provider === "vps" ? { date: b.renewal_date ?? null, monthlyCents: b.monthly_cost_brl_cents ?? null } : undefined} provider={b.provider} manual={b.source === "manual"} budget={b.source === "budget"} budgetCents={b.monthly_budget_brl_cents} balanceCents={b.balance_brl_cents} thresholdCents={b.threshold_brl_cents} runwayDays={b.runway_alert_days} note={b.note} />
               </li>
             );
           })}
@@ -218,9 +252,10 @@ export default async function CustosPage({ searchParams }: { searchParams?: Prom
             items={(fixed ?? []).map((f) => ({ id: f.id, label: `${f.occurred_at.slice(0, 7)} · ${label(f.provider)} · ${formatBRL(f.cost_brl_cents)}` }))} />
         </div>
         <p className="text-caption text-vinho/60">
-          Lance novos custos fixos (VPS, Supabase, domínio…) em <Link href="/admin/financeiro" className="underline">Financeiro</Link>; corrija valores aqui.
+          Adicione custos fixos aqui mesmo (botão abaixo) ou em <Link href="/admin/financeiro" className="underline">Financeiro</Link> (valor em US$); corrija valores na lista.
           <strong> Valor</strong> = quanto o custo fixo custou naquele mês (R$); <strong>Observação</strong> = nota livre (ex.: nº da fatura, motivo da correção).
         </p>
+        <AddFixedCost month={curMonth} />
         {(fixed ?? []).length === 0 ? (
           <p className="mt-3 text-caption text-vinho/70">Nenhum custo fixo lançado.</p>
         ) : (
@@ -228,7 +263,7 @@ export default async function CustosPage({ searchParams }: { searchParams?: Prom
             {(fixed ?? []).map((f) => (
               <li key={f.id} className="flex flex-col gap-2 py-3 text-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-semibold">{f.occurred_at.slice(0, 7)} · {label(f.provider)}</span>
+                  <span className="font-semibold">{f.occurred_at.slice(0, 7)} · {label(f.provider)}{f.recurring ? <span className="ml-2 rounded-full bg-areia-secundaria px-2 text-caption font-normal">repete todo mês</span> : null}</span>
                   <ConfirmDelete target="fixed" testId={`delete-fixed-${f.id}`} label="Excluir" title="Excluir este custo fixo?"
                     items={[{ id: f.id, label: `${f.occurred_at.slice(0, 7)} · ${label(f.provider)} · ${formatBRL(f.cost_brl_cents)}` }]} />
                 </div>
@@ -243,10 +278,11 @@ export default async function CustosPage({ searchParams }: { searchParams?: Prom
         <section className="rounded-card border border-line-subtle bg-off-white p-5 shadow-soft">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="font-serif text-title-3">Alertas recentes</h3>
-            <ConfirmDelete target="alert" testId="clear-alerts" label="Limpar histórico" title="Excluir os alertas listados?"
-              items={(alerts ?? []).map((a) => ({ id: a.id, label: `${new Date(a.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })} · ${label(a.provider)}` }))} />
+            <ConfirmDelete target="alert" testId="clear-alerts" label="Limpar todos" title="Dispensar todos os alertas?"
+              items={(allAlerts ?? []).map((a) => ({ id: a.id, label: `${new Date(a.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })} · ${label(a.provider)}` }))} />
           </div>
           <p className="text-caption text-vinho/60">Últimos 10 avisos gerados pelo cheque de saldos (diário às 08:00 de Brasília ou pelo botão). Horários em Brasília. “saldo baixo” = abaixo do limite; “fôlego curto” = acaba antes dos dias mínimos; “erro” = a API do provedor não respondeu.</p>
+          <p data-testid="alerts-dismiss-help" className="text-caption text-vinho/60">“Dispensar” tira o alerta desta lista (fica guardado, dá para recuperar). Se o problema continuar, o alerta <strong>não volta na hora</strong>: o sistema só avisa de novo no próximo cheque depois de 20 horas do último aviso, e só se o saldo ainda estiver baixo. “Limpar todos” dispensa todos os alertas de uma vez.</p>
           <ul className="mt-2 flex flex-col divide-y divide-line-subtle text-sm">
             {(alerts ?? []).map((a) => (
               <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
@@ -254,7 +290,7 @@ export default async function CustosPage({ searchParams }: { searchParams?: Prom
                 {new Date(a.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })} · {label(a.provider)} · {a.kind === "low_balance" ? "saldo baixo" : a.kind === "low_runway" ? "fôlego curto" : "erro"}
                 {a.balance_brl_cents !== null ? ` · ${formatBRL(a.balance_brl_cents)}` : ""}{a.emailed ? " · e-mail enviado" : ""}
                 </span>
-                <ConfirmDelete target="alert" testId={`delete-alert-${a.id}`} label="Excluir" title="Excluir este alerta?"
+                <ConfirmDelete target="alert" testId={`delete-alert-${a.id}`} label="Dispensar" title="Dispensar este alerta?"
                   items={[{ id: a.id, label: `${new Date(a.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })} · ${label(a.provider)}` }]} />
               </li>
             ))}

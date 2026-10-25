@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { StatusBadge, formatTicketDate } from "@/components/support/ticket-thread";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { SITUATION_LABELS, TICKET_SITUATIONS, parseSituation } from "@/lib/support/admin-ops";
 import {
   PRIORITY_LABELS,
   STATUS_LABELS,
@@ -31,13 +32,17 @@ export default async function AdminTicketsPage({
     from: sp.from,
     to: sp.to,
   });
+  const situation = parseSituation(sp.situacao);
   const admin = getSupabaseAdmin();
 
   let query = admin
     .from("support_tickets")
-    .select("id,type,subject,status,priority,email,user_id,created_at,updated_at")
+    .select("id,type,subject,status,priority,email,user_id,created_at,updated_at,closed_at")
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(200);
+  if (situation === "abertos") query = query.neq("status", "fechado");
+  if (situation === "encerrados") query = query.eq("status", "fechado");
   if (filters.type) query = query.eq("type", filters.type);
   if (filters.status) query = query.eq("status", filters.status);
   if (filters.priority) query = query.eq("priority", filters.priority);
@@ -46,7 +51,7 @@ export default async function AdminTicketsPage({
 
   const [{ data }, { data: all }] = await Promise.all([
     query,
-    admin.from("support_tickets").select("type,status").limit(5000),
+    admin.from("support_tickets").select("type,status").is("deleted_at", null).limit(5000),
   ]);
   const items = data ?? [];
   const counts = countTickets(all ?? []);
@@ -76,7 +81,20 @@ export default async function AdminTicketsPage({
         </div>
       </header>
 
+      {sp.excluido === "1" ? <p role="status" className="text-sm text-vinho/80">Chamado excluído (exclusão reversível).</p> : null}
+
+      <nav aria-label="Situação" data-testid="ticket-situation" className="flex flex-wrap gap-2 text-sm">
+        {TICKET_SITUATIONS.map((s) => (
+          <Link key={s} href={s === "abertos" ? "/admin/chamados" : `/admin/chamados?situacao=${s}`} aria-current={s === situation ? "page" : undefined}
+            className={s === situation ? "rounded-full bg-vinho px-4 py-1.5 font-semibold text-off-white" : "rounded-full border border-vinho/20 px-4 py-1.5 text-vinho"}>
+            {SITUATION_LABELS[s]}
+          </Link>
+        ))}
+      </nav>
+      <p className="-mt-6 text-caption text-vinho/60">“Abertos” = tudo que ainda não foi encerrado (aberto, em andamento ou resolvido). “Encerrados” = status Fechado. Chamados excluídos não aparecem em nenhuma lista nem nos números.</p>
+
       <form className="flex flex-wrap items-end gap-3" method="get">
+        <input type="hidden" name="situacao" value={situation} />
         <label className="flex flex-col gap-1 text-caption font-semibold text-vinho/80">Tipo<select name="type" defaultValue={filters.type ?? ""} className={selectClass} aria-label="Tipo">
           <option value="">Todos os tipos</option>
           {TICKET_TYPES.map((t) => (
