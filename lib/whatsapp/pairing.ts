@@ -10,8 +10,23 @@ import { z } from "zod";
 
 /** Os códigos do WhatsApp expiram rápido; renovamos antes disso. */
 export const PAIRING_CODE_TTL_SECONDS = 60;
-/** Intervalo de polling do estado da conexão. */
-export const CONNECTION_POLL_INTERVAL_MS = 4_000;
+/** Polling do estado: rápido logo após mostrar o QR/código (quando o usuário escaneia), depois mais espaçado. */
+export const CONNECTION_POLL_FAST_MS = 1_000;
+export const CONNECTION_POLL_FAST_WINDOW_MS = 90_000;
+export const CONNECTION_POLL_INTERVAL_MS = 3_000;
+
+export function nextConnectionPollDelayMs(elapsedSinceShownMs: number): number {
+  return elapsedSinceShownMs < CONNECTION_POLL_FAST_WINDOW_MS
+    ? CONNECTION_POLL_FAST_MS
+    : CONNECTION_POLL_INTERVAL_MS;
+}
+
+/** Espera entre reconsultas do /instance/connect: primeira bem curta, depois cresce. */
+export const CONNECT_RETRY_DELAYS_MS = [400, 700, 1_000, 1_500, 1_500, 2_000] as const;
+
+export function connectRetryDelayMs(retryIndex: number): number {
+  return CONNECT_RETRY_DELAYS_MS[Math.min(retryIndex, CONNECT_RETRY_DELAYS_MS.length - 1)] ?? 2_000;
+}
 
 /** Link que abre o app do WhatsApp (o usuário segue para Aparelhos conectados). */
 export const WHATSAPP_OPEN_URL = "whatsapp://";

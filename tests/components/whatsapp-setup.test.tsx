@@ -7,6 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const saveMock = vi.fn();
 const requestMock = vi.fn();
+const refreshMock = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: refreshMock }) }));
 vi.mock("@/app/(dashboard)/eventos/actions", () => ({
   saveWhatsappNumberModeAction: (...a: unknown[]) => saveMock(...a),
 }));
