@@ -225,7 +225,7 @@ Com o tunnel e o Asaas Sandbox configurados:
 
 Já implementado: autenticação (Supabase Auth + middleware), criação de eventos, motor
 determinístico (v1.1.0 com golden tests), checkout Pix (Asaas), **assinatura recorrente com
-concessão automática de franquia (0009)**, **conciliação diária (job); créditos não expiram (0034)**,
+concessão automática de franquia (0009)**, **conciliação diária (job); créditos não expiram (0037)**,
 webhooks idempotentes Asaas/Evolution, ativação de tíquete em transação SQL, ledger de créditos
 com guarda de saldo, **testes de componentes React (Vitest + Testing Library)**,
 landing + `/como-funciona` + `/para-planners` + `/planos` + auth/painel, perfil com CPF/WhatsApp e

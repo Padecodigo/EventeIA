@@ -184,7 +184,7 @@ export interface SearchCity {
   uf?: string;
 }
 
-/** Máximo de cidades de busca por evento (igual ao CHECK da migração 0034). */
+/** Máximo de cidades de busca por evento (igual ao CHECK da migração 0037). */
 export const MAX_SEARCH_CITIES = 10;
 
 /**

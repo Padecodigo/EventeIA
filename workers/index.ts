@@ -88,7 +88,7 @@ void getQueue(QUEUE_NAMES.testimonialInvites).add(
   {},
   { repeat: { pattern: "0 10 * * *", tz: "America/Sao_Paulo" }, attempts: 3 },
 );
-// Créditos nunca expiram (0034): remove o agendamento legado de expiração, se existir.
+// Créditos nunca expiram (0037): remove o agendamento legado de expiração, se existir.
 void getQueue(QUEUE_NAMES.creditsExpireLegacy)
   .getRepeatableJobs()
   .then(async (jobs) => {

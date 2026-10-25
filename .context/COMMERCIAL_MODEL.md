@@ -79,7 +79,7 @@ available ──checkout──► pending ──pagamento confirmado──► ac
 
 ### 3.3 Validade e _rollover_
 
-**Créditos nunca expiram**, qualquer que seja a origem (franquia, pacotes, avulso, extras, compensação). Garantido no banco pela migração `0034_credits_never_expire.sql` (trigger força `expires_at = null` e recusa lançamentos `expire`). O antigo job `credits-expire` foi removido; o worker apenas apaga o agendamento legado.
+**Créditos nunca expiram**, qualquer que seja a origem (franquia, pacotes, avulso, extras, compensação). Garantido no banco pela migração `0037_credits_never_expire.sql` (trigger força `expires_at = null` e recusa lançamentos `expire`). O antigo job `credits-expire` foi removido; o worker apenas apaga o agendamento legado.
 
 Franquia: na compra o cliente escolhe **renovar automaticamente todo mês** (assinatura Asaas, Pix ou cartão de crédito; créditos concedidos a cada pagamento confirmado — 0009) ou **compra única** (mesmo fluxo de pacote). A renovação pode ser cancelada no painel (`/creditos`). Evento avulso e créditos extras são sempre compra única.
 

@@ -90,7 +90,7 @@ const subscribeSchema = z.object({
  * - Sim: assinatura recorrente no Asaas (Pix ou cartão de crédito); os créditos
  *   entram após cada confirmação de pagamento (webhook, migração 0009).
  * - Não: compra única dos créditos do plano (mesmo fluxo dos pacotes).
- * Créditos nunca expiram (0034).
+ * Créditos nunca expiram (0037).
  */
 export async function subscribeToPlanAction(
   _previous: SubscribeState,
