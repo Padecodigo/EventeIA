@@ -30,12 +30,17 @@ export function ProspectingPanel({
   prospects,
   instanceStatus,
   numberMode = null,
+  connection,
 }: {
   eventId: string;
   prospects: readonly ProspectRow[];
   instanceStatus: string | null;
   numberMode?: "dedicated" | "personal" | null;
+  connection?: { connected: boolean; showDisconnectedAlert: boolean; phone: string | null };
 }) {
+  const connected =
+    connection?.connected ?? (instanceStatus === "active" || instanceStatus === "draining");
+  const showAlert = connection?.showDisconnectedAlert ?? instanceStatus === "disconnected";
   return (
     <section className="rounded-card border border-line-subtle bg-off-white shadow-soft">
       <header className="border-b border-line-subtle px-6 py-5">
@@ -47,8 +52,11 @@ export function ProspectingPanel({
         </p>
       </header>
 
-      {instanceStatus === "disconnected" ? (
-        <p role="alert" className="mx-6 mt-5 rounded-xl bg-semantic-error/10 px-4 py-3 text-sm text-semantic-error">
+      {showAlert ? (
+        <p
+          role="alert"
+          className="mx-6 mt-5 rounded-xl bg-semantic-error/10 px-4 py-3 text-sm text-semantic-error"
+        >
           Seu WhatsApp está desconectado. Reconecte a sessão para retomar os disparos — a fila
           continua pausada até a conexão voltar.
         </p>
@@ -77,20 +85,28 @@ export function ProspectingPanel({
         </ul>
       ) : null}
 
-      <div className="border-t border-line-subtle px-6 py-6">
-        <h3 className="font-serif text-title-3">Conectar WhatsApp</h3>
-        <p className="mt-1 max-w-prose text-sm leading-6 text-vinho/75">
-          O agente encontra fornecedores na cidade da festa sozinho — você não precisa cadastrar
-          ninguém. Escolha qual número ele usa para os contatos.
-        </p>
-        <div className="mt-4">
-          <WhatsappSetup
-            eventId={eventId}
-            current={numberMode}
-            connected={instanceStatus === "active" || instanceStatus === "draining"}
-          />
+      {connected ? (
+        <div className="border-t border-line-subtle px-6 py-6">
+          <p
+            role="status"
+            data-testid="whatsapp-connected"
+            className="inline-flex items-center gap-2 rounded-xl bg-champagne-claro/70 px-4 py-3 text-sm font-medium text-vinho"
+          >
+            ✓ Conectado{connection?.phone ? ` — WhatsApp ${connection.phone}` : ""}
+          </p>
         </div>
-      </div>
+      ) : (
+        <div className="border-t border-line-subtle px-6 py-6">
+          <h3 className="font-serif text-title-3">Conectar WhatsApp</h3>
+          <p className="mt-1 max-w-prose text-sm leading-6 text-vinho/75">
+            O agente encontra fornecedores na cidade da festa sozinho — você não precisa cadastrar
+            ninguém. Escolha qual número ele usa para os contatos.
+          </p>
+          <div className="mt-4">
+            <WhatsappSetup eventId={eventId} current={numberMode} connected={false} />
+          </div>
+        </div>
+      )}
     </section>
   );
 }

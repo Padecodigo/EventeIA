@@ -7,6 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const requestMock = vi.fn();
 const stateMock = vi.fn();
+const refreshMock = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: refreshMock }) }));
 vi.mock("@/app/(dashboard)/eventos/whatsapp-actions", () => ({
   requestWhatsappPairingAction: (...a: unknown[]) => requestMock(...a),
   whatsappConnectionStateAction: (...a: unknown[]) => stateMock(...a),
@@ -97,7 +99,7 @@ describe("WhatsappConnect", () => {
     expect(screen.getByText(/O código expirou/)).toBeInTheDocument();
     stateMock.mockResolvedValue({ state: "open" });
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(4_100);
+      await vi.advanceTimersByTimeAsync(1_100);
     });
     expect(screen.getByText("Conectado! Podemos prosseguir?")).toBeInTheDocument();
     await act(async () => {
@@ -157,5 +159,40 @@ describe("WhatsappConnect — conectar com código", () => {
     expect(screen.getByTestId("pairing-code")).toHaveTextContent("ABCD-1234");
     expect(screen.getByTestId("pairing-code").className).toContain("text-4xl");
     expect(screen.getByTestId("qr-block")).toBeInTheDocument();
+  });
+});
+
+describe("WhatsappConnect — progresso e velocidade", () => {
+  it("mostra Gerando código… → Aguardando confirmação → Conectado! em ~1s", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false });
+    setUA("Mozilla/5.0 (X11; Linux x86_64)");
+    let resolve: (v: unknown) => void = () => {};
+    requestMock.mockImplementationOnce(() => new Promise((r) => (resolve = r)));
+    stateMock.mockResolvedValue({ state: "connecting" });
+    render(<WhatsappConnect eventId="e1" />);
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "11 99876-5432" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Gerar código" }));
+    });
+    expect(screen.getByTestId("connect-progress")).toHaveTextContent("Gerando código…");
+    await act(async () => {
+      resolve({
+        ok: true,
+        pairingCode: "ABCD-1234",
+        qrDataUrl: null,
+        expiresAt: Date.now() + 60_000,
+        connected: false,
+      });
+    });
+    expect(screen.getByTestId("connect-progress")).toHaveTextContent(
+      "Aguardando confirmação no celular…",
+    );
+    stateMock.mockResolvedValue({ state: "open" });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_050);
+    });
+    expect(screen.getByText(/Conectado!/)).toBeInTheDocument();
+    expect(refreshMock).toHaveBeenCalled();
+    vi.useRealTimers();
   });
 });

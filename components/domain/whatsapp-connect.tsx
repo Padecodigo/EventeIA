@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 
 import {
@@ -9,7 +10,7 @@ import {
 import { QuotePreparingNotice } from "@/components/domain/quote-preparing-notice";
 import { Button } from "@/components/ui/button";
 import {
-  CONNECTION_POLL_INTERVAL_MS,
+  nextConnectionPollDelayMs,
   PAIRING_STEPS,
   WHATSAPP_FALLBACK_URL,
   WHATSAPP_OPEN_URL,
@@ -47,6 +48,12 @@ export function WhatsappConnect({
   const [now, setNow] = useState(() => Date.now());
   const [mobile, setMobile] = useState<boolean | null>(null);
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
+
+  // Conectou: re-renderiza a página (servidor) para sumir o aviso de desconectado.
+  useEffect(() => {
+    if (connected) router.refresh();
+  }, [connected, router]);
 
   useEffect(() => {
     const coarse =
@@ -93,15 +100,29 @@ export function WhatsappConnect({
     return () => clearInterval(id);
   }, [pairing, connected]);
 
-  // Polling do estado da conexão.
+  // Polling do estado da conexão: 1s logo após mostrar o QR/código, depois 3s.
   useEffect(() => {
     if (pairing === null || connected) return;
-    const id = setInterval(() => {
-      void whatsappConnectionStateAction(eventId).then((r) => {
-        if (r.state === "open") setConnected(true);
-      });
-    }, CONNECTION_POLL_INTERVAL_MS);
-    return () => clearInterval(id);
+    const shownAt = Date.now();
+    let cancelled = false;
+    let id: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      id = setTimeout(
+        () => {
+          void whatsappConnectionStateAction(eventId).then((r) => {
+            if (cancelled) return;
+            if (r.state === "open") setConnected(true);
+            else tick();
+          });
+        },
+        nextConnectionPollDelayMs(Date.now() - shownAt),
+      );
+    };
+    tick();
+    return () => {
+      cancelled = true;
+      clearTimeout(id);
+    };
   }, [pairing, connected, eventId]);
 
   const secondsLeft =
@@ -168,6 +189,12 @@ export function WhatsappConnect({
           {pending ? "Gerando…" : pairing?.pairingCode ? "Gerar novo código" : "Gerar código"}
         </Button>
       </form>
+
+      {pending ? (
+        <p role="status" data-testid="connect-progress" className="text-sm font-medium text-vinho">
+          {phone.trim().length > 0 ? "Gerando código…" : "Gerando QR code…"}
+        </p>
+      ) : null}
 
       {error !== null ? (
         <p role="alert" className="text-sm text-semantic-error">
@@ -245,9 +272,15 @@ export function WhatsappConnect({
                 <li key={step}>{step}</li>
               ))}
             </ol>
-            <p className="text-caption text-vinho/60" role="status">
-              Aguardando a conexão…
-            </p>
+            {pending ? null : (
+              <p
+                className="text-sm font-medium text-vinho"
+                role="status"
+                data-testid="connect-progress"
+              >
+                Aguardando confirmação no celular…
+              </p>
+            )}
           </div>
         </div>
       ) : null}

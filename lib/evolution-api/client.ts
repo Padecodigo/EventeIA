@@ -8,7 +8,11 @@ import {
   evolutionSendResponseSchema,
   firstContactPayloadSchema,
 } from "@/lib/schemas/whatsapp";
-import { parseConnectResponse, type ConnectPayload } from "@/lib/whatsapp/pairing";
+import {
+  connectRetryDelayMs,
+  parseConnectResponse,
+  type ConnectPayload,
+} from "@/lib/whatsapp/pairing";
 
 /** Timeout por requisição: evita sockets pendurados com ~100 sessões. */
 const REQUEST_TIMEOUT_MS = 20_000;
@@ -221,7 +225,6 @@ export interface ConnectOptions {
   sleep?: (ms: number) => Promise<void>;
   /** Quantas vezes reconsultar enquanto o QR/código ainda não ficou pronto. */
   attempts?: number;
-  intervalMs?: number;
 }
 
 const realSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -246,8 +249,7 @@ export async function connectInstance(
 ): Promise<ConnectPayload> {
   const { baseUrl, apiKey } = requireEnv();
   const sleep = options.sleep ?? realSleep;
-  const attempts = options.attempts ?? 6;
-  const intervalMs = options.intervalMs ?? 1_500;
+  const attempts = options.attempts ?? 7;
   const wantsCode = numberDigits.length > 0;
   const query = wantsCode ? `?number=${encodeURIComponent(numberDigits)}` : "";
   const url = `${baseUrl}/instance/connect/${encodeURIComponent(instance)}${query}`;
@@ -305,7 +307,7 @@ export async function connectInstance(
 
   let payload = await connectOnce();
   for (let i = 1; i < attempts && !ready(payload); i += 1) {
-    await sleep(intervalMs);
+    await sleep(connectRetryDelayMs(i - 1));
     payload = await connectOnce();
   }
   return payload;
@@ -327,12 +329,31 @@ async function resetPendingPairing(
   }
   if (state !== "connecting") return;
   await logoutInstance(instance);
-  for (let i = 0; i < 10; i += 1) {
-    await sleep(500);
+  for (let i = 0; i < 20; i += 1) {
+    await sleep(250);
     try {
       if ((await getConnectionState(instance)) !== "connecting") return;
     } catch {
       return;
     }
   }
+}
+
+/** Número (ownerJid) do WhatsApp conectado na instância; null se indisponível. */
+export async function getInstanceOwnerJid(instance: string): Promise<string | null> {
+  const { baseUrl, apiKey } = requireEnv();
+  const response = await fetch(
+    `${baseUrl}/instance/fetchInstances?instanceName=${encodeURIComponent(instance)}`,
+    {
+      headers: { apikey: apiKey },
+      cache: "no-store",
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    },
+  );
+  if (!response.ok) return null;
+  const body = (await response.json()) as unknown;
+  const first: unknown = Array.isArray(body) ? body[0] : null;
+  if (typeof first !== "object" || first === null) return null;
+  const jid = (first as { ownerJid?: unknown }).ownerJid;
+  return typeof jid === "string" && jid.length > 0 ? jid : null;
 }

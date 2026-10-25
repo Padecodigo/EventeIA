@@ -23,7 +23,9 @@ import { offerDiscountCents } from "@/lib/offers/pure";
 import { activeUserOffer } from "@/lib/offers/server";
 import { latestScenarios } from "@/lib/quotes/scenarios";
 import { canEditSearchStart, spDateKey } from "@/lib/search-start";
+import { getConnectionState, getInstanceOwnerJid } from "@/lib/evolution-api/client";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { formatWhatsappNumber, resolvePanelConnection } from "@/lib/whatsapp/panel-status";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const eventTypeSchema = z.enum([
@@ -132,11 +134,26 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
         .order("created_at", { ascending: false }),
       getSupabaseAdmin()
         .from("whatsapp_instances")
-        .select("status,number_mode")
+        .select("status,number_mode,instance_name")
         .eq("profile_id", event.owner_profile_id)
         .limit(1)
         .maybeSingle(),
     ]);
+
+  // Estado real na Evolution (o banco pode estar atrasado) + número conectado.
+  const instanceName = instancesResult.data?.instance_name ?? null;
+  const [evolutionState, ownerJid] =
+    instanceName === null
+      ? [null, null]
+      : await Promise.all([
+          getConnectionState(instanceName).catch(() => null),
+          getInstanceOwnerJid(instanceName).catch(() => null),
+        ]);
+  const panel = resolvePanelConnection(instancesResult.data?.status ?? null, evolutionState);
+  const connection = {
+    ...panel,
+    phone: panel.connected ? formatWhatsappNumber(ownerJid) : null,
+  };
 
   const eventType: EventType = eventTypeSchema.safeParse(event.event_type).data ?? "casamento";
   const region: RegionCode = regionSchema.safeParse(event.region_code).data ?? "outros";
@@ -256,6 +273,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
             prospects={prospectsResult.data ?? []}
             instanceStatus={instancesResult.data?.status ?? null}
             numberMode={instancesResult.data?.number_mode ?? null}
+            connection={connection}
           />
         </>
       ) : null}

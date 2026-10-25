@@ -109,6 +109,33 @@ describe("connectInstance (regressão do código de pareamento)", () => {
   });
 });
 
+describe("tempos do connect", () => {
+  it("espera 400ms antes do 1º retry e cresce depois (antes: 1500ms fixo)", async () => {
+    state = "close";
+    codeReadyAfter = 3;
+    stubEvolution();
+    const waits: number[] = [];
+    const payload = await connectInstance("i", "5511998765432", {
+      sleep: async (ms) => {
+        waits.push(ms);
+      },
+    });
+    expect(payload.pairingCode).toBe("ABCD-1234");
+    expect(waits).toEqual([400, 700, 1000]);
+  });
+
+  it("sessão pendente: checa o fim da tentativa anterior a cada 250ms", async () => {
+    stubEvolution();
+    const waits: number[] = [];
+    await connectInstance("i", "5511998765432", {
+      sleep: async (ms) => {
+        waits.push(ms);
+      },
+    });
+    expect(waits[0]).toBe(250);
+  });
+});
+
 describe("startPairing com número", () => {
   const deps = (logError = vi.fn()): PairingDeps => ({
     now: () => 0,
