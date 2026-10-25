@@ -20,6 +20,8 @@ export interface PairingDeps {
   instanceName(userId: string): Promise<string>;
   connect(instance: string, numberDigits: string): Promise<ConnectPayload>;
   connectionState(instance: string): Promise<"open" | "connecting" | "close">;
+  /** Log de erro técnico (sem segredos); opcional nos testes. */
+  logError?(message: string, context: Record<string, unknown>): void;
 }
 
 export type PairingResult =
@@ -50,7 +52,15 @@ export async function startPairing(
   try {
     const instance = await deps.ensureInstanceRow({ userId: input.userId, eventId: input.eventId });
     const payload = await deps.connect(instance, digits);
+    if (wantsCode && !payload.alreadyConnected && payload.pairingCode === null) {
+      deps.logError?.("Evolution não devolveu pairingCode", { instance });
+      return {
+        ok: false,
+        error: "O WhatsApp não gerou o código agora. Toque em “Gerar código” de novo em instantes.",
+      };
+    }
     if (!payload.alreadyConnected && payload.pairingCode === null && payload.qrDataUrl === null) {
+      deps.logError?.("Evolution não devolveu QR nem código", { instance });
       return {
         ok: false,
         error: "O WhatsApp não gerou o código agora. Tente novamente em instantes.",
@@ -64,6 +74,11 @@ export async function startPairing(
       connected: payload.alreadyConnected,
     };
   } catch (caught) {
+    if (!(caught instanceof InstanceBusyError)) {
+      deps.logError?.("falha ao gerar QR/código do WhatsApp", {
+        reason: caught instanceof Error ? caught.message : String(caught),
+      });
+    }
     if (caught instanceof InstanceBusyError) {
       return {
         ok: false,

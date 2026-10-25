@@ -87,6 +87,7 @@ describe("pareamento do WhatsApp", () => {
     });
     expect(rows).toEqual(["eventeia-abcdef12345647898abcdef012345678"]);
     expect(calls.map((c) => `${c.method} ${c.url}`)).toEqual([
+      "GET https://evo.test/instance/connectionState/eventeia-abcdef12345647898abcdef012345678",
       "GET https://evo.test/instance/connect/eventeia-abcdef12345647898abcdef012345678?number=5511998765432",
       "POST https://evo.test/instance/create",
       "GET https://evo.test/instance/connect/eventeia-abcdef12345647898abcdef012345678?number=5511998765432",
