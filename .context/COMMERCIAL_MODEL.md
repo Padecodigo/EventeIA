@@ -75,6 +75,7 @@ available ──checkout──► pending ──pagamento confirmado──► ac
 
 - **Pacotes avulsos** (créditos fora da assinatura): `3` (R$ 117), `7` (R$ 197) e `17` (R$ 397) — compráveis via Pix a qualquer momento (`payments.purpose='credit_topup'`).
 - Pacotes **não expiram** e passam pelo mesmo piso de margem (`CREDIT_PACKAGES` em `lib/plans.ts`; teste em `tests/unit/pricing.test.ts`).
+- Slider sob medida (3..20 eventos) em `lib/credit-slider.ts`: interpolação linear por trechos entre 3=R$117, 7=R$197, 17=R$397, 20=R$450, arredondada para reais cheios; o servidor recalcula o preço (`buyCreditsAction`, campo `credits`). Sem migração: reutiliza `payments.credits_granted` + ramo `credit_topup` da 0008.
 
 ### 3.3 Validade e *rollover*
 

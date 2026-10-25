@@ -12,6 +12,11 @@ import {
   createAsaasSubscription,
 } from "@/lib/asaas/client";
 import { requireUser } from "@/lib/auth";
+import {
+  CUSTOM_CREDITS_MAX,
+  CUSTOM_CREDITS_MIN,
+  customCreditsPriceCents,
+} from "@/lib/credit-slider";
 import { emitFeed } from "@/lib/feeds";
 import { logger } from "@/lib/logger";
 import { CREDIT_PACKAGES, PLANS } from "@/lib/plans";
@@ -195,20 +200,49 @@ const buyCreditsSchema = z.object({
   packageCode: z.enum(["pacote-3", "pacote-7", "pacote-17"]),
 });
 
+const customCreditsSchema = z.object({
+  credits: z.coerce.number().int().min(CUSTOM_CREDITS_MIN).max(CUSTOM_CREDITS_MAX),
+});
+
+interface ResolvedPack {
+  code: string;
+  name: string;
+  credits: number;
+  priceCents: number;
+}
+
+/**
+ * Resolve o pacote no servidor. Aceita o pacote fixo legado (`packageCode`) ou a
+ * quantidade do slider (`credits`, 3..20). O preço é SEMPRE recalculado aqui;
+ * qualquer preço vindo do cliente é ignorado.
+ */
+function resolvePack(formData: FormData): ResolvedPack | null {
+  const rawCredits = formData.get("credits");
+  if (rawCredits !== null) {
+    const parsed = customCreditsSchema.safeParse({ credits: rawCredits });
+    if (!parsed.success) return null;
+    const credits = parsed.data.credits;
+    return {
+      code: `custom-${String(credits)}`,
+      name: `Pacote ${String(credits)}`,
+      credits,
+      priceCents: customCreditsPriceCents(credits),
+    };
+  }
+  const parsed = buyCreditsSchema.safeParse({ packageCode: formData.get("packageCode") });
+  if (!parsed.success) return null;
+  return CREDIT_PACKAGES.find((item) => item.code === parsed.data.packageCode) ?? null;
+}
+
 export async function buyCreditsAction(
   _previous: CreditsCheckoutState,
   formData: FormData,
 ): Promise<CreditsCheckoutState> {
   const user = await requireUser();
-  const parsed = buyCreditsSchema.safeParse({ packageCode: formData.get("packageCode") });
+  const pack = resolvePack(formData);
 
-  if (!parsed.success) {
+  if (pack === null) {
     return { error: "Pacote inválido." };
-  }
-
-  const pack = CREDIT_PACKAGES.find((item) => item.code === parsed.data.packageCode);
-  if (pack === undefined) {
-    return { error: "Pacote não encontrado." };
   }
 
   const supabase = await createSupabaseServerClient();
