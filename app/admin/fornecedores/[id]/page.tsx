@@ -5,7 +5,8 @@ import { isUuid } from "@/lib/admin/search";
 import { requireAdmin } from "@/lib/auth";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
-import { Card, READ_ONLY_NOTE, fmtDate } from "../../ui";
+import { Card, fmtDate } from "../../ui";
+import { DeleteSupplier } from "../delete-supplier";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,11 @@ export default async function AdminFornecedorPage({ params }: { params: Promise<
       <header>
         <p className="text-caption"><Link className="underline" href="/admin/fornecedores">← Fornecedores</Link></p>
         <h2 className="font-serif text-title-2">{s.name}</h2>
-        <p className="text-caption text-vinho/60">{READ_ONLY_NOTE}</p>
+        {s.deleted_at ? (
+          <p className="text-caption text-semantic-error" data-testid="supplier-in-trash">Na Lixeira desde {fmtDate(s.deleted_at)}: fora da busca e dos contatos. Restaure pela <Link className="underline" href="/admin/lixeira">Lixeira</Link>.</p>
+        ) : (
+          <div className="mt-2"><DeleteSupplier supplierId={s.id} name={s.name} /></div>
+        )}
       </header>
       <Card testId="supplier-info">
         <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">

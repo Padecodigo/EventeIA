@@ -7,7 +7,8 @@ import { TYPE_LABELS, shortId } from "@/lib/support/pure";
 
 export const metadata = { title: "Meus chamados" };
 
-export default async function MyTicketsPage() {
+export default async function MyTicketsPage({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
+  const deleted = (await searchParams)?.excluido === "1";
   const user = await requireUser();
   const supabase = await createSupabaseServerClient();
   // RLS: só os tickets do próprio usuário.
@@ -15,6 +16,7 @@ export default async function MyTicketsPage() {
     .from("support_tickets")
     .select("id,type,subject,status,created_at,updated_at")
     .eq("user_id", user.id)
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false })
     .limit(100);
   const items = data ?? [];
@@ -28,6 +30,7 @@ export default async function MyTicketsPage() {
           Sugestões, reclamações, elogios e problemas que você enviou. Use o botão “Ajuda e feedback” para abrir um novo.
         </p>
       </header>
+      {deleted ? <p role="status" className="text-sm text-vinho/70">Chamado excluído.</p> : null}
       {items.length === 0 ? (
         <p className="text-sm text-vinho/70">Você ainda não enviou nenhuma mensagem.</p>
       ) : (

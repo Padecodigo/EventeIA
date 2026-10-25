@@ -43,7 +43,7 @@ export async function searchAdmin(db: SearchDb, raw: unknown, per = 10): Promise
     uuid ? Promise.resolve([] as Row[]) : run("profiles", "id,display_name,email,role", "email"),
     run("events", "id,title,event_date,status,city", "title"),
     run("support_tickets", "id,subject,status,created_at", "subject", (x) => x.is("deleted_at", null)),
-    run("suppliers", "id,name,category,city", "name"),
+    run("suppliers", "id,name,category,city", "name", (x) => x.is("deleted_at", null)),
   ]);
   const seen = new Set<string>();
   const clients = [...byName, ...byEmail].filter((r) => !seen.has(str(r.id)) && seen.add(str(r.id)));

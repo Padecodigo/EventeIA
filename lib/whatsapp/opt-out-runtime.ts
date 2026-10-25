@@ -1,5 +1,6 @@
 import "server-only";
 
+import { supplierBlockedAt } from "@/lib/admin/suppliers";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 import { isRecipientOptedOut } from "./opt-out";
@@ -20,12 +21,13 @@ export async function recipientOptedOut(input: {
       .eq("channel", "whatsapp")
       .maybeSingle(),
     input.supplierId
-      ? admin.from("suppliers").select("opt_out_at").eq("id", input.supplierId).maybeSingle()
+      ? admin.from("suppliers").select("opt_out_at,deleted_at").eq("id", input.supplierId).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
   return isRecipientOptedOut({
     prospectStatus: input.prospectStatus,
     consentStatus: consent.data?.status,
-    supplierOptOutAt: supplier.data?.opt_out_at,
+    // Fornecedor na lixeira do admin também não recebe mensagens.
+    supplierOptOutAt: supplierBlockedAt(supplier.data),
   });
 }
