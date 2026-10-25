@@ -18,6 +18,7 @@ vi.mock("@/app/(dashboard)/creditos/actions", () => ({
   createWorkspaceAction: vi.fn(),
   buyCreditsAction: vi.fn(),
   subscribePlanAction: vi.fn(),
+  cancelSubscriptionAction: vi.fn(),
 }));
 vi.mock("@/components/domain/credit-slider-form", () => ({ CreditSliderForm: () => null }));
 vi.mock("@/components/domain/subscribe-plan-form", () => ({ SubscribePlanForm: () => null }));
@@ -50,7 +51,10 @@ describe("/creditos — evento avulso para quem volta", () => {
     await renderPage();
     expect(screen.getByRole("heading", { name: /compre avulso/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /criar evento avulso/i })).toBeInTheDocument();
-    expect(screen.getByText(/Assinatura ativa/i)).toBeInTheDocument();
+    expect(screen.getByText(/Renovação automática ativa/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /cancelar renovação automática/i }),
+    ).toBeInTheDocument();
   });
 
   it("sem assinatura, mostra planos e evento avulso", async () => {
