@@ -5,7 +5,8 @@ import type { EventType } from "@/lib/engine/types";
 import { serverEnv } from "@/lib/env";
 import { findMunicipioByCode } from "@/lib/geo/municipios";
 import { logger } from "@/lib/logger";
-import { enqueue, getRedisConnection, QUEUE_NAMES } from "@/lib/queue";
+import { enqueue, getQueue, getRedisConnection, QUEUE_NAMES } from "@/lib/queue";
+import { msUntilSearchStart } from "@/lib/search-start";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { ensureUserInstance } from "@/lib/whatsapp/instance-store";
 import { supabaseInstanceStore } from "@/lib/whatsapp/instance-store-supabase";
@@ -23,10 +24,31 @@ export function discoveryJobId(eventId: string, round: number): string {
 }
 
 /** Enfileira a 1ª rodada (idempotente por jobId). Chamado após pagamento e após a entrevista. */
-export async function startDiscovery(eventId: string): Promise<boolean> {
-  // Prazo máximo da coleta (48h): independe de sessão WhatsApp (jobId idempotente).
-  await scheduleCollectionDeadline(eventId, resolveCollectionWindowMinutes(serverEnv().WHATSAPP_COLLECTION_WINDOW_MINUTES) * 60_000);
-  return enqueue(QUEUE_NAMES.supplierDiscovery, "discover", { eventId, round: 0 }, { jobId: discoveryJobId(eventId, 0) });
+export async function startDiscovery(eventId: string, now: Date = new Date()): Promise<boolean> {
+  // Respeita a data agendada pelo cliente + dia útil 9h–18h: o job nasce atrasado até lá
+  // (o worker re-checa na execução) e o prazo da coleta conta a partir do início real.
+  const { data } = await getSupabaseAdmin().from("events").select("search_start_date").eq("id", eventId).maybeSingle();
+  const startDelay = msUntilSearchStart(now, data?.search_start_date ?? null);
+  const windowMs = resolveCollectionWindowMinutes(serverEnv().WHATSAPP_COLLECTION_WINDOW_MINUTES) * 60_000;
+  await scheduleCollectionDeadline(eventId, startDelay + windowMs);
+  return enqueue(QUEUE_NAMES.supplierDiscovery, "discover", { eventId, round: 0 }, { jobId: discoveryJobId(eventId, 0), delayMs: startDelay });
+}
+
+/**
+ * Cliente mudou a data agendada: realinha o job da 1ª rodada (se ainda estiver atrasado) e o prazo da coleta.
+ * Sem job pendente não faz nada — a próxima ativação/entrevista enfileira já com a data nova.
+ */
+export async function rescheduleDiscovery(eventId: string, searchStartDate: string | null, now: Date = new Date()): Promise<boolean> {
+  const startDelay = msUntilSearchStart(now, searchStartDate);
+  const queue = getQueue(QUEUE_NAMES.supplierDiscovery);
+  const job = await queue.getJob(discoveryJobId(eventId, 0));
+  if (job === undefined || !(await job.isDelayed())) return false;
+  await job.changeDelay(startDelay);
+  const deadline = await getQueue(QUEUE_NAMES.whatsappSessionLifecycle).getJob(`collection-deadline-${eventId}`);
+  if (deadline !== undefined && (await deadline.isDelayed())) {
+    await deadline.changeDelay(startDelay + resolveCollectionWindowMinutes(serverEnv().WHATSAPP_COLLECTION_WINDOW_MINUTES) * 60_000);
+  }
+  return true;
 }
 
 export function createDiscoveryDeps(): DiscoveryDeps {
@@ -88,7 +110,7 @@ export function createDiscoveryDeps(): DiscoveryDeps {
 
     async eventProspects(eventId) {
       // Fora do modo dry-run, prospects fictícios (dry_run) não contam para as metas nem bloqueiam números.
-      let q = admin.from("vendor_prospects").select("phone_e164,vendor_category,vendor_name").eq("event_id", eventId);
+      let q = admin.from("vendor_prospects").select("phone_e164,vendor_category,vendor_name").eq("event_id", eventId).is("hidden_at", null);
       if (!env.DISCOVERY_DRY_RUN) q = q.eq("dry_run", false);
       const { data } = await q;
       return (data ?? []).map((p) => ({ phone: p.phone_e164, category: p.vendor_category, name: p.vendor_name }));

@@ -63,7 +63,7 @@ async function delay(job: Job, untilMs: number, token: string | undefined): Prom
   throw new DelayedError();
 }
 
-async function processProspectingJob(
+export async function processProspectingJob(
   job: Job<ProspectingJob>,
   token: string | undefined,
   pacing: PacingStore,
@@ -75,7 +75,7 @@ async function processProspectingJob(
   // Regra 3: opt-out (ou já enviado) — pula o envio imediatamente.
   const { data: prospect } = await admin
     .from("vendor_prospects")
-    .select("id,status,vendor_name,vendor_category,dry_run,supplier_id")
+    .select("id,status,vendor_name,vendor_category,dry_run,supplier_id,hidden_at")
     .eq("id", data.prospectId)
     .maybeSingle();
 
@@ -84,6 +84,11 @@ async function processProspectingJob(
     return;
   }
   if (prospect.status === "opt_out" || prospect.status === "sent") {
+    return;
+  }
+  // Prospect ocultado (soft-hide, ex.: exemplos de simulação): nunca recebe mensagem.
+  if (prospect.hidden_at !== null && prospect.hidden_at !== undefined) {
+    logger.info({ prospectId: data.prospectId }, "prospect oculto: envio suprimido");
     return;
   }
   // Dry-run (mock/homologação): NUNCA envia — fica registrado como pendente.

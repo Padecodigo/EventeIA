@@ -3,6 +3,7 @@ import Link from "next/link";
 import { NewEventForm } from "@/components/domain/new-event-form";
 import { requireUser } from "@/lib/auth";
 import { personalEventsFilter } from "@/lib/auth/personal-scope-server";
+import { spDateKey } from "@/lib/search-start";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Eventos" };
@@ -39,7 +40,7 @@ export default async function EventsPage() {
         </p>
       </section>
 
-      <NewEventForm />
+      <NewEventForm today={spDateKey(new Date())} />
 
       <section>
         <h2 className="font-serif text-title-1">Seus eventos</h2>

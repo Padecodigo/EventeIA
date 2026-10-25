@@ -34,9 +34,9 @@ describe("feriados nacionais", () => {
 });
 
 describe("janelas", () => {
-  it("contato 9–18h; descoberta 8–18h", () => {
+  it("contato 9–18h; descoberta também 9–18h (regra dura)", () => {
     expect(isWithinBusinessWindow(new Date("2026-10-26T11:30:00Z"), OUTREACH_WINDOW)).toBe(false); // 8h30
-    expect(isWithinBusinessWindow(new Date("2026-10-26T11:30:00Z"), DISCOVERY_WINDOW)).toBe(true);
+    expect(isWithinBusinessWindow(new Date("2026-10-26T11:30:00Z"), DISCOVERY_WINDOW)).toBe(false);
     expect(isWithinBusinessWindow(new Date("2026-10-26T20:59:00Z"), OUTREACH_WINDOW)).toBe(true); // 17h59
     expect(isWithinBusinessWindow(new Date("2026-10-26T21:00:00Z"), OUTREACH_WINDOW)).toBe(false); // 18h
   });

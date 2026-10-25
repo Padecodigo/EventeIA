@@ -10,6 +10,7 @@ import { ProspectingPanel } from "@/components/domain/prospecting-panel";
 import { QuotationsPanel } from "@/components/domain/quotations-panel";
 import { QuotePreparingNotice } from "@/components/domain/quote-preparing-notice";
 import { ScenariosPanel } from "@/components/domain/scenarios-panel";
+import { SearchStartEditor } from "@/components/domain/search-start-editor";
 import { TestimonialInvite } from "@/components/domain/testimonial-invite";
 import { CATEGORY_LABELS, type CategoryCode } from "@/lib/catalog/v1";
 import { calculate } from "@/lib/engine";
@@ -21,6 +22,7 @@ import { formatBRL } from "@/lib/money";
 import { offerDiscountCents } from "@/lib/offers/pure";
 import { activeUserOffer } from "@/lib/offers/server";
 import { latestScenarios } from "@/lib/quotes/scenarios";
+import { canEditSearchStart, spDateKey } from "@/lib/search-start";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -126,6 +128,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
         .eq("event_id", event.id)
         // Prospects fictícios de simulação (dry-run) não aparecem no painel.
         .eq("dry_run", false)
+        .is("hidden_at", null)
         .order("created_at", { ascending: false }),
       getSupabaseAdmin()
         .from("whatsapp_instances")
@@ -235,7 +238,17 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
       {unlocked ? (
         <>
-          {interviewDone && event.quotes_delivered_at === null ? <QuotePreparingNotice /> : null}
+          {interviewDone && event.quotes_delivered_at === null ? (
+            <QuotePreparingNotice searchStartDate={event.search_start_date} />
+          ) : null}
+          {canEditSearchStart(event) ? (
+            <SearchStartEditor
+              eventId={event.id}
+              searchStartDate={event.search_start_date}
+              today={spDateKey(new Date())}
+              eventDate={event.event_date}
+            />
+          ) : null}
           <ScenariosPanel eventId={event.id} scenarios={scenarios} />
           <QuotationsPanel eventId={event.id} quotations={quotationsResult.data ?? []} />
           <ProspectingPanel

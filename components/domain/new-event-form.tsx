@@ -4,12 +4,13 @@ import { useActionState } from "react";
 
 import { createEventAction, type ActionState } from "@/app/(dashboard)/eventos/actions";
 import { CityPicker } from "@/components/domain/city-picker";
+import { SearchStartField } from "@/components/domain/search-start-field";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 
 const initialState: ActionState = {};
 
-export function NewEventForm() {
+export function NewEventForm({ today }: { today: string }) {
   const [state, formAction, pending] = useActionState(createEventAction, initialState);
 
   return (
@@ -61,6 +62,10 @@ export function NewEventForm() {
           required
           defaultValue={120}
         />
+
+        <div className="md:col-span-2">
+          <SearchStartField minDate={today} />
+        </div>
 
         {state.error !== undefined ? (
           <p

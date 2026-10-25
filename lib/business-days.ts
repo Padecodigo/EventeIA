@@ -70,8 +70,8 @@ export interface BusinessWindow {
 
 /** Janela do contato com fornecedores (WhatsApp). */
 export const OUTREACH_WINDOW: BusinessWindow = { startHour: 9, endHour: 18 };
-/** Janela da descoberta (busca) — dia útil, um pouco mais ampla, termina junto com o contato. */
-export const DISCOVERY_WINDOW: BusinessWindow = { startHour: 8, endHour: 18 };
+/** Janela da descoberta (busca) — mesma do contato: dia útil, 9h–18h de Brasília (regra dura). */
+export const DISCOVERY_WINDOW: BusinessWindow = { startHour: 9, endHour: 18 };
 
 /** Dentro da janela útil agora? */
 export function isWithinBusinessWindow(now: Date, w: BusinessWindow): boolean {

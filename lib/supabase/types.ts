@@ -74,6 +74,7 @@ export interface Database {
         discovery_status: "running" | "completed" | "paused" | null;
         collection_ended_at: string | null;
         quotes_delivered_at: string | null;
+        search_start_date: string | null;
         created_at: string;
         whatsapp_channel: "cloud" | "evolution" | null;
       }>;
@@ -310,6 +311,7 @@ export interface Database {
         source: "manual" | "auto" | "ingest";
         source_url: string | null;
         dry_run: boolean;
+        hidden_at: string | null;
         created_at: string;
       }>;
       suppliers: Table<{
