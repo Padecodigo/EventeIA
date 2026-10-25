@@ -15,7 +15,7 @@ export const metadata = {
 interface CouponRow {
   id: string;
   code: string;
-  discount_type: "percent" | "fixed_cents";
+  discount_type: "percent" | "fixed_cents" | "free";
   value: number;
   active: boolean;
   expires_at: string | null;
@@ -25,6 +25,7 @@ interface CouponRow {
 }
 
 function describeDiscount(row: CouponRow): string {
+  if (row.discount_type === "free") return "Cortesia (grátis)";
   return row.discount_type === "percent"
     ? `${String(row.value)}%`
     : formatBRL(row.value);

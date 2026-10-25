@@ -131,7 +131,7 @@ export interface Database {
         purpose: "event_ticket" | "credit_topup" | "subscription_invoice";
         event_id: string | null;
         asaas_payment_id: string;
-        billing_type: "PIX" | "CREDIT_CARD";
+        billing_type: "PIX" | "CREDIT_CARD" | "COURTESY";
         amount_cents: number;
         status:
           "pending" | "paid" | "confirmed" | "overdue" | "refunded" | "risk_review" | "chargeback";
@@ -248,13 +248,23 @@ export interface Database {
         id: string;
         code: string;
         description: string | null;
-        discount_type: "percent" | "fixed_cents";
+        discount_type: "percent" | "fixed_cents" | "free";
         value: number;
         active: boolean;
         expires_at: string | null;
         max_redemptions: number | null;
         redemptions: number;
         created_at: string;
+      }>;
+      coupon_redemptions: Table<{
+        id: string;
+        coupon_id: string;
+        profile_id: string;
+        event_id: string | null;
+        payment_id: string | null;
+        status: "reserved" | "redeemed" | "released";
+        created_at: string;
+        updated_at: string;
       }>;
       whatsapp_instances: Table<{
         id: string;
@@ -464,6 +474,23 @@ export interface Database {
     };
     Views: { [_ in never]: never };
     Functions: {
+      reserve_coupon: {
+        Args: { p_code: string; p_profile_id: string; p_event_id: string | null };
+        Returns: {
+          status: "ok" | "invalid" | "already_used" | "exhausted";
+          reservation_id: string | null;
+          discount_type: "percent" | "fixed_cents" | "free" | null;
+          value: number | null;
+        }[];
+      };
+      attach_coupon_reservation: {
+        Args: { p_reservation_id: string; p_payment_id: string };
+        Returns: undefined;
+      };
+      redeem_courtesy_coupon: {
+        Args: { p_code: string; p_profile_id: string; p_event_id: string };
+        Returns: string;
+      };
       support_rate_hit: {
         Args: { p_key_hash: string; p_limit: number };
         Returns: number;

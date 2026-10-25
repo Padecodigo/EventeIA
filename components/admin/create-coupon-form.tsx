@@ -39,6 +39,7 @@ export function CreateCouponForm() {
         >
           <option value="percent">Percentual (%)</option>
           <option value="fixed_cents">Valor fixo (centavos)</option>
+          <option value="free">Cortesia — gratuidade total (1 uso se sem limite)</option>
         </select>
       </div>
 
@@ -58,6 +59,7 @@ export function CreateCouponForm() {
         <p className="text-caption text-vinho/70">
           Percentual até 90 · fixo em centavos até 100000 (R$ 1.000,00). O preço final nunca fica
           abaixo do custo operacional.
+          Cortesia ignora o valor (informe 1) e libera o evento sem cobrança.
         </p>
       </div>
 
