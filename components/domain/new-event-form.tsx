@@ -13,7 +13,10 @@ export function NewEventForm() {
   const [state, formAction, pending] = useActionState(createEventAction, initialState);
 
   return (
-    <section className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
+    <section
+      id="novo-evento"
+      className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft"
+    >
       <h2 className="font-serif text-title-2">Novo evento</h2>
       <p className="mt-1 text-sm text-vinho/75">
         Rascunhar é gratuito. A ativação acontece quando você comprar o tíquete do evento.
@@ -60,7 +63,10 @@ export function NewEventForm() {
         />
 
         {state.error !== undefined ? (
-          <p role="alert" className="md:col-span-2 rounded-xl bg-semantic-error/10 px-4 py-3 text-sm text-semantic-error">
+          <p
+            role="alert"
+            className="md:col-span-2 rounded-xl bg-semantic-error/10 px-4 py-3 text-sm text-semantic-error"
+          >
             {state.error}
           </p>
         ) : null}

@@ -1,11 +1,13 @@
 import Link from "next/link";
 
 import { CreditSliderForm } from "@/components/domain/credit-slider-form";
+import { SingleEventOffer } from "@/components/domain/single-event-offer";
 import { SubscribePlanForm } from "@/components/domain/subscribe-plan-form";
 import { requireUser } from "@/lib/auth";
 import { currentBalanceCents } from "@/lib/credits";
 import { formatBRL, roundHalfUpDiv } from "@/lib/money";
 import { PLANS } from "@/lib/plans";
+import { ticketPriceCents } from "@/lib/seo/pricing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import { createWorkspaceAction } from "./actions";
@@ -61,6 +63,8 @@ export default async function CreditsPage() {
             , antes de comprar créditos.
           </p>
         </section>
+
+        <SingleEventOffer priceCents={ticketPriceCents()} />
       </div>
     );
   }
@@ -101,6 +105,8 @@ export default async function CreditsPage() {
           <p className="text-caption text-vinho/70">{formatBRL(balance)} em valor de evento</p>
         </div>
       </section>
+
+      <SingleEventOffer priceCents={ticketPriceCents()} />
 
       <section>
         <h2 className="font-serif text-title-1">Assinatura mensal (franquia)</h2>
