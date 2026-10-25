@@ -11,6 +11,7 @@ import {
   needsAdminAlert,
   replySchema,
   adminUpdateSchema,
+  anonymousConfirmationEmail,
   sanitizePageUrl,
   userCanReply,
   validateAttachment,
@@ -66,6 +67,22 @@ export class SupportRateLimitedError extends Error {}
 export type ActionResult = { ok: true; ticketId: string } | { ok: false; error: string };
 
 const RATE_LIMIT_PER_10_MIN = 5;
+/** Anônimo: chamados por e-mail informado (10 min), além do limite por IP. */
+const ANON_TICKETS_PER_EMAIL_10_MIN = 3;
+/** Anônimo: no máximo 1 confirmação por destinatário e 20 no total a cada 10 min. */
+const ANON_CONFIRMATIONS_PER_EMAIL_10_MIN = 1;
+const ANON_CONFIRMATIONS_GLOBAL_10_MIN = 20;
+
+/** true se a chave ainda está dentro do limite (consome um hit). */
+async function withinLimit(deps: SupportDeps, key: string, limit: number): Promise<boolean> {
+  try {
+    await deps.rateHit(key, limit);
+    return true;
+  } catch (caught) {
+    if (caught instanceof SupportRateLimitedError) return false;
+    throw caught;
+  }
+}
 
 async function safeSend(deps: SupportDeps, to: string | null, mail: { subject: string; text: string }) {
   if (to === null) return;
@@ -99,13 +116,12 @@ export async function createTicket(
   const attachment = validateAttachment(file);
   if (!attachment.ok) return { ok: false, error: attachment.error };
 
-  try {
-    await deps.rateHit(ctx.userId !== null ? `user:${ctx.userId}` : `ip:${ctx.ipKey}`, RATE_LIMIT_PER_10_MIN);
-  } catch (caught) {
-    if (caught instanceof SupportRateLimitedError) {
-      return { ok: false, error: "Muitas mensagens em pouco tempo. Tente de novo em alguns minutos." };
-    }
-    throw caught;
+  const anonEmail = email?.trim().toLowerCase() ?? null;
+  const allowed =
+    (await withinLimit(deps, ctx.userId !== null ? `user:${ctx.userId}` : `ip:${ctx.ipKey}`, RATE_LIMIT_PER_10_MIN)) &&
+    (anonEmail === null || (await withinLimit(deps, `email:${anonEmail}`, ANON_TICKETS_PER_EMAIL_10_MIN)));
+  if (!allowed) {
+    return { ok: false, error: "Muitas mensagens em pouco tempo. Tente de novo em alguns minutos." };
   }
 
   const pageUrl = sanitizePageUrl(input.pageUrl);
@@ -134,7 +150,16 @@ export async function createTicket(
     priority: defaultPriority(input.type),
   });
 
-  await safeSend(deps, ctx.userId !== null ? ctx.userEmail : email, confirmationEmail(ticket, deps.appUrl, ctx.userId !== null));
+  if (ctx.userId !== null) {
+    await safeSend(deps, ctx.userEmail, confirmationEmail(ticket, deps.appUrl, true));
+  } else if (
+    anonEmail !== null &&
+    (await withinLimit(deps, `confirm:${anonEmail}`, ANON_CONFIRMATIONS_PER_EMAIL_10_MIN)) &&
+    (await withinLimit(deps, "confirm:anon:global", ANON_CONFIRMATIONS_GLOBAL_10_MIN))
+  ) {
+    // E-mail informado por anônimo não é verificado: conteúdo genérico, sem ecoar o texto enviado.
+    await safeSend(deps, anonEmail, anonymousConfirmationEmail(ticket));
+  }
   if (needsAdminAlert(ticket)) {
     await safeSend(deps, deps.adminEmail, adminAlertEmail(ticket, deps.appUrl));
   }

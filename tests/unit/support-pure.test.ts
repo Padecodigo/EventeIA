@@ -7,6 +7,7 @@ import {
   TICKET_TYPES,
   canTransition,
   countTickets,
+  anonymousConfirmationEmail,
   createTicketSchema,
   defaultPriority,
   eventIdFromPath,
@@ -108,5 +109,14 @@ describe("e-mails por tipo (regressão de concordância)", () => {
     expect(conf).not.toMatch(/Recebemos sua /);
     expect(conf).not.toContain(label.toLowerCase());
     expect(adminAlertEmail(t, "https://app").text).toContain(`Novo chamado (${label}) com prioridade normal`);
+  });
+});
+
+describe("anonymousConfirmationEmail", () => {
+  it("texto fixo, só o protocolo varia", () => {
+    const a = anonymousConfirmationEmail({ id: "abcdef12-0000-4000-8000-000000000000" });
+    expect(a.subject).toBe("Recebemos sua mensagem — #ABCDEF12");
+    expect(a.text).toContain("#ABCDEF12");
+    expect(a.text).not.toMatch(/http/);
   });
 });

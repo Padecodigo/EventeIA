@@ -186,6 +186,21 @@ export function confirmationEmail(t: MailTicket, appUrl: string, loggedIn: boole
   };
 }
 
+/**
+ * Confirmação para chamado ANÔNIMO: o e-mail não é verificado, então o texto é
+ * fixo — não ecoa assunto/mensagem (evita usar o formulário para mandar
+ * conteúdo arbitrário a terceiros).
+ */
+export function anonymousConfirmationEmail(t: { id: string }): Mail {
+  return {
+    subject: `Recebemos sua mensagem — #${shortId(t.id)}`,
+    text:
+      `Olá! Recebemos uma mensagem enviada pelo formulário de contato da EventeIA com este e-mail.\n` +
+      `Protocolo: #${shortId(t.id)}. Nossa equipe responde por este e-mail.\n\n` +
+      `Se não foi você, ignore esta mensagem.\n\n— Equipe EventeIA`,
+  };
+}
+
 export function adminReplyEmail(t: MailTicket, body: string, appUrl: string, loggedIn: boolean): Mail {
   const link = loggedIn ? `\n\nResponda em: ${appUrl}/chamados/${t.id}` : "";
   return {
