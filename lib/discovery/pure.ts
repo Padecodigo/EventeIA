@@ -30,6 +30,8 @@ export const supplierCandidateSchema = z.object({
   websiteUrl: z.string().trim().url().max(500).optional(),
   externalId: z.string().trim().max(120).optional(),
   city: z.string().trim().max(80).optional(),
+  /** Pista do tipo de negócio (ex.: tags OSM) para a classificação por LLM. */
+  hint: z.string().trim().max(120).optional(),
 });
 export type SupplierCandidate = z.infer<typeof supplierCandidateSchema>;
 

@@ -87,7 +87,10 @@ export function createDiscoveryDeps(): DiscoveryDeps {
     },
 
     async eventProspects(eventId) {
-      const { data } = await admin.from("vendor_prospects").select("phone_e164,vendor_category,vendor_name").eq("event_id", eventId);
+      // Fora do modo dry-run, prospects fictícios (dry_run) não contam para as metas nem bloqueiam números.
+      let q = admin.from("vendor_prospects").select("phone_e164,vendor_category,vendor_name").eq("event_id", eventId);
+      if (!env.DISCOVERY_DRY_RUN) q = q.eq("dry_run", false);
+      const { data } = await q;
       return (data ?? []).map((p) => ({ phone: p.phone_e164, category: p.vendor_category, name: p.vendor_name }));
     },
 
@@ -140,6 +143,7 @@ export function createDiscoveryDeps(): DiscoveryDeps {
         .eq("category", category)
         .is("opt_out_at", null)
         .neq("whatsapp_verified", false)
+        .neq("source_provider", "mock")
         .gte("last_seen_at", since)
         .limit(limit + excludePhones.length);
       return (data ?? [])
