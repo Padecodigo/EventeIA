@@ -22,6 +22,8 @@ import {
   customCreditsPriceCents,
 } from "@/lib/credit-slider";
 import { emitFeed } from "@/lib/feeds";
+import { recordTermsAcceptance } from "@/lib/legal/acceptance-server";
+import { TERMS_ERROR, hasAcceptedTerms } from "@/lib/legal/terms";
 import { logger } from "@/lib/logger";
 import { previewCheckoutDiscount, resolveCheckoutDiscount } from "@/lib/offers/checkout";
 import { attachUserOffer, releaseUserOffer } from "@/lib/offers/server";
@@ -168,9 +170,14 @@ export async function subscribeToPlanAction(
     return { error: "Escolha o plano e se deseja renovar automaticamente." };
   }
 
+  if (!hasAcceptedTerms(formData)) {
+    return { error: TERMS_ERROR };
+  }
+
   if (parsed.data.renew === "no") {
     return buyCreditsAction({}, formData);
   }
+  await recordTermsAcceptance(user.id, "checkout");
 
   const plan = PLANS.find((item) => item.code === parsed.data.planCode);
   if (plan === undefined) {
@@ -434,6 +441,11 @@ export async function buyCreditsAction(
   if (!method.success) {
     return { error: "Forma de pagamento inválida." };
   }
+
+  if (!hasAcceptedTerms(formData)) {
+    return { error: TERMS_ERROR };
+  }
+  await recordTermsAcceptance(user.id, "checkout");
   const billingType = method.data === "card" ? "CREDIT_CARD" : "PIX";
 
   const supabase = await createSupabaseServerClient();

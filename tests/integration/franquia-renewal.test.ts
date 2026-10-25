@@ -89,6 +89,7 @@ const { PLANS } = await import("@/lib/plans");
 
 function form(entries: Record<string, string>) {
   const fd = new FormData();
+  fd.set("acceptTerms", "on"); // aceite dos termos (obrigatório no checkout)
   for (const [k, v] of Object.entries(entries)) fd.set(k, v);
   return fd;
 }

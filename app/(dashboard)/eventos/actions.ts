@@ -18,6 +18,8 @@ import { ENGINE_VERSION } from "@/lib/engine";
 import { serverEnv } from "@/lib/env";
 import { emitFeed } from "@/lib/feeds";
 import { findMunicipioByCode, regionForUf } from "@/lib/geo/municipios";
+import { recordTermsAcceptance } from "@/lib/legal/acceptance-server";
+import { TERMS_ERROR, hasAcceptedTerms } from "@/lib/legal/terms";
 import { logger } from "@/lib/logger";
 import { luckyDiscountCents } from "@/lib/lucky/pure";
 import { reserveLuckyCoupon } from "@/lib/lucky/server";
@@ -235,6 +237,11 @@ export async function buyTicketAction(
   if (!parsed.success) {
     return { error: "Informe um CPF válido (11 dígitos)." };
   }
+
+  if (!hasAcceptedTerms(formData)) {
+    return { error: TERMS_ERROR };
+  }
+  await recordTermsAcceptance(user.id, "checkout");
 
   const supabase = await createSupabaseServerClient();
 

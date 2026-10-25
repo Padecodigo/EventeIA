@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { RESET_NEXT_COOKIE, publicOrigin, safeNextPath } from "@/lib/auth/oauth";
+import { recordTermsAcceptance } from "@/lib/legal/acceptance-server";
+import { TERMS_COOKIE, isCurrentTermsCookie } from "@/lib/legal/terms";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { bindWelcomeOfferToUser } from "@/lib/welcome/server";
 
@@ -34,7 +36,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // layout do painel repete o vínculo de forma idempotente).
   await bindWelcomeOfferToUser(data.user.id);
 
+  // Cadastro com Google: registra o aceite dos termos feito no /registrar.
+  const termsCookie = request.cookies.get(TERMS_COOKIE)?.value;
+  if (isCurrentTermsCookie(termsCookie)) {
+    await recordTermsAcceptance(data.user.id, "signup");
+  }
+
   const response = NextResponse.redirect(new URL(next, origin));
+  if (termsCookie !== undefined)
+    response.cookies.delete({ name: TERMS_COOKIE, path: "/auth/callback" });
   if (cookieNext !== undefined)
     response.cookies.delete({ name: RESET_NEXT_COOKIE, path: "/auth/callback" });
   return response;

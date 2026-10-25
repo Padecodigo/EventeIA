@@ -44,7 +44,12 @@ export function SiteFooter() {
           <Link prefetch={false} href="/contato" className="text-off-white/70 transition hover:text-off-white">
             Contato e suporte
           </Link>
-          <span className="text-off-white/70">Privacidade e LGPD em breve</span>
+          <Link prefetch={false} href="/termos" className="text-off-white/70 transition hover:text-off-white">
+            Termos de Uso
+          </Link>
+          <Link prefetch={false} href="/privacidade" className="text-off-white/70 transition hover:text-off-white">
+            Privacidade e LGPD
+          </Link>
         </div>
       </nav>
     </div>

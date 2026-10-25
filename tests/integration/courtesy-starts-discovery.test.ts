@@ -88,6 +88,7 @@ beforeEach(() => {
 
 function form(): FormData {
   const f = new FormData();
+  f.set("acceptTerms", "on"); // aceite dos termos (obrigatório no checkout)
   f.set("eventId", EVENT);
   f.set("cpf", "52998224725");
   f.set("coupon", "eventeia-free-1");

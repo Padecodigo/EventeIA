@@ -19,6 +19,13 @@ type Table<Row> = {
 export interface Database {
   public: {
     Tables: {
+      terms_acceptances: Table<{
+        id: number;
+        profile_id: string;
+        terms_version: string;
+        context: "signup" | "checkout";
+        accepted_at: string;
+      }>;
       profiles: Table<{
         id: string;
         role: "b2c" | "b2b" | "admin";
