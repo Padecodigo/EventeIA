@@ -167,8 +167,7 @@ export function CreditSliderForm({
           </div>
         </dl>
         <p className="mt-5 text-caption text-vinho/70">
-          {`Comprar ${String(credits)} por ${formatBRL(previewCents)}`} — Pix ou cartão de
-          crédito.
+          {`Comprar ${String(credits)} por ${formatBRL(previewCents)}`} — Pix ou cartão de crédito.
         </p>
         <div className="mt-2 flex flex-col gap-2 sm:flex-row">
           <Button type="submit" name="method" value="pix" disabled={pending}>

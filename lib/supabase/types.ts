@@ -6,7 +6,8 @@
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
-type ProcessStageDb = "briefing" | "discovery" | "prospecting" | "quote_collection" | "proposal" | "confirmation";
+type ProcessStageDb =
+  "briefing" | "discovery" | "prospecting" | "quote_collection" | "proposal" | "confirmation";
 
 type Table<Row> = {
   Row: Row;
