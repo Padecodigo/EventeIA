@@ -8,7 +8,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { parseAnswers, resolveRequirements } from "@/lib/catalog/rules";
 import { ALL_EVENT_TYPES, CATALOG_VERSION } from "@/lib/catalog/v1";
-import { startDiscovery } from "@/lib/discovery/runtime";
+import { kickoffDiscovery } from "@/lib/discovery/kickoff-runtime";
 import type { EventType } from "@/lib/engine/types";
 import { logger } from "@/lib/logger";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -114,14 +114,7 @@ export async function saveInterviewAction(
   }
 
   // Evento já pago + entrevista concluída ⇒ começa a buscar fornecedores na cidade.
-  const { data: fresh } = await supabase.from("events").select("status").eq("id", event.id).maybeSingle();
-  if (fresh?.status === "active") {
-    try {
-      await startDiscovery(event.id);
-    } catch {
-      logger.warn({ eventId: event.id }, "não foi possível iniciar a descoberta");
-    }
-  }
+  await kickoffDiscovery(event.id);
 
   revalidatePath(`/eventos/${event.id}`);
   redirect(`/eventos/${event.id}`);

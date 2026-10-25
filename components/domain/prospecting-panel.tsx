@@ -1,5 +1,4 @@
-import { WhatsappConnect } from "@/components/domain/whatsapp-connect";
-import { WhatsappModeForm } from "@/components/domain/whatsapp-mode-form";
+import { WhatsappSetup } from "@/components/domain/whatsapp-setup";
 
 export interface ProspectRow {
   id: string;
@@ -85,13 +84,12 @@ export function ProspectingPanel({
           ninguém. Escolha qual número ele usa para os contatos.
         </p>
         <div className="mt-4">
-          <WhatsappModeForm eventId={eventId} current={numberMode} />
+          <WhatsappSetup
+            eventId={eventId}
+            current={numberMode}
+            connected={instanceStatus === "active" || instanceStatus === "draining"}
+          />
         </div>
-        {instanceStatus !== "active" && instanceStatus !== "draining" ? (
-          <div className="mt-6">
-            <WhatsappConnect eventId={eventId} />
-          </div>
-        ) : null}
       </div>
     </section>
   );

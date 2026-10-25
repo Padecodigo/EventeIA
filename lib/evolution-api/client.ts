@@ -213,7 +213,8 @@ export async function logoutInstance(instance: string): Promise<void> {
  */
 export async function connectInstance(instance: string, numberDigits: string): Promise<ConnectPayload> {
   const { baseUrl, apiKey } = requireEnv();
-  const url = `${baseUrl}/instance/connect/${encodeURIComponent(instance)}?number=${encodeURIComponent(numberDigits)}`;
+  const query = numberDigits.length > 0 ? `?number=${encodeURIComponent(numberDigits)}` : "";
+  const url = `${baseUrl}/instance/connect/${encodeURIComponent(instance)}${query}`;
   const doConnect = () =>
     fetch(url, {
       method: "GET",

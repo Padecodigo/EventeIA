@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 
 import {
   requestWhatsappPairingAction,
   whatsappConnectionStateAction,
 } from "@/app/(dashboard)/eventos/whatsapp-actions";
+import { QuotePreparingNotice } from "@/components/domain/quote-preparing-notice";
 import { Button } from "@/components/ui/button";
 import {
   CONNECTION_POLL_INTERVAL_MS,
@@ -29,11 +30,13 @@ interface Pairing {
  *   escanear um QR no próprio aparelho).
  * Detecção por user agent; antes da hidratação, fallback responsivo (CSS).
  */
-export function WhatsappConnect({ eventId }: { eventId: string }) {
+export function WhatsappConnect({ eventId, autoStart = false }: { eventId: string; autoStart?: boolean }) {
   const [phone, setPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pairing, setPairing] = useState<Pairing | null>(null);
   const [connected, setConnected] = useState(false);
+  const [proceeded, setProceeded] = useState(false);
+  const autoStarted = useRef(false);
   const [copied, setCopied] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [mobile, setMobile] = useState<boolean | null>(null);
@@ -69,6 +72,13 @@ export function WhatsappConnect({ eventId }: { eventId: string }) {
     },
     [eventId],
   );
+
+  // Desktop: mostra o QR na hora, sem pedir número nem clicar em "Salvar".
+  useEffect(() => {
+    if (!autoStart || mobile !== false || autoStarted.current) return;
+    autoStarted.current = true;
+    request("");
+  }, [autoStart, mobile, request]);
 
   // Countdown do código.
   useEffect(() => {
@@ -112,10 +122,14 @@ export function WhatsappConnect({ eventId }: { eventId: string }) {
   }
 
   if (connected) {
+    if (proceeded) return <QuotePreparingNotice />;
     return (
-      <p role="status" className="rounded-xl bg-champagne-claro/70 px-4 py-3 text-sm text-vinho">
-        WhatsApp conectado! O agente já pode enviar os contatos pelo seu número.
-      </p>
+      <div role="status" className="flex flex-wrap items-center gap-3 rounded-xl bg-champagne-claro/70 px-4 py-3">
+        <p className="text-sm font-medium text-vinho">Conectado! Podemos prosseguir?</p>
+        <Button type="button" onClick={() => setProceeded(true)}>
+          Prosseguir
+        </Button>
+      </div>
     );
   }
 
@@ -127,7 +141,9 @@ export function WhatsappConnect({ eventId }: { eventId: string }) {
     <div className="flex flex-col gap-4">
       <form onSubmit={onSubmit} className="flex flex-col gap-2 sm:flex-row sm:items-end" noValidate>
         <label className="flex flex-1 flex-col gap-1 text-sm text-vinho">
-          Número do WhatsApp que será conectado
+          {autoStart && mobile === false
+            ? "Prefere o código de pareamento? Informe o número do WhatsApp"
+            : "Número do WhatsApp que será conectado"}
           <input
             type="tel"
             inputMode="tel"

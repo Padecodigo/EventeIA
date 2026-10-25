@@ -8,6 +8,7 @@ import { BudgetTable } from "@/components/domain/budget-table";
 import { BuyTicketForm } from "@/components/domain/buy-ticket-form";
 import { ProspectingPanel } from "@/components/domain/prospecting-panel";
 import { QuotationsPanel } from "@/components/domain/quotations-panel";
+import { QuotePreparingNotice } from "@/components/domain/quote-preparing-notice";
 import { ScenariosPanel } from "@/components/domain/scenarios-panel";
 import { TestimonialInvite } from "@/components/domain/testimonial-invite";
 import { CATEGORY_LABELS, type CategoryCode } from "@/lib/catalog/v1";
@@ -221,6 +222,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
       {unlocked ? (
         <>
+          {interviewDone && event.quotes_delivered_at === null ? <QuotePreparingNotice /> : null}
           <ScenariosPanel eventId={event.id} scenarios={scenarios} />
           <QuotationsPanel eventId={event.id} quotations={quotationsResult.data ?? []} />
           <ProspectingPanel
