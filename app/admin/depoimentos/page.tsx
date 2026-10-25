@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 import {
@@ -52,7 +54,11 @@ export default async function AdminTestimonialsPage() {
         <h1 className="mt-3 font-serif text-display-2 font-display">Moderação de depoimentos.</h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-vinho/75">
           Revise o texto e o consentimento antes de publicar. Aprovar publica imediatamente na home e
-          em <code className="rounded bg-areia-secundaria px-1.5 py-0.5">/para-planners</code> —
+          na página{" "}
+          <Link href="/para-planners" className="whitespace-nowrap font-medium underline decoration-champagne underline-offset-4" data-testid="link-para-planners">
+            Para planners
+          </Link>{" "}
+          —
           despublicar remove na hora.
         </p>
         <p className="mt-2 text-caption text-vinho/60">Depoimentos chegam dos clientes pelo convite automático no WhatsApp. Selos: Pendente = aguardando sua revisão; Aprovado/Publicado = visível no site; Rejeitado = não será publicado.</p>

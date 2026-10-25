@@ -1,5 +1,6 @@
 import "server-only";
 
+import { supplierBlockedAt } from "@/lib/admin/suppliers";
 import { ALL_EVENT_TYPES } from "@/lib/catalog/v1";
 import type { EventType } from "@/lib/engine/types";
 import { serverEnv } from "@/lib/env";
@@ -146,12 +147,14 @@ export function createDiscoveryDeps(): DiscoveryDeps {
           },
           { onConflict: "phone_e164" },
         )
-        .select("id,opt_out_at,last_contacted_at")
+        .select("id,opt_out_at,last_contacted_at,deleted_at")
         .single();
       if (error !== null || data === null) throw new Error(`falha ao gravar fornecedor (${error?.code ?? "?"})`);
+      const blockedAt = supplierBlockedAt(data);
       return {
         id: data.id,
-        optOutAt: data.opt_out_at === null ? null : new Date(data.opt_out_at),
+        // Fornecedor excluído pelo admin (lixeira) conta como "não contatar".
+        optOutAt: blockedAt === null ? null : new Date(blockedAt),
         lastContactedAt: data.last_contacted_at === null ? null : new Date(data.last_contacted_at),
       };
     },
@@ -164,6 +167,7 @@ export function createDiscoveryDeps(): DiscoveryDeps {
         .ilike("city", city)
         .eq("category", category)
         .is("opt_out_at", null)
+        .is("deleted_at", null)
         .neq("whatsapp_verified", false)
         .neq("source_provider", "mock")
         .gte("last_seen_at", since)

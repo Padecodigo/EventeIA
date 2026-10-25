@@ -337,6 +337,8 @@ export interface Database {
         last_contacted_at: string | null;
         first_seen_at: string;
         last_seen_at: string;
+        deleted_at?: string | null;
+        deleted_by?: string | null;
       }>;
       supplier_discovery_runs: Table<{
         id: string;
@@ -521,6 +523,24 @@ export interface Database {
         closed_by?: string | null;
         deleted_at?: string | null;
         deleted_by?: string | null;
+        edited_at?: string | null;
+      }>;
+      support_ticket_edits: Table<{
+        id: string;
+        ticket_id: string;
+        edited_by: string | null;
+        old_subject: string;
+        old_message: string;
+        edited_at: string;
+      }>;
+      admin_audit_log: Table<{
+        id: string;
+        admin_id: string | null;
+        action: string;
+        target_table: string;
+        target_ids: string[];
+        details: Json;
+        created_at: string;
       }>;
       support_ticket_messages: Table<{
         id: string;
@@ -533,6 +553,11 @@ export interface Database {
     };
     Views: { [_ in never]: never };
     Functions: {
+      support_ticket_owner_edit: {
+        Args: { p_ticket_id: string; p_subject: string; p_message: string };
+        Returns: boolean;
+      };
+      support_ticket_owner_delete: { Args: { p_ticket_id: string }; Returns: boolean };
       user_offer_current: {
         Args: { p_profile_id: string };
         Returns: {

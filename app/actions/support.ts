@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { requireUser } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { deleteOwnTicket, editOwnTicket, type OwnerResult } from "@/lib/support/owner-ops";
 import { createSupportDeps } from "@/lib/support/runtime";
 import { createTicket, replyAsUser, type ActionResult } from "@/lib/support/service";
 import { clientIpFrom } from "@/lib/welcome/pure";
@@ -62,4 +64,29 @@ export async function replySupportTicketAction(
   const result = await replyAsUser(createSupportDeps(), user.id, fields(formData, ["ticketId", "body"]));
   if (result.ok) revalidatePath(`/chamados/${result.ticketId}`);
   return result;
+}
+
+export type OwnerTicketState = OwnerResult | null;
+
+/** Dono edita assunto/descrição do próprio chamado (só aberto). Banco confere o dono (auth.uid()). */
+export async function editOwnTicketAction(_prev: OwnerTicketState, formData: FormData): Promise<OwnerTicketState> {
+  await requireUser();
+  const supabase = await createSupabaseServerClient();
+  const result = await editOwnTicket(supabase, fields(formData, ["ticketId", "subject", "message"]));
+  if (result.ok) {
+    revalidatePath("/chamados");
+    revalidatePath(`/chamados/${result.ticketId}`);
+  }
+  return result;
+}
+
+/** Dono exclui (soft delete) o próprio chamado; some da lista dele e vai para a Lixeira do admin. */
+export async function deleteOwnTicketAction(_prev: OwnerTicketState, formData: FormData): Promise<OwnerTicketState> {
+  await requireUser();
+  const supabase = await createSupabaseServerClient();
+  const result = await deleteOwnTicket(supabase, formData.get("ticketId"));
+  if (!result.ok) return result;
+  revalidatePath("/chamados");
+  revalidatePath("/admin/lixeira");
+  redirect("/chamados?excluido=1");
 }

@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { replySupportTicketAction } from "@/app/actions/support";
+import { deleteOwnTicketAction, editOwnTicketAction, replySupportTicketAction } from "@/app/actions/support";
+import { OwnerTicketControls } from "@/components/support/owner-ticket-controls";
 import { ReplyForm } from "@/components/support/reply-form";
 import { StatusBadge, TicketThread } from "@/components/support/ticket-thread";
 import { isAdminUser, requireUser } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { ownerCanEdit } from "@/lib/support/owner-ops";
 import { TYPE_LABELS, shortId, userCanReply } from "@/lib/support/pure";
 
 export const metadata = { title: "Chamado" };
@@ -16,11 +18,13 @@ export default async function MyTicketPage({ params }: { params: Promise<{ id: s
   const supabase = await createSupabaseServerClient();
   const { data: ticket } = await supabase
     .from("support_tickets")
-    .select("id,user_id,type,subject,message,status,created_at")
+    .select("id,user_id,type,subject,message,status,created_at,edited_at,deleted_at")
     .eq("id", id)
     .maybeSingle();
   if (ticket === null) notFound();
   const isOwner = ticket.user_id === user.id;
+  // Chamado excluído pelo dono some para ele (admin vê pela Lixeira).
+  if (isOwner && ticket.deleted_at) notFound();
   // Admin (superusuário) visualiza qualquer chamado; responde pela tela /admin/chamados.
   if (!isOwner && !(await isAdminUser(user.id))) notFound();
   const { data: messages } = await supabase
@@ -43,6 +47,11 @@ export default async function MyTicketPage({ params }: { params: Promise<{ id: s
         </div>
         <StatusBadge status={ticket.status} />
       </header>
+      {ticket.edited_at ? <p className="-mt-4 text-caption text-vinho/60">Editado pelo autor.</p> : null}
+      {isOwner ? (
+        <OwnerTicketControls ticketId={ticket.id} subject={ticket.subject} message={ticket.message}
+          canEdit={ownerCanEdit(ticket.status, ticket.deleted_at)} editAction={editOwnTicketAction} deleteAction={deleteOwnTicketAction} />
+      ) : null}
       <TicketThread original={ticket} messages={messages ?? []} viewer="user" />
       {isOwner && userCanReply(ticket.status) ? (
         <ReplyForm ticketId={ticket.id} action={replySupportTicketAction} />
