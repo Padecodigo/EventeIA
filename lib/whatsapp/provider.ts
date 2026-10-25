@@ -34,32 +34,32 @@ export class WindowClosedError extends Error {
 
 export async function sendFirstContactVia(
   channel: WhatsappChannel,
-  input: { instance: string; to: string; text: string },
+  input: { instance: string; to: string; text: string; eventId?: string | null },
 ): Promise<SendResult> {
   if (channel === "cloud") {
     const r = await sendCloudFirstContactTemplate(input.to, input.text);
-    meterUsage("whatsapp_cloud", "first_contact");
+    meterUsage("whatsapp_cloud", "first_contact", { eventId: input.eventId });
     return { channel, ...r };
   }
   const r = await evolutionFirstContact(input.instance, { number: input.to, text: input.text });
-  meterUsage("evolution", "first_contact");
+  meterUsage("evolution", "first_contact", { eventId: input.eventId });
   return { channel, ...r };
 }
 
 export async function sendTextVia(
   channel: WhatsappChannel,
-  input: { instance: string; to: string; text: string; lastInboundAt: string | null; now?: Date },
+  input: { instance: string; to: string; text: string; lastInboundAt: string | null; now?: Date; eventId?: string | null },
 ): Promise<SendResult> {
   if (channel === "cloud") {
     if (!isWithinServiceWindow(input.lastInboundAt, input.now ?? new Date())) {
       throw new WindowClosedError();
     }
     const r = await sendCloudText(input.to, input.text);
-    meterUsage("whatsapp_cloud", "text");
+    meterUsage("whatsapp_cloud", "text", { eventId: input.eventId });
     return { channel, ...r };
   }
   const r = await evolutionText(input.instance, input.to, input.text);
-  meterUsage("evolution", "text");
+  meterUsage("evolution", "text", { eventId: input.eventId });
   return { channel, ...r };
 }
 

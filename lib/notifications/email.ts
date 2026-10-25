@@ -8,6 +8,8 @@ export interface EmailMessage {
   to: string;
   subject: string;
   text: string;
+  /** Evento ao qual o envio é atribuído no painel de custos (não vai para o Resend). */
+  eventId?: string | null;
 }
 
 export interface EmailAdapter {
@@ -60,7 +62,7 @@ export function createResendAdapter(options: {
         throw new Error(`Resend HTTP ${String(response.status)}`);
       }
       // Mede o envio no painel de custos (import dinâmico: módulo server-only, best-effort).
-      void import("@/lib/finance/metering").then((m) => m.meterUsage("resend", "email")).catch(() => undefined);
+      void import("@/lib/finance/metering").then((m) => m.meterUsage("resend", "email", { eventId: message.eventId ?? null })).catch(() => undefined);
       const body = (await response.json()) as { id?: unknown };
       return { id: typeof body.id === "string" ? body.id : null };
     },

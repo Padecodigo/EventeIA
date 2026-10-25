@@ -57,14 +57,15 @@ export async function loadFinance(period: { from: string; to: string }): Promise
       .limit(MAX_ROWS),
     supabase
       .from("cost_entries")
-      .select("occurred_at,provider,kind,reason,event_id,quantity,cost_micro_usd,cost_brl_cents,note")
+      .select("occurred_at,provider,kind,reason,event_id,quantity,cost_micro_usd,cost_brl_cents,note,is_estimate")
+      .is("deleted_at", null)
       .gte("occurred_at", start)
       .lte("occurred_at", end)
       .order("occurred_at", { ascending: false })
       .limit(MAX_ROWS),
     supabase
       .from("payments")
-      .select("id,profile_id,purpose,event_id,amount_cents,asaas_fee_cents,net_cents,status,created_at,confirmed_at,refunded_at")
+      .select("id,profile_id,purpose,event_id,amount_cents,asaas_fee_cents,net_cents,status,created_at,confirmed_at,refunded_at,billing_type")
       .gte("created_at", start)
       .lte("created_at", end)
       .order("created_at", { ascending: false })
@@ -95,12 +96,16 @@ export async function loadFinance(period: { from: string; to: string }): Promise
       inputTokens: 0,
       outputTokens: 0,
       detail: `${String(r.quantity)}×${r.note ? ` · ${r.note}` : ""}`,
+      quantity: r.quantity,
+      ...(r.is_estimate === null || r.is_estimate === undefined ? {} : { estimated: r.is_estimate }),
     })),
   ].sort((a, b) => (a.at < b.at ? 1 : -1));
 
   const payRows = pays.data ?? [];
   const profileIds = [...new Set(payRows.map((p) => p.profile_id))];
-  const eventIds = [...new Set(costs.map((c) => c.eventId).filter((e): e is string => e !== null))].slice(0, 500);
+  const eventIds = [
+    ...new Set([...costs.map((c) => c.eventId), ...payRows.map((p) => p.event_id)].filter((e): e is string => e !== null)),
+  ].slice(0, 500);
   const admin = getSupabaseAdmin();
   const [profiles, events] = await Promise.all([
     profileIds.length > 0 ? supabase.from("profiles").select("id,display_name").in("id", profileIds.slice(0, 500)) : Promise.resolve({ data: [] }),
@@ -120,6 +125,8 @@ export async function loadFinance(period: { from: string; to: string }): Promise
     netCents: p.net_cents ?? p.amount_cents - (p.asaas_fee_cents ?? 0),
     status: p.status,
     refunded: p.status === "refunded" || p.status === "chargeback" || p.refunded_at !== null,
+    billingType: p.billing_type,
+    feeKnown: p.asaas_fee_cents !== null,
   }));
 
   return {

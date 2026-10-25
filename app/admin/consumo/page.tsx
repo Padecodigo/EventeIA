@@ -72,30 +72,30 @@ export default async function UsagePage({ searchParams }: { searchParams: Promis
         <div>
           <p className="text-overline uppercase tracking-[0.14em] text-vinho/70">Administração</p>
           <h1 className="font-serif text-display-2">Consumo de tokens</h1>
-          <p className="text-sm text-vinho/70">Uso de LLM por operação, usuário e estágio do processo.</p>
+          <p className="text-sm text-vinho/70">Quanto a inteligência artificial (DeepSeek e outros) foi usada e quanto custou, por operação, usuário e etapa do processo. Dados gravados automaticamente a cada chamada: tokens reais informados pela API × preço da tabela.</p>
         </div>
         <form className="flex flex-wrap items-end gap-2" method="get">
           <label className="text-caption">De<input type="date" name="from" defaultValue={filters.from} className={`ml-1 ${input}`} /></label>
           <label className="text-caption">Até<input type="date" name="to" defaultValue={filters.to} className={`ml-1 ${input}`} /></label>
-          <select name="task" defaultValue={filters.task ?? ""} className={input} aria-label="Operação">
+          <label className="flex flex-col gap-1 text-caption font-semibold text-vinho/80">Operação<select name="task" defaultValue={filters.task ?? ""} className={input} aria-label="Operação">
             <option value="">Todas as operações</option>
             {r.tasks.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
-          <input name="user" defaultValue={filters.user ?? ""} placeholder="ID do usuário" className={input} aria-label="Usuário" />
-          <select name="stage" defaultValue={filters.stage ?? ""} className={input} aria-label="Estágio">
+          </select></label>
+          <label className="flex flex-col gap-1 text-caption font-semibold text-vinho/80">Usuário<input name="user" defaultValue={filters.user ?? ""} placeholder="ID do usuário" className={input} aria-label="Usuário" /><span className="font-normal text-vinho/60">cole o ID do usuário</span></label>
+          <label className="flex flex-col gap-1 text-caption font-semibold text-vinho/80">Estágio<select name="stage" defaultValue={filters.stage ?? ""} className={input} aria-label="Estágio">
             <option value="">Todos os estágios</option>
             {PROCESS_STAGES.map((s) => <option key={s} value={s}>{STAGE_LABELS[s]}</option>)}
             <option value="none">Sem estágio</option>
-          </select>
-          <select name="channel" defaultValue={filters.channel ?? ""} className={input} aria-label="Canal WhatsApp">
+          </select></label>
+          <label className="flex flex-col gap-1 text-caption font-semibold text-vinho/80">Canal WhatsApp<select name="channel" defaultValue={filters.channel ?? ""} className={input} aria-label="Canal WhatsApp">
             <option value="">Todos os canais</option>
             {WHATSAPP_CHANNELS.map((c) => <option key={c} value={c}>{CHANNEL_LABELS[c]}</option>)}
             <option value="none">Sem canal</option>
-          </select>
-          <select name="provider" defaultValue={filters.provider ?? ""} className={input} aria-label="Provedor">
+          </select></label>
+          <label className="flex flex-col gap-1 text-caption font-semibold text-vinho/80">Provedor<select name="provider" defaultValue={filters.provider ?? ""} className={input} aria-label="Provedor">
             <option value="">Todos os provedores</option>
             {["deepseek", "grok", "nim"].map((p) => <option key={p} value={p}>{PROVIDER_LABELS[p] ?? p}</option>)}
-          </select>
+          </select></label>
           <button className="rounded-full bg-vinho px-4 py-2 text-sm font-semibold text-off-white">Filtrar</button>
           <Link href={`/admin/consumo/csv?${filtersToQuery(filters)}`} className="rounded-full border border-line-strong px-4 py-2 text-sm font-semibold" prefetch={false}>Exportar CSV</Link>
         </form>
@@ -114,6 +114,7 @@ export default async function UsagePage({ searchParams }: { searchParams: Promis
 
       <section>
         <h2 className="font-serif text-title-1">Por operação, usuário e estágio</h2>
+        <p className="text-caption text-vinho/60">Cada linha soma as chamadas de IA com a mesma operação, usuário e etapa. “Tokens in” = texto enviado; “Tokens out” = texto gerado. Valor em US$ e convertido para R$ pelo câmbio do dia.</p>
         <div className="mt-3 overflow-x-auto rounded-card border border-line-subtle bg-off-white">
           <table className="w-full text-sm">
             <thead>
@@ -165,16 +166,17 @@ export default async function UsagePage({ searchParams }: { searchParams: Promis
           </ul>
         ) : null}
         <form action={markClosedOutsideAction} className="flex flex-wrap items-end gap-2">
-          <input name="eventId" required placeholder="ID do evento" className={input} aria-label="ID do evento" />
-          <select name="stage" defaultValue="" className={input} aria-label="Estágio do fechamento">
+          <label className="flex flex-col gap-1 text-caption font-semibold text-vinho/80">ID do evento<input name="eventId" required placeholder="ID do evento" className={input} aria-label="ID do evento" /><span className="font-normal text-vinho/60">cole o ID completo do evento</span></label>
+          <label className="flex flex-col gap-1 text-caption font-semibold text-vinho/80">Estágio do fechamento<select name="stage" defaultValue="" className={input} aria-label="Estágio do fechamento">
             <option value="">Estágio atual do evento</option>
             {PROCESS_STAGES.map((s) => <option key={s} value={s}>{STAGE_LABELS[s]}</option>)}
-          </select>
-          <select name="channel" defaultValue="" className={input} aria-label="Canal do fechamento">
+          </select></label>
+          <label className="flex flex-col gap-1 text-caption font-semibold text-vinho/80">Canal do fechamento<select name="channel" defaultValue="" className={input} aria-label="Canal do fechamento">
             <option value="">Canal do evento</option>
             {WHATSAPP_CHANNELS.map((c) => <option key={c} value={c}>{CHANNEL_LABELS[c]}</option>)}
-          </select>
+          </select></label>
           <button className="rounded-full border border-line-strong px-4 py-2 text-sm font-semibold">Marcar fechamento por fora</button>
+          <p className="w-full text-caption text-vinho/60">Lançamento manual: informe o evento; estágio e canal em branco usam os atuais do evento.</p>
         </form>
       </section>
     </div>

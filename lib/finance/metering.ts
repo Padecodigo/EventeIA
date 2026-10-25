@@ -36,6 +36,8 @@ export function meterUsage(kind: RequestPriceKind, reason: string, opts: { quant
       unit_price_micro_usd: Math.round(cost / quantity),
       cost_micro_usd: cost,
       event_id: opts.eventId ?? null,
+      // Contagem real × preço de tabela: valor ESTIMADO (sem fatura por chamada).
+      is_estimate: true,
     });
   })().catch((e: unknown) => logger.warn({ reason: e instanceof Error ? e.message : "?" }, "falha ao medir uso"));
 }

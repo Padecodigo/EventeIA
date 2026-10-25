@@ -51,7 +51,7 @@ async function burnByProvider(): Promise<Map<string, number>> {
   const admin = getSupabaseAdmin();
   const since = new Date(Date.now() - BURN_WINDOW_DAYS * 86_400_000).toISOString();
   const [entries, llm] = await Promise.all([
-    admin.from("cost_entries").select("provider,cost_brl_cents").eq("kind", "variable").gte("occurred_at", since).limit(50_000),
+    admin.from("cost_entries").select("provider,cost_brl_cents").eq("kind", "variable").is("deleted_at", null).gte("occurred_at", since).limit(50_000),
     admin.from("llm_usage_events").select("provider,cost_brl_cents").gte("created_at", since).limit(50_000),
   ]);
   const sums = new Map<string, number[]>();
@@ -65,7 +65,7 @@ async function burnByProvider(): Promise<Map<string, number>> {
 async function monthSpend(provider: string, now: Date): Promise<number> {
   const local = new Date(now.getTime() - 3 * 3_600_000);
   const start = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), 1, 3)).toISOString();
-  const { data } = await getSupabaseAdmin().from("cost_entries").select("cost_brl_cents").eq("provider", provider as never).gte("occurred_at", start).limit(50_000);
+  const { data } = await getSupabaseAdmin().from("cost_entries").select("cost_brl_cents").eq("provider", provider as never).is("deleted_at", null).gte("occurred_at", start).limit(50_000);
   return (data ?? []).reduce((a, r) => a + r.cost_brl_cents, 0);
 }
 

@@ -11,6 +11,10 @@ export interface CostRow {
   inputTokens: number;
   outputTokens: number;
   detail: string;
+  /** Nº de chamadas/unidades (padrão 1). */
+  quantity?: number;
+  /** true = valor estimado (chamadas × preço de referência). */
+  estimated?: boolean;
 }
 
 export interface RevenueRow {
@@ -25,6 +29,10 @@ export interface RevenueRow {
   netCents: number;
   status: string;
   refunded: boolean;
+  /** PIX | CREDIT_CARD (estimativa da taxa Asaas quando o webhook ainda não informou). */
+  billingType?: string;
+  /** true = taxa Asaas real (netValue do webhook). */
+  feeKnown?: boolean;
 }
 
 export const PAID_STATUSES = new Set(["paid", "confirmed"]);

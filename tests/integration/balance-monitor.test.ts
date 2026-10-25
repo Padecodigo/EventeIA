@@ -13,6 +13,8 @@ function from(table: string) {
     order: () => b,
     limit: () => b,
     gte: () => b,
+    // exclusão recuperável: soma só custos não excluídos (deleted_at is null)
+    is: () => b,
     eq: (c: string, v: unknown) => (filters.push([c, v]), b),
     update: (p: Row) => ((patch = p), b),
     insert: (rows: Row[]) => ((inserted = rows), b),

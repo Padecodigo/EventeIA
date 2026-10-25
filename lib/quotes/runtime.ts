@@ -204,6 +204,7 @@ export function createCollectorDeps(): CollectorDeps {
           to: phone,
           text,
           lastInboundAt: channel === "cloud" ? await lastInboundAt(phone) : null,
+          eventId,
         });
       } catch (error) {
         if (!(error instanceof WindowClosedError)) throw error;

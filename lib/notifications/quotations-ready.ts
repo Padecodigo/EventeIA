@@ -85,7 +85,7 @@ export async function recordQuotationsReady(
         eventTitle: owner.eventTitle,
         reason: input.reason,
       });
-      await deps.email.send({ to: owner.email, ...content });
+      await deps.email.send({ to: owner.email, ...content, eventId: input.eventId });
       await deps.markEmailSent(notificationId);
     } catch (error) {
       // E-mail falho não desfaz a notificação in-app.

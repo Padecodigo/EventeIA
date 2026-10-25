@@ -77,6 +77,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
   const reason = (k: string) => REASON_LABELS[k] ?? k;
   const provider = (k: string) => PROVIDER_LABELS[k] ?? k;
   const eventType = (k: string) => (EVENT_TYPE_LABELS as Record<string, string>)[k] ?? k;
+  const brt = (iso: string) => new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
   const usd = (micro: number) => `US$ ${(micro / 1_000_000).toFixed(4)}`;
 
   return (
@@ -85,11 +86,11 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
         <div>
           <p className="text-overline uppercase tracking-[0.14em] text-vinho/70">Administração</p>
           <h1 className="font-serif text-display-2">Financeiro</h1>
-          <p className="text-sm text-vinho/70">Quanto gastou, onde, por quê — e quanto entrou, de quem.</p>
+          <p className="text-sm text-vinho/70">Quanto gastou, onde, por quê — e quanto entrou, de quem, no período escolhido. Receitas vêm do Asaas (pagamentos confirmados); custos de IA vêm dos tokens reais; Serper, Google Places, e-mail e WhatsApp são estimados por chamada; custos fixos são lançados à mão.</p>
         </div>
         <form className="flex flex-wrap items-end gap-2" method="get">
-          <label className="text-caption">De<input type="date" name="from" defaultValue={period.from} className="ml-1 rounded-full border border-line-subtle bg-off-white px-3 py-2 text-sm" /></label>
-          <label className="text-caption">Até<input type="date" name="to" defaultValue={period.to} className="ml-1 rounded-full border border-line-subtle bg-off-white px-3 py-2 text-sm" /></label>
+          <label className="text-caption font-semibold">De (início)<input type="date" name="from" defaultValue={period.from} className="ml-1 rounded-full border border-line-subtle bg-off-white px-3 py-2 text-sm" /></label>
+          <label className="text-caption font-semibold">Até (fim)<input type="date" name="to" defaultValue={period.to} className="ml-1 rounded-full border border-line-subtle bg-off-white px-3 py-2 text-sm" /></label>
           <button className="rounded-full bg-vinho px-4 py-2 text-sm font-semibold text-off-white">Filtrar</button>
           <Link href={`/admin/financeiro/csv?${qs}`} className="rounded-full border border-line-strong px-4 py-2 text-sm font-semibold" prefetch={false}>Exportar CSV</Link>
         </form>
@@ -127,6 +128,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
 
       <section>
         <h2 className="font-serif text-title-1">Lançamentos</h2>
+        <p className="text-caption text-vinho/60">Entradas manuais: custos fixos do mês, câmbio do dia (converte US$ em R$) e ajustes da tabela de preços usada nas estimativas.</p>
         <div className="mt-3"><FinanceForms month={period.to.slice(0, 7)} today={period.to} /></div>
         <p className="mt-2 text-caption text-vinho/70">
           Preços padrão (US$/1M tokens; Search/Fetch por 1000 req.):{" "}
@@ -136,23 +138,24 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
 
       <section>
         <h2 className="font-serif text-title-1">Detalhamento</h2>
+        <p className="text-caption text-vinho/60">Cada custo e cada pagamento do período, linha a linha (horário de Brasília). Status do pagamento: paid/confirmed = recebido; pending = aguardando; refunded/chargeback = devolvido.</p>
         <div className="mt-3 overflow-x-auto rounded-card border border-line-subtle bg-off-white">
           <table className="w-full text-sm">
             <thead className="bg-areia-quente/60 text-left">
-              <tr><th className="px-3 py-2">Data (UTC)</th><th>Tipo</th><th>Provedor/Plano</th><th>Motivo/Cliente</th><th>Evento</th><th>Detalhe</th><th className="px-3 text-right">Valor</th></tr>
+              <tr><th className="px-3 py-2">Data (Brasília)</th><th>Tipo</th><th>Provedor/Plano</th><th>Motivo/Cliente</th><th>Evento</th><th>Detalhe</th><th className="px-3 text-right">Valor</th></tr>
             </thead>
             <tbody>
               {[
                 ...data.costs.slice(0, 200).map((c, i) => (
                   <tr key={`c${String(i)}`} className="border-t border-line-subtle/60">
-                    <td className="px-3 py-1.5 tabular-nums">{c.at.slice(0, 16).replace("T", " ")}</td><td>Custo</td><td>{provider(c.provider)}</td><td>{reason(c.reason)}</td>
+                    <td className="px-3 py-1.5 tabular-nums">{brt(c.at)}</td><td>Custo</td><td>{provider(c.provider)}</td><td>{reason(c.reason)}</td>
                     <td>{c.eventId ? eventLabel(c.eventId) : "—"}</td><td className="text-caption text-vinho/70">{c.detail}{c.inputTokens + c.outputTokens > 0 ? ` · ${String(c.inputTokens)}/${String(c.outputTokens)} tok` : ""}</td>
                     <td className="px-3 text-right tabular-nums text-semantic-error">−{formatBRL(c.costBrlCents)}</td>
                   </tr>
                 )),
                 ...data.revenue.slice(0, 200).map((p) => (
                   <tr key={p.paymentId} className="border-t border-line-subtle/60">
-                    <td className="px-3 py-1.5 tabular-nums">{p.at.slice(0, 16).replace("T", " ")}</td><td>Receita</td><td>{p.plan}</td><td>{p.clientLabel}</td>
+                    <td className="px-3 py-1.5 tabular-nums">{brt(p.at)}</td><td>Receita</td><td>{p.plan}</td><td>{p.clientLabel}</td>
                     <td>{p.eventId ? eventLabel(p.eventId) : "—"}</td><td className="text-caption text-vinho/70">{p.status}{p.refunded ? " · estornado" : ""} · taxa {formatBRL(p.feeCents)}</td>
                     <td className="px-3 text-right tabular-nums">{formatBRL(p.netCents)}</td>
                   </tr>

@@ -411,6 +411,9 @@ export interface Database {
         fx_brl_per_usd_micro: number;
         cost_brl_cents: number;
         note: string | null;
+        is_estimate: boolean | null;
+        deleted_at: string | null;
+        deleted_by: string | null;
         created_by: string | null;
         created_at: string;
       }>;
@@ -447,6 +450,8 @@ export interface Database {
         runway_days: number | null;
         emailed: boolean;
         created_at: string;
+        deleted_at: string | null;
+        deleted_by: string | null;
       }>;
       fx_rates: Table<{
         rate_date: string;
