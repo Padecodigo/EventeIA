@@ -97,25 +97,57 @@ export interface CreatedPixPayment {
   pix: { payload: string; encodedImage: string; expirationDate?: string };
 }
 
-export async function createAsaasPixPayment(
-  input: CreatePixPaymentInput,
-): Promise<CreatedPixPayment> {
+export type CheckoutBillingType = "PIX" | "CREDIT_CARD";
+
+/**
+ * Payload puro de `POST /payments` (testável).
+ * CREDIT_CARD sem dados de cartão ⇒ o pagador informa o cartão na Fatura
+ * hospedada pelo Asaas (`invoiceUrl`), onde também aparece o cartão de DÉBITO
+ * (a API não aceita débito direto — docs.asaas.com, "Cartão de débito").
+ * Nunca trafegamos dados de cartão (fora do escopo PCI).
+ */
+export function buildPaymentPayload(
+  input: CreatePixPaymentInput & { billingType: CheckoutBillingType },
+): Record<string, string | number> {
   if (!Number.isInteger(input.amountCents) || input.amountCents <= 0) {
     throw new Error("amountCents inválido para o Asaas");
   }
+  return {
+    customer: input.customerId,
+    billingType: input.billingType,
+    value: input.amountCents / 100,
+    dueDate: input.dueDate,
+    description: input.description,
+    externalReference: input.externalReference,
+  };
+}
 
+/** Cobrança por cartão (crédito ou débito) via Fatura hospedada do Asaas. */
+export async function createAsaasCardPayment(
+  input: CreatePixPaymentInput,
+): Promise<{ paymentId: string; invoiceUrl: string }> {
   const payment = await request(
     "/payments",
     {
       method: "POST",
-      body: JSON.stringify({
-        customer: input.customerId,
-        billingType: "PIX",
-        value: input.amountCents / 100,
-        dueDate: input.dueDate,
-        description: input.description,
-        externalReference: input.externalReference,
-      }),
+      body: JSON.stringify(buildPaymentPayload({ ...input, billingType: "CREDIT_CARD" })),
+    },
+    paymentResponseSchema,
+  );
+  if (payment.invoiceUrl === undefined) {
+    throw new Error("Asaas não retornou invoiceUrl para a cobrança por cartão");
+  }
+  return { paymentId: payment.id, invoiceUrl: payment.invoiceUrl };
+}
+
+export async function createAsaasPixPayment(
+  input: CreatePixPaymentInput,
+): Promise<CreatedPixPayment> {
+  const payment = await request(
+    "/payments",
+    {
+      method: "POST",
+      body: JSON.stringify(buildPaymentPayload({ ...input, billingType: "PIX" })),
     },
     paymentResponseSchema,
   );

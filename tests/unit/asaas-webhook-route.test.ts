@@ -94,6 +94,32 @@ describe("POST /api/webhooks/asaas", () => {
     expect(state.enqueued).toBe(1);
   });
 
+  it("cartão: PAYMENT_CONFIRMED (CREDIT_CARD) é processado; RECEIVED posterior é outro evento idempotente", async () => {
+    const { POST } = await import("@/app/api/webhooks/asaas/route");
+    const confirmed = {
+      id: "evt_card_1",
+      event: "PAYMENT_CONFIRMED",
+      payment: { id: "pay_card", status: "CONFIRMED", billingType: "CREDIT_CARD", netValue: 93.61 },
+    };
+    const res = await POST(call(confirmed));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, result: "processed" });
+    expect(state.rpcCalls).toBe(1);
+
+    const received = { ...confirmed, id: "evt_card_2", event: "PAYMENT_RECEIVED" };
+    expect((await POST(call(received))).status).toBe(200);
+    expect((await POST(call(confirmed))).status).toBe(200);
+    expect(state.rpcCalls).toBe(2);
+  });
+
+  it("chargeback em disputa é aceito (200) e registrado — o SQL marca como não mapeado", async () => {
+    const { POST } = await import("@/app/api/webhooks/asaas/route");
+    const res = await POST(
+      call({ id: "evt_cb", event: "PAYMENT_CHARGEBACK_DISPUTE", payment: { id: "pay_card", status: "CHARGEBACK_DISPUTE" } }),
+    );
+    expect(res.status).toBe(200);
+  });
+
   it("payload inválido ⇒ 400", async () => {
     const { POST } = await import("@/app/api/webhooks/asaas/route");
     expect((await POST(call({ foo: 1 }))).status).toBe(400);

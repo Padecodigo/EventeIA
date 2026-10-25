@@ -229,3 +229,10 @@ Mocks de API: servidor fake Asaas (MSW/nock) com fixtures versionados em `tests/
 - O webhook `/api/webhooks/asaas` agora chama `process_payment_webhook` **inline** (atômico e idempotente em SQL); a fila BullMQ é apenas fallback quando o RPC falha.
 - `POST /api/dev/simulate-payment` (`{ "asaasPaymentId": "...", "webhookEventId"?: "..." }`) existe só com `NODE_ENV=development` (404 caso contrário) e envia `PAYMENT_RECEIVED` ao webhook real com o token. Repetir o mesmo `webhookEventId` retorna `duplicated: true`.
 - Testes: `tests/unit/asaas-webhook-route.test.ts` e `supabase/tests/payment_webhook_idempotency_test.sql`.
+
+## Formas de pagamento no checkout do tíquete (out/2026)
+
+- O comprador escolhe **Pix** (QR copia-e-cola, `billingType: PIX`) ou **cartão de crédito/débito** (`billingType: CREDIT_CARD` **sem** dados de cartão → redireciona para a Fatura hospedada `invoiceUrl`). Boleto não é oferecido.
+- Cartão de **débito**: a API do Asaas não aceita débito direto; a doc oficial orienta usar `CREDIT_CARD`/`UNDEFINED` e enviar o pagador à `invoiceUrl`, onde o débito aparece se estiver habilitado na conta.
+- Nunca recebemos dados de cartão (fora do escopo PCI). Payload em `buildPaymentPayload` (`lib/asaas/client.ts`).
+- Cartão confirma via `PAYMENT_CONFIRMED` (→ `paid`, ativa o tíquete); o `PAYMENT_RECEIVED` posterior vira `already_paid`. Eventos de disputa (`PAYMENT_CHARGEBACK_DISPUTE`, `PAYMENT_AWAITING_CHARGEBACK_REVERSAL`) ficam registrados como `webhook.unmapped_status` para revisão manual; `PAYMENT_CHARGEBACK_REQUESTED` → `chargeback`.

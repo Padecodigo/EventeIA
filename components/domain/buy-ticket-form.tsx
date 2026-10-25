@@ -37,6 +37,40 @@ export function BuyTicketForm({
 
   const couponApplied = couponState.ok === true;
 
+  if (state.card !== undefined) {
+    return (
+      <section className="rounded-card border border-champagne/50 bg-off-white p-6 shadow-soft">
+        <h2 className="font-serif text-title-1">Cobrança no cartão gerada.</h2>
+
+        {state.applied !== undefined ? (
+          <p className="mt-2 text-sm text-vinho/75">
+            Cupom <strong className="text-vinho">{state.applied.code}</strong> aplicado — desconto
+            de {formatBRL(state.applied.discountCents)}. Total:{" "}
+            <strong className="text-vinho">{formatBRL(state.applied.finalCents)}</strong>.
+          </p>
+        ) : null}
+
+        <p className="mt-2 text-sm text-vinho/70">
+          Conclua o pagamento com cartão de crédito ou débito na página segura do Asaas. Os dados do
+          cartão são digitados lá — a EventeIA não os recebe.
+        </p>
+
+        <a
+          href={state.card.invoiceUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-4 inline-flex rounded-xl bg-vinho px-5 py-3 text-sm font-medium text-off-white"
+        >
+          Pagar com cartão
+        </a>
+
+        <p className="mt-4 text-caption text-vinho/70">
+          A confirmação chega automaticamente — esta página será atualizada.
+        </p>
+      </section>
+    );
+  }
+
   if (state.pix !== undefined) {
     return (
       <section className="rounded-card border border-champagne/50 bg-off-white p-6 shadow-soft">
@@ -89,7 +123,7 @@ export function BuyTicketForm({
       <h2 className="font-serif text-title-1">Liberar este evento</h2>
       <p className="mt-2 text-sm text-vinho/70">
         Tíquete único de <strong className="text-vinho">{priceFormatted}</strong> — pagamento via
-        Pix. Inclui orçamento completo, cotações ilimitadas e disparos pelo WhatsApp.
+        Pix, cartão de crédito ou cartão de débito. Inclui orçamento completo, cotações ilimitadas e disparos pelo WhatsApp.
       </p>
 
       {welcome !== null && !couponApplied ? (
@@ -180,9 +214,14 @@ export function BuyTicketForm({
           </p>
         ) : null}
 
-        <Button type="submit" variant="gold" disabled={pending}>
-          {pending ? "Gerando Pix…" : "Pagar com Pix"}
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button type="submit" name="method" value="pix" variant="gold" disabled={pending}>
+            {pending ? "Gerando cobrança…" : "Pagar com Pix"}
+          </Button>
+          <Button type="submit" name="method" value="card" variant="secondary" disabled={pending}>
+            Pagar com cartão de crédito ou débito
+          </Button>
+        </div>
       </form>
     </section>
   );

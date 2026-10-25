@@ -41,3 +41,14 @@ describe("máquina de estados de pagamento", () => {
     expect(isTransitionAllowed("chargeback", "paid")).toBe(false);
   });
 });
+
+describe("cartão de crédito/débito", () => {
+  it("PAYMENT_CONFIRMED (cartão) ativa o tíquete como paid", () => {
+    expect(classifyAsaasEvent("PAYMENT_CONFIRMED")).toEqual({ status: "paid", activatesTicket: true });
+  });
+  it("disputa/reversão de chargeback não concede nada (apenas registro)", () => {
+    expect(classifyAsaasEvent("PAYMENT_CHARGEBACK_DISPUTE")).toBeNull();
+    expect(classifyAsaasEvent("PAYMENT_AWAITING_CHARGEBACK_REVERSAL")).toBeNull();
+  });
+});
+
