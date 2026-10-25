@@ -1,6 +1,7 @@
 /** Seções administrativas (fonte única para os menus de /painel* e /admin*). */
 export const ADMIN_NAV = [
   { href: "/admin/financeiro", label: "Financeiro", description: "Receitas, custos e margens." },
+  { href: "/admin/custos", label: "Custos", description: "Gastos por provedor, saldos e alertas." },
   {
     href: "/admin/consumo",
     label: "Consumo",

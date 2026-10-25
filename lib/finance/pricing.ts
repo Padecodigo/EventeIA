@@ -13,6 +13,11 @@ export const PRICE_KEYS = [
   "deepseek.out.peak",
   "search.per_1k",
   "fetch.per_1k",
+  "serper.per_1k",
+  "google_places.per_1k",
+  "resend.per_1k",
+  "whatsapp_cloud.per_1k",
+  "evolution.per_1k",
 ] as const;
 export type PriceKey = (typeof PRICE_KEYS)[number];
 export type FinancePrices = Record<PriceKey, number>;
@@ -26,7 +31,20 @@ export const DEFAULT_FINANCE_PRICES: FinancePrices = {
   "deepseek.out.peak": 1_200_000,
   "search.per_1k": 750_000,
   "fetch.per_1k": 750_000,
+  // Serper: US$ 50 / 50k créditos (plano inicial) ≈ US$ 1,00 por 1000 buscas.
+  "serper.per_1k": 1_000_000,
+  // Google Places Text Search (New) com telefone/site (SKU Enterprise) ≈ US$ 35 por 1000.
+  "google_places.per_1k": 35_000_000,
+  // Resend: plano gratuito (3k/mês) = 0; ajuste no painel se assinar (Pro ≈ US$ 0,40/1000).
+  "resend.per_1k": 0,
+  // WhatsApp Cloud API (template de utilidade, Brasil) ≈ US$ 0,008 por mensagem.
+  "whatsapp_cloud.per_1k": 8_000_000,
+  // Evolution (WhatsApp do cliente, self-hosted): sem custo por mensagem (custo fixo da VPS).
+  "evolution.per_1k": 0,
 };
+
+/** Chaves cobradas por requisição/unidade (preço por 1000). */
+export type RequestPriceKind = "search" | "fetch" | "serper" | "google_places" | "resend" | "whatsapp_cloud" | "evolution";
 
 const overrideSchema = z.record(z.string(), z.number().int().min(0).max(1_000_000_000));
 const keySchema = z.enum(PRICE_KEYS);
@@ -87,7 +105,7 @@ export function deepseekCost(usage: DeepseekUsage, at: Date, prices: FinancePric
 }
 
 /** Search/Fetch: US$ 0,75 por 1000 requisições BEM-SUCEDIDAS. */
-export function requestsCost(kind: "search" | "fetch", successfulRequests: number, prices: FinancePrices = DEFAULT_FINANCE_PRICES): number {
+export function requestsCost(kind: RequestPriceKind, successfulRequests: number, prices: FinancePrices = DEFAULT_FINANCE_PRICES): number {
   return divRoundHalfUp(BigInt(Math.max(0, successfulRequests)) * BigInt(prices[`${kind}.per_1k`]), 1_000n);
 }
 

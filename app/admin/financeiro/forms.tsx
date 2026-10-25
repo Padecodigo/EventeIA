@@ -28,6 +28,11 @@ export function FinanceForms({ month, today }: { month: string; today: string })
           <option value="supabase">Supabase</option>
           <option value="domain">Domínio</option>
           <option value="whatsapp">WhatsApp</option>
+          <option value="evolution">Evolution</option>
+          <option value="resend">Resend</option>
+          <option value="serper">Serper</option>
+          <option value="google_places">Google Places</option>
+          <option value="deepseek">DeepSeek</option>
           <option value="other">Outros</option>
         </select>
         <input name="month" type="month" defaultValue={month} className={input} aria-label="Mês" />

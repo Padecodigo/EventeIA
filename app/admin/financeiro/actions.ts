@@ -8,6 +8,8 @@ import { requireAdmin } from "@/lib/auth";
 import { microUsdToBrlCents, parseFxToMicro, PRICE_KEYS } from "@/lib/finance/pricing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+const FIXED_COST_PROVIDERS = ["vps", "supabase", "domain", "whatsapp", "evolution", "resend", "serper", "google_places", "deepseek", "other"] as const;
+
 export interface FinanceActionState {
   error?: string;
   success?: string;
@@ -23,7 +25,7 @@ const usdSchema = z
   });
 
 const fixedSchema = z.object({
-  provider: z.enum(["vps", "supabase", "domain", "whatsapp", "other"]),
+  provider: z.enum(FIXED_COST_PROVIDERS),
   month: z.string().regex(/^\d{4}-\d{2}$/),
   usd: usdSchema,
   fx: z.string().transform((v, ctx) => {
@@ -62,6 +64,7 @@ export async function addFixedCostAction(_prev: FinanceActionState, form: FormDa
   });
   if (error !== null) return { error: "Não foi possível lançar o custo." };
   revalidatePath("/admin/financeiro");
+  revalidatePath("/admin/custos");
   return { success: "Custo fixo lançado." };
 }
 

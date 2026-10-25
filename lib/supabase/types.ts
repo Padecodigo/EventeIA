@@ -386,7 +386,11 @@ export interface Database {
           | "vps"
           | "supabase"
           | "domain"
-          | "other";
+          | "other"
+          | "serper"
+          | "google_places"
+          | "resend"
+          | "evolution";
         kind: "variable" | "fixed";
         reason: string;
         event_id: string | null;
@@ -407,6 +411,33 @@ export interface Database {
         unit: "per_1m_tokens" | "per_1k_requests" | "per_unit";
         updated_by: string | null;
         updated_at: string;
+      }>;
+      provider_balances: Table<{
+        provider: string;
+        label: string;
+        source: "api" | "manual" | "budget";
+        monthly_budget_brl_cents: number | null;
+        balance_brl_cents: number | null;
+        raw_currency: string | null;
+        raw_balance: number | null;
+        threshold_brl_cents: number;
+        runway_alert_days: number;
+        daily_burn_brl_cents: number | null;
+        fetched_at: string | null;
+        last_error: string | null;
+        last_alert_at: string | null;
+        note: string | null;
+        updated_by: string | null;
+        updated_at: string;
+      }>;
+      finance_alerts: Table<{
+        id: string;
+        provider: string;
+        kind: "low_balance" | "low_runway" | "fetch_error";
+        balance_brl_cents: number | null;
+        runway_days: number | null;
+        emailed: boolean;
+        created_at: string;
       }>;
       fx_rates: Table<{
         rate_date: string;

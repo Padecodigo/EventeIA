@@ -59,6 +59,8 @@ export function createResendAdapter(options: {
       if (!response.ok) {
         throw new Error(`Resend HTTP ${String(response.status)}`);
       }
+      // Mede o envio no painel de custos (import dinâmico: módulo server-only, best-effort).
+      void import("@/lib/finance/metering").then((m) => m.meterUsage("resend", "email")).catch(() => undefined);
       const body = (await response.json()) as { id?: unknown };
       return { id: typeof body.id === "string" ? body.id : null };
     },

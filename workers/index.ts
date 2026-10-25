@@ -1,8 +1,9 @@
 import { Worker } from "bullmq";
 
 import { serverEnv } from "@/lib/env";
-import { handleAsaasWebhookJob, type AsaasWebhookJob } from "@/lib/jobs/asaas-webhook";
+import { runBalanceCheck } from "@/lib/finance/balance-monitor";
 import { runAsaasReconcileSweep } from "@/lib/jobs/asaas-reconcile";
+import { handleAsaasWebhookJob, type AsaasWebhookJob } from "@/lib/jobs/asaas-webhook";
 import { runTestimonialInviteSweep } from "@/lib/jobs/testimonial-invites";
 import { runInstanceHealthSweep } from "@/lib/jobs/whatsapp-instance-health";
 import {
@@ -11,10 +12,10 @@ import {
   type WhatsappOutboundJob,
 } from "@/lib/jobs/whatsapp-outbound";
 import { logger } from "@/lib/logger";
+import { QUEUE_NAMES, getQueue, getRedisConnection } from "@/lib/queue";
 import { createDiscoveryWorker } from "@/lib/queue/discovery-worker";
 import { createQuoteExtractionWorker } from "@/lib/queue/quote-extraction-worker";
 import { createProspectingWorker, createSessionLifecycleWorker } from "@/lib/queue/whatsapp-worker";
-import { QUEUE_NAMES, getQueue, getRedisConnection } from "@/lib/queue";
 
 /**
  * Processo de workers (BullMQ) — separado do runtime do Next.
@@ -62,6 +63,15 @@ const instanceHealthWorker = new Worker(
   { connection, concurrency: 1 },
 );
 
+// Saúde financeira: saldos dos provedores + alerta (banner/e-mail), diário 08:00.
+const balanceWorker = new Worker(
+  QUEUE_NAMES.financeBalanceCheck,
+  async () => {
+    await runBalanceCheck();
+  },
+  { connection, concurrency: 1 },
+);
+
 // Agente Orçamentista: pacing humanizado 45–90s POR INSTÂNCIA (reserva atômica no Redis);
 // concorrência configurável para ~100 sessões simultâneas.
 const prospectingWorker = createProspectingWorker(
@@ -87,6 +97,11 @@ void getQueue(QUEUE_NAMES.testimonialInvites).add(
   "sweep",
   {},
   { repeat: { pattern: "0 10 * * *", tz: "America/Sao_Paulo" }, attempts: 3 },
+);
+void getQueue(QUEUE_NAMES.financeBalanceCheck).add(
+  "check",
+  {},
+  { repeat: { pattern: "0 8 * * *", tz: "America/Sao_Paulo" }, attempts: 3 },
 );
 // Créditos nunca expiram (0037): remove o agendamento legado de expiração, se existir.
 void getQueue(QUEUE_NAMES.creditsExpireLegacy)
@@ -127,6 +142,7 @@ const workers = [
   sessionLifecycleWorker,
   discoveryWorker,
   quoteExtractionWorker,
+  balanceWorker,
 ];
 
 for (const worker of workers) {

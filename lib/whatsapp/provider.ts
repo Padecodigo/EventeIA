@@ -5,6 +5,7 @@ import {
   sendFirstContact as evolutionFirstContact,
   sendText as evolutionText,
 } from "@/lib/evolution-api/client";
+import { meterUsage } from "@/lib/finance/metering";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import {
   isCloudConfigured,
@@ -37,9 +38,11 @@ export async function sendFirstContactVia(
 ): Promise<SendResult> {
   if (channel === "cloud") {
     const r = await sendCloudFirstContactTemplate(input.to, input.text);
+    meterUsage("whatsapp_cloud", "first_contact");
     return { channel, ...r };
   }
   const r = await evolutionFirstContact(input.instance, { number: input.to, text: input.text });
+  meterUsage("evolution", "first_contact");
   return { channel, ...r };
 }
 
@@ -52,9 +55,11 @@ export async function sendTextVia(
       throw new WindowClosedError();
     }
     const r = await sendCloudText(input.to, input.text);
+    meterUsage("whatsapp_cloud", "text");
     return { channel, ...r };
   }
   const r = await evolutionText(input.instance, input.to, input.text);
+  meterUsage("evolution", "text");
   return { channel, ...r };
 }
 
