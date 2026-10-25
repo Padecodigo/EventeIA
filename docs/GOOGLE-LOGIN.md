@@ -23,7 +23,7 @@ Fluxo: `/entrar` ou `/registrar` → botão **Entrar com Google** → Google →
    - Nome: `EventeIA Web`.
    - **Origens JavaScript autorizadas**:
      - `http://localhost:3000`
-     - `https://app.eventeia.com.br`
+     - `https://eventeia.com.br`
    - **URIs de redirecionamento autorizados** (é o callback do **Supabase**, não do app):
      - Local: `http://127.0.0.1:54321/auth/v1/callback` (e também `http://localhost:54321/auth/v1/callback`)
      - Produção: `https://<project-ref>.supabase.co/auth/v1/callback`
@@ -48,9 +48,9 @@ Fluxo: `/entrar` ou `/registrar` → botão **Entrar com Google** → Google →
 1. Painel do Supabase → **Authentication → Sign In / Providers → Google** → ative e cole
    **Client ID** e **Client Secret**.
 2. **Authentication → URL Configuration**:
-   - Site URL: `https://app.eventeia.com.br`
-   - Redirect URLs: `https://app.eventeia.com.br/auth/callback`
-3. Confirme `NEXT_PUBLIC_APP_URL=https://app.eventeia.com.br` no ambiente do app (é a origem usada no `redirectTo`).
+   - Site URL: `https://eventeia.com.br`
+   - Redirect URLs: `https://eventeia.com.br/auth/callback`
+3. Confirme `NEXT_PUBLIC_APP_URL=https://eventeia.com.br` no ambiente do app (é a origem usada no `redirectTo`).
 4. Rode as migrações (`npx supabase db push`) para criar `profiles.email`.
 
 ## 4. Resumo das URLs de redirecionamento
@@ -58,8 +58,8 @@ Fluxo: `/entrar` ou `/registrar` → botão **Entrar com Google** → Google →
 | Onde                                    | Local                                     | Produção                                             |
 | --------------------------------------- | ----------------------------------------- | ---------------------------------------------------- |
 | Google Cloud → URIs de redirecionamento | `http://127.0.0.1:54321/auth/v1/callback` | `https://<project-ref>.supabase.co/auth/v1/callback` |
-| Google Cloud → Origens JS               | `http://localhost:3000`                   | `https://app.eventeia.com.br`                        |
-| Supabase → Redirect URLs (app)          | `http://localhost:3000/auth/callback`     | `https://app.eventeia.com.br/auth/callback`          |
+| Google Cloud → Origens JS               | `http://localhost:3000`                   | `https://eventeia.com.br`                        |
+| Supabase → Redirect URLs (app)          | `http://localhost:3000/auth/callback`     | `https://eventeia.com.br/auth/callback`          |
 
 ## 5. Contas existentes e segurança
 

@@ -2,7 +2,7 @@
 
 import { CityPicker, type Municipio } from "@/components/domain/city-picker";
 
-/** Mesmo teto de MAX_SEARCH_CITIES / CHECK da migração 0033 (inclui a cidade do evento). */
+/** Mesmo teto de MAX_SEARCH_CITIES / CHECK da migração 0034 (inclui a cidade do evento). */
 export const MAX_SEARCH_CITIES_UI = 10;
 
 /**

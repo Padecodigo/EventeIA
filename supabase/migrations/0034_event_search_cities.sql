@@ -1,4 +1,4 @@
--- 0033: cidades extras de busca de fornecedores — ADITIVA e não destrutiva (expand).
+-- 0034: cidades extras de busca de fornecedores — ADITIVA e não destrutiva (expand).
 -- Só adiciona uma coluna anulável; null/ausente ⇒ busca apenas na cidade do evento.
 -- Guarda SOMENTE códigos IBGE (o servidor resolve nome/UF pela lista estática):
 -- sem texto livre ⇒ sem injeção em prompt via esta coluna.
