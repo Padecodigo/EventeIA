@@ -40,6 +40,17 @@ export async function requireUser(): Promise<SessionUser> {
   return user;
 }
 
+/**
+ * Para /entrar e /registrar: quem já tem sessão vai direto ao painel em vez de
+ * ver o formulário de login de novo.
+ */
+export async function redirectIfSignedIn(): Promise<void> {
+  const user = await getSessionUser();
+  if (user !== null) {
+    redirect("/painel");
+  }
+}
+
 /** Verdadeiro quando o usuário tem profiles.role = 'admin' (superusuário). Nunca lança. */
 export async function isAdminUser(userId: string): Promise<boolean> {
   const supabase = await createSupabaseServerClient().catch(() => null);
