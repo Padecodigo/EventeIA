@@ -3,8 +3,11 @@ import "server-only";
 import { ALL_EVENT_TYPES } from "@/lib/catalog/v1";
 import type { EventType } from "@/lib/engine/types";
 import { serverEnv } from "@/lib/env";
+import { logger } from "@/lib/logger";
 import { enqueue, getRedisConnection, QUEUE_NAMES } from "@/lib/queue";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { ensureUserInstance } from "@/lib/whatsapp/instance-store";
+import { supabaseInstanceStore } from "@/lib/whatsapp/instance-store-supabase";
 import { resolveCollectionWindowMinutes } from "@/lib/whatsapp/session-lifecycle";
 import { scheduleCollectionDeadline } from "@/lib/whatsapp/session-runtime";
 
@@ -148,11 +151,9 @@ export function createDiscoveryDeps(): DiscoveryDeps {
     },
 
     async ensureInstance(ownerId, eventId) {
-      const instance = `eventeia-${ownerId.slice(0, 8)}`;
-      const { data } = await admin.from("whatsapp_instances").select("id").eq("instance_name", instance).maybeSingle();
-      if (data === null) {
-        await admin.from("whatsapp_instances").insert({ profile_id: ownerId, instance_name: instance, status: "connecting", event_id: eventId });
-      }
+      // Revincula como o pareamento; se o WhatsApp coleta para OUTRO evento, não sequestra.
+      const { instance, binding } = await ensureUserInstance(supabaseInstanceStore(), { userId: ownerId, eventId, onBusy: "keep" });
+      if (binding === "busy") logger.warn({ eventId }, "descoberta: instância ocupada por outro evento");
       return instance;
     },
 

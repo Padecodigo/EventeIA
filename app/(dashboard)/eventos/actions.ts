@@ -31,6 +31,9 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { welcomeDiscountCents } from "@/lib/welcome/pure";
 import { bindWelcomeOfferToUser, reserveWelcomeOffer } from "@/lib/welcome/server";
+import { ensureUserInstance, newInstanceNameFor } from "@/lib/whatsapp/instance-store";
+import { supabaseInstanceStore } from "@/lib/whatsapp/instance-store-supabase";
+import { InstanceBusyError } from "@/lib/whatsapp/pairing";
 import { renderQuotationSummary } from "@/lib/whatsapp/templates";
 
 export interface ActionState {
@@ -770,27 +773,16 @@ export async function addVendorProspectAction(
     return { error: `Limite de ${String(MAX_PROSPECTS_PER_EVENT)} fornecedores por evento.` };
   }
 
-  // Instância do próprio cliente (Regra: WhatsApp do usuário envia).
-  const instance = `eventeia-${user.id.slice(0, 8)}`;
-
-  const { data: instanceRow } = await admin
-    .from("whatsapp_instances")
-    .select("id")
-    .eq("instance_name", instance)
-    .maybeSingle();
-
-  if (instanceRow === null) {
-    const { error: instanceError } = await admin.from("whatsapp_instances").insert({
-      profile_id: user.id,
-      instance_name: instance,
-      status: "connecting",
-      event_id: event.id,
-    });
-
-    if (instanceError !== null) {
-      logger.error({ code: instanceError.code }, "falha ao criar instância");
-      return { error: "Não foi possível preparar sua instância do WhatsApp." };
+  // Instância do próprio cliente (Regra: WhatsApp do usuário envia), vinculada a ESTE evento.
+  let instance: string;
+  try {
+    ({ instance } = await ensureUserInstance(supabaseInstanceStore(), { userId: user.id, eventId: event.id, onBusy: "throw" }));
+  } catch (caught) {
+    if (caught instanceof InstanceBusyError) {
+      return { error: "Seu WhatsApp ainda está coletando orçamentos de outro evento. Aguarde essa coleta terminar." };
     }
+    logger.error({ reason: caught instanceof Error ? caught.message : "?" }, "falha ao preparar instância");
+    return { error: "Não foi possível preparar sua instância do WhatsApp." };
   }
 
   const { data: prospect, error: prospectError } = await admin
@@ -1010,17 +1002,18 @@ export async function setWhatsappNumberModeAction(
   if (event === null) return { error: "Evento não encontrado." };
 
   const admin = getSupabaseAdmin();
-  const instance = `eventeia-${user.id.slice(0, 8)}`;
-  const { data: existing } = await admin
-    .from("whatsapp_instances")
-    .select("id")
-    .eq("instance_name", instance)
-    .maybeSingle();
+  const store = supabaseInstanceStore();
+  let existing: { id: string } | null;
+  try {
+    existing = await store.findByOwner(user.id);
+  } catch {
+    return { error: "Não foi possível salvar. Tente novamente." };
+  }
   const { error } =
     existing === null
       ? await admin.from("whatsapp_instances").insert({
           profile_id: user.id,
-          instance_name: instance,
+          instance_name: newInstanceNameFor(user.id),
           status: "connecting",
           event_id: event.id,
           number_mode: parsed.data.mode,

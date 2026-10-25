@@ -6,7 +6,6 @@
 import {
   InstanceBusyError,
   PAIRING_CODE_TTL_SECONDS,
-  instanceNameFor,
   parsePairingPhone,
   type ConnectPayload,
 } from "./pairing";
@@ -15,8 +14,10 @@ export interface PairingDeps {
   now(): number;
   /** O evento pertence ao usuário (RLS)? */
   ownsEvent(eventId: string): Promise<boolean>;
-  /** Garante a linha em whatsapp_instances (status connecting) vinculada a ESTE evento; InstanceBusyError se ocupada. */
-  ensureInstanceRow(input: { userId: string; instance: string; eventId: string }): Promise<void>;
+  /** Garante a linha em whatsapp_instances vinculada a ESTE evento e devolve o nome; InstanceBusyError se ocupada. */
+  ensureInstanceRow(input: { userId: string; eventId: string }): Promise<string>;
+  /** Nome da instância do usuário (legado preservado; novas usam o UUID completo). */
+  instanceName(userId: string): Promise<string>;
   connect(instance: string, numberDigits: string): Promise<ConnectPayload>;
   connectionState(instance: string): Promise<"open" | "connecting" | "close">;
 }
@@ -44,9 +45,8 @@ export async function startPairing(
   }
   if (!(await deps.ownsEvent(input.eventId))) return { ok: false, error: "Evento não encontrado." };
 
-  const instance = instanceNameFor(input.userId);
   try {
-    await deps.ensureInstanceRow({ userId: input.userId, instance, eventId: input.eventId });
+    const instance = await deps.ensureInstanceRow({ userId: input.userId, eventId: input.eventId });
     const payload = await deps.connect(instance, digits);
     if (!payload.alreadyConnected && payload.pairingCode === null && payload.qrDataUrl === null) {
       return {
@@ -79,7 +79,7 @@ export async function checkPairing(
 ): Promise<{ state: "open" | "connecting" | "close" | "unknown" }> {
   if (!(await deps.ownsEvent(input.eventId))) return { state: "unknown" };
   try {
-    return { state: await deps.connectionState(instanceNameFor(input.userId)) };
+    return { state: await deps.connectionState(await deps.instanceName(input.userId)) };
   } catch {
     return { state: "unknown" };
   }

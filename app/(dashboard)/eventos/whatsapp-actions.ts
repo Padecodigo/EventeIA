@@ -3,9 +3,10 @@
 import { requireUser } from "@/lib/auth";
 import { connectInstance, getConnectionState } from "@/lib/evolution-api/client";
 import { logger } from "@/lib/logger";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { decideInstanceBinding, InstanceBusyError } from "@/lib/whatsapp/pairing";
+import { ensureUserInstance, resolveInstanceName } from "@/lib/whatsapp/instance-store";
+import { supabaseInstanceStore } from "@/lib/whatsapp/instance-store-supabase";
+import { InstanceBusyError } from "@/lib/whatsapp/pairing";
 import {
   checkPairing,
   startPairing,
@@ -21,33 +22,17 @@ function deps(): PairingDeps {
       const { data } = await supabase.from("events").select("id").eq("id", eventId).maybeSingle();
       return data !== null;
     },
-    async ensureInstanceRow({ userId, instance, eventId }) {
-      const admin = getSupabaseAdmin();
-      const { data } = await admin
-        .from("whatsapp_instances")
-        .select("id,event_id,status")
-        .eq("instance_name", instance)
-        .maybeSingle();
-      const binding = decideInstanceBinding(data, eventId);
-      if (binding === "keep") return;
-      if (binding === "busy") throw new InstanceBusyError();
-      const { error } =
-        binding === "insert" || data === null
-          ? await admin.from("whatsapp_instances").insert({
-              profile_id: userId,
-              instance_name: instance,
-              status: "connecting",
-              event_id: eventId,
-            })
-          : await admin
-              .from("whatsapp_instances")
-              .update({ event_id: eventId, status: "connecting" })
-              .eq("id", data.id);
-      if (error !== null) {
-        logger.error({ code: error.code, binding }, "falha ao preparar instância (pareamento)");
+    async ensureInstanceRow({ userId, eventId }) {
+      try {
+        const { instance } = await ensureUserInstance(supabaseInstanceStore(), { userId, eventId, onBusy: "throw" });
+        return instance;
+      } catch (caught) {
+        if (caught instanceof InstanceBusyError) throw caught;
+        logger.error({ reason: caught instanceof Error ? caught.message : "?" }, "falha ao preparar instância (pareamento)");
         throw new Error("instância");
       }
     },
+    instanceName: (userId) => resolveInstanceName(supabaseInstanceStore(), userId),
     connect: connectInstance,
     connectionState: getConnectionState,
   };

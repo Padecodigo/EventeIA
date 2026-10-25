@@ -99,11 +99,6 @@ export function parseConnectResponse(body: unknown): ConnectPayload {
   return { pairingCode: code, qrDataUrl, alreadyConnected };
 }
 
-/** Nome da instância do cliente (mesma convenção das actions de eventos). */
-export function instanceNameFor(userId: string): string {
-  return `eventeia-${userId.slice(0, 8)}`;
-}
-
 export type InstanceBinding = "insert" | "keep" | "rebind" | "busy";
 
 /**
