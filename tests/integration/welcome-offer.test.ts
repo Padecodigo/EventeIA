@@ -182,6 +182,7 @@ describe("vínculo após login/cadastro com Google (dashboard layout pós /auth/
 
   it("layout do dashboard vincula a oferta do aparelho ao usuário vindo do OAuth", async () => {
     vi.doMock("@/lib/auth", () => ({
+      isAdminUser: async () => false,
       requireUser: async () => ({
         id: "d4444444-4444-4444-8444-444444444444",
         email: "g@gmail.com",

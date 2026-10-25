@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { ADMIN_NAV } from "@/lib/admin/nav";
 import { requireAdmin } from "@/lib/auth";
 import { THEME_COOKIE, parseThemePreference, themeClass } from "@/lib/theme/palette";
 
@@ -24,29 +25,24 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </span>
           </div>
           <nav className="flex items-center gap-5 text-sm text-ink-inverse/80">
-            <Link href="/admin/financeiro" className="transition hover:text-ink-inverse">
-              Financeiro
+            <Link href="/admin" className="transition hover:text-ink-inverse">
+              Início
             </Link>
-            <Link href="/admin/consumo" className="transition hover:text-ink-inverse">
-              Consumo
-            </Link>
-            <Link href="/admin/depoimentos" className="transition hover:text-ink-inverse">
-              Depoimentos
-            </Link>
-            <Link href="/admin/cupons" className="transition hover:text-ink-inverse">
-              Cupons
-            </Link>
-            <Link href="/admin/chamados" className="transition hover:text-ink-inverse">
-              Chamados
-            </Link>
+            {ADMIN_NAV.map((item) => (
+              <Link key={item.href} href={item.href} className="transition hover:text-ink-inverse">
+                {item.label}
+              </Link>
+            ))}
             <Link href="/painel" className="transition hover:text-ink-inverse">
-              Painel
+              Painel do usuário
             </Link>
             <Link href="/" className="transition hover:text-ink-inverse">
               Ver site
             </Link>
             <ThemeToggle initial={pref} targetId="admin-root" />
-            <span className="hidden text-caption text-ink-inverse/50 sm:inline">{user.email ?? ""}</span>
+            <span className="hidden text-caption text-ink-inverse/50 sm:inline">
+              {user.email ?? ""}
+            </span>
           </nav>
         </div>
       </header>
