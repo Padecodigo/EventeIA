@@ -41,39 +41,28 @@ describe("WhatsappSetup (passo único)", () => {
     expect(screen.queryByRole("button", { name: /Salvar/ })).toBeNull();
   });
 
-  it("dedicado: escolhe e confirma uma vez ⇒ aviso de orçamento em preparo", async () => {
-    render(<WhatsappSetup eventId="e1" current={null} connected={false} />);
-    fireEvent.click(screen.getByRole("radio", { name: /Número dedicado/ }));
-    expect(saveMock).not.toHaveBeenCalled();
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Confirmar número dedicado" }));
-    });
-    expect(saveMock).toHaveBeenCalledWith("e1", "dedicated");
-    expect(screen.getByTestId("quote-preparing-notice")).toHaveTextContent(
-      "Seu orçamento está sendo preparado! Vamos te avisar por e-mail em até 2 dias úteis.",
-    );
-  });
-
-  it("pessoal: clicar já persiste e mostra o QR na hora", async () => {
+  it.each([
+    ["Número dedicado", "dedicated"],
+    ["Meu número pessoal", "personal"],
+  ])("%s: um clique persiste e mostra o QR na hora", async (label, mode) => {
     render(<WhatsappSetup eventId="e1" current={null} connected={false} />);
     await act(async () => {
-      fireEvent.click(screen.getByRole("radio", { name: /Meu número pessoal/ }));
+      fireEvent.click(screen.getByRole("radio", { name: new RegExp(label) }));
     });
-    expect(saveMock).toHaveBeenCalledWith("e1", "personal");
+    expect(saveMock).toHaveBeenCalledWith("e1", mode);
     expect(requestMock).toHaveBeenCalledWith("e1", "");
     expect(screen.getByTestId("qr-block")).toBeInTheDocument();
   });
 
-  it("regressão 'Salvando…' eterno: falha ao salvar vira erro e libera a UI", async () => {
+  it("regressão 'Salvando…' eterno: falha ao salvar vira erro e não trava a UI", async () => {
     saveMock.mockRejectedValue(new Error("Failed to find Server Action"));
     render(<WhatsappSetup eventId="e1" current={null} connected={false} />);
-    fireEvent.click(screen.getByRole("radio", { name: /Número dedicado/ }));
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Confirmar número dedicado" }));
+      fireEvent.click(screen.getByRole("radio", { name: /Número dedicado/ }));
     });
     expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível salvar");
     expect(screen.queryByText(/Salvando/)).toBeNull();
-    expect(screen.getByRole("button", { name: "Confirmar número dedicado" })).toBeEnabled();
+    expect(screen.getByRole("radio", { name: /Meu número pessoal/ })).toBeEnabled();
   });
 
   it("já conectado ⇒ só o aviso de preparo (sem spinner)", () => {

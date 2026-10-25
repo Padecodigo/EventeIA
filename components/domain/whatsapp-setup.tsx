@@ -5,7 +5,6 @@ import { useState, useTransition } from "react";
 import { saveWhatsappNumberModeAction } from "@/app/(dashboard)/eventos/actions";
 import { QuotePreparingNotice } from "@/components/domain/quote-preparing-notice";
 import { WhatsappConnect } from "@/components/domain/whatsapp-connect";
-import { Button } from "@/components/ui/button";
 
 type Mode = "dedicated" | "personal";
 
@@ -13,7 +12,7 @@ const OPTIONS: readonly { value: Mode; title: string; body: string }[] = [
   {
     value: "dedicated",
     title: "Número dedicado (recomendado)",
-    body: "Use um segundo chip só para o EventeIA. Seu WhatsApp pessoal fica intocado.",
+    body: "Um segundo chip seu, só para o EventeIA. Conecte agora pelo QR code.",
   },
   {
     value: "personal",
@@ -24,8 +23,8 @@ const OPTIONS: readonly { value: Mode; title: string; body: string }[] = [
 
 /**
  * Passo único de WhatsApp: escolher a opção já persiste (sem "Salvar").
- * - dedicado: uma confirmação e pronto;
- * - pessoal: QR/código aparecem na hora; ao conectar, "Conectado! Podemos prosseguir?".
+ * ambas as opções são números do próprio usuário: o QR/código aparece na hora
+ * (número só se preciso para o código) e, ao conectar, "Conectado! Podemos prosseguir?".
  */
 export function WhatsappSetup({
   eventId,
@@ -37,13 +36,12 @@ export function WhatsappSetup({
   connected: boolean;
 }) {
   const [mode, setMode] = useState<Mode | null>(connected ? current : null);
-  const [dedicatedDone, setDedicatedDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [saving, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   if (connected) return <QuotePreparingNotice />;
 
-  function persist(next: Mode, after?: () => void) {
+  function persist(next: Mode) {
     setError(null);
     startTransition(async () => {
       try {
@@ -52,7 +50,6 @@ export function WhatsappSetup({
           setError(result.error);
           return;
         }
-        after?.();
       } catch {
         setError("Não foi possível salvar. Tente novamente.");
       }
@@ -61,8 +58,7 @@ export function WhatsappSetup({
 
   function choose(next: Mode) {
     setMode(next);
-    setDedicatedDone(false);
-    if (next === "personal") persist("personal");
+    persist(next);
   }
 
   return (
@@ -93,23 +89,7 @@ export function WhatsappSetup({
         </p>
       ) : null}
 
-      {mode === "dedicated" ? (
-        dedicatedDone ? (
-          <QuotePreparingNotice />
-        ) : (
-          <div>
-            <Button
-              type="button"
-              disabled={saving}
-              onClick={() => persist("dedicated", () => setDedicatedDone(true))}
-            >
-              Confirmar número dedicado
-            </Button>
-          </div>
-        )
-      ) : null}
-
-      {mode === "personal" ? <WhatsappConnect eventId={eventId} autoStart /> : null}
+      {mode !== null ? <WhatsappConnect key={mode} eventId={eventId} autoStart /> : null}
     </div>
   );
 }
