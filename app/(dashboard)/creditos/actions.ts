@@ -11,6 +11,8 @@ import {
   createAsaasCustomer,
   createAsaasPixPayment,
   createAsaasSubscription,
+  cancelAsaasSubscription,
+  getAsaasSubscriptionFirstInvoiceUrl,
 } from "@/lib/asaas/client";
 import { requireUser } from "@/lib/auth";
 import {
@@ -71,29 +73,42 @@ export interface CreditsCheckoutState {
 
 const paymentMethodSchema = z.enum(["pix", "card"]).default("pix");
 
-export interface SubscribeState {
-  error?: string;
+export interface SubscribeState extends CreditsCheckoutState {
   success?: boolean;
+  /** Assinatura recorrente: fatura hospedada do 1º ciclo (Pix ou cartão de crédito). */
+  invoiceUrl?: string;
 }
 
 const subscribeSchema = z.object({
   planCode: z.enum(["essencial", "atelier", "maison"]),
+  renew: z.enum(["yes", "no"]),
+  method: z.enum(["pix", "card"]).default("pix"),
 });
 
 /**
- * Cria a assinatura recorrente no Asaas (uma fatura Pix por mês). A franquia
- * de créditos é concedida automaticamente quando o webhook confirma a fatura
- * (migração 0009). Ver .context/PAYMENTS.md §7.
+ * Franquia: o comprador escolhe "Renovar automaticamente todo mês?".
+ * - Sim: assinatura recorrente no Asaas (Pix ou cartão de crédito); os créditos
+ *   entram após cada confirmação de pagamento (webhook, migração 0009).
+ * - Não: compra única dos créditos do plano (mesmo fluxo dos pacotes).
+ * Créditos nunca expiram (0034).
  */
 export async function subscribeToPlanAction(
   _previous: SubscribeState,
   formData: FormData,
 ): Promise<SubscribeState> {
   const user = await requireUser();
-  const parsed = subscribeSchema.safeParse({ planCode: formData.get("planCode") });
+  const parsed = subscribeSchema.safeParse({
+    planCode: formData.get("planCode"),
+    renew: formData.get("renew"),
+    method: formData.get("method") ?? undefined,
+  });
 
   if (!parsed.success) {
-    return { error: "Plano inválido." };
+    return { error: "Escolha o plano e se deseja renovar automaticamente." };
+  }
+
+  if (parsed.data.renew === "no") {
+    return buyCreditsAction({}, formData);
   }
 
   const plan = PLANS.find((item) => item.code === parsed.data.planCode);
@@ -158,6 +173,7 @@ export async function subscribeToPlanAction(
       priceCents: plan.priceCents,
       description: `EventeIA — ${plan.name} (${String(plan.credits)} créditos/mês)`,
       nextDueDate,
+      billingType: parsed.data.method === "card" ? "CREDIT_CARD" : "PIX",
     });
 
     const { error: insertError } = await admin.from("subscriptions").insert({
@@ -187,8 +203,15 @@ export async function subscribeToPlanAction(
       // feed não bloqueia a assinatura
     }
 
+    let invoiceUrl: string | null = null;
+    try {
+      invoiceUrl = await getAsaasSubscriptionFirstInvoiceUrl(subscription.subscriptionId);
+    } catch {
+      // a fatura também chega por e-mail do Asaas
+    }
+
     revalidatePath("/creditos");
-    return { success: true };
+    return invoiceUrl !== null ? { success: true, invoiceUrl } : { success: true };
   } catch (caught) {
     if (caught instanceof AsaasNotConfiguredError) {
       return { error: "Pagamentos não configurados neste ambiente (ASAAS_API_KEY)." };
@@ -222,6 +245,18 @@ interface ResolvedPack {
  * qualquer preço vindo do cliente é ignorado.
  */
 function resolvePack(formData: FormData): ResolvedPack | null {
+  const rawPlan = formData.get("planCode");
+  if (rawPlan !== null) {
+    // Franquia sem renovação: compra única dos créditos do plano.
+    const plan = PLANS.find((item) => item.code === rawPlan);
+    if (plan === undefined) return null;
+    return {
+      code: `plano-${plan.code}-unico`,
+      name: `${plan.name} (compra única)`,
+      credits: plan.credits,
+      priceCents: plan.priceCents,
+    };
+  }
   const rawCredits = formData.get("credits");
   if (rawCredits !== null) {
     const parsed = customCreditsSchema.safeParse({ credits: rawCredits });
@@ -365,5 +400,80 @@ export async function buyCreditsAction(
       "falha ao comprar créditos",
     );
     return { error: "Não foi possível gerar o pagamento. Tente novamente." };
+  }
+}
+
+export interface CancelSubscriptionState {
+  error?: string;
+  success?: boolean;
+}
+
+/** Cancela a renovação automática. Créditos já concedidos permanecem (não expiram). */
+export async function cancelSubscriptionAction(
+  _previous: CancelSubscriptionState,
+  _formData: FormData,
+): Promise<CancelSubscriptionState> {
+  const user = await requireUser();
+  const supabase = await createSupabaseServerClient();
+  const { data: workspace } = await supabase
+    .from("workspaces")
+    .select("id")
+    .eq("owner_id", user.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (workspace === null) {
+    return { error: "Workspace não encontrado." };
+  }
+
+  const { data: sub } = await supabase
+    .from("subscriptions")
+    .select("id,asaas_subscription_id")
+    .eq("workspace_id", workspace.id)
+    .in("status", ["pending", "active", "overdue"])
+    .limit(1)
+    .maybeSingle();
+
+  if (sub === null) {
+    return { error: "Nenhuma renovação automática ativa." };
+  }
+
+  try {
+    await cancelAsaasSubscription(sub.asaas_subscription_id);
+    const admin = getSupabaseAdmin();
+    const { error } = await admin
+      .from("subscriptions")
+      .update({ status: "canceled" })
+      .eq("id", sub.id)
+      .eq("workspace_id", workspace.id);
+    if (error !== null) {
+      logger.error({ code: error.code }, "falha ao marcar assinatura cancelada");
+      return { error: "Recorrência cancelada no Asaas, mas o registro local falhou." };
+    }
+    try {
+      await emitFeed(admin, {
+        type: "subscription.canceled",
+        actorType: "user",
+        actorId: user.id,
+        aggregateType: "workspace",
+        aggregateId: workspace.id,
+        payload: {},
+        correlationId: sub.asaas_subscription_id,
+        source: "app",
+      });
+    } catch {
+      // feed não bloqueia
+    }
+    revalidatePath("/creditos");
+    return { success: true };
+  } catch (caught) {
+    if (caught instanceof AsaasNotConfiguredError) {
+      return { error: "Pagamentos não configurados neste ambiente (ASAAS_API_KEY)." };
+    }
+    logger.error(
+      { reason: caught instanceof Error ? caught.message : "desconhecido" },
+      "falha ao cancelar assinatura",
+    );
+    return { error: "Não foi possível cancelar a renovação. Tente novamente." };
   }
 }

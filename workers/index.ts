@@ -3,7 +3,6 @@ import { Worker } from "bullmq";
 import { serverEnv } from "@/lib/env";
 import { handleAsaasWebhookJob, type AsaasWebhookJob } from "@/lib/jobs/asaas-webhook";
 import { runAsaasReconcileSweep } from "@/lib/jobs/asaas-reconcile";
-import { runCreditsExpireSweep } from "@/lib/jobs/credits-expire";
 import { runTestimonialInviteSweep } from "@/lib/jobs/testimonial-invites";
 import { runInstanceHealthSweep } from "@/lib/jobs/whatsapp-instance-health";
 import {
@@ -55,14 +54,6 @@ const reconcileWorker = new Worker(
   { connection, concurrency: 1 },
 );
 
-const creditsExpireWorker = new Worker(
-  QUEUE_NAMES.creditsExpire,
-  async () => {
-    await runCreditsExpireSweep();
-  },
-  { connection, concurrency: 1 },
-);
-
 const instanceHealthWorker = new Worker(
   QUEUE_NAMES.whatsappInstanceHealth,
   async () => {
@@ -86,7 +77,6 @@ const quoteExtractionWorker = createQuoteExtractionWorker(connection);
 // Agendamentos (America/Sao_Paulo):
 // 09:30 — conciliação Asaas (PAYMENTS.md §8)
 // 10:00 — convites de depoimento pós-evento
-// 11:00 — expiração de franquias (COMMERCIAL_MODEL.md §3.3)
 // a cada 5 min — saúde das instâncias WhatsApp (retoma a fila de prospecção)
 void getQueue(QUEUE_NAMES.asaasReconcile).add(
   "sweep",
@@ -98,11 +88,14 @@ void getQueue(QUEUE_NAMES.testimonialInvites).add(
   {},
   { repeat: { pattern: "0 10 * * *", tz: "America/Sao_Paulo" }, attempts: 3 },
 );
-void getQueue(QUEUE_NAMES.creditsExpire).add(
-  "sweep",
-  {},
-  { repeat: { pattern: "0 11 * * *", tz: "America/Sao_Paulo" }, attempts: 3 },
-);
+// Créditos nunca expiram (0034): remove o agendamento legado de expiração, se existir.
+void getQueue(QUEUE_NAMES.creditsExpireLegacy)
+  .getRepeatableJobs()
+  .then(async (jobs) => {
+    const queue = getQueue(QUEUE_NAMES.creditsExpireLegacy);
+    for (const job of jobs) await queue.removeRepeatableByKey(job.key);
+  })
+  .catch(() => undefined);
 void getQueue(QUEUE_NAMES.whatsappInstanceHealth).add(
   "sweep",
   {},
@@ -129,7 +122,6 @@ const workers = [
   whatsappWorker,
   testimonialWorker,
   reconcileWorker,
-  creditsExpireWorker,
   instanceHealthWorker,
   prospectingWorker,
   sessionLifecycleWorker,
@@ -143,10 +135,7 @@ for (const worker of workers) {
   });
 }
 
-logger.info(
-  { queues: workers.map((worker) => worker.name) },
-  "workers da EventeIA online",
-);
+logger.info({ queues: workers.map((worker) => worker.name) }, "workers da EventeIA online");
 
 async function shutdown(): Promise<void> {
   logger.info("encerrando workers…");

@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { CancelSubscriptionForm } from "@/components/domain/cancel-subscription-form";
 import { CreditSliderForm } from "@/components/domain/credit-slider-form";
 import { SingleEventOffer } from "@/components/domain/single-event-offer";
 import { SubscribePlanForm } from "@/components/domain/subscribe-plan-form";
@@ -80,7 +81,7 @@ export default async function CreditsPage() {
       .from("subscriptions")
       .select("plan_code,status,current_period_end")
       .eq("workspace_id", workspace.id)
-      .in("status", ["pending", "active"])
+      .in("status", ["pending", "active", "overdue"])
       .limit(1)
       .maybeSingle(),
   ]);
@@ -111,14 +112,20 @@ export default async function CreditsPage() {
       <section>
         <h2 className="font-serif text-title-1">Assinatura mensal (franquia)</h2>
         <p className="mt-1 text-sm text-vinho/75">
-          Uma fatura Pix por mês; os créditos entram automaticamente após a confirmação. Créditos da
-          franquia valem por dois ciclos; pacotes avulsos não expiram.
+          Escolha se quer renovar automaticamente todo mês (Pix ou cartão de crédito; os créditos
+          entram após cada pagamento confirmado) ou fazer uma compra única. Você pode cancelar a
+          renovação aqui no painel. Seus créditos não expiram: use quando quiser.
         </p>
 
         {subscription !== null ? (
           <div className="mt-6 rounded-card border border-champagne/50 bg-vinho p-6 text-off-white shadow-raised">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-champagne-claro">
-              Assinatura {subscription.status === "active" ? "ativa" : "pendente de confirmação"}
+              Renovação automática{" "}
+              {subscription.status === "active"
+                ? "ativa"
+                : subscription.status === "overdue"
+                  ? "com pagamento em atraso"
+                  : "pendente de confirmação"}
             </p>
             <p className="mt-2 font-serif text-title-1">
               Plano{" "}
@@ -136,6 +143,7 @@ export default async function CreditsPage() {
                 )}
               </p>
             ) : null}
+            <CancelSubscriptionForm />
           </div>
         ) : (
           <div className="mt-6 grid gap-6 md:grid-cols-3">
@@ -172,7 +180,7 @@ export default async function CreditsPage() {
       <section>
         <h2 className="font-serif text-title-1">Precisa de créditos extras agora?</h2>
         <p className="mt-1 text-sm text-vinho/75">
-          Arraste para escolher de 3 a 20 eventos. Pix ou cartão de crédito, sem assinatura e sem
+          Arraste para escolher de 3 a 20 eventos. Pix ou cartão de crédito, compra única e sem
           validade.
         </p>
 

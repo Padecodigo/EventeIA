@@ -10,7 +10,7 @@
 A EventeIA é um SaaS de **inteligência de custos e cotações para eventos** com dois públicos:
 
 - **B2C (Anfitriões)** — compram um **tíquete único por evento** e recebem clareza financeira (orçamento determinístico, cotações, disparos via WhatsApp).
-- **B2B (Planners/Cerimonialistas)** — assinam uma **franquia de créditos mensal** e gerenciam múltiplos eventos de seus clientes dentro de *workspaces*.
+- **B2B (Planners/Cerimonialistas)** — assinam uma **franquia de créditos mensal** e gerenciam múltiplos eventos de seus clientes dentro de _workspaces_.
 
 ### 1.1 Diagrama de contexto
 
@@ -32,7 +32,7 @@ A EventeIA é um SaaS de **inteligência de custos e cotações para eventos** c
    ┌─────────────────────────────────┐   ┌──────────────────────┐
    │  BullMQ (Redis)                 │──►│  Workers (processo    │
    │  asaas-webhooks · whatsapp-*    │   │  separado: workers/)  │
-   │  credits-expire · feeds-*       │   └──────────┬───────────┘
+   │  feeds-*                       │   └──────────┬───────────┘
    └───────┬─────────────────────────┘              │
            │                                         │
            ▼                                         ▼
@@ -114,13 +114,13 @@ EventeIA/
 
 ## 3. Camadas e fronteiras
 
-| Camada | Local | Pode importar | Proibido |
-|---|---|---|---|
-| Superfície HTTP | `app/**` | `components/**`, `lib/**` | SQL direto, `fetch` a Asaas fora de `lib/asaas` |
-| Componentes | `components/**` | `lib/**` (tipos/utils), `components/**` | Lógica de negócio, acesso a dados |
-| Domínio | `lib/**` | `lib/**` (entre si), SDKs externos | `app/**`, `components/**`, `next/*` (exceto tipos em `lib/supabase/server.ts`) |
-| **Motor** | `lib/engine/**` | **apenas código puro** (módulos próprios e `lib/money`) | **Qualquer I/O**: banco, rede, `Date.now`, `Math.random`, env vars |
-| Workers | `workers/**` | `lib/**`, `bullmq` | `app/**`, `components/**` |
+| Camada          | Local           | Pode importar                                           | Proibido                                                                       |
+| --------------- | --------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Superfície HTTP | `app/**`        | `components/**`, `lib/**`                               | SQL direto, `fetch` a Asaas fora de `lib/asaas`                                |
+| Componentes     | `components/**` | `lib/**` (tipos/utils), `components/**`                 | Lógica de negócio, acesso a dados                                              |
+| Domínio         | `lib/**`        | `lib/**` (entre si), SDKs externos                      | `app/**`, `components/**`, `next/*` (exceto tipos em `lib/supabase/server.ts`) |
+| **Motor**       | `lib/engine/**` | **apenas código puro** (módulos próprios e `lib/money`) | **Qualquer I/O**: banco, rede, `Date.now`, `Math.random`, env vars             |
+| Workers         | `workers/**`    | `lib/**`, `bullmq`                                      | `app/**`, `components/**`                                                      |
 
 A fronteira do motor é reforçada por lint (`no-restricted-imports`/`no-restricted-properties` em `lib/engine/**` — ver [.eslintrc.json](../.eslintrc.json)) e por testes de pureza (golden files + property tests).
 
@@ -152,11 +152,11 @@ export function calculate(input: EngineInput, params: EngineParams): EngineResul
 
 type EngineInput = {
   event: {
-    type: EventType;          // casamento, aniversário, corporativo…
-    guestCount: number;       // 1..n
-    date: string;             // ISO-8601 (data local do evento)
-    region: RegionCode;       // tabela de custo regional
-    items: ItemSelection[];   // buffet, música, flores, foto…
+    type: EventType; // casamento, aniversário, corporativo…
+    guestCount: number; // 1..n
+    date: string; // ISO-8601 (data local do evento)
+    region: RegionCode; // tabela de custo regional
+    items: ItemSelection[]; // buffet, música, flores, foto…
     preferences: Preferences; // faixas de prioridade por item
   };
 };
@@ -164,10 +164,10 @@ type EngineInput = {
 type EngineResult = {
   engineVersion: string;
   currency: "BRL";
-  totalCents: number;              // soma das linhas
-  breakdown: LineItem[];           // custo por item, com faixa min/sugerida/max
-  warnings: EngineWarning[];       // ex.: datas < 30 dias (custo de urgência)
-  quotationHints: QuotationHint[] // dados para cotação com fornecedores
+  totalCents: number; // soma das linhas
+  breakdown: LineItem[]; // custo por item, com faixa min/sugerida/max
+  warnings: EngineWarning[]; // ex.: datas < 30 dias (custo de urgência)
+  quotationHints: QuotationHint[]; // dados para cotação com fornecedores
 };
 ```
 
@@ -202,17 +202,16 @@ EngineInput
 
 ## 6. Filas e workers (BullMQ)
 
-| Fila | Produtor | Consumidor | jobId (idempotência) | Retry |
-|---|---|---|---|---|
-| `asaas-webhooks` | Route Handler `webhooks/asaas` | Worker de pagamentos | `external_event_id` | 5× backoff exponencial + jitter |
-| `asaas-reconcile` | Repeatable job diário | Conciliação Asaas↔local | data `YYYY-MM-DD` | 3× |
-| `whatsapp-outbound` | Server Actions/Services | Disparador Evolution | `idempotency_key` da mensagem | 5× backoff + rate limit |
-| `whatsapp-inbound` | Route Handler `webhooks/evolution` | Processador de respostas/SAIR | `external_message_id` | 3× |
-| `credits-expire` | Repeatable diário | Expiração de créditos B2B | ciclo `YYYY-MM` | 3× |
-| `feeds-dispatch` | Outbox pós-transação | Publicador de eventos | feed `id` | 5× |
-| `testimonial-invites` | Repeatable diário (10:00 America/Sao_Paulo) | Convida eventos de ontem para depoimento | `testimonial_invite:event:<id>` na mensagem | 3× |
-| `quotation-prospecting-queue` | Server Action de prospecção | Agente Orçamentista: primeiro contato ao fornecedor pelo WhatsApp do cliente | `prospect:<prospectId>` | 5× backoff + pacing 45–90s/instância |
-| `whatsapp-instance-health` | Repeatable (*/5 min) | Saúde das instâncias; retoma a fila de prospecção | sweep por ciclo | 3× |
+| Fila                          | Produtor                                    | Consumidor                                                                   | jobId (idempotência)                        | Retry                                |
+| ----------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------ |
+| `asaas-webhooks`              | Route Handler `webhooks/asaas`              | Worker de pagamentos                                                         | `external_event_id`                         | 5× backoff exponencial + jitter      |
+| `asaas-reconcile`             | Repeatable job diário                       | Conciliação Asaas↔local                                                      | data `YYYY-MM-DD`                           | 3×                                   |
+| `whatsapp-outbound`           | Server Actions/Services                     | Disparador Evolution                                                         | `idempotency_key` da mensagem               | 5× backoff + rate limit              |
+| `whatsapp-inbound`            | Route Handler `webhooks/evolution`          | Processador de respostas/SAIR                                                | `external_message_id`                       | 3×                                   |
+| `feeds-dispatch`              | Outbox pós-transação                        | Publicador de eventos                                                        | feed `id`                                   | 5×                                   |
+| `testimonial-invites`         | Repeatable diário (10:00 America/Sao_Paulo) | Convida eventos de ontem para depoimento                                     | `testimonial_invite:event:<id>` na mensagem | 3×                                   |
+| `quotation-prospecting-queue` | Server Action de prospecção                 | Agente Orçamentista: primeiro contato ao fornecedor pelo WhatsApp do cliente | `prospect:<prospectId>`                     | 5× backoff + pacing 45–90s/instância |
+| `whatsapp-instance-health`    | Repeatable (*/5 min)                        | Saúde das instâncias; retoma a fila de prospecção                            | sweep por ciclo                             | 3×                                   |
 
 - Redis: `REDIS_URL`. Workers rodam em **processo próprio** (`pnpm workers`), nunca no runtime do Next.
 - DLQ: após esgotar tentativas, job vai para `*-failed` com feed `worker.job_failed` + alerta.
@@ -263,24 +262,24 @@ quotations criadas (motor) → whatsapp_messages (pending, idempotency_key)
 
 ## 8. Variáveis de ambiente
 
-| Variável | Escopo | Exemplo | Uso |
-|---|---|---|---|
-| `NEXT_PUBLIC_APP_URL` | client+server | `http://localhost:3000` | URLs absolutas |
-| `NEXT_PUBLIC_SUPABASE_URL` | client+server | `https://xxx.supabase.co` | SDK client |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | client+server | `eyJ…` | SDK client (anon) |
-| `SUPABASE_SERVICE_ROLE_KEY` | **server only** | `eyJ…` | Admin/RLS-bypass — jamais no client |
-| `REDIS_URL` | server/workers | `redis://localhost:6379` | BullMQ |
-| `ASAAS_API_URL` | server | `https://api-sandbox.asaas.com/v3` | Base da API |
-| `ASAAS_API_KEY` | server | `$aab_…` | Autenticação Asaas |
-| `ASAAS_WEBHOOK_TOKEN` | server | segredo | Validar header do webhook |
-| `EVOLUTION_API_URL` | server/workers | `http://localhost:8080` | Base Evolution API |
-| `EVOLUTION_API_KEY` | server/workers | segredo | Header `apikey` |
-| `EVOLUTION_INSTANCE` | server/workers | `EventeIA` | Nome da instância |
-| `EVOLUTION_WEBHOOK_TOKEN` | server | segredo | Validar webhook Evolution |
-| `B2C_TICKET_PRICE_CENTS` | server | `4700` | Preço do tíquete único |
-| `ENGINE_TIMEZONE` | server | `America/Sao_Paulo` | Fuso do motor |
-| `WHATSAPP_MIN_INTERVAL_SECONDS` | workers | `60` | Piso do intervalo entre disparos (clamp 45–90) |
-| `WHATSAPP_CREDENTIALS_KEY` | server | hex 64 chars | Chave AES-256-GCM das credenciais de instância |
+| Variável                        | Escopo          | Exemplo                            | Uso                                            |
+| ------------------------------- | --------------- | ---------------------------------- | ---------------------------------------------- |
+| `NEXT_PUBLIC_APP_URL`           | client+server   | `http://localhost:3000`            | URLs absolutas                                 |
+| `NEXT_PUBLIC_SUPABASE_URL`      | client+server   | `https://xxx.supabase.co`          | SDK client                                     |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | client+server   | `eyJ…`                             | SDK client (anon)                              |
+| `SUPABASE_SERVICE_ROLE_KEY`     | **server only** | `eyJ…`                             | Admin/RLS-bypass — jamais no client            |
+| `REDIS_URL`                     | server/workers  | `redis://localhost:6379`           | BullMQ                                         |
+| `ASAAS_API_URL`                 | server          | `https://api-sandbox.asaas.com/v3` | Base da API                                    |
+| `ASAAS_API_KEY`                 | server          | `$aab_…`                           | Autenticação Asaas                             |
+| `ASAAS_WEBHOOK_TOKEN`           | server          | segredo                            | Validar header do webhook                      |
+| `EVOLUTION_API_URL`             | server/workers  | `http://localhost:8080`            | Base Evolution API                             |
+| `EVOLUTION_API_KEY`             | server/workers  | segredo                            | Header `apikey`                                |
+| `EVOLUTION_INSTANCE`            | server/workers  | `EventeIA`                         | Nome da instância                              |
+| `EVOLUTION_WEBHOOK_TOKEN`       | server          | segredo                            | Validar webhook Evolution                      |
+| `B2C_TICKET_PRICE_CENTS`        | server          | `4700`                             | Preço do tíquete único                         |
+| `ENGINE_TIMEZONE`               | server          | `America/Sao_Paulo`                | Fuso do motor                                  |
+| `WHATSAPP_MIN_INTERVAL_SECONDS` | workers         | `60`                               | Piso do intervalo entre disparos (clamp 45–90) |
+| `WHATSAPP_CREDENTIALS_KEY`      | server          | hex 64 chars                       | Chave AES-256-GCM das credenciais de instância |
 
 > Segredos **nunca** levam prefixo `NEXT_PUBLIC_`. Ver [SECURITY.md](SECURITY.md).
 
@@ -288,15 +287,15 @@ quotations criadas (motor) → whatsapp_messages (pending, idempotency_key)
 
 ## 9. Registros de decisão (mini-ADRs)
 
-| ID | Decisão | Motivo |
-|---|---|---|
+| ID      | Decisão                                          | Motivo                                                                                |
+| ------- | ------------------------------------------------ | ------------------------------------------------------------------------------------- |
 | ADR-001 | Asaas como gateway único (Pix dinâmico + cartão) | Custo/benefício, webhook idempotente por `event.id`, conta PF hoje com trilha para PJ |
-| ADR-002 | Dinheiro em centavos inteiros | Elimina classe inteira de bugs de arredondamento |
-| ADR-003 | Motor financeiro puro e versionado | Auditoria, testabilidade, replicabilidade de orçamento |
-| ADR-004 | BullMQ + workers em processo separado | Isolar latência de rede (Asaas/Evolution) do runtime Next |
-| ADR-005 | RLS default-deny em todas as tabelas | Defesa em profundidade; ver [DATABASE_RLS.md](DATABASE_RLS.md) |
-| ADR-006 | Feeds append-only como registro canônico | Auditoria e timeline derivada; ver [FEEDS.md](FEEDS.md) |
-| ADR-007 | Trunk-Based Development | Deploy contínuo, PRs pequenos, feature flags |
+| ADR-002 | Dinheiro em centavos inteiros                    | Elimina classe inteira de bugs de arredondamento                                      |
+| ADR-003 | Motor financeiro puro e versionado               | Auditoria, testabilidade, replicabilidade de orçamento                                |
+| ADR-004 | BullMQ + workers em processo separado            | Isolar latência de rede (Asaas/Evolution) do runtime Next                             |
+| ADR-005 | RLS default-deny em todas as tabelas             | Defesa em profundidade; ver [DATABASE_RLS.md](DATABASE_RLS.md)                        |
+| ADR-006 | Feeds append-only como registro canônico         | Auditoria e timeline derivada; ver [FEEDS.md](FEEDS.md)                               |
+| ADR-007 | Trunk-Based Development                          | Deploy contínuo, PRs pequenos, feature flags                                          |
 
 ---
 

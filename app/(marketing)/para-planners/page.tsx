@@ -1,10 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import {
-  PLANNER_TESTIMONIAL,
-  TestimonialCard,
-} from "@/components/marketing/testimonials";
+import { PLANNER_TESTIMONIAL, TestimonialCard } from "@/components/marketing/testimonials";
 import { formatBRL } from "@/lib/money";
 import { PLANS } from "@/lib/plans";
 import { calculatePlanEconomics } from "@/lib/pricing";
@@ -53,19 +50,21 @@ export default async function ParaPlannersPage() {
             <em className="italic">Menos tempo cobrando orçamento.</em>
           </h1>
           <p className="mt-8 max-w-xl text-lg leading-8 text-vinho/70">
-            A EventeIA amplia sua capacidade de prospecção: encontra fornecedores, coleta propostas e
-            entrega tudo organizado para você cuidar da experiência — em festas infantis e em todos
-            os eventos que você assina.
+            A EventeIA amplia sua capacidade de prospecção: encontra fornecedores, coleta propostas
+            e entrega tudo organizado para você cuidar da experiência — em festas infantis e em
+            todos os eventos que você assina.
           </p>
 
           <div className="mt-9 flex flex-wrap items-center gap-4">
-            <Link prefetch={false}
+            <Link
+              prefetch={false}
               href="/registrar"
               className="rounded-full bg-primaria px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-primaria-escura"
             >
               Quero conhecer <span aria-hidden="true">↗</span>
             </Link>
-            <Link prefetch={false}
+            <Link
+              prefetch={false}
               href="/planos"
               className="text-sm font-medium text-vinho underline decoration-champagne underline-offset-8"
             >
@@ -103,7 +102,10 @@ export default async function ParaPlannersPage() {
 
           <div className="mt-10 grid gap-6 sm:grid-cols-2">
             {BENEFITS.map((benefit) => (
-              <article key={benefit.title} className="rounded-card border border-line-subtle bg-areia-quente p-6">
+              <article
+                key={benefit.title}
+                className="rounded-card border border-line-subtle bg-areia-quente p-6"
+              >
                 <h3 className="font-serif text-title-2">{benefit.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-vinho/75">{benefit.text}</p>
               </article>
@@ -120,7 +122,8 @@ export default async function ParaPlannersPage() {
               Planos para o seu ritmo de ateliê.
             </h2>
           </div>
-          <Link prefetch={false}
+          <Link
+            prefetch={false}
             href="/planos"
             className="text-sm font-medium text-vinho underline decoration-champagne underline-offset-8"
           >
@@ -145,18 +148,23 @@ export default async function ParaPlannersPage() {
                     : "rounded-card border border-line-subtle bg-off-white p-8 shadow-soft"
                 }
               >
-                <p className={plan.featured ? "w-fit rounded-full bg-champagne-claro px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-primaria-escura" : "text-[10px] font-semibold uppercase tracking-[0.16em] opacity-70"}>
+                <p
+                  className={
+                    plan.featured
+                      ? "w-fit rounded-full bg-champagne-claro px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-primaria-escura"
+                      : "text-[10px] font-semibold uppercase tracking-[0.16em] opacity-70"
+                  }
+                >
                   {plan.featured ? "✦ Mais escolhido" : "Plano"}
                 </p>
                 <h3 className="mt-3 font-serif text-title-1">{plan.name}</h3>
                 <p className="mt-5 font-serif text-3xl">{formatBRL(plan.priceCents)}</p>
                 <p className="text-caption opacity-70">por mês</p>
                 <p className="mt-4 text-sm font-medium">{plan.credits} créditos/mês</p>
-                <p className="text-caption opacity-70">
-                  ≈ {formatBRL(perCreditCents)} por evento
-                </p>
+                <p className="text-caption opacity-70">≈ {formatBRL(perCreditCents)} por evento</p>
                 <p className="mt-2 text-sm opacity-75">{plan.description}</p>
-                <Link prefetch={false}
+                <Link
+                  prefetch={false}
                   href="/registrar"
                   className={
                     plan.featured
@@ -171,8 +179,8 @@ export default async function ParaPlannersPage() {
           })}
         </div>
         <p className="mt-6 text-caption text-vinho/70">
-          Valores ilustrativos e configuráveis. O crédito corresponde a um evento ativado; top-ups
-          avulsos não expiram.
+          Valores ilustrativos e configuráveis. O crédito corresponde a um evento ativado. Seus
+          créditos não expiram: use quando quiser.
         </p>
       </section>
 
@@ -188,7 +196,8 @@ export default async function ParaPlannersPage() {
                 Planner há 12 anos, Débora transformou a franquia em capacidade de atendimento sem
                 perder a curadoria que é a marca do ateliê dela.
               </p>
-              <Link prefetch={false}
+              <Link
+                prefetch={false}
                 href="/registrar"
                 className="mt-8 inline-flex rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-white transition hover:bg-primaria-escura"
               >
