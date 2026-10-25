@@ -203,7 +203,7 @@ describe("evento avulso", () => {
   it("sem acumular: cupom maior (90%) ⇒ vale o cupom, oferta fica intacta", async () => {
     const { buyTicketAction } = await import("@/app/(dashboard)/eventos/actions");
     const state = await buyTicketAction({}, ticketForm("NOVENTA"));
-    expect(state.applied).toMatchObject({ code: "NOVENTA", finalCents: 970 });
+    expect(state.applied).toMatchObject({ code: "NOVENTA", finalCents: 4700 });
     expect(fns()).toContain("reserve_coupon");
     expect(fns()).not.toContain("user_offer_claim");
   });

@@ -59,9 +59,9 @@ describe("cálculo do desconto", () => {
     expect(discountCents(coupon({ value: 15 }), 9733)).toBe(1460);
   });
 
-  it("percentual é limitado a 90% (final nunca menor que R$ 9,70 no tíquete)", () => {
-    expect(discountCents(coupon({ value: 100 }), B2C_TICKET_CENTS)).toBe(8730);
-    expect(finalPriceCents(B2C_TICKET_CENTS, 8730)).toBe(970);
+  it("percentual alto esbarra no piso de R$ 47 no tíquete", () => {
+    expect(discountCents(coupon({ value: 100 }), B2C_TICKET_CENTS)).toBe(5000);
+    expect(finalPriceCents(B2C_TICKET_CENTS, 5000)).toBe(4700);
   });
 
   it("valor fixo em centavos, limitado ao preço", () => {
@@ -70,10 +70,10 @@ describe("cálculo do desconto", () => {
     ).toBe(2000);
     expect(
       discountCents(coupon({ discount_type: "fixed_cents", value: 99900 }), B2C_TICKET_CENTS),
-    ).toBe(8800);
+    ).toBe(5000);
   });
 
-  it("REGRA DE OURO (CI): cupom nunca derruba o tíquete abaixo do custo operacional (R$ 9)", () => {
+  it("REGRA DE OURO (CI): cupom nunca derruba o tíquete abaixo do piso (R$ 47)", () => {
     const aggressive = [
       coupon({ value: 100 }), // percent > 90
       coupon({ value: 90 }), // percent no limite
@@ -82,7 +82,7 @@ describe("cálculo do desconto", () => {
     ];
     for (const c of aggressive) {
       const final = finalPriceCents(B2C_TICKET_CENTS, discountCents(c, B2C_TICKET_CENTS));
-      expect(final).toBeGreaterThanOrEqual(900);
+      expect(final).toBeGreaterThanOrEqual(4700);
     }
   });
 
@@ -108,12 +108,12 @@ describe("cortesia (discount_type free)", () => {
     expect(finalPriceCents(B2C_TICKET_CENTS, discountCents(c, B2C_TICKET_CENTS))).toBe(0);
   });
 
-  it("regressão: 100% (teto 90%) e fixo 9700 comuns nunca zeram (piso R$ 9)", () => {
-    expect(B2C_TICKET_CENTS - discountCents(coupon({ value: 100 }), B2C_TICKET_CENTS)).toBe(970);
+  it("regressão: 100% (teto 90%) e fixo 9700 comuns nunca zeram (piso R$ 47)", () => {
+    expect(B2C_TICKET_CENTS - discountCents(coupon({ value: 100 }), B2C_TICKET_CENTS)).toBe(4700);
     expect(
       B2C_TICKET_CENTS -
         discountCents(coupon({ discount_type: "fixed_cents", value: 9700 }), B2C_TICKET_CENTS),
-    ).toBe(900);
+    ).toBe(4700);
     expect(isCourtesyCoupon(coupon())).toBe(false);
   });
 

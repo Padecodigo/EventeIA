@@ -1,5 +1,5 @@
 import { roundHalfUpDiv } from "@/lib/money";
-import { PRICING_ASSUMPTIONS } from "@/lib/pricing";
+import { DISCOUNT_FLOOR_CENTS } from "@/lib/pricing";
 
 /**
  * Ofertas pessoais do usuário logado (migração 0036) — regras puras.
@@ -13,8 +13,8 @@ export const OFFER_WINDOW_HOURS = 48;
 /** "Quer cupom?": 1 cupom novo por usuário a cada N dias (decisão do produto: 3 meses). */
 export const PERSONAL_COUPON_COOLDOWN_DAYS = 90;
 
-/** Mesmo piso dos cupons: nunca abaixo do custo por evento (R$ 9). */
-export const OFFER_MIN_FINAL_CENTS = Math.max(PRICING_ASSUMPTIONS.costPerEventCents, 100);
+/** Mesmo piso dos cupons: nunca abaixo de R$ 47 (DISCOUNT_FLOOR_CENTS). */
+export const OFFER_MIN_FINAL_CENTS = DISCOUNT_FLOOR_CENTS;
 
 export type OfferKind = "welcome" | "personal";
 /** avulso = tíquete de 1 evento; pack = pacote/slider/1ª fatura da franquia. */

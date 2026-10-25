@@ -1,5 +1,5 @@
 import { roundHalfUpDiv } from "@/lib/money";
-import { PRICING_ASSUMPTIONS } from "@/lib/pricing";
+import { DISCOUNT_FLOOR_CENTS } from "@/lib/pricing";
 
 /**
  * Regras puras de cupom (ver .context/COMMERCIAL_MODEL.md §2.4).
@@ -26,11 +26,10 @@ export interface CouponLike {
 const MAX_PERCENT = 90;
 
 /**
- * Regra de ouro (spec): o valor final com cupom NUNCA fica abaixo do custo
- * operacional por evento (R$ 9 — PRICING_ASSUMPTIONS.costPerEventCents).
- * Piso técnico adicional de R$ 1,00 para a API do Asaas (cobrança > 0).
+ * Regra de ouro: o valor final com cupom NUNCA fica abaixo do piso de desconto
+ * (R$ 47 — DISCOUNT_FLOOR_CENTS). Exceção: cortesia (free).
  */
-const MIN_FINAL_CENTS = Math.max(PRICING_ASSUMPTIONS.costPerEventCents, 100);
+export const MIN_FINAL_CENTS = DISCOUNT_FLOOR_CENTS;
 
 export function isCouponRedeemable(coupon: CouponLike, now: Date = new Date()): boolean {
   if (!coupon.active) {

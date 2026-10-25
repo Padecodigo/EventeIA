@@ -36,10 +36,11 @@ describe("ofertas pessoais — valores do produto", () => {
     expect(offerDiscountCents(welcome, "pack", 45_000)).toBe(13_500);
   });
 
-  it("piso de R$ 9 sempre respeitado", () => {
-    expect(OFFER_MIN_FINAL_CENTS).toBe(900);
-    expect(4500 - offerDiscountCents(welcome, "avulso", 4500)).toBe(900);
-    expect(offerDiscountCents(welcome, "avulso", 800)).toBe(0);
+  it("piso de R$ 47 sempre respeitado", () => {
+    expect(OFFER_MIN_FINAL_CENTS).toBe(4700);
+    expect(6000 - offerDiscountCents(welcome, "avulso", 6000)).toBe(4700);
+    expect(offerDiscountCents(welcome, "avulso", 4500)).toBe(0);
+    expect(6000 - offerDiscountCents(welcome, "pack", 6000)).toBe(4700);
   });
 
   it("rejeita preço inválido", () => {
