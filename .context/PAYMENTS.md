@@ -131,16 +131,16 @@ job(external_event_id):
 
 ## 5. Mapeamento de status (Asaas → interno)
 
-| Asaas `status` | Evento webhook típico | `payments.status` | Ação automática |
-|---|---|---|---|
-| `CREATED` | `PAYMENT_CREATED` | `pending` | Registrar cobrança |
-| (aguardando) | — | `pending` | Pix aguardando pagamento |
-| `RECEIVED` | `PAYMENT_RECEIVED` | `paid` | **Confirma**: ativar tíquete / conceder créditos |
-| `CONFIRMED` | `PAYMENT_CONFIRMED` | `confirmed` | Confirmação manual/baixa conciliada (sem novo efeito se já `paid`) |
-| `OVERDUE` | `PAYMENT_OVERDUE` | `overdue` | Expirou: liberar reserva/tíquete pendente |
-| `REFUNDED` | `PAYMENT_REFUNDED` | `refunded` | Reverter tíquete/créditos conforme [COMMERCIAL_MODEL.md](COMMERCIAL_MODEL.md) §6 |
-| `AWAITING_RISK_ANALYSIS` | idem | `risk_review` | **Não concede nada**; aguardar resolução Asaas |
-| Chargeback (disputa) | evento de chargeback | `chargeback` | Congela efeitos; tratar caso a caso |
+| Asaas `status`           | Evento webhook típico | `payments.status` | Ação automática                                                                  |
+| ------------------------ | --------------------- | ----------------- | -------------------------------------------------------------------------------- |
+| `CREATED`                | `PAYMENT_CREATED`     | `pending`         | Registrar cobrança                                                               |
+| (aguardando)             | —                     | `pending`         | Pix aguardando pagamento                                                         |
+| `RECEIVED`               | `PAYMENT_RECEIVED`    | `paid`            | **Confirma**: ativar tíquete / conceder créditos                                 |
+| `CONFIRMED`              | `PAYMENT_CONFIRMED`   | `confirmed`       | Confirmação manual/baixa conciliada (sem novo efeito se já `paid`)               |
+| `OVERDUE`                | `PAYMENT_OVERDUE`     | `overdue`         | Expirou: liberar reserva/tíquete pendente                                        |
+| `REFUNDED`               | `PAYMENT_REFUNDED`    | `refunded`        | Reverter tíquete/créditos conforme [COMMERCIAL_MODEL.md](COMMERCIAL_MODEL.md) §6 |
+| `AWAITING_RISK_ANALYSIS` | idem                  | `risk_review`     | **Não concede nada**; aguardar resolução Asaas                                   |
+| Chargeback (disputa)     | evento de chargeback  | `chargeback`      | Congela efeitos; tratar caso a caso                                              |
 
 - `RECEIVED_IN_CASH` não é utilizado (a EventeIA não opera caixa físico).
 - Desconhecido/mapeado a `unmapped_status`: grava feed `webhook.unmapped_status` e **não altera** estado financeiro.
@@ -177,7 +177,7 @@ Webhooks podem chegar **fora de ordem** (ex.: `OVERDUE` após `RECEIVED` em trâ
 3. **Inadimplência** (`OVERDUE`/falha): sem concessão no ciclo; workspace entra em `grace` (apenas leitura de disparos; ver [COMMERCIAL_MODEL.md](COMMERCIAL_MODEL.md) §5).
 4. **Renovação programática**: além do webhook, um job repeatable diário (`asaas-reconcile`, 09:30) compara o ciclo local com o Asaas — defesa contra webhook perdido.
 5. **Implementado (0009)**: faturas da assinatura bootstrapam o pagamento local e concedem a franquia automaticamente (`grant:sub:<id>:pay:<fatura>`, expira em 2 meses). Conciliação diária em `lib/jobs/asaas-reconcile.ts`.
-5. **Upgrade/downgrade**: mudanças de plano aplicam pro-rata calculado no **servidor** (regra em [COMMERCIAL_MODEL.md](COMMERCIAL_MODEL.md) §4).
+6. **Upgrade/downgrade**: mudanças de plano aplicam pro-rata calculado no **servidor** (regra em [COMMERCIAL_MODEL.md](COMMERCIAL_MODEL.md) §4).
 
 ---
 
@@ -209,17 +209,17 @@ A conta Asaas atual é de **pessoa física (CPF)**. Quando a EventeIA constituir
 
 ## 10. Testes obrigatórios (integração)
 
-| Cenário | Expectativa |
-|---|---|
-| Webhook legítimo | 200; job processado; efeito aplicado 1× |
-| Replay exato do mesmo `event.id` | 200; `webhook.duplicated`; **zero** efeito duplicado |
-| `PAYMENT_RECEIVED` duas vezes | Tíquete ativo 1×; créditos concedidos 1× |
-| Ordem invertida (`OVERDUE` depois de `RECEIVED`) | Sem regressão de estado (guarda §6) |
-| Token ausente/incorreto | 401; nada persistido além de log de segurança |
-| Payload malformado | 400; sem crash; sem reprocessamento |
-| Valor retornado pela API diverge do esperado | `payment.divergence`; sem efeito automático |
-| Worker cai no meio do processamento | Retomada por `processing`+attempts; efeito atômico ou nenhum |
-| Expiração de Pix (30 min) | Novo checkout gera novo `asaas_payment_id`; antigo → `overdue` |
+| Cenário                                          | Expectativa                                                    |
+| ------------------------------------------------ | -------------------------------------------------------------- |
+| Webhook legítimo                                 | 200; job processado; efeito aplicado 1×                        |
+| Replay exato do mesmo `event.id`                 | 200; `webhook.duplicated`; **zero** efeito duplicado           |
+| `PAYMENT_RECEIVED` duas vezes                    | Tíquete ativo 1×; créditos concedidos 1×                       |
+| Ordem invertida (`OVERDUE` depois de `RECEIVED`) | Sem regressão de estado (guarda §6)                            |
+| Token ausente/incorreto                          | 401; nada persistido além de log de segurança                  |
+| Payload malformado                               | 400; sem crash; sem reprocessamento                            |
+| Valor retornado pela API diverge do esperado     | `payment.divergence`; sem efeito automático                    |
+| Worker cai no meio do processamento              | Retomada por `processing`+attempts; efeito atômico ou nenhum   |
+| Expiração de Pix (30 min)                        | Novo checkout gera novo `asaas_payment_id`; antigo → `overdue` |
 
 Mocks de API: servidor fake Asaas (MSW/nock) com fixtures versionados em `tests/integration/fixtures/asaas/`.
 
@@ -232,7 +232,7 @@ Mocks de API: servidor fake Asaas (MSW/nock) com fixtures versionados em `tests/
 
 ## Formas de pagamento no checkout do tíquete (out/2026)
 
-- O comprador escolhe **Pix** (QR copia-e-cola, `billingType: PIX`) ou **cartão de crédito/débito** (`billingType: CREDIT_CARD` **sem** dados de cartão → redireciona para a Fatura hospedada `invoiceUrl`). Boleto não é oferecido.
-- Cartão de **débito**: a API do Asaas não aceita débito direto; a doc oficial orienta usar `CREDIT_CARD`/`UNDEFINED` e enviar o pagador à `invoiceUrl`, onde o débito aparece se estiver habilitado na conta.
+- O comprador escolhe **Pix** (QR copia-e-cola, `billingType: PIX`) ou **cartão de crédito** (`billingType: CREDIT_CARD` **sem** dados de cartão → redireciona para a Fatura hospedada `invoiceUrl`). Boleto não é oferecido.
+- Cartão de **débito** não é oferecido (decisão de produto: só Pix e crédito). A API não permite restringir por cobrança; caso o débito esteja habilitado na conta Asaas, desative-o nas configurações da conta.
 - Nunca recebemos dados de cartão (fora do escopo PCI). Payload em `buildPaymentPayload` (`lib/asaas/client.ts`).
 - Cartão confirma via `PAYMENT_CONFIRMED` (→ `paid`, ativa o tíquete); o `PAYMENT_RECEIVED` posterior vira `already_paid`. Eventos de disputa (`PAYMENT_CHARGEBACK_DISPUTE`, `PAYMENT_AWAITING_CHARGEBACK_REVERSAL`) ficam registrados como `webhook.unmapped_status` para revisão manual; `PAYMENT_CHARGEBACK_REQUESTED` → `chargeback`.

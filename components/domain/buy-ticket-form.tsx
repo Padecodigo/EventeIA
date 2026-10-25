@@ -63,8 +63,8 @@ export function BuyTicketForm({
         ) : null}
 
         <p className="mt-2 text-sm text-vinho/70">
-          Conclua o pagamento com cartão de crédito ou débito na página segura do Asaas. Os dados do
-          cartão são digitados lá — a EventeIA não os recebe.
+          Conclua o pagamento com cartão de crédito na página segura do Asaas. Os dados do cartão
+          são digitados lá — a EventeIA não os recebe.
         </p>
 
         <a
@@ -135,8 +135,8 @@ export function BuyTicketForm({
       <h2 className="font-serif text-title-1">Liberar este evento</h2>
       <p className="mt-2 text-sm text-vinho/70">
         Tíquete único de <strong className="text-vinho">{priceFormatted}</strong> — pagamento via
-        Pix, cartão de crédito ou cartão de débito. Inclui orçamento completo, cotações ilimitadas e
-        disparos pelo WhatsApp.
+        Pix ou cartão de crédito. Inclui orçamento completo, cotações ilimitadas e disparos pelo
+        WhatsApp.
       </p>
 
       {welcome !== null && !couponApplied ? (
@@ -237,7 +237,7 @@ export function BuyTicketForm({
               {pending ? "Gerando cobrança…" : "Pagar com Pix"}
             </Button>
             <Button type="submit" name="method" value="card" variant="secondary" disabled={pending}>
-              Pagar com cartão de crédito ou débito
+              Pagar com cartão de crédito
             </Button>
           </div>
         )}

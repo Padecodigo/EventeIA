@@ -20,9 +20,10 @@ describe("BuyTicketForm — cupom com feedback imediato", () => {
     render(<BuyTicketForm eventId="evt" priceFormatted="R$ 97,00" defaultCpf="" />);
 
     expect(screen.getByLabelText("Possui cupom de desconto?")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /aplicar cupom/i }),
-    ).toHaveAttribute("type", "submit");
+    expect(screen.getByRole("button", { name: /aplicar cupom/i })).toHaveAttribute(
+      "type",
+      "submit",
+    );
   });
 
   it("CPF continua obrigatório no formulário de pagamento", () => {
@@ -40,14 +41,14 @@ describe("BuyTicketForm — cupom com feedback imediato", () => {
     expect(couponForm).not.toContainElement(pay);
   });
 
-  it("oferece Pix e cartão de crédito/débito (sem boleto)", () => {
+  it("oferece Pix e cartão de crédito (sem boleto)", () => {
     render(<BuyTicketForm eventId="evt" priceFormatted="R$ 97,00" defaultCpf="" />);
     const pix = screen.getByRole("button", { name: /pagar com pix/i });
-    const card = screen.getByRole("button", { name: /cartão de crédito ou débito/i });
+    const card = screen.getByRole("button", { name: /cartão de crédito/i });
     expect(pix).toHaveAttribute("name", "method");
     expect(pix).toHaveAttribute("value", "pix");
     expect(card).toHaveAttribute("value", "card");
-    expect(screen.getByText(/Pix, cartão de crédito ou cartão de débito/)).toBeInTheDocument();
+    expect(screen.getByText(/Pix ou cartão de crédito/)).toBeInTheDocument();
     expect(screen.queryByText(/boleto/i)).toBeNull();
   });
 });

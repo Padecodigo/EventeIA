@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createFakeDb, fakeClient, type FakeDb } from "./helpers/fake-supabase";
 
 /**
- * Checkout do tíquete com Asaas mockado (fetch): Pix e cartão (crédito/débito
+ * Checkout do tíquete com Asaas mockado (fetch): Pix e cartão (crédito
  * na Fatura hospedada). Garante que nenhum dado de cartão trafega por nós.
  */
 let db: FakeDb;
@@ -13,7 +13,9 @@ vi.mock("@/lib/auth", () => ({
   requireAdmin: async () => ({ id: "admin-1" }),
 }));
 vi.mock("@/lib/supabase/admin", () => ({ getSupabaseAdmin: () => fakeClient(db) }));
-vi.mock("@/lib/supabase/server", () => ({ createSupabaseServerClient: async () => fakeClient(db) }));
+vi.mock("@/lib/supabase/server", () => ({
+  createSupabaseServerClient: async () => fakeClient(db),
+}));
 vi.mock("@/lib/welcome/server", () => ({
   bindWelcomeOfferToUser: async () => undefined,
   reserveWelcomeOffer: async () => null,
@@ -45,7 +47,8 @@ beforeEach(() => {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string, init?: RequestInit) => {
-      const body = typeof init?.body === "string" ? (JSON.parse(init.body) as Record<string, unknown>) : null;
+      const body =
+        typeof init?.body === "string" ? (JSON.parse(init.body) as Record<string, unknown>) : null;
       calls.push({ url, body });
       if (url.endsWith("/pixQrCode")) {
         return new Response(JSON.stringify({ encodedImage: "img", payload: "000201PIX" }));

@@ -102,8 +102,7 @@ export type CheckoutBillingType = "PIX" | "CREDIT_CARD";
 /**
  * Payload puro de `POST /payments` (testável).
  * CREDIT_CARD sem dados de cartão ⇒ o pagador informa o cartão na Fatura
- * hospedada pelo Asaas (`invoiceUrl`), onde também aparece o cartão de DÉBITO
- * (a API não aceita débito direto — docs.asaas.com, "Cartão de débito").
+ * hospedada pelo Asaas (`invoiceUrl`). Apenas cartão de crédito é oferecido.
  * Nunca trafegamos dados de cartão (fora do escopo PCI).
  */
 export function buildPaymentPayload(
@@ -122,7 +121,7 @@ export function buildPaymentPayload(
   };
 }
 
-/** Cobrança por cartão (crédito ou débito) via Fatura hospedada do Asaas. */
+/** Cobrança por cartão de crédito via Fatura hospedada do Asaas. */
 export async function createAsaasCardPayment(
   input: CreatePixPaymentInput,
 ): Promise<{ paymentId: string; invoiceUrl: string }> {
