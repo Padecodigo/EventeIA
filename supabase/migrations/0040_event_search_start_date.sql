@@ -98,3 +98,18 @@ drop trigger if exists events_guard_search_start_date on public.events;
 create trigger events_guard_search_start_date
   before insert or update of search_start_date on public.events
   for each row execute function public.guard_events_search_start_date();
+
+-- ------------------------------------------------------------------
+-- vendor_prospects.hidden_at: ocultação lógica (nunca apaga). Prospects ocultos
+-- não aparecem no painel, não contam para metas e nunca recebem mensagem.
+-- Só o servidor (service_role) oculta: o cliente não tem política de update nela.
+-- ------------------------------------------------------------------
+alter table public.vendor_prospects
+  add column if not exists hidden_at timestamptz;
+
+comment on column public.vendor_prospects.hidden_at is
+  'Ocultação lógica (soft-hide) pelo servidor; NULL = visível. Linhas nunca são apagadas.';
+
+create index if not exists vendor_prospects_event_visible_idx
+  on public.vendor_prospects (event_id, created_at desc)
+  where hidden_at is null;

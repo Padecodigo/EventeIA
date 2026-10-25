@@ -128,6 +128,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
         .eq("event_id", event.id)
         // Prospects fictícios de simulação (dry-run) não aparecem no painel.
         .eq("dry_run", false)
+        .is("hidden_at", null)
         .order("created_at", { ascending: false }),
       getSupabaseAdmin()
         .from("whatsapp_instances")

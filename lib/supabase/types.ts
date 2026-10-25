@@ -311,6 +311,7 @@ export interface Database {
         source: "manual" | "auto" | "ingest";
         source_url: string | null;
         dry_run: boolean;
+        hidden_at: string | null;
         created_at: string;
       }>;
       suppliers: Table<{

@@ -110,7 +110,7 @@ export function createDiscoveryDeps(): DiscoveryDeps {
 
     async eventProspects(eventId) {
       // Fora do modo dry-run, prospects fictícios (dry_run) não contam para as metas nem bloqueiam números.
-      let q = admin.from("vendor_prospects").select("phone_e164,vendor_category,vendor_name").eq("event_id", eventId);
+      let q = admin.from("vendor_prospects").select("phone_e164,vendor_category,vendor_name").eq("event_id", eventId).is("hidden_at", null);
       if (!env.DISCOVERY_DRY_RUN) q = q.eq("dry_run", false);
       const { data } = await q;
       return (data ?? []).map((p) => ({ phone: p.phone_e164, category: p.vendor_category, name: p.vendor_name }));
