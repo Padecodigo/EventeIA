@@ -78,7 +78,7 @@ describe("OverpassProvider (fetch mockado)", () => {
 
 describe("registry DISCOVERY_PROVIDERS", () => {
   it("grok é o padrão com chave; sem chave cai para mock", () => {
-    expect(resolveProviders({ XAI_API_KEY: "k" }).map((p) => p.name)).toEqual(["grok", "overpass", "mock"]);
+    expect(resolveProviders({ XAI_API_KEY: "k" }).map((p) => p.name)).toEqual(["grok", "social", "overpass", "mock"]);
     expect(resolveProviders({}).map((p) => p.name)).toEqual(["mock"]);
     expect(resolveProviders({ DISCOVERY_PROVIDERS: "overpass,grok" }).map((p) => p.name)).toEqual(["overpass"]);
   });

@@ -53,7 +53,7 @@ describe("switch Grok → NIM", () => {
 
   it("registry: com as duas chaves o grok vira roteador; só NIM ⇒ nim", () => {
     const both = resolveProviders({ XAI_API_KEY: "x", NVIDIA_NIM_API_KEY: "n" });
-    expect(both.map((p) => p.name)).toEqual(["grok", "overpass", "mock"]);
+    expect(both.map((p) => p.name)).toEqual(["grok", "social", "overpass", "mock"]);
     expect(both[0]?.lastUsed).toBe("grok");
     expect(resolveProviders({ NVIDIA_NIM_API_KEY: "n" }).map((p) => p.name)).toEqual(["nim", "overpass", "mock"]);
   });
