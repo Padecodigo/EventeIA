@@ -37,6 +37,18 @@ export function BuyTicketForm({
 
   const couponApplied = couponState.ok === true;
 
+  if (state.courtesy !== undefined) {
+    return (
+      <section className="rounded-card border border-champagne/50 bg-off-white p-6 shadow-soft">
+        <h2 className="font-serif text-title-1">Cortesia aplicada — evento liberado.</h2>
+        <p className="mt-2 text-sm text-vinho/70">
+          Cupom <strong className="text-vinho">{state.applied?.code}</strong>: total{" "}
+          <strong className="text-vinho">{formatBRL(0)}</strong>. Nenhuma cobrança foi gerada.
+        </p>
+      </section>
+    );
+  }
+
   if (state.card !== undefined) {
     return (
       <section className="rounded-card border border-champagne/50 bg-off-white p-6 shadow-soft">
@@ -123,7 +135,8 @@ export function BuyTicketForm({
       <h2 className="font-serif text-title-1">Liberar este evento</h2>
       <p className="mt-2 text-sm text-vinho/70">
         Tíquete único de <strong className="text-vinho">{priceFormatted}</strong> — pagamento via
-        Pix, cartão de crédito ou cartão de débito. Inclui orçamento completo, cotações ilimitadas e disparos pelo WhatsApp.
+        Pix, cartão de crédito ou cartão de débito. Inclui orçamento completo, cotações ilimitadas e
+        disparos pelo WhatsApp.
       </p>
 
       {welcome !== null && !couponApplied ? (
@@ -214,14 +227,20 @@ export function BuyTicketForm({
           </p>
         ) : null}
 
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Button type="submit" name="method" value="pix" variant="gold" disabled={pending}>
-            {pending ? "Gerando cobrança…" : "Pagar com Pix"}
+        {couponApplied && couponState.finalCents === 0 ? (
+          <Button type="submit" variant="gold" disabled={pending}>
+            {pending ? "Ativando…" : "Ativar evento com cortesia"}
           </Button>
-          <Button type="submit" name="method" value="card" variant="secondary" disabled={pending}>
-            Pagar com cartão de crédito ou débito
-          </Button>
-        </div>
+        ) : (
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button type="submit" name="method" value="pix" variant="gold" disabled={pending}>
+              {pending ? "Gerando cobrança…" : "Pagar com Pix"}
+            </Button>
+            <Button type="submit" name="method" value="card" variant="secondary" disabled={pending}>
+              Pagar com cartão de crédito ou débito
+            </Button>
+          </div>
+        )}
       </form>
     </section>
   );

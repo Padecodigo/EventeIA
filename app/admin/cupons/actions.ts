@@ -17,15 +17,17 @@ export interface CouponAdminState {
 
 const createCouponSchema = z.object({
   code: z.string().trim().min(2).max(24),
-  discountType: z.enum(["percent", "fixed_cents"]),
+  discountType: z.enum(["percent", "fixed_cents", "free"]),
   value: z.coerce.number().int().positive(),
   maxUses: z.coerce.number().int().positive().optional(),
   expiresAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
-const VALUE_LIMITS: Record<"percent" | "fixed_cents", number> = {
+const VALUE_LIMITS: Record<"percent" | "fixed_cents" | "free", number> = {
   percent: 90,
   fixed_cents: 100_000,
+  // Cortesia: valor é irrelevante (gratuidade total); gravado como 1.
+  free: Number.MAX_SAFE_INTEGER,
 };
 
 export async function createCouponAction(
@@ -59,19 +61,21 @@ export async function createCouponAction(
     };
   }
 
+  const isFree = parsed.data.discountType === "free";
   const admin = getSupabaseAdmin();
 
   const { error } = await admin.from("coupons").insert({
     code,
     description: null,
     discount_type: parsed.data.discountType,
-    value: parsed.data.value,
+    value: isFree ? 1 : parsed.data.value,
     active: true,
     expires_at:
       parsed.data.expiresAt !== undefined
         ? new Date(`${parsed.data.expiresAt}T23:59:59Z`).toISOString()
         : null,
-    max_redemptions: parsed.data.maxUses ?? null,
+    // Cortesia sem limite explícito vale 1 uso (nunca ilimitada por engano).
+    max_redemptions: parsed.data.maxUses ?? (isFree ? 1 : null),
     redemptions: 0,
   });
 

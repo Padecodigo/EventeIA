@@ -4,6 +4,7 @@ import {
   discountCents,
   finalPriceCents,
   isCouponRedeemable,
+  isCourtesyCoupon,
   normalizeCouponCode,
   type CouponLike,
 } from "@/lib/coupons/pure";
@@ -96,5 +97,29 @@ describe("normalização do código", () => {
   it("maiúsculas e sem espaços", () => {
     expect(normalizeCouponCode("  bemvinda10 ")).toBe("BEMVINDA10");
     expect(normalizeCouponCode("Primeira Festa")).toBe("PRIMEIRAFESTA");
+  });
+});
+
+describe("cortesia (discount_type free)", () => {
+  it("zera o total — única exceção ao piso", () => {
+    const c = coupon({ discount_type: "free", value: 1, max_redemptions: 1 });
+    expect(isCourtesyCoupon(c)).toBe(true);
+    expect(discountCents(c, B2C_TICKET_CENTS)).toBe(B2C_TICKET_CENTS);
+    expect(finalPriceCents(B2C_TICKET_CENTS, discountCents(c, B2C_TICKET_CENTS))).toBe(0);
+  });
+
+  it("regressão: 100% (teto 90%) e fixo 9700 comuns nunca zeram (piso R$ 9)", () => {
+    expect(B2C_TICKET_CENTS - discountCents(coupon({ value: 100 }), B2C_TICKET_CENTS)).toBe(970);
+    expect(
+      B2C_TICKET_CENTS -
+        discountCents(coupon({ discount_type: "fixed_cents", value: 9700 }), B2C_TICKET_CENTS),
+    ).toBe(900);
+    expect(isCourtesyCoupon(coupon())).toBe(false);
+  });
+
+  it("cortesia esgotada não é resgatável", () => {
+    expect(
+      isCouponRedeemable(coupon({ discount_type: "free", max_redemptions: 1, redemptions: 1 })),
+    ).toBe(false);
   });
 });

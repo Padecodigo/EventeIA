@@ -6,7 +6,11 @@ import { PRICING_ASSUMPTIONS } from "@/lib/pricing";
  * O desconto é SEMPRE calculado no servidor — o client só envia o código.
  */
 
-export type CouponDiscountType = "percent" | "fixed_cents";
+/**
+ * `free` = cortesia (gratuidade): total 0, sem Asaas. Só admins criam; é a
+ * ÚNICA exceção ao piso de R$ 9 (resgate atômico em `redeem_courtesy_coupon`).
+ */
+export type CouponDiscountType = "percent" | "fixed_cents" | "free";
 
 export interface CouponLike {
   code: string;
@@ -46,6 +50,10 @@ export function discountCents(coupon: CouponLike, priceCents: number): number {
     throw new Error("priceCents deve ser inteiro positivo");
   }
 
+  if (coupon.discount_type === "free") {
+    return priceCents;
+  }
+
   let discount: number;
 
   if (coupon.discount_type === "percent") {
@@ -57,6 +65,10 @@ export function discountCents(coupon: CouponLike, priceCents: number): number {
 
   // Nunca zerar a cobrança: garante preço final mínimo.
   return Math.min(discount, priceCents - MIN_FINAL_CENTS);
+}
+
+export function isCourtesyCoupon(coupon: Pick<CouponLike, "discount_type">): boolean {
+  return coupon.discount_type === "free";
 }
 
 export function finalPriceCents(priceCents: number, discount: number): number {
