@@ -159,7 +159,16 @@ export function AuthForm({ mode, oauthError }: { mode: AuthMode; oauthError?: st
               )}
             </button>
           </div>
-          {isSignUp ? <p className="text-caption text-vinho/70">Mínimo de 8 caracteres.</p> : null}
+          {isSignUp ? (
+            <p className="text-caption text-vinho/70">Mínimo de 8 caracteres.</p>
+          ) : (
+            <Link
+              href="/esqueci-senha"
+              className="self-end text-caption font-medium text-vinho underline decoration-champagne underline-offset-4"
+            >
+              Esqueci minha senha
+            </Link>
+          )}
         </div>
 
         {state.error !== undefined ? (

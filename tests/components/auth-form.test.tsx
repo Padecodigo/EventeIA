@@ -94,3 +94,16 @@ describe("AuthForm — Entrar com Google", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Login com Google cancelado.");
   });
 });
+
+describe("AuthForm — esqueci minha senha", () => {
+  it("mostra o link só no modo entrar", () => {
+    render(<AuthForm mode="entrar" />);
+    expect(screen.getByRole("link", { name: "Esqueci minha senha" })).toHaveAttribute(
+      "href",
+      "/esqueci-senha",
+    );
+    cleanup();
+    render(<AuthForm mode="registrar" />);
+    expect(screen.queryByRole("link", { name: "Esqueci minha senha" })).toBeNull();
+  });
+});

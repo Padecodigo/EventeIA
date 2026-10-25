@@ -135,3 +135,34 @@ export async function signInWithGoogleAction(): Promise<AuthActionState> {
 
   redirect(data.url);
 }
+
+const resetSchema = z.object({ email: z.string().trim().email() });
+
+/**
+ * "Esqueci minha senha": funciona também para contas criadas com Google
+ * (o link cria a sessão e a pessoa define uma senha em /redefinir-senha).
+ * Resposta sempre neutra para não revelar se o e-mail tem conta.
+ */
+export async function requestPasswordResetAction(
+  _previous: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const parsed = resetSchema.safeParse({ email: formData.get("email") });
+  if (!parsed.success) return { error: "Informe um e-mail válido." };
+
+  const h = await headers();
+  const origin = publicOrigin(h, "http://localhost:3000");
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+    redirectTo: buildCallbackUrl(origin, "/redefinir-senha"),
+  });
+
+  if (error !== null && /rate limit/i.test(error.message)) {
+    return { error: "Muitas tentativas. Aguarde alguns minutos e tente novamente." };
+  }
+
+  return {
+    notice:
+      "Se houver uma conta com este e-mail, enviamos um link para criar uma nova senha. Confira a caixa de entrada e o spam.",
+  };
+}
