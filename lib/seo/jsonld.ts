@@ -34,8 +34,8 @@ export function websiteLd(base: string = siteUrl()): JsonLd {
 
 function areaServed(): JsonLd[] {
   return SERVICE_AREA.map((name) =>
-    name === "Vale do Paraíba"
-      ? { "@type": "AdministrativeArea", name }
+    name === "Vale do Paraíba" || name === "Grande São Paulo"
+      ? { "@type": "AdministrativeArea", name, containedInPlace: { "@type": "State", name: "São Paulo" } }
       : { "@type": "City", name, containedInPlace: { "@type": "State", name: "São Paulo" } },
   );
 }

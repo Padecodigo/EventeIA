@@ -36,7 +36,7 @@ const body = localFont({
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
   title: {
-    default: "EventeIA — Orçamento de festa pelo WhatsApp no Vale do Paraíba",
+    default: "EventeIA — Orçamento de festa pelo WhatsApp no Vale do Paraíba e em São Paulo",
     template: "%s · EventeIA",
   },
   description: SITE_DESCRIPTION,
