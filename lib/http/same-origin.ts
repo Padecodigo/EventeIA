@@ -10,6 +10,8 @@ export interface OriginContext {
   host: string | null;
   forwardedHost: string | null;
   appUrl: string | undefined;
+  /** URL vista pelo servidor (nextUrl) — vale fora do proxy (dev/testes). */
+  requestUrl?: string;
 }
 
 function hostOf(url: string): string | null {
@@ -30,14 +32,17 @@ export function isSameOrigin(ctx: OriginContext): boolean {
   if (ctx.host) allowed.add(ctx.host.toLowerCase());
   const app = ctx.appUrl ? hostOf(ctx.appUrl) : null;
   if (app) allowed.add(app);
+  const own = ctx.requestUrl ? hostOf(ctx.requestUrl) : null;
+  if (own) allowed.add(own);
   return allowed.has(originHost);
 }
 
-export function requestIsSameOrigin(request: { headers: Headers }): boolean {
+export function requestIsSameOrigin(request: { headers: Headers; url: string }): boolean {
   return isSameOrigin({
     origin: request.headers.get("origin"),
     host: request.headers.get("host"),
     forwardedHost: request.headers.get("x-forwarded-host"),
     appUrl: process.env.NEXT_PUBLIC_APP_URL,
+    requestUrl: request.url,
   });
 }
