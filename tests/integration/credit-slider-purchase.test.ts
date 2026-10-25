@@ -73,6 +73,7 @@ function applyPaidWebhook(ledger: Map<string, number>, payment: Record<string, u
 
 function form(entries: Record<string, string>) {
   const fd = new FormData();
+  fd.set("acceptTerms", "on"); // aceite dos termos (obrigatório no checkout)
   for (const [k, v] of Object.entries(entries)) fd.set(k, v);
   return fd;
 }
@@ -128,6 +129,7 @@ describe("compra pelo slider", () => {
 describe("créditos — Pix ou cartão de crédito", () => {
   function fd(entries: Record<string, string>): FormData {
     const f = new FormData();
+    f.set("acceptTerms", "on"); // aceite dos termos (obrigatório no checkout)
     for (const [k, v] of Object.entries(entries)) f.set(k, v);
     return f;
   }

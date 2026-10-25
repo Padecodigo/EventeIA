@@ -8,6 +8,7 @@ import {
   type SubscribeState,
 } from "@/app/(dashboard)/creditos/actions";
 import { CouponToggle } from "@/components/domain/coupon-toggle";
+import { TermsCheckbox } from "@/components/legal/terms-checkbox";
 import { Button } from "@/components/ui/button";
 import { formatBRL } from "@/lib/money";
 
@@ -32,6 +33,7 @@ export function SubscribePlanForm({
   const [state, formAction, pending] = useActionState(subscribeToPlanAction, initialState);
   const [coupon, setCoupon] = useState<{ code: string; finalCents: number } | null>(null);
   const firstMonth = coupon?.finalCents ?? firstMonthCents;
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   return (
     <div>
@@ -54,11 +56,29 @@ export function SubscribePlanForm({
             <input type="radio" name="renew" value="no" required /> Não, compra única
           </label>
         </fieldset>
+        <TermsCheckbox
+          id={`terms-plan-${planCode}`}
+          checked={acceptedTerms}
+          onChange={setAcceptedTerms}
+          className="mb-3"
+        />
         <div className="flex flex-col gap-2">
-          <Button type="submit" name="method" value="pix" variant="primary" disabled={pending}>
+          <Button
+            type="submit"
+            name="method"
+            value="pix"
+            variant="primary"
+            disabled={pending || !acceptedTerms}
+          >
             {pending ? "Gerando cobrança…" : `${planName} com Pix (${priceFormatted})`}
           </Button>
-          <Button type="submit" name="method" value="card" variant="secondary" disabled={pending}>
+          <Button
+            type="submit"
+            name="method"
+            value="card"
+            variant="secondary"
+            disabled={pending || !acceptedTerms}
+          >
             {`${planName} com cartão de crédito`}
           </Button>
         </div>

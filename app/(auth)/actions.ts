@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { RESET_NEXT_COOKIE, buildCallbackUrl, publicOrigin } from "@/lib/auth/oauth";
+import { recordTermsAcceptance } from "@/lib/legal/acceptance-server";
+import { TERMS_COOKIE, TERMS_ERROR, TERMS_VERSION, hasAcceptedTerms } from "@/lib/legal/terms";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { bindWelcomeOfferToUser } from "@/lib/welcome/server";
 
@@ -92,6 +94,10 @@ export async function signUpAction(
     return { error: "Confira nome, e-mail e senha (mínimo de 8 caracteres)." };
   }
 
+  if (!hasAcceptedTerms(formData)) {
+    return { error: TERMS_ERROR };
+  }
+
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
@@ -106,6 +112,8 @@ export async function signUpAction(
   if (data.user !== null) {
     // Vincula a oferta de boas-vindas deste aparelho à nova conta (prazo original mantido).
     await bindWelcomeOfferToUser(data.user.id);
+    // Prova do aceite: data/hora + versão dos termos (0041).
+    await recordTermsAcceptance(data.user.id, "signup");
   }
 
   if (data.session === null) {
@@ -115,8 +123,20 @@ export async function signUpAction(
   redirect("/painel");
 }
 
-/** Login/cadastro em um clique com Google (Supabase Auth OAuth, fluxo PKCE). */
-export async function signInWithGoogleAction(): Promise<AuthActionState> {
+/**
+ * Login/cadastro em um clique com Google (Supabase Auth OAuth, fluxo PKCE).
+ * No cadastro (intent=signup) o aceite dos termos é obrigatório e segue num
+ * cookie curto até o /auth/callback, onde é registrado para a conta.
+ */
+export async function signInWithGoogleAction(
+  _previous?: AuthActionState,
+  formData?: FormData,
+): Promise<AuthActionState> {
+  const isSignUp = formData?.get("intent") === "signup";
+  if (isSignUp && !hasAcceptedTerms(formData)) {
+    return { error: TERMS_ERROR };
+  }
+
   const h = await headers();
   const origin = publicOrigin(h, "http://localhost:3000");
 
@@ -131,6 +151,16 @@ export async function signInWithGoogleAction(): Promise<AuthActionState> {
 
   if (error !== null || data.url === null) {
     return { error: "Não foi possível iniciar o login com Google. Tente novamente." };
+  }
+
+  if (isSignUp) {
+    (await cookies()).set(TERMS_COOKIE, TERMS_VERSION, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: origin.startsWith("https://"),
+      path: "/auth/callback",
+      maxAge: 60 * 60,
+    });
   }
 
   redirect(data.url);

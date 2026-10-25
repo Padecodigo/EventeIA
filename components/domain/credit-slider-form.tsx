@@ -9,6 +9,7 @@ import {
 } from "@/app/(dashboard)/creditos/actions";
 import { CouponToggle } from "@/components/domain/coupon-toggle";
 import { OfferBanner } from "@/components/domain/offer-banner";
+import { TermsCheckbox } from "@/components/legal/terms-checkbox";
 import { Button } from "@/components/ui/button";
 import { CUSTOM_CREDITS_MAX, CUSTOM_CREDITS_MIN, quoteCustomCredits } from "@/lib/credit-slider";
 import { formatBRL } from "@/lib/money";
@@ -41,6 +42,7 @@ export function CreditSliderForm({
     credits: number;
   } | null>(null);
   const [state, formAction, pending] = useActionState(buyCreditsAction, initialState);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const sliderId = useId();
   const quote = quoteCustomCredits(credits);
   const valueText = `${String(credits)} eventos por ${formatBRL(quote.priceCents)}`;
@@ -169,11 +171,23 @@ export function CreditSliderForm({
         <p className="mt-5 text-caption text-vinho/70">
           {`Comprar ${String(credits)} por ${formatBRL(previewCents)}`} — Pix ou cartão de crédito.
         </p>
+        <TermsCheckbox
+          id="terms-slider"
+          checked={acceptedTerms}
+          onChange={setAcceptedTerms}
+          className="mt-3"
+        />
         <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-          <Button type="submit" name="method" value="pix" disabled={pending}>
+          <Button type="submit" name="method" value="pix" disabled={pending || !acceptedTerms}>
             {pending ? "Gerando cobrança…" : "Pagar com Pix"}
           </Button>
-          <Button type="submit" name="method" value="card" variant="secondary" disabled={pending}>
+          <Button
+            type="submit"
+            name="method"
+            value="card"
+            variant="secondary"
+            disabled={pending || !acceptedTerms}
+          >
             Cartão de crédito
           </Button>
         </div>

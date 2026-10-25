@@ -117,6 +117,7 @@ beforeEach(() => {
 
 function form(coupon: string, method = "pix"): FormData {
   const f = new FormData();
+  f.set("acceptTerms", "on"); // aceite dos termos (obrigatório no checkout)
   f.set("eventId", "11111111-1111-4111-8111-111111111111");
   f.set("cpf", "52998224725");
   f.set("method", method);

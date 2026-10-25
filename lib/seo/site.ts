@@ -49,6 +49,8 @@ export const PUBLIC_ROUTES = [
   { path: "/como-funciona", priority: 0.8, changeFrequency: "monthly" },
   { path: "/planos", priority: 0.8, changeFrequency: "monthly" },
   { path: "/para-planners", priority: 0.7, changeFrequency: "monthly" },
+  { path: "/termos", priority: 0.3, changeFrequency: "yearly" },
+  { path: "/privacidade", priority: 0.3, changeFrequency: "yearly" },
   { path: "/precos.json", priority: 0.3, changeFrequency: "monthly" },
 ] as const;
 

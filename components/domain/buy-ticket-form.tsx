@@ -10,6 +10,7 @@ import {
 } from "@/app/(dashboard)/eventos/actions";
 import { CouponToggle, type CouponPreviewState } from "@/components/domain/coupon-toggle";
 import { WelcomeCountdown } from "@/components/domain/welcome-countdown";
+import { TermsCheckbox } from "@/components/legal/terms-checkbox";
 import { Button } from "@/components/ui/button";
 import { formatBRL } from "@/lib/money";
 
@@ -38,6 +39,7 @@ export function BuyTicketForm({
 }: BuyTicketFormProps) {
   const [couponState, setCouponState] = useState<CouponCheckState>({});
   const [state, formAction, pending] = useActionState(buyTicketAction, initialCheckout);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const couponApplied = couponState.ok === true;
   const onApplied = (code: string | null, preview: CouponPreviewState | null): void => {
@@ -193,6 +195,8 @@ export function BuyTicketForm({
           </p>
         </div>
 
+        <TermsCheckbox id="terms-ticket" checked={acceptedTerms} onChange={setAcceptedTerms} />
+
         {state.error !== undefined ? (
           <p
             role="alert"
@@ -203,15 +207,27 @@ export function BuyTicketForm({
         ) : null}
 
         {couponApplied && couponState.finalCents === 0 ? (
-          <Button type="submit" variant="gold" disabled={pending}>
+          <Button type="submit" variant="gold" disabled={pending || !acceptedTerms}>
             {pending ? "Ativando…" : "Ativar evento com cortesia"}
           </Button>
         ) : (
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Button type="submit" name="method" value="pix" variant="gold" disabled={pending}>
+            <Button
+              type="submit"
+              name="method"
+              value="pix"
+              variant="gold"
+              disabled={pending || !acceptedTerms}
+            >
               {pending ? "Gerando cobrança…" : "Pagar com Pix"}
             </Button>
-            <Button type="submit" name="method" value="card" variant="secondary" disabled={pending}>
+            <Button
+              type="submit"
+              name="method"
+              value="card"
+              variant="secondary"
+              disabled={pending || !acceptedTerms}
+            >
               Pagar com cartão de crédito
             </Button>
           </div>

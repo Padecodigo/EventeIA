@@ -152,6 +152,7 @@ beforeEach(() => {
 
 function ticketForm(coupon = "", method = "pix"): FormData {
   const f = new FormData();
+  f.set("acceptTerms", "on"); // aceite dos termos (obrigatório no checkout)
   f.set("eventId", EVENT);
   f.set("cpf", "52998224725");
   f.set("method", method);
@@ -244,6 +245,7 @@ describe("evento avulso", () => {
   it("prévia do 'Tem um cupom?' avisa quando a oferta é maior", async () => {
     const { applyCouponAction } = await import("@/app/(dashboard)/eventos/actions");
     const f = new FormData();
+    f.set("acceptTerms", "on"); // aceite dos termos (obrigatório no checkout)
     f.set("code", "dez");
     const preview = await applyCouponAction({}, f);
     expect(preview).toMatchObject({ ok: true, offerWins: true, finalCents: 5700 });
@@ -256,6 +258,7 @@ describe("pacotes, slider e franquia", () => {
   it("slider 7 créditos (R$ 197) ⇒ 30% off = R$ 137,90", async () => {
     const { buyCreditsAction } = await import("@/app/(dashboard)/creditos/actions");
     const f = new FormData();
+    f.set("acceptTerms", "on"); // aceite dos termos (obrigatório no checkout)
     f.set("credits", "7");
     const state = await buyCreditsAction({}, f);
     expect(state.applied).toEqual({
@@ -272,6 +275,7 @@ describe("pacotes, slider e franquia", () => {
     offer = null;
     const { buyCreditsAction } = await import("@/app/(dashboard)/creditos/actions");
     const f = new FormData();
+    f.set("acceptTerms", "on"); // aceite dos termos (obrigatório no checkout)
     f.set("packageCode", "pacote-3");
     f.set("coupon", "DEZ");
     const state = await buyCreditsAction({}, f);
@@ -282,6 +286,7 @@ describe("pacotes, slider e franquia", () => {
   it("cortesia não vale para pacote", async () => {
     const { buyCreditsAction } = await import("@/app/(dashboard)/creditos/actions");
     const f = new FormData();
+    f.set("acceptTerms", "on"); // aceite dos termos (obrigatório no checkout)
     f.set("credits", "3");
     f.set("coupon", "CORTESIA");
     const state = await buyCreditsAction({}, f);
@@ -293,6 +298,7 @@ describe("pacotes, slider e franquia", () => {
     offer = null;
     const { buyCreditsAction } = await import("@/app/(dashboard)/creditos/actions");
     const f = new FormData();
+    f.set("acceptTerms", "on"); // aceite dos termos (obrigatório no checkout)
     f.set("credits", "3");
     const state = await buyCreditsAction({}, f);
     expect(state.applied).toBeUndefined();
@@ -302,6 +308,7 @@ describe("pacotes, slider e franquia", () => {
   it("franquia: 30% SÓ na 1ª fatura (assinatura segue com valor cheio)", async () => {
     const { subscribeToPlanAction } = await import("@/app/(dashboard)/creditos/actions");
     const f = new FormData();
+    f.set("acceptTerms", "on"); // aceite dos termos (obrigatório no checkout)
     f.set("planCode", "atelier");
     f.set("renew", "yes");
     const state = await subscribeToPlanAction({}, f);

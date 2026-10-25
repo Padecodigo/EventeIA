@@ -10,6 +10,8 @@ import {
   signUpAction,
   type AuthActionState,
 } from "@/app/(auth)/actions";
+import { TermsCheckbox } from "@/components/legal/terms-checkbox";
+import { TERMS_FIELD } from "@/lib/legal/terms";
 
 type AuthMode = "entrar" | "registrar";
 
@@ -26,6 +28,10 @@ export function AuthForm({ mode, oauthError }: { mode: AuthMode; oauthError?: st
     initialState,
   );
   const [showPassword, setShowPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const termsBlocked = isSignUp && !acceptedTerms;
+  const termsHidden =
+    isSignUp && acceptedTerms ? <input type="hidden" name={TERMS_FIELD} value="on" /> : null;
   const googleError = googleState.error ?? oauthError;
 
   return (
@@ -42,10 +48,21 @@ export function AuthForm({ mode, oauthError }: { mode: AuthMode; oauthError?: st
           : "Continue de onde parou e acompanhe os seus eventos."}
       </p>
 
-      <form action={googleAction} className="mt-8">
+      {isSignUp ? (
+        <TermsCheckbox
+          id="accept-terms"
+          checked={acceptedTerms}
+          onChange={setAcceptedTerms}
+          className="mt-6"
+        />
+      ) : null}
+
+      <form action={googleAction} className={isSignUp ? "mt-4" : "mt-8"}>
+        {isSignUp ? <input type="hidden" name="intent" value="signup" /> : null}
+        {termsHidden}
         <button
           type="submit"
-          disabled={googlePending}
+          disabled={googlePending || termsBlocked}
           className="flex h-14 w-full items-center justify-center gap-3 rounded-full bg-primaria text-base font-semibold text-white shadow-[0_10px_24px_-12px_rgba(163,72,90,0.7)] transition hover:bg-primaria-escura disabled:cursor-not-allowed disabled:opacity-50"
         >
           <span className="flex size-8 items-center justify-center rounded-full bg-white">
@@ -77,6 +94,7 @@ export function AuthForm({ mode, oauthError }: { mode: AuthMode; oauthError?: st
       </div>
 
       <form action={formAction} className="flex flex-col gap-4">
+        {termsHidden}
         {isSignUp ? (
           <div className="flex flex-col gap-1.5">
             <label htmlFor="full-name" className="text-sm font-medium text-vinho">
@@ -188,7 +206,7 @@ export function AuthForm({ mode, oauthError }: { mode: AuthMode; oauthError?: st
 
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || termsBlocked}
           className="mt-2 h-12 rounded-full border border-primaria/40 bg-off-white text-sm font-semibold text-primaria transition hover:bg-areia-secundaria/60 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {pending ? "Aguarde…" : isSignUp ? "Criar conta com e-mail" : "Entrar com e-mail"}
