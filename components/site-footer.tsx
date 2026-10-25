@@ -50,6 +50,12 @@ export function SiteFooter() {
           <Link prefetch={false} href="/privacidade" className="text-off-white/70 transition hover:text-off-white">
             Privacidade e LGPD
           </Link>
+          <Link prefetch={false} href="/estorno" className="text-off-white/70 transition hover:text-off-white">
+            Política de Estorno
+          </Link>
+          <Link prefetch={false} href="/retencao-de-dados" className="text-off-white/70 transition hover:text-off-white">
+            Retenção de Dados
+          </Link>
         </div>
       </nav>
     </div>

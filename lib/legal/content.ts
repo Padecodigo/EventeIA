@@ -68,10 +68,12 @@ export const PRIVACY_SECTIONS: readonly LegalSection[] = [
     id: "retencao",
     title: "Por quanto tempo guardamos",
     items: [
-      "Dados da conta e dos eventos: enquanto a conta estiver ativa ou enquanto forem necessários para prestar o serviço.",
-      "Registros de pagamento: pelo prazo exigido pela legislação fiscal e contábil.",
+      "Dados da conta: enquanto a conta estiver ativa.",
+      "Arquivos e conversas do evento: por 90 dias após a data do evento; depois, são anonimizados.",
+      "Dados de pagamento e registros fiscais: por 5 anos, para cumprir obrigações fiscais e contábeis.",
       "Registros de acesso: pelo prazo previsto no Marco Civil da Internet.",
       "Dados de fornecedores: enquanto forem úteis para pedir orçamentos, ou até o fornecedor pedir a exclusão.",
+      "Os detalhes estão na Política de Retenção de Dados (/retencao-de-dados).",
       "Depois desses prazos, os dados são eliminados ou anonimizados.",
     ],
   },
@@ -137,8 +139,8 @@ export const TERMS_SECTIONS: readonly LegalSection[] = [
     id: "reembolso",
     title: "Arrependimento e reembolso",
     paragraphs: [
-      "Você pode desistir da compra em até 7 dias corridos após o pagamento (direito de arrependimento do Código de Defesa do Consumidor, art. 49) e receber o reembolso dos créditos ainda não usados. Créditos já usados para iniciar a busca de um evento não são reembolsáveis, porque o serviço já foi prestado.",
-      "Para pedir, use a página de contato. O reembolso é feito pelo mesmo meio de pagamento, via Asaas.",
+      "Você pode desistir da compra em até 7 dias corridos após o pagamento (direito de arrependimento do Código de Defesa do Consumidor, art. 49) e receber o valor integral, se a busca de fornecedores ainda não tiver começado. Tickets comprados e não usados, sem busca iniciada, também são reembolsados integralmente. Depois que a busca de fornecedores de um evento começa, o ticket usado nele não é reembolsável, porque o serviço já foi prestado e gerou custos.",
+      "Para pedir, abra um chamado no painel ou use a página de contato. O reembolso é feito pelo mesmo meio de pagamento, via Asaas. Disputas de pagamento (chargeback e MED do Pix) suspendem o evento enquanto estiverem abertas. Os detalhes estão na Política de Estorno e Disputa de Pagamento (/estorno).",
     ],
   },
   {
