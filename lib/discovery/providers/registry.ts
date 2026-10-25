@@ -3,9 +3,10 @@ import { createGrokProvider } from "./grok";
 import { createMockProvider } from "./mock";
 import { createNimProvider } from "./nim";
 import { createOverpassProvider } from "./overpass";
+import { createSocialProvider } from "./social";
 import type { DiscoveryProvider, FetchLike } from "./types";
 
-export const KNOWN_PROVIDERS = ["grok", "nim", "overpass", "mock"] as const;
+export const KNOWN_PROVIDERS = ["grok", "social", "nim", "overpass", "mock"] as const;
 
 export interface ProviderEnv {
   DISCOVERY_PROVIDERS?: string;
@@ -19,7 +20,7 @@ export interface ProviderEnv {
 
 /**
  * DISCOVERY_PROVIDERS="grok,overpass,mock" (ordem = prioridade). Sem a variável:
- * grok quando XAI_API_KEY existe, depois overpass e mock. Com NVIDIA_NIM_API_KEY,
+ * grok + social (perfis públicos Instagram/Facebook/TikTok) quando XAI_API_KEY existe, depois overpass e mock. Com NVIDIA_NIM_API_KEY,
  * o grok vira um roteador que troca para o NIM ao passar de XAI_USAGE_SWITCH_PCT%
  * do orçamento diário ou em erro de cota (429/402/403). Sem chave xAI, "grok" vira "nim".
  */
@@ -29,8 +30,10 @@ export function resolveProviders(env: ProviderEnv, fetchImpl?: FetchLike, usage:
   const names =
     env.DISCOVERY_PROVIDERS !== undefined && env.DISCOVERY_PROVIDERS.trim().length > 0
       ? env.DISCOVERY_PROVIDERS.split(",").map((s) => s.trim().toLowerCase())
-      : hasXai || hasNim
-        ? ["grok", "overpass", "mock"]
+      : hasXai
+        ? ["grok", "social", "overpass", "mock"]
+        : hasNim
+          ? ["grok", "overpass", "mock"]
         : ["mock"];
   const overpass = createOverpassProvider(fetchImpl);
   const nim =
@@ -60,6 +63,8 @@ export function resolveProviders(env: ProviderEnv, fetchImpl?: FetchLike, usage:
           : grok,
       );
     } else if ((name === "grok" || name === "nim") && nim !== null) add(nim);
+    else if (name === "social" && hasXai && env.XAI_API_KEY !== undefined)
+      add(createSocialProvider({ apiKey: env.XAI_API_KEY, model: env.XAI_MODEL, fetchImpl }));
     else if (name === "overpass") add(overpass);
     else if (name === "mock") add(createMockProvider());
   }
