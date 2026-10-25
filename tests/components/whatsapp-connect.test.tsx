@@ -113,7 +113,7 @@ describe("WhatsappConnect", () => {
     });
     expect(requestMock).toHaveBeenCalledWith("e1", "");
     expect(screen.getByTestId("qr-block")).toBeInTheDocument();
-    expect(screen.getByLabelText(/Prefere o código de pareamento/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Conectar com código/)).toBeInTheDocument();
   });
 
   it("autoStart no celular: pede o número (necessário para o código), sem disparar sozinho", async () => {
@@ -124,5 +124,38 @@ describe("WhatsappConnect", () => {
     expect(requestMock).not.toHaveBeenCalled();
     await generate();
     expect(requestMock).toHaveBeenCalledWith("e1", "11998765432");
+  });
+});
+
+describe("WhatsappConnect — conectar com código", () => {
+  it("desktop: após o QR, informar o número mostra o código grande", async () => {
+    setUA("Mozilla/5.0 (X11; Linux x86_64)");
+    requestMock.mockResolvedValueOnce({
+      ok: true,
+      pairingCode: null,
+      qrDataUrl: "data:image/png;base64,QR",
+      expiresAt: Date.now() + 60_000,
+      connected: false,
+    });
+    requestMock.mockResolvedValueOnce({
+      ok: true,
+      pairingCode: "ABCD-1234",
+      qrDataUrl: "data:image/png;base64,QR",
+      expiresAt: Date.now() + 60_000,
+      connected: false,
+    });
+    await act(async () => {
+      render(<WhatsappConnect eventId="e1" autoStart />);
+    });
+    fireEvent.change(screen.getByLabelText(/Conectar com código/), {
+      target: { value: "(11) 99876-5432" },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Gerar código" }));
+    });
+    expect(requestMock).toHaveBeenLastCalledWith("e1", "(11) 99876-5432");
+    expect(screen.getByTestId("pairing-code")).toHaveTextContent("ABCD-1234");
+    expect(screen.getByTestId("pairing-code").className).toContain("text-4xl");
+    expect(screen.getByTestId("qr-block")).toBeInTheDocument();
   });
 });

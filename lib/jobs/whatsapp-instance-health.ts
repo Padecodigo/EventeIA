@@ -1,13 +1,13 @@
 import "server-only";
 
 import { isConfigured, serverEnv } from "@/lib/env";
-import { getConnectionState } from "@/lib/evolution-api/client";
+import { getConnectionState, logoutInstance } from "@/lib/evolution-api/client";
 import { EvolutionNotConfiguredError, EvolutionSessionError } from "@/lib/evolution-api/client";
 import { emitFeed } from "@/lib/feeds";
 import { logger } from "@/lib/logger";
 import { getQueue, QUEUE_NAMES } from "@/lib/queue";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
-import { toSessionState } from "@/lib/whatsapp/session-lifecycle";
+import { shouldReleaseConnection, toSessionState } from "@/lib/whatsapp/session-lifecycle";
 import { handleSessionLost } from "@/lib/whatsapp/session-manager";
 import { createSessionDeps, resumeEventJobs } from "@/lib/whatsapp/session-runtime";
 
@@ -44,6 +44,40 @@ export async function runInstanceHealthSweep(): Promise<number> {
     try {
       const state = await getConnectionState(instance.instance_name);
       const lifecycle = toSessionState(instance.status);
+
+      // Conexão não é mais necessária (coleta do evento já encerrada): logout
+      // gracioso na Evolution (sem apagar instância nem dados).
+      if (state === "open" && instance.event_id !== null) {
+        const { data: ev } = await admin
+          .from("events")
+          .select("collection_ended_at")
+          .eq("id", instance.event_id)
+          .maybeSingle();
+        if (
+          shouldReleaseConnection({
+            evolutionState: state,
+            dbStatus: instance.status,
+            eventId: instance.event_id,
+            collectionEndedAt: ev?.collection_ended_at ?? null,
+          })
+        ) {
+          await logoutInstance(instance.instance_name);
+          await admin
+            .from("whatsapp_instances")
+            .update({
+              status: "disconnected",
+              disconnected_at: new Date().toISOString(),
+              last_checked_at: new Date().toISOString(),
+            })
+            .eq("id", instance.id);
+          logger.info(
+            { instance: instance.instance_name },
+            "saúde: conexão encerrada (coleta do evento já terminou)",
+          );
+          updated += 1;
+          continue;
+        }
+      }
       // Sessão efêmera: "open" mantém active/draining (não regride o ciclo de vida).
       const status =
         state === "open"
@@ -114,7 +148,10 @@ export async function runInstanceHealthSweep(): Promise<number> {
         continue;
       }
       logger.warn(
-        { instance: instance.instance_name, reason: caught instanceof Error ? caught.message : "desconhecido" },
+        {
+          instance: instance.instance_name,
+          reason: caught instanceof Error ? caught.message : "desconhecido",
+        },
         "saúde: falha ao consultar instância",
       );
     }

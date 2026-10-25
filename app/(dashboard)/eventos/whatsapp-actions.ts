@@ -24,17 +24,25 @@ function deps(): PairingDeps {
     },
     async ensureInstanceRow({ userId, eventId }) {
       try {
-        const { instance } = await ensureUserInstance(supabaseInstanceStore(), { userId, eventId, onBusy: "throw" });
+        const { instance } = await ensureUserInstance(supabaseInstanceStore(), {
+          userId,
+          eventId,
+          onBusy: "throw",
+        });
         return instance;
       } catch (caught) {
         if (caught instanceof InstanceBusyError) throw caught;
-        logger.error({ reason: caught instanceof Error ? caught.message : "?" }, "falha ao preparar instância (pareamento)");
+        logger.error(
+          { reason: caught instanceof Error ? caught.message : "?" },
+          "falha ao preparar instância (pareamento)",
+        );
         throw new Error("instância");
       }
     },
     instanceName: (userId) => resolveInstanceName(supabaseInstanceStore(), userId),
-    connect: connectInstance,
+    connect: (instance, digits) => connectInstance(instance, digits),
     connectionState: getConnectionState,
+    logError: (message, context) => logger.error(context, message),
   };
 }
 

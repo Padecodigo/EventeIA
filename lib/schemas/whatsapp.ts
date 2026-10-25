@@ -86,10 +86,20 @@ export const evolutionSendResponseSchema = z.object({
 export type EvolutionSendResponse = z.infer<typeof evolutionSendResponseSchema>;
 
 /** GET /instance/connectionState/{instance} */
-export const evolutionConnectionStateSchema = z.object({
-  instance: z.string().optional(),
-  state: z.enum(["open", "connecting", "close", "closed"]),
-});
+const connectionStateEnum = z.enum(["open", "connecting", "close", "closed"]);
+
+/**
+ * Evolution v2 devolve `{ instance: { instanceName, state } }`; versões antigas,
+ * `{ instance: "nome", state }`. Aceitamos as duas e normalizamos para `{ state }`.
+ */
+export const evolutionConnectionStateSchema = z.union([
+  z.object({ instance: z.string().optional(), state: connectionStateEnum }),
+  z
+    .object({
+      instance: z.object({ instanceName: z.string().optional(), state: connectionStateEnum }),
+    })
+    .transform((v) => ({ instance: v.instance.instanceName, state: v.instance.state })),
+]);
 
 export type EvolutionConnectionState = z.infer<typeof evolutionConnectionStateSchema>;
 
