@@ -43,10 +43,10 @@ export function PasswordForm({
         />
         <p className="text-caption text-vinho/70" aria-live="polite">
           Mínimo de {PASSWORD_MIN_LENGTH} caracteres.
-          {strength !== null ? ` Força: ${strength}.` : ""}
+          {strength !== null ? ` Força: ${strength}.` : null}
           {strength === "fraca" || strength === "média"
             ? " Misture maiúsculas, números e símbolos."
-            : ""}
+            : null}
         </p>
       </div>
       <div className="flex flex-col gap-1.5">

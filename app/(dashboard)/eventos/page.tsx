@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { NewEventForm } from "@/components/domain/new-event-form";
+import { requireUser } from "@/lib/auth";
+import { personalEventsFilter } from "@/lib/auth/personal-scope-server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Eventos" };
@@ -14,10 +16,14 @@ const statusLabels: Record<string, string> = {
 };
 
 export default async function EventsPage() {
+  const user = await requireUser();
   const supabase = await createSupabaseServerClient();
+  // Escopo explícito: admin lê tudo via RLS (0035); aqui só os eventos do usuário.
+  const scope = await personalEventsFilter(supabase, user.id);
   const { data: events } = await supabase
     .from("events")
     .select("id,title,event_type,event_date,guest_count,status,created_at")
+    .or(scope)
     .order("created_at", { ascending: false });
 
   const list = events ?? [];

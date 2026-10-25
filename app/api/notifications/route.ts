@@ -18,6 +18,8 @@ export async function GET(): Promise<NextResponse> {
   const { data, error } = await supabase
     .from("notifications")
     .select("id, type, event_id, created_at")
+    // Admin lê todas via RLS (0035): o sino mostra só as do próprio usuário.
+    .eq("profile_id", auth.user.id)
     .is("read_at", null)
     .order("created_at", { ascending: false })
     .limit(20);
