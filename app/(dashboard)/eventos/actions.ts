@@ -19,6 +19,7 @@ import {
   isCourtesyCoupon,
   normalizeCouponCode,
 } from "@/lib/coupons/pure";
+import { kickoffDiscovery } from "@/lib/discovery/kickoff-runtime";
 import { ENGINE_VERSION } from "@/lib/engine";
 import { serverEnv } from "@/lib/env";
 import { emitFeed } from "@/lib/feeds";
@@ -329,6 +330,8 @@ export async function buyTicketAction(
         if (outcome !== "activated") {
           return { error: COUPON_REFUSAL[String(outcome)] ?? "Cupom inválido, expirado ou esgotado." };
         }
+        // Cortesia não passa pelo webhook do Asaas: inicia a descoberta aqui.
+        await kickoffDiscovery(event.id);
         revalidatePath(`/eventos/${event.id}`);
         return {
           courtesy: { activated: true },
@@ -779,6 +782,7 @@ export async function activateEventWithCreditAction(
       { onConflict: "event_id" },
     );
   await admin.from("events").update({ status: "active" }).eq("id", event.id);
+  await kickoffDiscovery(event.id);
 
   try {
     await emitFeed(admin, {
@@ -1092,15 +1096,16 @@ const numberModeSchema = z.object({
  * Tela de conexão do WhatsApp: número dedicado (recomendado) ou pessoal
  * (as conversas com fornecedores são arquivadas automaticamente).
  */
-export async function setWhatsappNumberModeAction(
-  _previous: NumberModeState,
-  formData: FormData,
+/**
+ * Persiste a escolha do número automaticamente (sem botão "Salvar"): chamado
+ * ao clicar na opção. Idempotente; nunca deixa a UI pendurada.
+ */
+export async function saveWhatsappNumberModeAction(
+  eventId: string,
+  mode: "dedicated" | "personal",
 ): Promise<NumberModeState> {
   const user = await requireUser();
-  const parsed = numberModeSchema.safeParse({
-    eventId: formData.get("eventId"),
-    mode: formData.get("mode"),
-  });
+  const parsed = numberModeSchema.safeParse({ eventId, mode });
   if (!parsed.success) return { error: "Escolha uma das opções." };
 
   const supabase = await createSupabaseServerClient();
@@ -1112,10 +1117,9 @@ export async function setWhatsappNumberModeAction(
   if (event === null) return { error: "Evento não encontrado." };
 
   const admin = getSupabaseAdmin();
-  const store = supabaseInstanceStore();
   let existing: { id: string } | null;
   try {
-    existing = await store.findByOwner(user.id);
+    existing = await supabaseInstanceStore().findByOwner(user.id);
   } catch {
     return { error: "Não foi possível salvar. Tente novamente." };
   }
@@ -1136,6 +1140,7 @@ export async function setWhatsappNumberModeAction(
     logger.error({ code: error.code }, "falha ao salvar modo do número");
     return { error: "Não foi possível salvar. Tente novamente." };
   }
-  revalidatePath(`/eventos/${event.id}`);
+  // Sem revalidatePath: a UI já reflete a escolha localmente e não precisa
+  // re-renderizar a página inteira (nem esperar por isso) a cada clique.
   return { saved: parsed.data.mode };
 }

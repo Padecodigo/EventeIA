@@ -36,7 +36,9 @@ export async function startPairing(
   deps: PairingDeps,
   input: { userId: string; eventId: string; phone: string },
 ): Promise<PairingResult> {
-  const digits = parsePairingPhone(input.phone);
+  // Sem número ⇒ só QR (desktop). O número só é exigido para o código de pareamento.
+  const wantsCode = input.phone.trim().length > 0;
+  const digits = wantsCode ? parsePairingPhone(input.phone) : "";
   if (digits === null) {
     return {
       ok: false,

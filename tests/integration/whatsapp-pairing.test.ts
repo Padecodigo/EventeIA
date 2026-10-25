@@ -95,6 +95,12 @@ describe("pareamento do WhatsApp", () => {
     expect(JSON.stringify(result)).not.toContain("segredo");
   });
 
+  it("sem número (desktop) ⇒ só QR: conecta sem ?number=", async () => {
+    const result = await startPairing(deps(), { userId: USER, eventId: EVENT, phone: "" });
+    expect(result.ok).toBe(true);
+    expect(calls.every((c) => !c.url.includes("number="))).toBe(true);
+  });
+
   it("valida o número antes de chamar a Evolution", async () => {
     const result = await startPairing(deps(), { userId: USER, eventId: EVENT, phone: "123" });
     expect(result.ok).toBe(false);

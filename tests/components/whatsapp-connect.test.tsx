@@ -99,6 +99,30 @@ describe("WhatsappConnect", () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(4_100);
     });
-    expect(screen.getByRole("status")).toHaveTextContent("WhatsApp conectado");
+    expect(screen.getByText("Conectado! Podemos prosseguir?")).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Prosseguir" }));
+    });
+    expect(screen.getByTestId("quote-preparing-notice")).toHaveTextContent("até 2 dias úteis");
+  });
+
+  it("autoStart no desktop: QR aparece sem pedir número", async () => {
+    setUA("Mozilla/5.0 (X11; Linux x86_64)");
+    await act(async () => {
+      render(<WhatsappConnect eventId="e1" autoStart />);
+    });
+    expect(requestMock).toHaveBeenCalledWith("e1", "");
+    expect(screen.getByTestId("qr-block")).toBeInTheDocument();
+    expect(screen.getByLabelText(/Prefere o código de pareamento/)).toBeInTheDocument();
+  });
+
+  it("autoStart no celular: pede o número (necessário para o código), sem disparar sozinho", async () => {
+    setUA("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile");
+    await act(async () => {
+      render(<WhatsappConnect eventId="e1" autoStart />);
+    });
+    expect(requestMock).not.toHaveBeenCalled();
+    await generate();
+    expect(requestMock).toHaveBeenCalledWith("e1", "11998765432");
   });
 });
