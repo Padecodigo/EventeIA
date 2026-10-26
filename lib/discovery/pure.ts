@@ -1,17 +1,16 @@
-import { z } from "zod";
-
-import { msUntilBusinessWindow, OUTREACH_WINDOW } from "@/lib/business-days";
 /**
  * Regras puras da descoberta automática de fornecedores (sem I/O, testáveis).
  */
+import { z } from "zod";
 
+import { msUntilBusinessWindow, OUTREACH_WINDOW } from "@/lib/business-days";
 import { CATEGORY_LABELS, type CategoryCode, type Unit } from "@/lib/catalog/v1";
 import { firstContactMessageSchema } from "@/lib/schemas/whatsapp";
 import { buildFirstContactText, quoteSubjectWithItems } from "@/lib/whatsapp/first-contact";
 
-/** Meta de coleta: 5 cotações por categoria OU 48h. */
+/** Meta de coleta: 5 cotações por categoria OU 24h. */
 export const QUOTES_TARGET_PER_CATEGORY = 5;
-export const COLLECTION_WINDOW_MS = 48 * 60 * 60 * 1000;
+export const COLLECTION_WINDOW_MS = 24 * 60 * 60 * 1000;
 /** Contatos por categoria para alcançar ~5 cotações (taxa de resposta ~40%). */
 export const MAX_PROSPECTS_PER_CATEGORY = 12;
 /** Teto absoluto por evento (protege a reputação do número). */
@@ -143,8 +142,10 @@ export interface FirstContactInput {
 }
 
 /**
- * Primeiro contato com detalhes do evento, origem do contato e opção SAIR.
+ * Primeiro contato com detalhes do evento e origem do contato.
  * Passa pelo schema do primeiro contato (texto puro, sem URLs/emojis, ≤ 900).
+ * Sem rodapé de opt-out: a conversa precisa soar humana (o opt-out continua
+ * sendo detectado nas respostas — ver detectOptOut em lib/schemas/whatsapp.ts).
  */
 export function renderDiscoveryFirstContact(input: FirstContactInput): string {
   // Respostas da entrevista refletidas nos itens (observações) + demanda específica.
@@ -172,9 +173,8 @@ export function renderDiscoveryFirstContact(input: FirstContactInput): string {
     category: input.category,
     seed: input.vendorName,
   });
-  const text = `${body} Encontramos seu contato em ${source}. Se não quiser receber mensagens, responda SAIR.`;
-  const clipped =
-    text.length > 900 ? `${text.slice(0, 880).trimEnd()}… Responda SAIR para não receber.` : text;
+  const text = `${body} Encontramos seu contato em ${source}.`;
+  const clipped = text.length > 900 ? `${text.slice(0, 895).trimEnd()}…` : text;
   return firstContactMessageSchema.parse(clipped);
 }
 

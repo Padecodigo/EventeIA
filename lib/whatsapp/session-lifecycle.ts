@@ -9,11 +9,11 @@ export type SessionState = "connecting" | "active" | "draining" | "disconnected"
 
 /**
  * A sessão fica conectada durante TODA a coleta: até 5 cotações por categoria
- * ou 48h (o que vier primeiro). Só desconecta depois de entregar as cotações.
+ * ou 24h (o que vier primeiro). Só desconecta depois de entregar as cotações.
  */
 export const MIN_COLLECTION_WINDOW_MINUTES = 30;
 export const MAX_COLLECTION_WINDOW_MINUTES = 48 * 60;
-export const DEFAULT_COLLECTION_WINDOW_MINUTES = 48 * 60;
+export const DEFAULT_COLLECTION_WINDOW_MINUTES = 24 * 60;
 export const QUOTES_PER_CATEGORY_TARGET = 5;
 
 const TRANSITIONS: Record<SessionState, readonly SessionState[]> = {

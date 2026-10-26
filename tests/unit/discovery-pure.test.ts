@@ -32,11 +32,11 @@ describe("telefone BR / DDD", () => {
 
 describe("regras de coleta", () => {
   const start = new Date("2026-10-20T12:00:00Z");
-  it("encerra em 48h ou com 5 orçamentos em todas as categorias", () => {
+  it("encerra em 24h ou com 5 orçamentos em todas as categorias", () => {
     expect(
       collectionEnded({
         startedAt: start,
-        now: new Date(start.getTime() + 48 * 3600_000),
+        now: new Date(start.getTime() + 24 * 3600_000),
         categories: ["buffet"],
         quotesByCategory: {},
       }),
@@ -87,7 +87,7 @@ describe("regras de coleta", () => {
 });
 
 describe("primeiro contato da descoberta", () => {
-  it("traz detalhes do evento, origem e SAIR, e passa no schema", () => {
+  it("traz detalhes do evento e origem, sem rodapé de opt-out, e passa no schema", () => {
     const text = renderDiscoveryFirstContact({
       vendorName: "Buffet Sabor",
       category: "buffet",
@@ -103,7 +103,7 @@ describe("primeiro contato da descoberta", () => {
     expect(text).toMatch(/internet/);
     expect(text).toContain("Aqui é da EventeIA.");
     expect(text).toContain("orçamento de buffet");
-    expect(text).toContain("SAIR");
+    expect(text).not.toContain("SAIR");
     expect(firstContactMessageSchema.safeParse(text).success).toBe(true);
   });
   it("candidato exige source_url válida", () => {
