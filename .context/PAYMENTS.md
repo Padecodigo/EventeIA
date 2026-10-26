@@ -144,6 +144,7 @@ job(external_event_id):
 
 - `RECEIVED_IN_CASH` não é utilizado (a EventeIA não opera caixa físico).
 - Desconhecido/mapeado a `unmapped_status`: grava feed `webhook.unmapped_status` e **não altera** estado financeiro.
+- `canceled`: cobrança removida no Asaas porque o **evento foi excluído** antes do pagamento (DELETE /payments/{id}). É terminal; webhook tardio (`PAYMENT_RECEIVED`) cai na guarda de transições (§6) e é rejeitado — sem efeito. Feed `payment.canceled`.
 
 ---
 

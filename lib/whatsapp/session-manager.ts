@@ -29,7 +29,7 @@ export interface SessionDeps {
   /** Retoma os jobs DESTE evento (remove a pausa deixada por uma queda anterior). */
   resumeEventJobs?(eventId: string): Promise<void>;
   scheduleWindowEnd(instance: string, eventId: string, delayMs: number): Promise<void>;
-  /** Encerra a coleta já (meta atingida). Job distinto do agendado para 48h. */
+  /** Encerra a coleta já (meta atingida). Job distinto do agendado para 24h. */
   triggerCollectionEnd(instance: string | null, eventId: string): Promise<void>;
   /**
    * Entrega as cotações (fase 4: cenários/budget_snapshots). Executada ANTES do
@@ -66,7 +66,7 @@ export async function activateSession(
 }
 
 /**
- * Fim da coleta (48h ou meta atingida): draining → entrega as cotações →
+ * Fim da coleta (24h ou meta atingida): draining → entrega as cotações →
  * logout gracioso → disconnected → notifica. Se a entrega falhar, a sessão
  * fica em draining e o erro sobe (o job tenta de novo com backoff).
  */

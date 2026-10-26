@@ -74,7 +74,7 @@ describe("runDiscoveryRound", () => {
     expect(summary.status).toBe("running");
     expect(jobs).toHaveLength(1);
     expect(jobs[0]).toMatchObject({ dryRun: true, category: "buffet" });
-    expect(jobs[0]?.messageText).toContain("SAIR");
+    expect(jobs[0]?.messageText).not.toContain("SAIR");
     expect(runs.some((r) => r.provider === "grok")).toBe(true);
     expect(scheduled.length).toBe(1);
   });
@@ -90,7 +90,7 @@ describe("runDiscoveryRound", () => {
     expect(jobs).toHaveLength(0);
     expect(runs.every((r) => r.status === "skipped")).toBe(true);
   });
-  it("encerra após 48h", async () => {
+  it("encerra após o prazo de 24h", async () => {
     const { deps } = makeDeps({}, { discoveryStartedAt: new Date("2026-10-21T00:00:00Z") });
     const s = await runDiscoveryRound(deps, [], { eventId: "x", round: 3 });
     expect(s).toMatchObject({ status: "ended", reason: "time" });

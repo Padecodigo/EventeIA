@@ -30,7 +30,7 @@ Formato: `<domínio>.<ação_no_passado>` — domínios fechados; ações no pas
 | `engine` | `engine.calculated`, `engine.version_bumped` |
 | `budget` | `budget.snapshot_created` |
 | `quotation` | `quotation.created`, `quotation.dispatched`, `quotation.confirmed`, `quotation.expired` |
-| `payment` | `payment.created`, `payment.confirmed`, `payment.refunded`, `payment.overdue`, `payment.divergence`, `payment.reconciled`, `payment.transition_rejected` |
+| `payment` | `payment.created`, `payment.confirmed`, `payment.refunded`, `payment.overdue`, `payment.divergence`, `payment.reconciled`, `payment.transition_rejected`, `payment.canceled` |
 | `webhook` | `webhook.received`, `webhook.duplicated`, `webhook.unmapped_status`, `webhook.rejected` |
 | `subscription` | `subscription.created`, `subscription.renewed`, `subscription.overdue`, `subscription.canceled` |
 | `credits` | `credits.granted`, `credits.consumed`, `credits.refunded`, `credits.expired`, `credits.adjusted` |

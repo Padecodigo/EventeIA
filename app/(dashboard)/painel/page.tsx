@@ -32,6 +32,7 @@ export default async function DashboardPage() {
       .from("events")
       .select("id,title,status,event_date,created_at")
       .or(scope)
+      .neq("status", "canceled")
       .order("created_at", { ascending: false })
       .limit(5),
     supabase
@@ -39,7 +40,7 @@ export default async function DashboardPage() {
       .select("id", { count: "exact", head: true })
       .eq("status", "active")
       .in("event_id", ownEventIds.length > 0 ? ownEventIds : noEvents),
-    supabase.from("events").select("id", { count: "exact", head: true }).or(scope),
+    supabase.from("events").select("id", { count: "exact", head: true }).or(scope).neq("status", "canceled"),
   ]);
 
   const events = eventsResult.data ?? [];

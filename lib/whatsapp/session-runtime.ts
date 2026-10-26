@@ -21,6 +21,11 @@ export async function isEventPaused(eventId: string): Promise<boolean> {
   return (await getRedisConnection().exists(eventPausedKey(eventId))) === 1;
 }
 
+/** Pausa SÓ os jobs do evento (não a fila global). */
+export async function pauseEventJobs(eventId: string): Promise<void> {
+  await getRedisConnection().set(eventPausedKey(eventId), "1", "EX", EVENT_PAUSE_TTL_SECONDS);
+}
+
 export async function resumeEventJobs(eventId: string): Promise<void> {
   await getRedisConnection().del(eventPausedKey(eventId));
 }
@@ -56,9 +61,7 @@ export function createSessionDeps(): SessionDeps {
         .eq("instance_name", instance);
     },
     logout: logoutInstance,
-    async pauseEventJobs(eventId) {
-      await getRedisConnection().set(eventPausedKey(eventId), "1", "EX", EVENT_PAUSE_TTL_SECONDS);
-    },
+    pauseEventJobs,
     resumeEventJobs,
     async scheduleWindowEnd(instance, eventId, delayMs) {
       await enqueue(
@@ -105,7 +108,7 @@ export async function findEventInstance(eventId: string): Promise<string | null>
   return data?.instance_name ?? null;
 }
 
-/** Prazo máximo da coleta (48h por padrão), agendado ao iniciar a descoberta. */
+/** Prazo máximo da coleta (24h por padrão), agendado ao iniciar a descoberta. */
 export async function scheduleCollectionDeadline(
   eventId: string,
   delayMs: number,

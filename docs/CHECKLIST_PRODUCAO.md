@@ -26,7 +26,7 @@
 - [ ] Fase 3 — mapeamento das respostas/cotações recebidas por categoria.
 - [ ] Fase 4 — 3 orçamentos (custo-benefício, mais barato, mais prático) + notificação.
 - [ ] Fase 5 — PDF/download e histórico no dashboard.
-- [x] Janela da sessão WhatsApp: conectada durante toda a coleta (5 cotações/categoria ou 48h); desconecta após entregar as cotações.
+- [x] Janela da sessão WhatsApp: conectada durante toda a coleta (5 cotações/categoria ou 24h); desconecta após entregar as cotações.
 
 ## 5. Infraestrutura
 - [ ] Docker Compose: app (next start), workers, Redis, Evolution; restart=always; limites de memória.

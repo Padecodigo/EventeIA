@@ -147,11 +147,11 @@ describe("session-lifecycle", () => {
     expect(canTransition("disconnected", "active")).toBe(false);
     expect(canTransition("draining", "active")).toBe(false);
   });
-  it("janela com clamp 30–60", () => {
+  it("janela com clamp 30 min–48 h (padrão 24 h)", () => {
     expect(resolveCollectionWindowMinutes(10)).toBe(30);
     expect(resolveCollectionWindowMinutes(90)).toBe(90);
     expect(resolveCollectionWindowMinutes(5000)).toBe(2880);
-    expect(resolveCollectionWindowMinutes(undefined)).toBe(2880);
+    expect(resolveCollectionWindowMinutes(undefined)).toBe(1440);
     expect(computeDrainAtMs(0, 30)).toBe(1_800_000);
   });
   it("só envia em active", () => {
@@ -212,11 +212,11 @@ describe("session-manager", () => {
     expect(deps.calls).toEqual(["status:active", "schedule:1800000"]);
   });
 
-  it("ativa por 48h por padrão (sessão fica conectada durante toda a coleta)", async () => {
+  it("ativa por 24h por padrão (sessão fica conectada durante toda a coleta)", async () => {
     const deps = fakeSessionDeps("connecting");
     const result = await activateSession(deps, { instance: "i", eventId: "e" });
-    expect(result.windowMinutes).toBe(2880);
-    expect(deps.calls).toEqual(["status:active", `schedule:${String(48 * 3_600_000)}`]);
+    expect(result.windowMinutes).toBe(1440);
+    expect(deps.calls).toEqual(["status:active", `schedule:${String(24 * 3_600_000)}`]);
   });
 
   it("fim da janela: draining → entrega cotações → logout → disconnected → notifica", async () => {

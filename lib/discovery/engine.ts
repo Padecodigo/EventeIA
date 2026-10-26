@@ -12,6 +12,7 @@ import type { DiscoveryProvider } from "./providers/types";
 import {
   canRecontact,
   categoryNeed,
+  COLLECTION_WINDOW_MS,
   collectionEnded,
   isCategoryCode,
   renderDiscoveryFirstContact,
@@ -244,7 +245,7 @@ export async function runDiscoveryRound(
   const now = deps.now();
   const startedAt = event.discoveryStartedAt ?? now;
   if (event.discoveryStartedAt === null) {
-    await deps.markDiscovery(event.id, { startedAt, endsAt: new Date(startedAt.getTime() + 48 * 3600_000), status: "running" });
+    await deps.markDiscovery(event.id, { startedAt, endsAt: new Date(startedAt.getTime() + COLLECTION_WINDOW_MS), status: "running" });
   }
 
   const categories = [...new Set(event.requirements.map((r) => r.category))];
@@ -333,7 +334,7 @@ export async function runDiscoveryRound(
     }
   }
 
-  // Continua procurando fornecedores NOVOS até 5 cotações/categoria ou 48h.
+  // Continua procurando fornecedores NOVOS até 5 cotações/categoria ou 24h.
   await deps.scheduleRound(event.id, input.round + 1, ROUND_INTERVAL_MS);
   return summary;
 }

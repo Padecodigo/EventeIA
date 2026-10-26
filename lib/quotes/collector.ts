@@ -2,12 +2,11 @@ import { z } from "zod";
 
 import type { FirstReplyIntent } from "@/lib/ai/contingency";
 import type { MandatoryFee, NuancedQuotation } from "@/lib/schemas/quotation-extraction";
-import { OPT_OUT_FOOTER } from "@/lib/whatsapp/templates";
 
 /**
  * Fase 3 — coleta: inbound do fornecedor → extração (roteador) → rascunho em `quotations`.
  * Confiança baixa ⇒ pergunta de esclarecimento (no máx. MAX_FOLLOWUPS por fornecedor).
- * Cada cotação aproveitável reavalia a regra de fim (5 por categoria ou 48h).
+ * Cada cotação aproveitável reavalia a regra de fim (5 por categoria ou 24h).
  * Módulo puro: I/O injetado (testável). Texto do fornecedor = dado NÃO confiável.
  */
 
@@ -135,7 +134,7 @@ export function buildFollowUp(
     asks.push("se há taxas à parte (limpeza, frete, louça ou equipe) e seus valores");
   const what = asks.length > 0 ? asks.join(" e ") : "os valores do orçamento";
   const name = vendorName.trim().slice(0, 60) || "tudo bem";
-  return `Olá, ${name}! Obrigado pelo retorno. Para comparar certinho, pode me confirmar ${what}? ${OPT_OUT_FOOTER}`;
+  return `Olá, ${name}! Obrigado pelo retorno. Para comparar certinho, pode me confirmar ${what}?`;
 }
 
 export type CollectorOutcome =

@@ -39,7 +39,7 @@ export function renderQuotationsReadyEmail(input: {
 }): { subject: string; text: string } {
   const why =
     input.reason === "window_closed"
-      ? "O prazo de 48h de coleta terminou"
+      ? "O prazo de 24h de coleta terminou"
       : input.reason === "collection_complete"
         ? "Recebemos as cotações necessárias"
         : "A conexão com o seu WhatsApp caiu";

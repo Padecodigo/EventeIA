@@ -25,6 +25,7 @@ export default async function EventsPage() {
     .from("events")
     .select("id,title,event_type,event_date,guest_count,status,created_at")
     .or(scope)
+    .neq("status", "canceled")
     .order("created_at", { ascending: false });
 
   const list = events ?? [];

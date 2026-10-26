@@ -83,6 +83,19 @@ export async function processProspectingJob(
     logger.warn({ prospectId: data.prospectId }, "prospect não encontrado — job descartado");
     return;
   }
+  // Evento encerrado/excluído: nunca dispara, mesmo com job órfão na fila.
+  const { data: eventRow } = await admin
+    .from("events")
+    .select("status")
+    .eq("id", data.eventId)
+    .maybeSingle();
+  if (eventRow === null || eventRow.status !== "active") {
+    logger.info(
+      { eventId: data.eventId, status: eventRow?.status ?? "missing" },
+      "evento fora de 'active' — envio não iniciado",
+    );
+    return;
+  }
   if (prospect.status === "opt_out" || prospect.status === "sent") {
     return;
   }

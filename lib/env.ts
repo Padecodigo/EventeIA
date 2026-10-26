@@ -7,6 +7,14 @@ import { z } from "zod";
  * Lida de forma preguiçosa (lazy) para não quebrar o build sem .env.
  * Segredos NUNCA chegam ao client: este módulo é server-only.
  */
+/**
+ * Os docker-compose passam `${VAR:-}`: variável ausente chega como "".
+ * Sem isto, "" vira 0 (`Number("")`) e derruba o default numérico
+ * (ex.: janela de coleta viraria 30 min em vez de 24 h).
+ */
+const emptyToUndefined = (raw: unknown): unknown =>
+  typeof raw === "string" && raw.trim() === "" ? undefined : raw;
+
 const serverSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
@@ -37,12 +45,15 @@ const serverSchema = z.object({
   WHATSAPP_CLOUD_FIRST_CONTACT_TEMPLATE: z.string().min(1).default("eventeia_primeiro_contato"),
   WHATSAPP_CLOUD_TEMPLATE_LANGUAGE: z.string().min(2).default("pt_BR"),
   WHATSAPP_CLOUD_FIRST_CONTACT_PARAM_COUNT: z.coerce.number().int().min(1).max(10).default(3),
-  B2C_TICKET_PRICE_CENTS: z.coerce.number().int().positive().default(9700),
+  B2C_TICKET_PRICE_CENTS: z.preprocess(emptyToUndefined, z.coerce.number().int().positive().default(9700)),
   // Agente Orçamentista: intervalo humanizado entre disparos (clamp 45–90s no worker).
-  WHATSAPP_MIN_INTERVAL_SECONDS: z.coerce.number().int().default(60),
-  // Janela de coleta da sessão efêmera (clamp 30–60 min) e concorrência do worker.
-  WHATSAPP_COLLECTION_WINDOW_MINUTES: z.coerce.number().int().default(2880),
-  WHATSAPP_PROSPECTING_CONCURRENCY: z.coerce.number().int().min(1).max(200).default(25),
+  WHATSAPP_MIN_INTERVAL_SECONDS: z.preprocess(emptyToUndefined, z.coerce.number().int().default(60)),
+  // Janela de coleta da sessão efêmera (padrão 24h; clamp 30 min–48 h) e concorrência do worker.
+  WHATSAPP_COLLECTION_WINDOW_MINUTES: z.preprocess(emptyToUndefined, z.coerce.number().int().default(1440)),
+  WHATSAPP_PROSPECTING_CONCURRENCY: z.preprocess(
+    emptyToUndefined,
+    z.coerce.number().int().min(1).max(200).default(25),
+  ),
   // AES-256 (hex 64 chars) p/ credenciais de instância; opcional em dev.
   WHATSAPP_CREDENTIALS_KEY: z.string().optional(),
   ENGINE_TIMEZONE: z.string().default("America/Sao_Paulo"),
