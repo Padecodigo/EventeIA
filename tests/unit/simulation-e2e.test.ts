@@ -69,12 +69,34 @@ describe("simulação E2E da coleta (mock, dry-run)", () => {
     const deps: CollectorDeps = {
       loadContext: (job) => {
         const p = prospects.find((x) => x.id === job.prospectId);
-        return Promise.resolve(p ? { eventId: job.eventId, collectionEnded: delivered !== null, prospect: p, inboundText: inbox.get(p.id) ?? "" } : null);
+        return Promise.resolve(
+          p
+            ? {
+                eventId: job.eventId,
+                collectionEnded: delivered !== null,
+                prospect: p,
+                event: {
+                  title: "Simulação",
+                  eventType: "festa_infantil",
+                  eventDateIso: "2026-12-05",
+                  city: "Taubaté",
+                  guestCount: 40,
+                },
+                inboundText: inbox.get(p.id) ?? "",
+              }
+            : null,
+        );
       },
       getFollowupCount: (_e, p) => Promise.resolve(drafts.get(p)?.followupCount ?? 0),
       firstReply: async (t) => { const r = await routeFirstReplyParsing(router, t); return { value: r.value, provider: r.provider }; },
       extract: async (t) => { const r = await routeQuotationExtraction(router, [{ role: "user", content: t }], t); return { value: r.value, provider: r.provider }; },
       hiddenFees: async (t) => { const r = await routeHiddenFeeScan(router, t); return { value: r.value, provider: r.provider }; },
+      draftReply: () =>
+        Promise.resolve({
+          value: { kind: "question" as const, reply: "Pode me confirmar os valores?", confidence_score: 0.8 },
+          provider: "contingency" as const,
+        }),
+      savePendingReply: () => Promise.resolve(),
       saveDraft: (row) => { drafts.set(row.prospectId, row); return Promise.resolve(); },
       // dry-run: follow-up registrado como canceled, nunca enviado.
       sendFollowUp: (i) => { followups.push({ phone: i.phone, status: "canceled" }); return Promise.resolve("dry_run"); },

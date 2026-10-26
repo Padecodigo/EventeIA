@@ -336,6 +336,9 @@ export interface Database {
         source_url: string | null;
         dry_run: boolean;
         hidden_at: string | null;
+        pending_reply: string | null;
+        pending_reply_kind: "question" | "values" | "unavailable" | "other" | null;
+        pending_reply_at: string | null;
         created_at: string;
       }>;
       suppliers: Table<{

@@ -4,12 +4,14 @@ import {
   contingencyFirstReply,
   contingencyHiddenFees,
   contingencyQuotation,
+  contingencySupplierReply,
 } from "@/lib/ai/contingency";
 import { getRouter } from "@/lib/ai/runtime";
 import {
   routeFirstReplyParsing,
   routeHiddenFeeScan,
   routeQuotationExtraction,
+  routeSupplierReply,
 } from "@/lib/ai/tasks";
 import { buildExtractionMessages } from "@/lib/deepseek/extractor";
 import { ENGINE_VERSION } from "@/lib/engine";
@@ -30,6 +32,7 @@ import { completeCollectionIfReady } from "@/lib/whatsapp/session-manager";
 import { createSessionDeps, findEventInstance } from "@/lib/whatsapp/session-runtime";
 
 import { countUsableByCategory, quotableCategories, type CollectorDeps } from "./collector";
+import { buildSupplierReplyMessages } from "./triage";
 
 /** Agrupa mensagens picadas do fornecedor: 1 extração por fornecedor por janela de 45s. */
 export const QUOTE_DEBOUNCE_MS = 45_000;
@@ -63,7 +66,7 @@ export function createCollectorDeps(): CollectorDeps {
       if (p === null) return null;
       const { data: e } = await admin
         .from("events")
-        .select("collection_ended_at")
+        .select("collection_ended_at,title,event_type,event_date,city,guest_count")
         .eq("id", eventId)
         .maybeSingle();
       const { data: msgs } = await admin
@@ -82,6 +85,13 @@ export function createCollectorDeps(): CollectorDeps {
           category: p.vendor_category,
           phone: p.phone_e164,
           supplierId: p.supplier_id,
+        },
+        event: {
+          title: e?.title ?? "",
+          eventType: e?.event_type ?? "",
+          eventDateIso: e?.event_date ?? "",
+          city: e?.city ?? "",
+          guestCount: e?.guest_count ?? 0,
         },
         inboundText: (msgs ?? []).map((m) => m.body).join("\n"),
       };
@@ -115,6 +125,30 @@ export function createCollectorDeps(): CollectorDeps {
       if (router === null) return { value: contingencyHiddenFees(text), provider: "contingency" };
       const r = await routeHiddenFeeScan(router, text, { eventId, reason: "hidden_fees", stage: "quote_collection" });
       return { value: r.value, provider: r.provider };
+    },
+
+    async draftReply({ eventId, text, questions, context }) {
+      if (router === null) return { value: contingencySupplierReply(context), provider: "contingency" };
+      const r = await routeSupplierReply(
+        router,
+        buildSupplierReplyMessages(text, context, questions),
+        context,
+        { eventId, reason: "supplier_reply", stage: "quote_collection" },
+      );
+      return { value: r.value, provider: r.provider };
+    },
+
+    async savePendingReply({ eventId, prospectId, kind, reply }) {
+      const { error } = await admin
+        .from("vendor_prospects")
+        .update({
+          pending_reply: reply,
+          pending_reply_kind: kind,
+          pending_reply_at: new Date().toISOString(),
+        })
+        .eq("id", prospectId)
+        .eq("event_id", eventId);
+      if (error !== null) throw new Error(`falha ao guardar resposta pendente (${error.code})`);
     },
 
     async saveDraft(row) {

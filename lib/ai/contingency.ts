@@ -1,3 +1,4 @@
+import { formatEventDate, type SupplierReply, type SupplierReplyContext } from "@/lib/quotes/triage";
 import { EMPTY_QUOTATION, type NuancedQuotation } from "@/lib/schemas/quotation-extraction";
 import { detectOptOut } from "@/lib/schemas/whatsapp";
 
@@ -91,4 +92,15 @@ export function contingencyClassification(
       .some((word) => word.length >= 4 && haystack.includes(word.slice(0, Math.max(4, word.length - 1)))),
   );
   return { category: hit ?? null, confidence_score: hit === undefined ? 0 : 0.4 };
+}
+
+/**
+ * Contingência da resposta ao fornecedor (quando nenhum LLM está disponível):
+ * resposta cordial usando SÓ o contexto do evento, sem inventar valores.
+ */
+export function contingencySupplierReply(context: SupplierReplyContext): SupplierReply {
+  const name = context.vendorName.trim().slice(0, 60) || "tudo bem";
+  const where = context.city.trim().length > 0 ? ` em ${context.city.trim()}` : "";
+  const reply = `Olá, ${name}! Obrigado pelo retorno. Somos uma empresa que faz orçamentos para eventos — o evento "${context.eventTitle}" está previsto para ${formatEventDate(context.eventDateIso)}${where}, para ${context.guestCount} convidados (${context.categoryLabel}). Pode me confirmar os valores e o que está incluso?`;
+  return { kind: "question", reply: reply.slice(0, 600), confidence_score: 0.5 };
 }
