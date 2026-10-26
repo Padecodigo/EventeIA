@@ -65,7 +65,7 @@ describe("fase 3 — coleta de cotações", () => {
     const out = await processQuoteMessage(deps, job);
     expect(out.status).toBe("followup");
     expect(followups[0]).toMatch(/taxas à parte/);
-    expect(followups[0]).toMatch(/SAIR/);
+    expect(followups[0]).not.toMatch(/SAIR/);
     expect(drafts[0]).toMatchObject({ needsFollowup: true, followupCount: 1 });
   });
 

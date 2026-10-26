@@ -6,6 +6,7 @@ import { z } from "zod";
 import { ActivateWithCredit } from "@/components/domain/activate-with-credit";
 import { BudgetTable } from "@/components/domain/budget-table";
 import { BuyTicketForm } from "@/components/domain/buy-ticket-form";
+import { EventLifecycleActions } from "@/components/domain/event-lifecycle-actions";
 import { ProspectingPanel } from "@/components/domain/prospecting-panel";
 import { QuotationsPanel } from "@/components/domain/quotations-panel";
 import { QuotePreparingNotice } from "@/components/domain/quote-preparing-notice";
@@ -16,6 +17,8 @@ import { CATEGORY_LABELS, type CategoryCode } from "@/lib/catalog/v1";
 import { calculate } from "@/lib/engine";
 import type { EngineItemSelection, EventType, RegionCode } from "@/lib/engine/types";
 import { serverEnv } from "@/lib/env";
+import { canCancelEvent, canCompleteEvent } from "@/lib/events/lifecycle";
+import { getConnectionState, getInstanceOwnerJid } from "@/lib/evolution-api/client";
 import { luckyDiscountCents } from "@/lib/lucky/pure";
 import { lookupLuckyCoupon } from "@/lib/lucky/server";
 import { formatBRL } from "@/lib/money";
@@ -23,10 +26,9 @@ import { offerDiscountCents } from "@/lib/offers/pure";
 import { activeUserOffer } from "@/lib/offers/server";
 import { latestScenarios } from "@/lib/quotes/scenarios";
 import { canEditSearchStart, spDateKey } from "@/lib/search-start";
-import { getConnectionState, getInstanceOwnerJid } from "@/lib/evolution-api/client";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
-import { formatWhatsappNumber, resolvePanelConnection } from "@/lib/whatsapp/panel-status";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { formatWhatsappNumber, resolvePanelConnection } from "@/lib/whatsapp/panel-status";
 
 const eventTypeSchema = z.enum([
   "festa_infantil",
@@ -202,9 +204,16 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
             {statusLabels[event.status] ?? event.status}
           </p>
         </div>
-        <span className="rounded-pill bg-areia-secundaria px-4 py-1.5 text-caption text-vinho/70">
-          {unlocked ? "Orçamento liberado" : "Aguardando ativação"}
-        </span>
+        <div className="flex flex-col items-end gap-3">
+          <span className="rounded-pill bg-areia-secundaria px-4 py-1.5 text-caption text-vinho/70">
+            {unlocked ? "Orçamento liberado" : "Aguardando ativação"}
+          </span>
+          <EventLifecycleActions
+            eventId={event.id}
+            canComplete={canCompleteEvent(event.status)}
+            canCancel={canCancelEvent(event.status)}
+          />
+        </div>
       </header>
 
       <section className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">

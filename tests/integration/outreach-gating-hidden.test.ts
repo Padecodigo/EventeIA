@@ -6,13 +6,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * prospects ocultados (soft-hide) nunca recebem mensagem.
  */
 let prospect: Record<string, unknown> = {};
+let eventStatus = "active";
 const send = vi.fn();
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/supabase/admin", () => ({
   getSupabaseAdmin: () => ({
-    from: () => {
-      const q = { select: () => q, eq: () => q, in: () => q, maybeSingle: () => Promise.resolve({ data: prospect }) };
+    from: (table: string) => {
+      const q = {
+        select: () => q,
+        eq: () => q,
+        in: () => q,
+        maybeSingle: () =>
+          Promise.resolve({ data: table === "events" ? { status: eventStatus } : prospect }),
+      };
       return q;
     },
   }),
@@ -50,6 +57,7 @@ describe("outreach: regra dura de dia útil + prospects ocultos", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     send.mockClear();
+    eventStatus = "active";
     prospect = { id: data.prospectId, status: "pending", vendor_name: "Buffet Real", vendor_category: "buffet", dry_run: false, supplier_id: null, hidden_at: null };
   });
 
@@ -71,6 +79,15 @@ describe("outreach: regra dura de dia útil + prospects ocultos", () => {
   it("prospect oculto nunca é contatado (nem adiado)", async () => {
     vi.setSystemTime(new Date("2026-10-26T14:00:00Z"));
     prospect.hidden_at = "2026-10-25T10:00:00Z";
+    const j = job();
+    await processProspectingJob(j as never, "t", {} as never);
+    expect(j.moveToDelayed).not.toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("evento encerrado/excluído nunca dispara", async () => {
+    vi.setSystemTime(new Date("2026-10-26T14:00:00Z"));
+    eventStatus = "canceled";
     const j = job();
     await processProspectingJob(j as never, "t", {} as never);
     expect(j.moveToDelayed).not.toHaveBeenCalled();

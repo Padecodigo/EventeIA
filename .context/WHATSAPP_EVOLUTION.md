@@ -203,7 +203,7 @@ Mocks: servidor fake Evolution (MSW) com fixtures de eventos reais anonimizados.
 
 - Estados da instância: `pending_qr → active → draining → ended` (ou `lost`). `connection.update open` ativa; `close` marca perdida e pausa só os jobs daquele evento (flag Redis `eventeia:event-paused:<eventId>`), sem `queue.pause()` global.
 - Ritmo por instância (Redis `SET NX PX` + jitter) em `lib/queue/prospecting-pacing.ts`; concorrência global via `WHATSAPP_PROSPECTING_CONCURRENCY`.
-- Fim da coleta: meta de 5 cotações por categoria (job `collection-complete-<inst>-<event>`) ou prazo de 48h (`WHATSAPP_COLLECTION_WINDOW_MINUTES`, padrão 2880, job `window-end-<inst>-<event>`). A sessão fica conectada durante toda a coleta; primeiro entrega as cotações (cenários), depois faz logout da instância, notificação `quotations_ready` (idempotente) + e-mail (Resend ou mock).
+- Fim da coleta: meta de 5 cotações por categoria (job `collection-complete-<inst>-<event>`) ou prazo de 24h (`WHATSAPP_COLLECTION_WINDOW_MINUTES`, padrão 1440, job `window-end-<inst>-<event>`). A sessão fica conectada durante toda a coleta; primeiro entrega as cotações (cenários), depois faz logout da instância, notificação `quotations_ready` (idempotente) + e-mail (Resend ou mock).
 - Opt-out unificado em `detectOptOut` (frases + comandos curtos), sempre marca o fornecedor.
 
 ## Fase 3 — Coleta de cotações (inbound → rascunho)
@@ -218,5 +218,5 @@ Mocks: servidor fake Evolution (MSW) com fixtures de eventos reais anonimizados.
 3. Confiança < 0,7 ou sem total ⇒ pergunta de esclarecimento curta (máx. 2 por fornecedor; nunca após
    "respondo depois"). Em dry-run/simulação a pergunta só é registrada (`status = canceled`), nunca enviada.
 4. Fim da coleta: 5 cotações aproveitáveis em TODAS as categorias do evento (exceto `outros`) ⇒ job
-   `collection-complete-<evento>`; ou prazo de 48h (`collection-deadline-<evento>`, agendado no início da
+   `collection-complete-<evento>`; ou prazo de 24h (`collection-deadline-<evento>`, agendado no início da
    descoberta). O worker do ciclo de vida entrega as cotações (fase 4) e só então desconecta a sessão.

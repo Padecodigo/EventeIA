@@ -29,7 +29,7 @@ describe("fluxo de primeiro contato (descoberta → job → payload Evolution)",
     });
     expect(messageText).toMatch(/^Boa tarde, tudo bem\? Aqui é da EventeIA\./);
     expect(messageText).toContain("Estamos fazendo um levantamento de orçamentos.");
-    expect(messageText).toContain("SAIR");
+    expect(messageText).not.toContain("SAIR");
     expect(messageText).toContain("o cardápio, o valor por pessoa e a equipe");
     expect(messageText).toContain("opção vegetariana");
     const job = prospectingJobSchema.parse({

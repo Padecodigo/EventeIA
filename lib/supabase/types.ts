@@ -146,7 +146,14 @@ export interface Database {
         billing_type: "PIX" | "CREDIT_CARD" | "COURTESY";
         amount_cents: number;
         status:
-          "pending" | "paid" | "confirmed" | "overdue" | "refunded" | "risk_review" | "chargeback";
+          | "pending"
+          | "paid"
+          | "confirmed"
+          | "overdue"
+          | "refunded"
+          | "risk_review"
+          | "chargeback"
+          | "canceled";
         asaas_fee_cents: number | null;
         net_cents: number | null;
         credits_granted: number | null;

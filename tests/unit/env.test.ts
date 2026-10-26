@@ -9,6 +9,10 @@ const KEYS = [
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   "ASAAS_API_KEY",
   "EVOLUTION_API_KEY",
+  "B2C_TICKET_PRICE_CENTS",
+  "WHATSAPP_MIN_INTERVAL_SECONDS",
+  "WHATSAPP_COLLECTION_WINDOW_MINUTES",
+  "WHATSAPP_PROSPECTING_CONCURRENCY",
 ] as const;
 
 /**
@@ -49,5 +53,22 @@ describe("serverEnv", () => {
     expect(env.isConfigured("")).toBe(false);
     expect(env.isConfigured(undefined)).toBe(false);
     expect(env.isConfigured("$aab_key")).toBe(true);
+  });
+
+  it("string vazia em variável numérica usa o default (o compose passa \"\")", async () => {
+    process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "http://127.0.0.1:54321";
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "a".repeat(24);
+    process.env.B2C_TICKET_PRICE_CENTS = "";
+    process.env.WHATSAPP_MIN_INTERVAL_SECONDS = "";
+    process.env.WHATSAPP_COLLECTION_WINDOW_MINUTES = "";
+    process.env.WHATSAPP_PROSPECTING_CONCURRENCY = "";
+
+    const env = (await import("@/lib/env")) as typeof import("@/lib/env");
+
+    expect(env.serverEnv().B2C_TICKET_PRICE_CENTS).toBe(9700);
+    expect(env.serverEnv().WHATSAPP_MIN_INTERVAL_SECONDS).toBe(60);
+    expect(env.serverEnv().WHATSAPP_COLLECTION_WINDOW_MINUTES).toBe(1440);
+    expect(env.serverEnv().WHATSAPP_PROSPECTING_CONCURRENCY).toBe(25);
   });
 });

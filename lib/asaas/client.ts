@@ -245,6 +245,15 @@ export async function cancelAsaasSubscription(subscriptionId: string): Promise<v
   );
 }
 
+/** Cancela uma cobrança pendente no Asaas (Pix de evento que está sendo excluído). */
+export async function cancelAsaasPayment(paymentId: string): Promise<void> {
+  await request(
+    `/payments/${encodeURIComponent(paymentId)}`,
+    { method: "DELETE" },
+    z.object({ deleted: z.boolean().optional() }).passthrough(),
+  );
+}
+
 /**
  * Desconto só na 1ª fatura da assinatura: localiza a cobrança inicial gerada pelo
  * Asaas e altera apenas o valor dela (as próximas seguem o valor cheio).
