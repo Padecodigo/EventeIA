@@ -68,6 +68,6 @@ describe("triagem da resposta do fornecedor", () => {
     expect(reply.kind).toBe("question");
     expect(reply.reply).toContain("Festa da Lia");
     expect(reply.reply).toContain(formatEventDate("2026-12-05"));
-    expect(reply.reply.toLowerCase()).toContain(IDENTITY_PHRASE.toLowerCase());
+    expect((reply.reply ?? "").toLowerCase()).toContain(IDENTITY_PHRASE.toLowerCase());
   });
 });
