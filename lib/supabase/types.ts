@@ -129,6 +129,16 @@ export interface Database {
         updated_at: string;
         created_at: string;
       }>;
+      quotation_choices: Table<{
+        id: string;
+        event_id: string;
+        quotation_id: string;
+        option_index: number;
+        option_snapshot: Json;
+        chosen_by_profile_id: string | null;
+        created_at: string;
+        updated_at: string;
+      }>;
       budget_snapshots: Table<{
         id: string;
         event_id: string;

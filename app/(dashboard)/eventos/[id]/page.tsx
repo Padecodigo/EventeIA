@@ -6,6 +6,7 @@ import { z } from "zod";
 import { ActivateWithCredit } from "@/components/domain/activate-with-credit";
 import { BudgetTable } from "@/components/domain/budget-table";
 import { BuyTicketForm } from "@/components/domain/buy-ticket-form";
+import { ChoicesPanel } from "@/components/domain/choices-panel";
 import { EventLifecycleActions } from "@/components/domain/event-lifecycle-actions";
 import { ProspectingPanel } from "@/components/domain/prospecting-panel";
 import { QuotationsPanel } from "@/components/domain/quotations-panel";
@@ -24,6 +25,8 @@ import { lookupLuckyCoupon } from "@/lib/lucky/server";
 import { formatBRL } from "@/lib/money";
 import { offerDiscountCents } from "@/lib/offers/pure";
 import { activeUserOffer } from "@/lib/offers/server";
+import { parseQuotationOptions } from "@/lib/quotes/choices";
+import { categoryLabel } from "@/lib/quotes/labels";
 import { latestScenarios } from "@/lib/quotes/scenarios";
 import { canEditSearchStart, spDateKey } from "@/lib/search-start";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -123,7 +126,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
         .maybeSingle(),
       supabase
         .from("quotations")
-        .select("id,category,vendor_name,vendor_contact,amount_cents,status,created_at")
+        .select("id,category,vendor_name,vendor_contact,amount_cents,status,created_at,extraction")
         .eq("event_id", event.id)
         .order("created_at", { ascending: true }),
       supabase
@@ -191,6 +194,36 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
   const requirementCategories = [...new Set((requirementRows ?? []).map((r) => r.category))];
   const interviewDone = event.interview_completed_at !== null;
+
+  // Escolhas do fornecedor: opções/pacotes extraídos de cada cotação + a escolhida.
+  const { data: choiceRows } = await supabase
+    .from("quotation_choices")
+    .select("quotation_id,option_index")
+    .eq("event_id", event.id);
+  const chosenByQuotation = new Map(
+    (choiceRows ?? []).map((row) => [row.quotation_id, row.option_index]),
+  );
+  const choiceViews = (quotationsResult.data ?? [])
+    .filter((q) => q.status === "draft")
+    .map((q) => {
+      const options = parseQuotationOptions(q.extraction);
+      return {
+        quotationId: q.id,
+        vendorName: q.vendor_name,
+        categoryLabel: categoryLabel(q.category),
+        vendorContact: q.vendor_contact,
+        options: options.map((option, index) => ({
+          index,
+          name: option.name,
+          description: option.description ?? null,
+          includes: option.includes ?? [],
+          amountFormatted:
+            option.amount_cents === null ? "A combinar" : formatBRL(option.amount_cents),
+        })),
+        chosenIndex: chosenByQuotation.get(q.id) ?? null,
+      };
+    })
+    .filter((row) => row.options.length > 0);
 
   return (
     <div className="flex flex-col gap-8">
@@ -277,6 +310,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           ) : null}
           <ScenariosPanel eventId={event.id} scenarios={scenarios} />
           <QuotationsPanel eventId={event.id} quotations={quotationsResult.data ?? []} />
+          <ChoicesPanel eventId={event.id} rows={choiceViews} />
           <ProspectingPanel
             eventId={event.id}
             prospects={prospectsResult.data ?? []}
