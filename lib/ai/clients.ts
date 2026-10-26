@@ -174,6 +174,13 @@ export function createMockLlmClient(name: LlmProviderName, confidence = 0.8): Ll
         case "optout_intent":
           value = contingencyOptOut(text);
           break;
+        case "supplier_reply":
+          value = {
+            kind: "question",
+            reply: "Ok, deixa eu confirmar com a organização e já te retorno.",
+            confidence_score: 0.6,
+          };
+          break;
         case "first_reply_parsing":
           value = contingencyFirstReply(text);
           break;

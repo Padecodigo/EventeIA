@@ -31,6 +31,10 @@ Responda SOMENTE um objeto JSON com exatamente estas chaves:
   lavagem_louca, toalhas, mesas_cadeiras, limpeza, seguranca, som, iluminacao, decoracao, bolo_doces, gerador,
   frete_entrega, recolhimento, montagem_desmontagem, transporte_convidados, cozinha, estacionamento, outro.
   price_cents só quando o fornecedor der um valor separado para aquele item; senão null. Não liste o que não foi dito.
+- options: lista de pacotes/opções DISTINTOS que o fornecedor ofereceu para o cliente escolher
+  (ex.: "Pacote prata", "Pacote ouro", "cardápio A/B"), cada um com { name: string, description?: string,
+  includes?: string[], amount_cents: inteiro ou null }. Preencha SOMENTE quando o fornecedor apresentar
+  mais de uma opção; com uma única oferta, use [].
 - validity_days: inteiro ou null.
 - payment_conditions: string ou null.
 - confidence_score: número entre 0 e 1.
@@ -76,6 +80,8 @@ function salvagePartial(candidate: unknown): NuancedQuotation {
   if (validity.success) result.validity_days = validity.data;
   const scope = shape.scope.safeParse(record.scope);
   if (scope.success) result.scope = scope.data;
+  const options = shape.options.safeParse(record.options);
+  if (options.success) result.options = options.data;
   const payment = shape.payment_conditions.safeParse(record.payment_conditions);
   if (payment.success) result.payment_conditions = payment.data;
   // confiança zerada: parcial nunca é tratado como confiável.

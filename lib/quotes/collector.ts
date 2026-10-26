@@ -3,6 +3,8 @@ import { z } from "zod";
 import type { FirstReplyIntent } from "@/lib/ai/contingency";
 import type { MandatoryFee, NuancedQuotation } from "@/lib/schemas/quotation-extraction";
 
+import { sanitizeSupplierReply, type SupplierReply, type SupplierReplyKind } from "./triage";
+
 /**
  * Fase 3 — coleta: inbound do fornecedor → extração (roteador) → rascunho em `quotations`.
  * Confiança baixa ⇒ pergunta de esclarecimento (no máx. MAX_FOLLOWUPS por fornecedor).
@@ -36,6 +38,14 @@ export interface CollectorContext {
     category: string;
     phone: string;
     supplierId: string | null;
+  };
+  /** Resumo do evento para a triagem/redação da resposta (nunca inventar dados). */
+  event: {
+    title: string;
+    eventType: string;
+    eventDateIso: string;
+    city: string;
+    guestCount: number;
   };
   /** Mensagens inbound do fornecedor neste evento, em ordem. */
   inboundText: string;
@@ -73,6 +83,28 @@ export interface CollectorDeps {
   extract(text: string, eventId?: string): Promise<Routed<NuancedQuotation>>;
   hiddenFees(text: string, eventId?: string): Promise<Routed<{ fees: MandatoryFee[] }>>;
   saveDraft(row: DraftRow): Promise<void>;
+  /** Redige a resposta humana a uma dúvida do fornecedor (não envia). */
+  draftReply(input: {
+    eventId: string;
+    text: string;
+    questions: string[];
+    context: {
+      eventTitle: string;
+      eventType: string;
+      eventDateIso: string;
+      city: string;
+      guestCount: number;
+      categoryLabel: string;
+      vendorName: string;
+    };
+  }): Promise<Routed<SupplierReply>>;
+  /** Guarda a resposta pendente de aprovação no fornecedor (vendor_prospects). */
+  savePendingReply(input: {
+    eventId: string;
+    prospectId: string;
+    kind: SupplierReplyKind;
+    reply: string;
+  }): Promise<void>;
   sendFollowUp(input: {
     eventId: string;
     prospectId: string;
@@ -139,7 +171,10 @@ export function buildFollowUp(
 
 export type CollectorOutcome =
   | { status: "skipped" | "declined" }
-  | { status: "usable" | "followup" | "incomplete"; end: "triggered" | "pending" | "not_active" };
+  | {
+      status: "usable" | "drafted" | "followup" | "incomplete";
+      end: "triggered" | "pending" | "not_active";
+    };
 
 export async function processQuoteMessage(
   deps: CollectorDeps,
@@ -163,21 +198,57 @@ export async function processQuoteMessage(
 
   let followupCount = await deps.getFollowupCount(ctx.eventId, ctx.prospect.id);
   let followedUp = false;
+  let draftedReply = false;
+
   // "later" = fornecedor avisou que responde depois: não insistir.
-  if (!usable && followupCount < MAX_FOLLOWUPS && first.value.intent !== "later") {
-    const sent = await deps.sendFollowUp({
-      eventId: ctx.eventId,
-      prospectId: ctx.prospect.id,
-      phone: ctx.prospect.phone,
-      text: buildFollowUp(ctx.prospect.name, {
-        total: resolved.amountCents === null,
-        fees: resolved.confidence < QUOTE_MIN_CONFIDENCE,
-      }),
-      n: followupCount + 1,
-    });
-    if (sent !== "skipped") {
-      followupCount += 1;
-      followedUp = true;
+  // Sem valor e com pergunta ⇒ redige resposta humana para APROVAÇÃO (nunca envia sozinha).
+  // Sem pergunta ⇒ mantém o follow-up pedindo só o que falta.
+  if (!usable && first.value.intent !== "later") {
+    if (first.value.questions.length > 0) {
+      try {
+        const drafted = await deps.draftReply({
+          eventId: ctx.eventId,
+          text,
+          questions: first.value.questions,
+          context: {
+            eventTitle: ctx.event.title,
+            eventType: ctx.event.eventType,
+            eventDateIso: ctx.event.eventDateIso,
+            city: ctx.event.city,
+            guestCount: ctx.event.guestCount,
+            categoryLabel: ctx.prospect.category,
+            vendorName: ctx.prospect.name,
+          },
+        });
+        const reply = sanitizeSupplierReply(drafted.value.reply);
+        if (reply !== null) {
+          await deps.savePendingReply({
+            eventId: ctx.eventId,
+            prospectId: ctx.prospect.id,
+            kind: drafted.value.kind,
+            reply,
+          });
+          draftedReply = true;
+        }
+      } catch {
+        // falha ao redigir não impede o follow-up tradicional
+      }
+    }
+    if (!draftedReply && followupCount < MAX_FOLLOWUPS) {
+      const sent = await deps.sendFollowUp({
+        eventId: ctx.eventId,
+        prospectId: ctx.prospect.id,
+        phone: ctx.prospect.phone,
+        text: buildFollowUp(ctx.prospect.name, {
+          total: resolved.amountCents === null,
+          fees: resolved.confidence < QUOTE_MIN_CONFIDENCE,
+        }),
+        n: followupCount + 1,
+      });
+      if (sent !== "skipped") {
+        followupCount += 1;
+        followedUp = true;
+      }
     }
   }
 
@@ -204,7 +275,10 @@ export async function processQuoteMessage(
   });
 
   const end = await deps.checkCollectionEnd(ctx.eventId);
-  return { status: usable ? "usable" : followedUp ? "followup" : "incomplete", end };
+  return {
+    status: usable ? "usable" : draftedReply ? "drafted" : followedUp ? "followup" : "incomplete",
+    end,
+  };
 }
 
 /** Contagem de cotações aproveitáveis por categoria (para a regra dos 5). */

@@ -32,6 +32,7 @@ export type LlmTask =
   | "classification"
   | "negotiation"
   | "optout_intent"
+  | "supplier_reply"
   | "discovery_search";
 
 /** Tarefas em que o Grok vem antes do NIM no fallback (ainda sujeito ao teto). */

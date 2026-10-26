@@ -47,12 +47,26 @@ export const scopeEntrySchema = z.object({
 
 export type ScopeEntry = z.infer<typeof scopeEntrySchema>;
 
+/**
+ * Opção/pacote que o fornecedor ofereceu (ex.: "Pacote prata", "Pacote ouro").
+ * Preço em centavos; null = "a combinar". O usuário escolhe no painel do evento.
+ */
+export const quoteOptionSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  description: z.string().trim().max(300).optional(),
+  includes: z.array(z.string().trim().max(60)).max(20).optional(),
+  amount_cents: centsSchema.nullable().default(null),
+});
+
+export type QuoteOption = z.infer<typeof quoteOptionSchema>;
+
 export const nuancedQuotationSchema = z.object({
   total_price_cents: centsSchema.nullable(),
   base_price_cents: centsSchema.nullable(),
   mandatory_fees: z.array(mandatoryFeeSchema).max(30),
   item_breakdown: z.array(itemBreakdownSchema).max(100),
   scope: z.array(scopeEntrySchema).max(40).default([]),
+  options: z.array(quoteOptionSchema).max(15).default([]),
   validity_days: z.number().int().min(0).max(365).nullable(),
   payment_conditions: z.string().trim().max(500).nullable(),
   confidence_score: z.number().min(0).max(1),
@@ -76,6 +90,7 @@ export const EMPTY_QUOTATION: Readonly<NuancedQuotation> = Object.freeze({
   mandatory_fees: [],
   item_breakdown: [],
   scope: [],
+  options: [],
   validity_days: null,
   payment_conditions: null,
   confidence_score: 0,

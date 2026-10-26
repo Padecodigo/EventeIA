@@ -20,12 +20,20 @@ const PROSPECT = "22222222-2222-4222-8222-222222222222";
 function fakeDeps(text: string, opts: { confidence?: number; followups?: number; ended?: boolean } = {}) {
   const drafts: DraftRow[] = [];
   const followups: string[] = [];
+  const pending: { kind: string; reply: string }[] = [];
   const deps: CollectorDeps = {
     loadContext: () =>
       Promise.resolve({
         eventId: EVENT,
         collectionEnded: opts.ended ?? false,
         prospect: { id: PROSPECT, name: "Buffet Alegria", category: "buffet", phone: "+5512999990000", supplierId: null },
+        event: {
+          title: "Festa da Lia",
+          eventType: "festa_infantil",
+          eventDateIso: "2026-12-05",
+          city: "Taubaté",
+          guestCount: 40,
+        },
         inboundText: text,
       }),
     getFollowupCount: () => Promise.resolve(opts.followups ?? 0),
@@ -36,6 +44,20 @@ function fakeDeps(text: string, opts: { confidence?: number; followups?: number;
         provider: "deepseek",
       }),
     hiddenFees: (t) => Promise.resolve({ value: contingencyHiddenFees(t), provider: "deepseek" }),
+    draftReply: () =>
+      Promise.resolve({
+        value: {
+          kind: "question" as const,
+          reply:
+            "Olá! Somos uma empresa que faz orçamentos para eventos — o evento será em Taubaté para 40 convidados. Pode confirmar os valores?",
+          confidence_score: 0.8,
+        },
+        provider: "deepseek",
+      }),
+    savePendingReply: ({ kind, reply }) => {
+      pending.push({ kind, reply });
+      return Promise.resolve();
+    },
     saveDraft: (row) => {
       drafts.push(row);
       return Promise.resolve();
@@ -46,7 +68,7 @@ function fakeDeps(text: string, opts: { confidence?: number; followups?: number;
     },
     checkCollectionEnd: () => Promise.resolve("pending"),
   };
-  return { deps, drafts, followups };
+  return { deps, drafts, followups, pending };
 }
 
 const job = { eventId: EVENT, prospectId: PROSPECT };
@@ -87,6 +109,17 @@ describe("fase 3 — coleta de cotações", () => {
     const { deps, followups } = fakeDeps("Te passo amanhã", { confidence: 0 });
     expect((await processQuoteMessage(deps, job)).status).toBe("incomplete");
     expect(followups).toHaveLength(0);
+  });
+
+  it("pergunta do fornecedor gera resposta pendente para aprovação (sem follow-up)", async () => {
+    const { deps, drafts, followups, pending } = fakeDeps("Qual a data? Quantas pessoas?");
+    const out = await processQuoteMessage(deps, job);
+    expect(out.status).toBe("drafted");
+    expect(pending).toHaveLength(1);
+    expect(pending[0]?.kind).toBe("question");
+    expect(pending[0]?.reply).toMatch(/orçamentos para eventos/);
+    expect(followups).toHaveLength(0);
+    expect(drafts[0]).toMatchObject({ needsFollowup: true });
   });
 
   it("total ausente: base + taxas extras; contingência limita confiança a 0,3", () => {

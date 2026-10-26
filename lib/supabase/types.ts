@@ -129,6 +129,16 @@ export interface Database {
         updated_at: string;
         created_at: string;
       }>;
+      quotation_choices: Table<{
+        id: string;
+        event_id: string;
+        quotation_id: string;
+        option_index: number;
+        option_snapshot: Json;
+        chosen_by_profile_id: string | null;
+        created_at: string;
+        updated_at: string;
+      }>;
       budget_snapshots: Table<{
         id: string;
         event_id: string;
@@ -326,6 +336,9 @@ export interface Database {
         source_url: string | null;
         dry_run: boolean;
         hidden_at: string | null;
+        pending_reply: string | null;
+        pending_reply_kind: "question" | "values" | "unavailable" | "other" | null;
+        pending_reply_at: string | null;
         created_at: string;
       }>;
       suppliers: Table<{

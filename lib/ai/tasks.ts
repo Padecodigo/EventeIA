@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { supplierReplySchema, type SupplierReply, type SupplierReplyContext } from "@/lib/quotes/triage";
 import { mandatoryFeeSchema, nuancedQuotationSchema, type NuancedQuotation } from "@/lib/schemas/quotation-extraction";
 
 import {
@@ -8,6 +9,7 @@ import {
   contingencyHiddenFees,
   contingencyOptOut,
   contingencyQuotation,
+  contingencySupplierReply,
 } from "./contingency";
 import type { ChatMessage, RouteResult, Router, UsageMeta } from "./router";
 
@@ -158,5 +160,26 @@ Se nenhuma servir, use null. Responda só JSON {"category": string|null, "confid
     confidence: (r) => r.confidence_score,
     contingency: () => contingencyClassification(text, allowed),
     maxTokens: 60,
+  });
+}
+
+/**
+ * Triagem da resposta do fornecedor: classifica (dúvida/valores/indisponível/outro)
+ * e redige a resposta humana que o usuário aprova antes do envio.
+ */
+export async function routeSupplierReply(
+  router: Router,
+  messages: ChatMessage[],
+  context: SupplierReplyContext,
+  meta?: CostMeta,
+): Promise<RouteResult<SupplierReply>> {
+  return router.run({
+    meta,
+    task: "supplier_reply",
+    messages,
+    schema: supplierReplySchema,
+    confidence: (r) => r.confidence_score,
+    contingency: () => contingencySupplierReply(context),
+    maxTokens: 600,
   });
 }
