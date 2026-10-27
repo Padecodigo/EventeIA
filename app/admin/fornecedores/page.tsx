@@ -5,7 +5,7 @@ import { requireAdmin } from "@/lib/auth";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 import { Card, fmtDate, likeTerm } from "../ui";
-import { socialContactUrl } from "@/lib/social/contact";
+import { socialContactUrl, SOCIAL_FIRST_CONTACT } from "@/lib/social/contact";
 import { DeleteSupplier } from "./delete-supplier";
 
 export const dynamic = "force-dynamic";
@@ -66,7 +66,7 @@ export default async function AdminFornecedoresPage({ searchParams }: { searchPa
                   <td>{fmtDate(r.last_contacted_at)}</td>
                   <td>
                     {(() => {
-                      const c = socialContactUrl(r.source_url);
+                      const c = socialContactUrl(r.source_url, SOCIAL_FIRST_CONTACT);
                       return c === null
                         ? <span className="text-vinho/40">—</span>
                         : <a href={c.url} target="_blank" rel="noreferrer" className="font-medium underline">{c.label}</a>;

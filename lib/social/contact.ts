@@ -16,7 +16,15 @@ export interface SocialContact {
   url: string;
 }
 
-export function socialContactUrl(sourceUrl: string): SocialContact | null {
+/**
+ * Primeira mensagem genérica para o contato manual. É um ponto de partida: o
+ * usuário vê o texto pré-preenchido na DM e pode editar antes de enviar. Ajuste
+ * aqui quando a copy mudar.
+ */
+export const SOCIAL_FIRST_CONTACT =
+  "Olá! Aqui é da EventeIA. Vi o perfil de vocês e gostaria de pedir um orçamento para um evento. Podem me ajudar?";
+
+export function socialContactUrl(sourceUrl: string, message?: string): SocialContact | null {
   let u: URL;
   try {
     u = new URL(sourceUrl);
@@ -36,7 +44,8 @@ export function socialContactUrl(sourceUrl: string): SocialContact | null {
   if (host === "instagram.com" && first !== undefined) {
     const handle = first.replace(/^@/, "");
     if (handle.length > 0) {
-      return { platform: "instagram", label: "Instagram DM", url: `https://ig.me/m/${handle}` };
+      const query = message !== undefined && message.trim().length > 0 ? `?text=${encodeURIComponent(message)}` : "";
+      return { platform: "instagram", label: "Instagram DM", url: `https://ig.me/m/${handle}${query}` };
     }
   }
 
