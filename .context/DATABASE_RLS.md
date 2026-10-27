@@ -72,6 +72,16 @@ create table public.events (
   created_at timestamptz not null default now()
 );
 
+-- Transições de status permitidas ao cliente (trigger guard_events_client_write,
+-- 0029 + 0051). A RLS "events: dono/planner edita" já limita a linha ao dono ou
+-- a quem edita o workspace; a guarda limita o destino:
+--   draft -> awaiting_payment   (concluir a compra)
+--   active -> completed          (encerrar o evento)
+--   *     -> canceled            (soft delete; nunca DELETE físico)
+-- Nenhuma transição leva a 'active': ativação é exclusiva do servidor
+-- (webhook do pagamento e créditos), para o cliente não liberar a descoberta
+-- e o WhatsApp sem pagar.
+
 -- Tíquete B2C (1 por evento quando comprado)
 create table public.event_tickets (
   id uuid primary key default gen_random_uuid(),
