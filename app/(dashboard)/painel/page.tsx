@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { PanelEventDelete } from "@/components/domain/panel-event-delete";
+import { PanelEventsClear } from "@/components/domain/panel-events-clear";
 import { getUserActivity } from "@/lib/activity";
 import { requireUser } from "@/lib/auth";
 import { personalEventsFilter } from "@/lib/auth/personal-scope-server";
@@ -102,8 +104,9 @@ export default async function DashboardPage() {
       </section>
 
       <section>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-serif text-title-1">Últimos eventos</h2>
+          <PanelEventsClear liveCount={totalEvents} />
           <Link
             href="/eventos"
             className="text-sm font-medium text-vinho underline decoration-champagne underline-offset-4"
@@ -128,10 +131,10 @@ export default async function DashboardPage() {
         ) : (
           <ul className="mt-6 divide-y divide-line-subtle rounded-card border border-line-subtle bg-off-white">
             {events.map((event) => (
-              <li key={event.id}>
+              <li key={event.id} className="flex items-center gap-2 pr-4">
                 <Link
                   href={`/eventos/${event.id}`}
-                  className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 transition hover:bg-areia-quente/60"
+                  className="flex flex-1 flex-wrap items-center justify-between gap-3 px-6 py-4 transition hover:bg-areia-quente/60"
                 >
                   <div>
                     <p className="font-medium text-vinho">{event.title}</p>
@@ -142,6 +145,7 @@ export default async function DashboardPage() {
                   </div>
                   <span className="text-sm text-vinho/70">ver evento →</span>
                 </Link>
+                <PanelEventDelete eventId={event.id} title={event.title} />
               </li>
             ))}
           </ul>
