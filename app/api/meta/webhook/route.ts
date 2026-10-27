@@ -4,15 +4,17 @@ import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { verifyChallenge, verifyHubSignature } from "@/lib/meta/signature";
 import { parseMetaWebhook } from "@/lib/meta/webhook";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import type { Json } from "@/lib/supabase/types";
 
 export const runtime = "nodejs";
 
 /**
  * Webhook único do Meta (Instagram + Messenger).
  *
- * Fase 2 (fundação): verifica a assinatura e normaliza as mensagens recebidas.
- * O encaminhamento para o pipeline de interpretação (DeepSeek V4 Flash) entra
- * na etapa seguinte; por ora nada é processado nem persistido.
+ * Verifica a assinatura, normaliza as mensagens e as persiste em
+ * `webhook_events` (dedup por source + external_event_id). O encaminhamento para
+ * o pipeline de interpretação (DeepSeek V4 Flash) entra na etapa seguinte.
  */
 
 /** Verificação do webhook pela Meta (hub.challenge). */
@@ -27,7 +29,7 @@ export function GET(request: Request): NextResponse {
   return new NextResponse(challenge, { status: 200, headers: { "Content-Type": "text/plain" } });
 }
 
-/** Recebe mensagens do Instagram/Messenger, valida a assinatura e normaliza. */
+/** Recebe mensagens do Instagram/Messenger, valida a assinatura e persiste. */
 export async function POST(request: Request): Promise<NextResponse> {
   const raw = await request.text();
   if (!verifyHubSignature(raw, request.headers.get("x-hub-signature-256"), serverEnv().META_APP_SECRET)) {
@@ -48,8 +50,32 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ received: true }, { status: 200 });
   }
 
-  logger.info({ count: messages.length }, "webhook meta: mensagens recebidas (fundação)");
+  const admin = getSupabaseAdmin();
+  let persisted = 0;
+  for (const message of messages) {
+    const { data: inserted, error } = await admin
+      .from("webhook_events")
+      .upsert(
+        {
+          // A migração 0052 relaxa o CHECK para incluir 'meta'; os tipos gerados
+          // (`supabase gen types`) ainda não foram regenerados, então o cast é
+          // temporário até o banco receber a 0052 e os tipos serem re-gerados.
+          source: "meta" as unknown as "whatsapp_cloud",
+          external_event_id: message.eventId,
+          payload: message as unknown as Json,
+          status: "received",
+        },
+        { onConflict: "source,external_event_id", ignoreDuplicates: true },
+      )
+      .select("id")
+      .maybeSingle();
+    if (error !== null) {
+      logger.error({ code: error.code }, "falha ao persistir webhook meta");
+      return NextResponse.json({ error: "persist_failed" }, { status: 500 });
+    }
+    if (inserted !== null) persisted += 1;
+  }
 
-  // TODO(meta, etapa seguinte): repassar para o pipeline de entrada + responder.
+  logger.info({ received: messages.length, persisted }, "webhook meta: mensagens persistidas");
   return NextResponse.json({ received: true, count: messages.length }, { status: 200 });
 }

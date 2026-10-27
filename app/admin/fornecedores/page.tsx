@@ -2,10 +2,10 @@ import Link from "next/link";
 
 import { AdminSupplierClear } from "@/components/admin/admin-supplier-clear";
 import { requireAdmin } from "@/lib/auth";
+import { socialContactUrl, SOCIAL_FIRST_CONTACT } from "@/lib/social/contact";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 import { Card, fmtDate, likeTerm } from "../ui";
-import { socialContactUrl, SOCIAL_FIRST_CONTACT } from "@/lib/social/contact";
 import { DeleteSupplier } from "./delete-supplier";
 
 export const dynamic = "force-dynamic";
