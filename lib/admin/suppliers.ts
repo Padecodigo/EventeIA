@@ -20,3 +20,24 @@ export async function softDeleteSupplier(db: SupplierDb, supplierId: unknown, ad
   const { error } = await db.from("suppliers").update({ deleted_at: now.toISOString(), deleted_by: adminId }).eq("id", supplierId).is("deleted_at", null);
   return error ? { ok: false, error: "Não foi possível excluir. Tente de novo." } : { ok: true };
 }
+
+/** Palavra digitada pelo admin para confirmar a limpeza da lista de fornecedores. */
+export const SUPPLIERS_CLEAR_CONFIRMATION = "LIMPAR";
+
+export function isSuppliersClearConfirmed(value: unknown): boolean {
+  return typeof value === "string" && value.trim().toUpperCase() === SUPPLIERS_CLEAR_CONFIRMATION;
+}
+
+/**
+ * "Limpar fornecedores": manda para a Lixeira todos os que ainda não estão lá.
+ *
+ * É um UPDATE filtrado por `deleted_at is null` — nunca um DELETE sem WHERE.
+ * O que já está na lixeira não é tocado, então a ação é idempotente.
+ */
+export async function softDeleteAllSuppliers(db: SupplierDb, adminId: string, now = new Date()): Promise<OpResult> {
+  const { error } = await db
+    .from("suppliers")
+    .update({ deleted_at: now.toISOString(), deleted_by: adminId })
+    .is("deleted_at", null);
+  return error ? { ok: false, error: "Não foi possível excluir. Tente de novo." } : { ok: true };
+}

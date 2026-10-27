@@ -38,10 +38,10 @@ export function canCancelEvent(status: string): boolean {
  * A ação é um UPDATE filtrado (nunca DELETE), mas atinge vários eventos de uma
  * vez — por isso exige confirmação explícita e não apenas um clique.
  */
-export const BULK_CANCEL_CONFIRMATION = "CANCELAR";
+export const BULK_CLEAR_CONFIRMATION = "LIMPAR";
 
-export function isBulkCancelConfirmed(value: unknown): boolean {
+export function isBulkClearConfirmed(value: unknown): boolean {
   return (
-    typeof value === "string" && value.trim().toUpperCase() === BULK_CANCEL_CONFIRMATION
+    typeof value === "string" && value.trim().toUpperCase() === BULK_CLEAR_CONFIRMATION
   );
 }
