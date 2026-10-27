@@ -319,6 +319,125 @@ Metodologia: **Trunk-Based Development** — `main` sempre implantável, PRs peq
 
 ---
 
+## Fluxo de prospecção de fornecedores (Instagram/Messenger)
+
+> Objetivo: atrair fornecedores com **posts de isca**, receber o contato por **comentário ou DM** e fechar a cotação na própria conversa — sempre pelas **APIs oficiais** da Meta.
+
+### Princípios de conformidade
+
+- **Nunca** o bot manda a primeira DM para quem não interagiu. O fornecedor inicia (comentário ou DM).
+- Resposta na DM só dentro da **janela de 24h**; private reply a comentário só dentro de **7 dias**.
+- Proibido: login por navegador, automação de tela, follow/DM/comentário em perfis de terceiros.
+- O agente **se identifica como assistente virtual** quando perguntado e respeita pedido de parada (opt-out).
+- Texto do fornecedor é **dado**, nunca instrução executável.
+
+### Diagrama ponta a ponta
+
+```mermaid
+flowchart LR
+  A[Lista de fornecedores\n(CSV/banco — etapa separada)] --> B[Plano de posts\nplanPostBatches + buildPostContent]
+  B --> C[Aprovação humana\nREQUIRE_APPROVAL=true]
+  C --> D[Imagem SDXL\nModelsLab]
+  D --> E[Container + publish\nInstagram Content Publishing]
+  E --> F[Post no perfil]
+  F --> G{Fornecedor\ncomenta ou manda DM}
+  G -->|comentário com palavra-chave| H[Private reply\n(7 dias)]
+  G -->|DM| I[Webhook Meta\nassinatura + dedup]
+  I --> J[Resolve fornecedor\nIGSID/@username]
+  J --> K[(prospect_conversations\nprospect_messages)]
+  K --> L[Agente LLM\nhistórico + critérios]
+  L --> M{Dentro dos critérios?}
+  M -->|sim| N[Salva prospect_quotes\ne responde na DM]
+  M -->|não| O[Escala ao humano\n(awaiting_human)]
+  N --> P{Opt-out?}
+  O --> P
+  P -->|sim| Q[Marca opted_out]
+```
+
+### Módulos
+
+| Módulo | Responsabilidade |
+|---|---|
+| `lib/meta/limits.ts` | Limites/permissões oficiais (Meta e ModelsLab) com data e links da consulta. |
+| `lib/meta/signature.ts` | `X-Hub-Signature-256` e desafio `hub.challenge`. |
+| `lib/meta/webhook.ts` | Normaliza DMs (`parseMetaWebhook`) e comentários (`parseMetaComments`). |
+| `lib/meta/resolve.ts` | IGSID → fornecedor (Graph API + `source_url`) e @handle → fornecedor. |
+| `lib/meta/client.ts` · `lib/meta/publishing.ts` | Envio de DM, container, publish e private reply. |
+| `lib/modelslab/client.ts` | Geração de imagem SDXL (`/api/v6/realtime/text2img`). |
+| `lib/prospecting/batch.ts` | Divisão em lotes por limite de marcações e posts por dia. |
+| `lib/prospecting/window.ts` | Janela de 24h e prazo de 7 dias da private reply. |
+| `lib/prospecting/opt-out.ts` · `router.ts` | Detecção de parada e roteamento do evento. |
+| `lib/prospecting/quote.ts` | Schema da cotação (dinheiro em centavos inteiros). |
+| `lib/prospecting/content.ts` | Prompt visual + legenda (CTA, menções, "imagens ilustrativas"). |
+| `lib/prospecting/agent.ts` · `agent-runtime.ts` | Prompt/regras do agente e execução no DeepSeek. |
+| `lib/prospecting/respond.ts` · `supabase-respond.ts` | Aplica resposta: responde, salva cotação, opt-out, escalona. |
+| `lib/prospecting/inbound.ts` · `supabase-store.ts` | Conversa/mensagem idempotente por evento externo. |
+| `lib/prospecting/publish-plan.ts` · `publish-runtime.ts` | Plano e execução do post com gate de aprovação. |
+| `app/api/meta/webhook/route.ts` | Endpoint único do Meta (verificação, assinatura, dedup e agente). |
+| `supabase/migrations/0052…0053` | `webhook_events` aceita `meta`; tabelas `prospect_*`. |
+
+### Regra de divisão dos posts
+
+1. Fornecedores são agrupados por **categoria/produto**.
+2. Cada grupo é fatiado em lotes de até `MAX_TAGS_PER_POST` (nunca acima do limite da plataforma).
+3. Os lotes viram posts distribuídos ao longo dos dias com no máximo `MAX_POSTS_PER_DAY` por dia (`dayIndex`).
+4. Se sobrarem fornecedores, novos posts são criados e espaçados — o excedente nunca é descartado.
+5. Cada post recebe legenda **diferente** (variação determinística por `dayIndex`) e o aviso **"Imagens ilustrativas."**.
+
+### Fluxo da DM (detalhado)
+
+1. Webhook `POST /api/meta/webhook` valida a assinatura; payload inválido → 400; sem assinatura → 401.
+2. DMs são persistidas em `webhook_events` (dedup por `source + external_event_id`).
+3. O remetente é resolvido para um fornecedor (`IGSID` → `@username` → `source_url`).
+4. `handleInbound` cria/encontra a conversa e grava a mensagem **sem duplicar** (replay = `recorded:false`).
+5. O agente roda com o histórico e critérios (`maxPriceCents`/`maxDeadlineDays`); a resposta é validada por schema.
+6. Efeitos: responde na DM; em cotação, salva `prospect_quotes`; fora dos critérios, escala; pedido de parada marca `opted_out`.
+7. Sem `META_ACCESS_TOKEN`/`META_INSTAGRAM_BUSINESS_ID`, o fluxo registra e **não envia** (degrada sem quebrar).
+
+### Variáveis de ambiente (prospecção)
+
+| Variável | Padrão | Uso |
+|---|---|---|
+| `META_ACCESS_TOKEN` | — | Token do app/Página (Graph API). |
+| `META_APP_SECRET` | — | Assinatura `X-Hub-Signature-256`. |
+| `META_VERIFY_TOKEN` | — | Desafio de verificação do webhook. |
+| `META_PAGE_ID` | — | Página do Facebook. |
+| `META_INSTAGRAM_BUSINESS_ID` | — | Conta profissional do Instagram (envio). |
+| `META_API_VERSION` | `v26.0` | Versão da Graph API. |
+| `META_PROSPECT_KEYWORD` | `cotação` | Palavra-chave do CTA/private reply. |
+| `MODELSLAB_API_KEY` | — | Geração de imagem SDXL. |
+| `REQUIRE_APPROVAL` | `true` | Exige aprovação humana antes de publicar. |
+| `MAX_POSTS_PER_DAY` | `2` | Posts por dia (máx. 50). |
+| `MAX_TAGS_PER_POST` | `8` | Marcações por post. |
+| `MIN_POST_INTERVAL_MINUTES` | `60` | Intervalo mínimo entre posts. |
+
+### Como rodar e testar
+
+```bash
+pnpm install
+pnpm lint        # ESLint (+ import/order)
+pnpm typecheck   # tsc --noEmit
+pnpm test        # vitest (unitário)
+pnpm build       # next build
+```
+
+Testes específicos do fluxo:
+
+```bash
+npx vitest run tests/unit/prospecting*.test.ts tests/unit/meta*.test.ts tests/unit/modelslab.test.ts
+```
+
+### Como estender
+
+- **Novo canal/API da Meta**: implemente um parser em `lib/meta/` e plugue no `route.ts` antes do `persist` — o resto (dedup/resolução) é reutilizado.
+- **Novo critério de fechamento**: adicione ao `AgentContext` e ao `buildSystemPrompt`; a decisão continua vindo do `escalate` do agente.
+- **Nova etapa de conteúdo**: `buildPostContent` é o ponto único (prompt + legenda); o plano e o runtime não mudam.
+- **Trocar o provedor de imagem**: implemente a mesma assinatura de `generateImage` e injete em `publishPlannedPost`.
+- **Tipos do Supabase**: ao aplicar migrações novas, rode `supabase gen types` e remova os casts documentados de `prospect_*`.
+
+
+---
+
 ## Documentação oficial consultada (Meta / ModelsLab)
 
 Consulta em **2026-10-27** (via extrator de texto, pois as páginas são renderizadas por JavaScript).
