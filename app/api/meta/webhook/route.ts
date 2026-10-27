@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { getDeepSeekClient } from "@/lib/deepseek/client";
 import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import {
@@ -11,6 +12,12 @@ import {
 import { verifyChallenge, verifyHubSignature } from "@/lib/meta/signature";
 import { parseMetaComments, parseMetaWebhook } from "@/lib/meta/webhook";
 import { handleInbound } from "@/lib/prospecting/inbound";
+import { respondToInbound } from "@/lib/prospecting/respond";
+import {
+  createSupabaseRespondPorts,
+  defaultRespondDb,
+  loadHistory,
+} from "@/lib/prospecting/supabase-respond";
 import { createSupabaseProspectStore } from "@/lib/prospecting/supabase-store";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/types";
@@ -55,7 +62,9 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   const admin = getSupabaseAdmin();
   const store = createSupabaseProspectStore();
+  const respondDb = defaultRespondDb();
   const accessToken = serverEnv().META_ACCESS_TOKEN;
+  const igBusinessId = serverEnv().META_INSTAGRAM_BUSINESS_ID;
   const keyword = serverEnv().META_PROSPECT_KEYWORD;
   const lookup = admin as unknown as MetaSupplierLookup;
   let persisted = 0;
@@ -94,7 +103,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       supplier = await resolveInstagramSupplier(lookup, message.senderId, accessToken);
       if (supplier !== null) {
         resolved += 1;
-        await handleInbound(
+        const outcome = await handleInbound(
           store,
           {
             kind: "message",
@@ -106,6 +115,22 @@ export async function POST(request: Request): Promise<NextResponse> {
           },
           { keyword, now: new Date() },
         );
+        // Só responde uma vez por evento (idempotente) e se houver como enviar.
+        if (outcome.recorded && accessToken !== undefined && accessToken.length > 0 && igBusinessId !== undefined && igBusinessId.length > 0) {
+          const history = await loadHistory(respondDb, outcome.conversation.id);
+          await respondToInbound({
+            client: getDeepSeekClient(),
+            context: { category: supplier.category },
+            history,
+            ports: createSupabaseRespondPorts({
+              db: respondDb,
+              message: { instagramBusinessId: igBusinessId, accessToken },
+              recipientId: message.senderId,
+            }),
+            conversationId: outcome.conversation.id,
+            supplierId: supplier.id,
+          });
+        }
       }
     }
     const payload = supplier === null ? message : { ...message, supplier };
