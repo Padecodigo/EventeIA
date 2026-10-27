@@ -58,7 +58,7 @@ describe("simulação E2E da coleta (mock, dry-run)", () => {
           engineVersion: "v1",
           claim: () => { const ok = delivered === null; delivered ??= "now"; return Promise.resolve(ok); },
           release: () => { delivered = null; return Promise.resolve(); },
-          load: () => Promise.resolve({ requirements, quotations: asRows() }),
+          load: () => Promise.resolve({ requirements, quotations: asRows(), guestCount: 40 }),
           insertSnapshots: (rows) => { snapshots.push(...rows); return Promise.resolve(); },
         }, eventId);
       },
