@@ -16,7 +16,7 @@ export const TESTIMONIALS: readonly Testimonial[] = [
     initials: "CR",
     name: "Camila R.",
     context: "Mãe da Lia · Festa de 5 anos",
-    city: "São José dos Campos, SP",
+    city: "São Paulo, SP",
     quote:
       "No dia, eu só chorei de emoção vendo a Lia apagar as velinhas. Pela primeira vez não passei a festa resolvendo problema — passei abraçando quem eu amo.",
     outcome: "",
@@ -49,7 +49,7 @@ export const TESTIMONIALS: readonly Testimonial[] = [
     initials: "DN",
     name: "Débora N.",
     context: "Cerimonialista · franquia de créditos",
-    city: "São Paulo, SP",
+    city: "São José dos Campos, SP",
     quote:
       "Ganhei tempo para o que eu amo: cuidar de cada família. Os orçamentos chegam organizados e eu foco nos detalhes que emocionam.",
     outcome: "",
