@@ -47,6 +47,12 @@ const serverSchema = z.object({
   META_API_VERSION: z.string().regex(/^v\d+\.\d+$/).default("v26.0"),
   // Palavra-chave que o fornecedor comenta para receber a cotação na DM.
   META_PROSPECT_KEYWORD: z.string().min(1).default("cotação"),
+  // Prospecção: posts de isca (aprovação humana por padrão) e imagem SDXL.
+  REQUIRE_APPROVAL: z.enum(["true", "false"]).default("true").transform((v) => v === "true"),
+  MAX_POSTS_PER_DAY: z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).max(50).default(2)),
+  MAX_TAGS_PER_POST: z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).max(20).default(8)),
+  MIN_POST_INTERVAL_MINUTES: z.preprocess(emptyToUndefined, z.coerce.number().int().min(0).default(60)),
+  MODELSLAB_API_KEY: z.string().optional(),
   WHATSAPP_CLOUD_API_VERSION: z
     .string()
     .regex(/^v\d+\.\d+$/)
