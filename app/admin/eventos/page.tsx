@@ -1,9 +1,11 @@
 import Link from "next/link";
 
+import { AdminEventCancelAll } from "@/components/admin/admin-event-cancel-all";
+import { AdminEventDelete } from "@/components/admin/admin-event-delete";
 import { requireAdmin } from "@/lib/auth";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
-import { Card, EVENT_STATUS_LABELS, Pill, READ_ONLY_NOTE, SearchBox, fmtDate, likeTerm } from "../ui";
+import { Card, EVENT_STATUS_LABELS, Pill, SearchBox, fmtDate, likeTerm } from "../ui";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +25,10 @@ export default async function AdminEventosPage({ searchParams }: { searchParams:
   if (status) query = query.eq("status", status as never);
   const { data } = await query;
   const events = data ?? [];
+  const { count: activeTotal } = await admin
+    .from("events")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "active");
   const ownerIds = [...new Set(events.map((e) => e.owner_profile_id))];
   const { data: owners } = ownerIds.length ? await admin.from("profiles").select("id,display_name").in("id", ownerIds) : { data: [] };
   const ownerName = new Map((owners ?? []).map((o) => [o.id, o.display_name]));
@@ -32,7 +38,7 @@ export default async function AdminEventosPage({ searchParams }: { searchParams:
     <div className="flex flex-col gap-6">
       <header>
         <h2 className="font-serif text-title-2">Eventos</h2>
-        <p className="text-caption text-vinho/60">Todos os eventos criados pelos clientes (até 200 mais recentes). {READ_ONLY_NOTE}</p>
+        <p className="text-caption text-vinho/60">Todos os eventos criados pelos clientes (até 200 mais recentes). Excluir é soft delete: o evento vira “Cancelado” e o histórico financeiro fica guardado.</p>
       </header>
       <Card>
         <SearchBox action="/admin/eventos" q={q} placeholder="Buscar pelo nome do evento" hidden={status ? { status } : undefined} />
@@ -41,11 +47,17 @@ export default async function AdminEventosPage({ searchParams }: { searchParams:
           {Object.entries(EVENT_STATUS_LABELS).map(([k, v]) => <Pill key={k} href={href(k)} active={status === k}>{v}</Pill>)}
         </nav>
       </Card>
+      <Card testId="events-bulk">
+        <h3 className="font-serif text-title-3">Cancelar em massa</h3>
+        <div className="mt-3">
+          <AdminEventCancelAll activeCount={activeTotal ?? 0} />
+        </div>
+      </Card>
       <Card testId="events-list">
         {events.length === 0 ? <p className="text-caption text-vinho/70">Nenhum evento encontrado.</p> : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[36rem] text-sm [&_td]:px-2 [&_td]:py-2 [&_th]:px-2 [&_th]:py-2 [&_th]:font-medium">
-              <thead className="text-left text-caption text-vinho/60"><tr><th>Evento</th><th>Data</th><th>Cidade</th><th>Situação</th><th>Cliente</th></tr></thead>
+              <thead className="text-left text-caption text-vinho/60"><tr><th>Evento</th><th>Data</th><th>Cidade</th><th>Situação</th><th>Cliente</th><th>Ações</th></tr></thead>
               <tbody>
                 {events.map((e) => (
                   <tr key={e.id} className="border-t border-line-subtle">
@@ -54,6 +66,7 @@ export default async function AdminEventosPage({ searchParams }: { searchParams:
                     <td>{e.city ? `${e.city}${e.city_uf ? `/${e.city_uf}` : ""}` : "—"}</td>
                     <td>{EVENT_STATUS_LABELS[e.status] ?? e.status}</td>
                     <td><Link className="underline" href={`/admin/clientes/${e.owner_profile_id}`}>{ownerName.get(e.owner_profile_id) ?? "ver cliente"}</Link></td>
+                    <td>{e.status === "canceled" ? <span className="text-caption text-vinho/50">excluído</span> : <AdminEventDelete eventId={e.id} title={e.title} />}</td>
                   </tr>
                 ))}
               </tbody>

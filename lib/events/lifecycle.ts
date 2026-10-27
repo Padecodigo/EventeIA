@@ -32,3 +32,16 @@ export function canCompleteEvent(status: string): boolean {
 export function canCancelEvent(status: string): boolean {
   return isEventStatus(status) && status !== "canceled";
 }
+
+/**
+ * Palavra digitada pelo admin para confirmar o cancelamento em massa.
+ * A ação é um UPDATE filtrado (nunca DELETE), mas atinge vários eventos de uma
+ * vez — por isso exige confirmação explícita e não apenas um clique.
+ */
+export const BULK_CANCEL_CONFIRMATION = "CANCELAR";
+
+export function isBulkCancelConfirmed(value: unknown): boolean {
+  return (
+    typeof value === "string" && value.trim().toUpperCase() === BULK_CANCEL_CONFIRMATION
+  );
+}

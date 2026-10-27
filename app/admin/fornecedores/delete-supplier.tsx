@@ -7,15 +7,17 @@ import type { OpResult } from "@/lib/admin/suppliers";
 import { deleteSupplierAction } from "./actions";
 
 /** "Excluir fornecedor" com diálogo de confirmação (exclusão reversível pela Lixeira). */
-export function DeleteSupplier({ supplierId, name }: { supplierId: string; name: string }) {
+export function DeleteSupplier({ supplierId, name, compact = false }: { supplierId: string; name: string; compact?: boolean }) {
   const [state, action, pending] = useActionState<OpResult | null, FormData>(deleteSupplierAction, null);
   const ref = useRef<HTMLDialogElement>(null);
   if (state?.ok) return <p role="status" className="text-sm text-vinho/70">Fornecedor excluído. Ele está na Lixeira e pode ser restaurado.</p>;
   return (
     <div className="flex flex-col gap-2 text-sm">
       <button type="button" data-testid="supplier-delete" onClick={() => ref.current?.showModal()}
-        className="self-start rounded-full border border-semantic-error/40 px-4 py-2 font-semibold text-semantic-error hover:bg-semantic-error/10">
-        Excluir fornecedor
+        className={compact
+          ? "self-start rounded-full border border-semantic-error/40 px-3 py-1.5 text-caption font-semibold text-semantic-error hover:bg-semantic-error/10"
+          : "self-start rounded-full border border-semantic-error/40 px-4 py-2 font-semibold text-semantic-error hover:bg-semantic-error/10"}>
+        {compact ? "Excluir" : "Excluir fornecedor"}
       </button>
       {state && !state.ok ? <p role="alert" className="text-semantic-error">{state.error}</p> : null}
       <dialog ref={ref} aria-labelledby="supplier-delete-title" className="w-[min(32rem,92vw)] rounded-card border border-line-subtle bg-off-white p-5 text-vinho shadow-soft backdrop:bg-black/40">

@@ -53,7 +53,9 @@ describe("depoimentos: subtítulo (regressão do chip /para-planners)", () => {
 describe("fornecedores: excluir (soft delete)", () => {
   it("lista oculta excluídos e o detalhe oferece 'Excluir fornecedor'", async () => {
     render(await Fornecedores({ searchParams: Promise.resolve({}) }));
-    expect(screen.getByText("Buffet Ativo")).toBeInTheDocument();
+    // A lista agora também renderiza o diálogo de exclusão (com o nome do
+    // fornecedor), então o alvo é o link da tabela, não qualquer texto igual.
+    expect(screen.getByRole("link", { name: "Buffet Ativo" })).toBeInTheDocument();
     expect(screen.queryByText("Buffet Velho")).toBeNull();
     cleanup();
     render(await Fornecedor({ params: Promise.resolve({ id: S1 }) }));

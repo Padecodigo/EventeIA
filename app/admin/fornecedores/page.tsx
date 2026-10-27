@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 import { Card, fmtDate, likeTerm } from "../ui";
+import { DeleteSupplier } from "./delete-supplier";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export default async function AdminFornecedoresPage({ searchParams }: { searchPa
     <div className="flex flex-col gap-6">
       <header>
         <h2 className="font-serif text-title-2">Fornecedores</h2>
-        <p className="text-caption text-vinho/60">Fornecedores encontrados pela busca automática (até 200 mais recentes). Para tirar um fornecedor da busca e dos contatos, abra-o e use “Excluir fornecedor” (vai para a Lixeira e dá para restaurar).</p>
+        <p className="text-caption text-vinho/60">Fornecedores encontrados pela busca automática (até 200 mais recentes). Para tirar um fornecedor da busca e dos contatos, use “Excluir” na linha (vai para a Lixeira e dá para restaurar).</p>
       </header>
       <Card>
         <form action="/admin/fornecedores" method="get" className="flex flex-wrap gap-2" role="search">
@@ -43,7 +44,7 @@ export default async function AdminFornecedoresPage({ searchParams }: { searchPa
         {rows.length === 0 ? <p className="text-caption text-vinho/70">Nenhum fornecedor encontrado.</p> : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[36rem] text-sm [&_td]:px-2 [&_td]:py-2 [&_th]:px-2 [&_th]:py-2 [&_th]:font-medium">
-              <thead className="text-left text-caption text-vinho/60"><tr><th>Nome</th><th>Categoria</th><th>Cidade</th><th>WhatsApp</th><th>Último contato</th></tr></thead>
+              <thead className="text-left text-caption text-vinho/60"><tr><th>Nome</th><th>Categoria</th><th>Cidade</th><th>WhatsApp</th><th>Último contato</th><th>Ações</th></tr></thead>
               <tbody>{rows.map((r) => (
                 <tr key={r.id} className="border-t border-line-subtle">
                   <td className="py-2"><Link className="font-semibold underline" href={`/admin/fornecedores/${r.id}`}>{r.name}</Link>{r.opt_out_at ? <span className="ml-1 text-caption text-semantic-error">pediu para sair</span> : null}</td>
@@ -51,6 +52,7 @@ export default async function AdminFornecedoresPage({ searchParams }: { searchPa
                   <td>{r.city ?? "—"}</td>
                   <td>{r.whatsapp_verified ? "verificado" : r.phone_e164 ? "não verificado" : "sem número"}</td>
                   <td>{fmtDate(r.last_contacted_at)}</td>
+                  <td><DeleteSupplier supplierId={r.id} name={r.name} compact /></td>
                 </tr>))}</tbody>
             </table>
           </div>
