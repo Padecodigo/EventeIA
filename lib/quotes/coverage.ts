@@ -69,7 +69,10 @@ export interface Variant {
 const extractionSchema = z.object({
   fees: z.array(mandatoryFeeSchema).max(30).optional(),
   quotation: z
-    .object({ scope: z.array(scopeEntrySchema).max(40).optional() })
+    .object({
+      scope: z.array(scopeEntrySchema).max(40).optional(),
+      per_guest_cents: z.number().int().min(0).max(100_000_000).nullable().optional(),
+    })
     .partial()
     .optional(),
 });
@@ -77,10 +80,15 @@ const extractionSchema = z.object({
 function parseExtraction(raw: unknown): {
   fees: z.infer<typeof mandatoryFeeSchema>[];
   scope: ScopeEntry[];
+  perGuestCents: number | null;
 } {
   const parsed = extractionSchema.safeParse(raw);
-  if (!parsed.success) return { fees: [], scope: [] };
-  return { fees: parsed.data.fees ?? [], scope: parsed.data.quotation?.scope ?? [] };
+  if (!parsed.success) return { fees: [], scope: [], perGuestCents: null };
+  return {
+    fees: parsed.data.fees ?? [],
+    scope: parsed.data.quotation?.scope ?? [],
+    perGuestCents: parsed.data.quotation?.per_guest_cents ?? null,
+  };
 }
 
 function subsets<T>(items: readonly T[]): T[][] {
@@ -95,7 +103,7 @@ export function expandOffer(
   row: OfferRow,
   required: ReadonlySet<string>,
 ): { variants: Variant[]; detail: OfferDetail } {
-  const { fees, scope } = parseExtraction(row.extraction);
+  const { fees, scope, perGuestCents } = parseExtraction(row.extraction);
   const included = scope.filter((s) => s.status === "inclui").map((s) => s.item);
   const covers = new Set<string>([row.category]);
   for (const item of included) {
@@ -163,6 +171,7 @@ export function expandOffer(
         basePriceCents: baseCents + chosen.reduce((s, a) => s + a.priceCents, 0),
         totalPriceCents: null,
         fees: consistent ? mandatory : [],
+        perGuestCents,
         qualityBps: quality,
       },
     };
@@ -210,6 +219,7 @@ export function composeWithCoverage(
   wanted: readonly string[],
   offers: readonly OfferRow[],
   categoryName: (c: string) => string = CATEGORY_NAME,
+  guestCount = 0,
 ): CoverageResult {
   const wantedSet = new Set(wanted);
   const expanded = offers.map((o) => expandOffer(o, wantedSet));
@@ -225,12 +235,12 @@ export function composeWithCoverage(
     required,
     quotes,
     { alreadyOwned: [], unneededFeeCategories: [] },
-    { exactCover: true },
+    { exactCover: true, guestCount },
   );
   const loose = buildAllScenarios(required, quotes, {
     alreadyOwned: [],
     unneededFeeCategories: [],
-  });
+  }, { guestCount });
   const kinds: ScenarioKind[] = ["preco", "custo_beneficio", "comodidade"];
   const outcomes = {} as Record<ScenarioKind, ScenarioOutcome>;
   const details = {} as CoverageResult["details"];

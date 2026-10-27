@@ -7,7 +7,7 @@ export interface DeliveryDeps {
   release(eventId: string): Promise<void>;
   load(
     eventId: string,
-  ): Promise<{ requirements: { category: string }[]; quotations: QuotationRowForScenario[] }>;
+  ): Promise<{ requirements: { category: string }[]; quotations: QuotationRowForScenario[]; guestCount: number }>;
   insertSnapshots(rows: ReturnType<typeof toSnapshotRows>): Promise<void>;
   engineVersion: string;
 }
@@ -18,8 +18,8 @@ export async function deliverEventQuotes(
 ): Promise<{ status: "delivered"; scenarios: number } | { status: "already_delivered" }> {
   if (!(await deps.claim(eventId))) return { status: "already_delivered" };
   try {
-    const { requirements, quotations } = await deps.load(eventId);
-    const result = buildEventScenarios(requirements, quotations);
+    const { requirements, quotations, guestCount } = await deps.load(eventId);
+    const result = buildEventScenarios(requirements, quotations, guestCount);
     const rows = toSnapshotRows(eventId, deps.engineVersion, result, quotations);
     await deps.insertSnapshots(rows);
     return {

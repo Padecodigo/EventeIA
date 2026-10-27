@@ -80,7 +80,7 @@ describe("fase 4 — cenários reais", () => {
         claimed = false;
         return Promise.resolve();
       },
-      load: () => Promise.resolve({ requirements: reqs, quotations: [q("a", "buffet", 1000)] }),
+      load: () => Promise.resolve({ requirements: reqs, quotations: [q("a", "buffet", 1000)], guestCount: 0 }),
       insertSnapshots: (rows) => {
         inserted.push(...rows);
         return Promise.resolve();
@@ -95,3 +95,14 @@ describe("fase 4 — cenários reais", () => {
     expect(claimed).toBe(false);
   });
 });
+
+  it("C_total soma per_guest_cents × guestCount no cenário", () => {
+    const row = {
+      ...q("a", "buffet", 300000),
+      extraction: { fees: [], quotation: { per_guest_cents: 5000 } },
+    };
+    const withGuests = buildEventScenarios(reqs, [row], 100);
+    expect(withGuests.outcomes.preco.scenario?.totalCents).toBe(800_000); // 300000 + 5000×100
+    const withoutGuests = buildEventScenarios(reqs, [row], 0);
+    expect(withoutGuests.outcomes.preco.scenario?.totalCents).toBe(300_000);
+  });

@@ -63,6 +63,7 @@ export type QuoteOption = z.infer<typeof quoteOptionSchema>;
 export const nuancedQuotationSchema = z.object({
   total_price_cents: centsSchema.nullable(),
   base_price_cents: centsSchema.nullable(),
+  per_guest_cents: centsSchema.nullable().optional(),
   mandatory_fees: z.array(mandatoryFeeSchema).max(30),
   item_breakdown: z.array(itemBreakdownSchema).max(100),
   scope: z.array(scopeEntrySchema).max(40).default([]),
@@ -87,6 +88,7 @@ export interface QuotationExtractionResult {
 export const EMPTY_QUOTATION: Readonly<NuancedQuotation> = Object.freeze({
   total_price_cents: null,
   base_price_cents: null,
+  per_guest_cents: null,
   mandatory_fees: [],
   item_breakdown: [],
   scope: [],

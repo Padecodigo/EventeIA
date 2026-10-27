@@ -45,6 +45,13 @@ export interface QuotationRowForScenario {
 
 const extractionFeesSchema = z.object({ fees: z.array(mandatoryFeeSchema).max(30) });
 
+const extractionPerGuestSchema = z.object({
+  quotation: z
+    .object({ per_guest_cents: z.number().int().min(0).max(100_000_000).nullable() })
+    .partial()
+    .optional(),
+});
+
 /** amount_cents já inclui as taxas extras: base = total − taxas; taxas viram fees do motor. */
 export function toSupplierQuote(row: QuotationRowForScenario): SupplierQuote {
   const parsed = extractionFeesSchema.safeParse(row.extraction);
@@ -56,6 +63,8 @@ export function toSupplierQuote(row: QuotationRowForScenario): SupplierQuote {
       amountCents: f.amount_cents,
       includedInBase: false,
     }));
+  const perGuest = extractionPerGuestSchema.safeParse(row.extraction);
+  const perGuestCents = perGuest.success ? (perGuest.data.quotation?.per_guest_cents ?? null) : null;
   const feesSum = fees.reduce((s, f) => s + (f.amountCents ?? 0), 0);
   // Coerência: se as taxas do JSON não batem com fees_cents, confia no total gravado.
   const consistent = feesSum === row.fees_cents && feesSum <= row.amount_cents;
@@ -66,6 +75,7 @@ export function toSupplierQuote(row: QuotationRowForScenario): SupplierQuote {
     basePriceCents: consistent ? row.amount_cents - feesSum : row.amount_cents,
     totalPriceCents: row.amount_cents,
     fees: consistent ? fees : [],
+    perGuestCents,
     qualityBps: Math.round(Math.min(1, Math.max(0, row.confidence ?? 0)) * 10_000),
   };
 }
@@ -83,12 +93,13 @@ export interface EventScenarios {
 export function buildEventScenarios(
   requirements: readonly { category: string }[],
   quotations: readonly QuotationRowForScenario[],
+  guestCount = 0,
 ): EventScenarios {
   const usable = quotations.filter(
     (q) => !q.needs_followup && isUsableQuote(q.amount_cents, q.confidence ?? 0),
   );
   const wanted = quotableCategories(requirements);
-  const r = composeWithCoverage(wanted, usable, categoryLabel);
+  const r = composeWithCoverage(wanted, usable, categoryLabel, guestCount);
   return { required: r.required, uncovered: r.uncovered, outcomes: r.outcomes, details: r.details };
 }
 
