@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { resolveInstagramSupplier, type MetaSupplier, type MetaSupplierLookup } from "@/lib/meta/resolve";
 import { verifyChallenge, verifyHubSignature } from "@/lib/meta/signature";
 import { parseMetaWebhook } from "@/lib/meta/webhook";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -12,9 +13,10 @@ export const runtime = "nodejs";
 /**
  * Webhook único do Meta (Instagram + Messenger).
  *
- * Verifica a assinatura, normaliza as mensagens e as persiste em
- * `webhook_events` (dedup por source + external_event_id). O encaminhamento para
- * o pipeline de interpretação (DeepSeek V4 Flash) entra na etapa seguinte.
+ * Verifica a assinatura, normaliza as mensagens, resolve o remetente do
+ * Instagram para um fornecedor conhecido e persiste tudo em `webhook_events`
+ * (dedup por source + external_event_id). A interpretação do texto entra na
+ * etapa seguinte, quando o contexto de evento estiver definido.
  */
 
 /** Verificação do webhook pela Meta (hub.challenge). */
@@ -29,7 +31,7 @@ export function GET(request: Request): NextResponse {
   return new NextResponse(challenge, { status: 200, headers: { "Content-Type": "text/plain" } });
 }
 
-/** Recebe mensagens do Instagram/Messenger, valida a assinatura e persiste. */
+/** Recebe mensagens do Instagram/Messenger, valida, resolve o remetente e persiste. */
 export async function POST(request: Request): Promise<NextResponse> {
   const raw = await request.text();
   if (!verifyHubSignature(raw, request.headers.get("x-hub-signature-256"), serverEnv().META_APP_SECRET)) {
@@ -51,8 +53,22 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   const admin = getSupabaseAdmin();
+  const accessToken = serverEnv().META_ACCESS_TOKEN;
   let persisted = 0;
+  let resolved = 0;
+
   for (const message of messages) {
+    let supplier: MetaSupplier = null;
+    if (message.source === "instagram" && accessToken !== undefined && accessToken.length > 0) {
+      supplier = await resolveInstagramSupplier(
+        admin as unknown as MetaSupplierLookup,
+        message.senderId,
+        accessToken,
+      );
+      if (supplier !== null) resolved += 1;
+    }
+
+    const payload = supplier === null ? message : { ...message, supplier };
     const { data: inserted, error } = await admin
       .from("webhook_events")
       .upsert(
@@ -62,7 +78,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           // temporário até o banco receber a 0052 e os tipos serem re-gerados.
           source: "meta" as unknown as "whatsapp_cloud",
           external_event_id: message.eventId,
-          payload: message as unknown as Json,
+          payload: payload as unknown as Json,
           status: "received",
         },
         { onConflict: "source,external_event_id", ignoreDuplicates: true },
@@ -76,6 +92,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (inserted !== null) persisted += 1;
   }
 
-  logger.info({ received: messages.length, persisted }, "webhook meta: mensagens persistidas");
+  logger.info({ received: messages.length, persisted, resolved }, "webhook meta: mensagens persistidas");
   return NextResponse.json({ received: true, count: messages.length }, { status: 200 });
 }
