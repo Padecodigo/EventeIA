@@ -37,7 +37,7 @@ Formato: `<domínio>.<ação_no_passado>` — domínios fechados; ações no pas
 | `whatsapp` | `whatsapp.queued`, `whatsapp.sent`, `whatsapp.delivered`, `whatsapp.failed`, `whatsapp.skipped_no_consent`, `whatsapp.instance_disconnected`, `whatsapp.instance_reconnected`, `whatsapp.status_ignored` |
 | `vendor` | `vendor.prospected`, `vendor.opt_out`, `vendor.replied` |
 | `consent` | `consent.opted_in`, `consent.opted_out` |
-| `coupon` | `coupon.created`, `coupon.updated`, `coupon.redeemed` |
+| `coupon` | `coupon.created`, `coupon.updated`, `coupon.deleted`, `coupon.redeemed` |
 | `testimonial` | `testimonial.invited`, `testimonial.submitted`, `testimonial.published`, `testimonial.rejected`, `testimonial.unpublished` |
 | `worker` | `worker.job_failed`, `worker.dlq_parked` |
 | `admin` | `admin.export_requested`, `admin.erasure_executed` |

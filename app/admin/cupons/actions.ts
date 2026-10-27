@@ -147,3 +147,85 @@ export async function toggleCouponAction(formData: FormData): Promise<void> {
 
   revalidatePath("/admin/cupons");
 }
+
+/**
+ * Exclui um cupom do catálogo.
+ *
+ * Só cupons sem histórico: qualquer redenção (reserva ou uso) é auditoria
+ * financeira e a tabela `coupon_redemptions` a referencia por FK — apagar
+ * destruiria o rastro do desconto. Nesse caso a resposta orienta a desativar,
+ * que já existe no catálogo e preserva o histórico.
+ */
+export async function deleteCouponAction(
+  _previous: CouponAdminState,
+  formData: FormData,
+): Promise<CouponAdminState> {
+  const adminUser = await requireAdmin();
+
+  const parsed = z
+    .object({ couponId: z.string().uuid() })
+    .safeParse({ couponId: formData.get("couponId") });
+
+  if (!parsed.success) {
+    return { error: "Cupom inválido." };
+  }
+
+  const admin = getSupabaseAdmin();
+  const { data: coupon, error: loadError } = await admin
+    .from("coupons")
+    .select("id,code,redemptions")
+    .eq("id", parsed.data.couponId)
+    .maybeSingle();
+
+  if (loadError !== null) {
+    logger.error({ code: loadError.code }, "falha ao carregar cupom para exclusão");
+    return { error: "Não foi possível excluir o cupom." };
+  }
+  if (coupon === null) {
+    return { error: "Cupom não encontrado." };
+  }
+
+  // O contador da linha pode estar zerado com reservas pendentes na tabela de
+  // redenções, então as duas fontes são consultadas.
+  const { count, error: countError } = await admin
+    .from("coupon_redemptions")
+    .select("id", { count: "exact", head: true })
+    .eq("coupon_id", coupon.id);
+
+  if (countError !== null) {
+    logger.error({ code: countError.code }, "falha ao contar redenções do cupom");
+    return { error: "Não foi possível excluir o cupom." };
+  }
+
+  if ((count ?? 0) > 0 || coupon.redemptions > 0) {
+    return {
+      error:
+        "Este cupom já tem usos registrados. Desative-o em vez de excluir — o histórico de descontos é auditoria.",
+    };
+  }
+
+  const { error } = await admin.from("coupons").delete().eq("id", coupon.id);
+
+  if (error !== null) {
+    logger.error({ code: error.code }, "falha ao excluir cupom");
+    return { error: "Não foi possível excluir o cupom." };
+  }
+
+  try {
+    await emitFeed(admin, {
+      type: "coupon.deleted",
+      actorType: "admin",
+      actorId: adminUser.id,
+      aggregateType: "coupon",
+      aggregateId: coupon.code,
+      payload: { coupon_id: coupon.id, code: coupon.code },
+      correlationId: coupon.code,
+      source: "app",
+    });
+  } catch {
+    // feed não bloqueia a exclusão
+  }
+
+  revalidatePath("/admin/cupons");
+  return { success: true };
+}
