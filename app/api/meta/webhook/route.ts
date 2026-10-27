@@ -2,9 +2,14 @@ import { NextResponse } from "next/server";
 
 import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { resolveInstagramSupplier, type MetaSupplier, type MetaSupplierLookup } from "@/lib/meta/resolve";
+import {
+  resolveInstagramSupplier,
+  resolveInstagramSupplierByHandle,
+  type MetaSupplier,
+  type MetaSupplierLookup,
+} from "@/lib/meta/resolve";
 import { verifyChallenge, verifyHubSignature } from "@/lib/meta/signature";
-import { parseMetaWebhook } from "@/lib/meta/webhook";
+import { parseMetaComments, parseMetaWebhook } from "@/lib/meta/webhook";
 import { handleInbound } from "@/lib/prospecting/inbound";
 import { createSupabaseProspectStore } from "@/lib/prospecting/supabase-store";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -15,10 +20,10 @@ export const runtime = "nodejs";
 /**
  * Webhook único do Meta (Instagram + Messenger).
  *
- * Verifica a assinatura, normaliza as mensagens, resolve o remetente do
- * Instagram para um fornecedor conhecido e persiste tudo em `webhook_events`
- * (dedup por source + external_event_id). A interpretação do texto entra na
- * etapa seguinte, quando o contexto de evento estiver definido.
+ * Verifica a assinatura, normaliza DMs e comentários, resolve o fornecedor e
+ * persiste em `webhook_events` (dedup por source + external_event_id). A DM
+ * resolvida também entra na conversa (`prospect_conversations`/`messages`) de
+ * forma idempotente. A interpretação do texto entra na etapa seguinte.
  */
 
 /** Verificação do webhook pela Meta (hub.challenge). */
@@ -33,7 +38,7 @@ export function GET(request: Request): NextResponse {
   return new NextResponse(challenge, { status: 200, headers: { "Content-Type": "text/plain" } });
 }
 
-/** Recebe mensagens do Instagram/Messenger, valida, resolve o remetente e persiste. */
+/** Recebe eventos do Instagram/Messenger, valida, resolve o fornecedor e persiste. */
 export async function POST(request: Request): Promise<NextResponse> {
   const raw = await request.text();
   if (!verifyHubSignature(raw, request.headers.get("x-hub-signature-256"), serverEnv().META_APP_SECRET)) {
@@ -48,30 +53,47 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
 
-  const messages = parseMetaWebhook(json);
-  if (messages === null) {
-    // echo/read/delivery ou payload não reconhecido: confirma recebimento e ignora.
-    return NextResponse.json({ received: true }, { status: 200 });
-  }
-
   const admin = getSupabaseAdmin();
   const store = createSupabaseProspectStore();
   const accessToken = serverEnv().META_ACCESS_TOKEN;
   const keyword = serverEnv().META_PROSPECT_KEYWORD;
+  const lookup = admin as unknown as MetaSupplierLookup;
   let persisted = 0;
   let resolved = 0;
 
-  for (const message of messages) {
+  const persist = async (externalId: string, payload: unknown): Promise<boolean> => {
+    const { data: inserted, error } = await admin
+      .from("webhook_events")
+      .upsert(
+        {
+          // A migração 0052 relaxa o CHECK para incluir 'meta'; os tipos gerados
+          // (`supabase gen types`) ainda não foram regenerados, então o cast é
+          // temporário até o banco receber a 0052 e os tipos serem re-gerados.
+          source: "meta" as unknown as "whatsapp_cloud",
+          external_event_id: externalId,
+          payload: payload as unknown as Json,
+          status: "received",
+        },
+        { onConflict: "source,external_event_id", ignoreDuplicates: true },
+      )
+      .select("id")
+      .maybeSingle();
+    if (error !== null) {
+      logger.error({ code: error.code }, "falha ao persistir webhook meta");
+      return false;
+    }
+    if (inserted !== null) persisted += 1;
+    return true;
+  };
+
+  // DMs (Instagram + Messenger).
+  const messages = parseMetaWebhook(json);
+  for (const message of messages ?? []) {
     let supplier: MetaSupplier = null;
     if (message.source === "instagram" && accessToken !== undefined && accessToken.length > 0) {
-      supplier = await resolveInstagramSupplier(
-        admin as unknown as MetaSupplierLookup,
-        message.senderId,
-        accessToken,
-      );
+      supplier = await resolveInstagramSupplier(lookup, message.senderId, accessToken);
       if (supplier !== null) {
         resolved += 1;
-        // DM resolvida: registra a conversa/mensagem (idempotente por mid).
         await handleInbound(
           store,
           {
@@ -86,31 +108,48 @@ export async function POST(request: Request): Promise<NextResponse> {
         );
       }
     }
-
     const payload = supplier === null ? message : { ...message, supplier };
-    const { data: inserted, error } = await admin
-      .from("webhook_events")
-      .upsert(
-        {
-          // A migração 0052 relaxa o CHECK para incluir 'meta'; os tipos gerados
-          // (`supabase gen types`) ainda não foram regenerados, então o cast é
-          // temporário até o banco receber a 0052 e os tipos serem re-gerados.
-          source: "meta" as unknown as "whatsapp_cloud",
-          external_event_id: message.eventId,
-          payload: payload as unknown as Json,
-          status: "received",
-        },
-        { onConflict: "source,external_event_id", ignoreDuplicates: true },
-      )
-      .select("id")
-      .maybeSingle();
-    if (error !== null) {
-      logger.error({ code: error.code }, "falha ao persistir webhook meta");
+    if (!(await persist(message.eventId, payload))) {
       return NextResponse.json({ error: "persist_failed" }, { status: 500 });
     }
-    if (inserted !== null) persisted += 1;
   }
 
-  logger.info({ received: messages.length, persisted, resolved }, "webhook meta: mensagens persistidas");
-  return NextResponse.json({ received: true, count: messages.length }, { status: 200 });
+  // Comentários em posts de isca (o @username já vem no payload).
+  const comments = parseMetaComments(json);
+  for (const comment of comments ?? []) {
+    const supplier = await resolveInstagramSupplierByHandle(lookup, comment.senderUsername);
+    if (supplier !== null) {
+      resolved += 1;
+      await handleInbound(
+        store,
+        {
+          kind: "comment",
+          commentId: comment.commentId,
+          senderId: comment.senderId,
+          text: comment.text,
+          supplierId: supplier.id,
+          channel: "instagram",
+        },
+        { keyword, now: new Date() },
+      );
+    }
+    const payload = supplier === null ? comment : { ...comment, supplier };
+    if (!(await persist(comment.commentId, payload))) {
+      return NextResponse.json({ error: "persist_failed" }, { status: 500 });
+    }
+  }
+
+  if (messages === null && comments === null) {
+    // echo/read/delivery ou payload não reconhecido: confirma e ignora.
+    return NextResponse.json({ received: true }, { status: 200 });
+  }
+
+  logger.info(
+    { messages: messages?.length ?? 0, comments: comments?.length ?? 0, persisted, resolved },
+    "webhook meta: eventos processados",
+  );
+  return NextResponse.json(
+    { received: true, messages: messages?.length ?? 0, comments: comments?.length ?? 0 },
+    { status: 200 },
+  );
 }

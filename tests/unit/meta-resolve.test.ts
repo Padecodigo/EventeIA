@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { instagramProfileUrl, resolveInstagramSupplier, type MetaSupplierLookup } from "@/lib/meta/resolve";
+import {
+  instagramProfileUrl,
+  resolveInstagramSupplier,
+  resolveInstagramSupplierByHandle,
+  type MetaSupplierLookup,
+} from "@/lib/meta/resolve";
 
 function fakeFetch(body: unknown, ok = true): typeof fetch {
   return (async () =>
@@ -58,5 +63,20 @@ describe("resolução de remetente do Instagram", () => {
 
   it("normaliza o @handle para minúsculas", () => {
     expect(instagramProfileUrl("BUFFET_DA_ANA")).toBe("https://www.instagram.com/BUFFET_DA_ANA");
+  });
+});
+
+
+describe("resolução por @username (comentário)", () => {
+  it("casa o handle do comentário com o fornecedor", async () => {
+    const supplier = await resolveInstagramSupplierByHandle(
+      fakeDb({ id: "s1", name: "Buffet da Ana", category: "buffet" }),
+      "Buffet_da_Ana",
+    );
+    expect(supplier?.id).toBe("s1");
+  });
+
+  it("handle vazio devolve null sem consultar", async () => {
+    expect(await resolveInstagramSupplierByHandle(fakeDb(null), "  ")).toBeNull();
   });
 });

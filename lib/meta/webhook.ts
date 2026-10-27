@@ -104,3 +104,56 @@ export function parseMetaWebhook(raw: unknown): MetaInboundMessage[] | null {
 
   return null;
 }
+
+/**
+ * Comentários do Instagram (post de isca) — evento separado das DMs.
+ * Payload: `changes[].field === "comments"` com `{ id, text, from, media }`.
+ */
+export interface MetaCommentEvent {
+  commentId: string;
+  text: string;
+  senderId: string;
+  senderUsername: string;
+  mediaId: string | null;
+}
+
+const commentValue = z.object({
+  id: z.string(),
+  text: z.string(),
+  from: z.object({ id: z.string(), username: z.string().optional() }),
+  media: z.object({ id: z.string() }).optional(),
+});
+
+const instagramCommentsSchema = z.object({
+  object: z.literal("instagram"),
+  entry: z.array(
+    z.object({
+      changes: z
+        .array(
+          z.object({
+            field: z.literal("comments"),
+            value: commentValue.passthrough(),
+          }),
+        )
+        .optional(),
+    }),
+  ),
+});
+
+export function parseMetaComments(raw: unknown): MetaCommentEvent[] | null {
+  const parsed = instagramCommentsSchema.safeParse(raw);
+  if (!parsed.success) return null;
+  const out: MetaCommentEvent[] = [];
+  for (const entry of parsed.data.entry) {
+    for (const change of entry.changes ?? []) {
+      out.push({
+        commentId: change.value.id,
+        text: change.value.text,
+        senderId: change.value.from.id,
+        senderUsername: change.value.from.username ?? "",
+        mediaId: change.value.media?.id ?? null,
+      });
+    }
+  }
+  return out;
+}
