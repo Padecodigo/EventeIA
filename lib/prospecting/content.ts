@@ -69,3 +69,7 @@ export function buildPostContent(input: ContentInput): PostContent {
     caption: buildCaption(input),
   };
 }
+
+/** Texto de abertura da DM enviada como private reply a um comentário. */
+export const PRIVATE_REPLY_OPENER =
+  "Olá! Vi seu comentário. Já te chamo por aqui para entender o pedido.";

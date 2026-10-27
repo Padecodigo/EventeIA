@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getDeepSeekClient } from "@/lib/deepseek/client";
 import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { sendPrivateReply } from "@/lib/meta/publishing";
 import {
   resolveInstagramSupplier,
   resolveInstagramSupplierByHandle,
@@ -11,6 +12,7 @@ import {
 } from "@/lib/meta/resolve";
 import { verifyChallenge, verifyHubSignature } from "@/lib/meta/signature";
 import { parseMetaComments, parseMetaWebhook } from "@/lib/meta/webhook";
+import { PRIVATE_REPLY_OPENER } from "@/lib/prospecting/content";
 import { handleInbound } from "@/lib/prospecting/inbound";
 import { respondToInbound } from "@/lib/prospecting/respond";
 import {
@@ -145,7 +147,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const supplier = await resolveInstagramSupplierByHandle(lookup, comment.senderUsername);
     if (supplier !== null) {
       resolved += 1;
-      await handleInbound(
+      const outcome = await handleInbound(
         store,
         {
           kind: "comment",
@@ -157,6 +159,23 @@ export async function POST(request: Request): Promise<NextResponse> {
         },
         { keyword, now: new Date() },
       );
+      // Comentário com a palavra-chave: envia a DM de abertura (1x, 7 dias).
+      if (
+        outcome.recorded &&
+        outcome.action.action === "private_reply" &&
+        accessToken !== undefined &&
+        accessToken.length > 0 &&
+        igBusinessId !== undefined &&
+        igBusinessId.length > 0
+      ) {
+        const sent = await sendPrivateReply({
+          igUserId: igBusinessId,
+          accessToken,
+          commentId: comment.commentId,
+          text: PRIVATE_REPLY_OPENER,
+        });
+        if (!sent.ok) logger.warn({ error: sent.error }, "falha ao enviar private reply");
+      }
     }
     const payload = supplier === null ? comment : { ...comment, supplier };
     if (!(await persist(comment.commentId, payload))) {
