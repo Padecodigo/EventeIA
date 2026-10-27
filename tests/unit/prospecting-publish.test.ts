@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildPublishPlan } from "@/lib/prospecting/publish-plan";
+import { createSupabasePostStore } from "@/lib/prospecting/posts-store";
 import { publishPlannedPost } from "@/lib/prospecting/publish-runtime";
 
 const suppliers = [
@@ -74,5 +75,69 @@ describe("runtime de publicação", () => {
     const outcome = await publishPlannedPost({ planned, approved: true, modelslabKey: "k", meta, fetchImpl });
     expect(outcome.ok).toBe(false);
     if (!outcome.ok) expect(outcome.reason).toBe("image_failed");
+  });
+});
+
+describe("persistência do post", () => {
+  const planned = { dayIndex: 0, category: "buffet", handles: ["buffet_a"], imagePrompt: "salao", caption: "Comente COTAÇÃO" };
+  const meta = { igUserId: "1784", accessToken: "tok" };
+
+  function fakeStore(): { store: { record: (i: { status: string }) => Promise<void> }; statuses: string[] } {
+    const statuses: string[] = [];
+    return {
+      statuses,
+      store: {
+        async record(input) {
+          statuses.push(input.status);
+        },
+      },
+    };
+  }
+
+  it("registra pending_approval quando não aprovado", async () => {
+    const { store, statuses } = fakeStore();
+    await publishPlannedPost({ planned, approved: false, modelslabKey: "k", meta, store: store as never });
+    expect(statuses).toEqual(["pending_approval"]);
+  });
+
+  it("registra failed quando a imagem falha", async () => {
+    const { store, statuses } = fakeStore();
+    const fetchImpl = fakeFetch(() => ({ status: "error", message: "x" }), 401);
+    await publishPlannedPost({ planned, approved: true, modelslabKey: "k", meta, store: store as never, fetchImpl });
+    expect(statuses).toEqual(["failed"]);
+  });
+
+  it("registra published ao concluir", async () => {
+    const { store, statuses } = fakeStore();
+    const fetchImpl = fakeFetch((url) => {
+      if (url.includes("modelslab.com")) return { status: "success", output: ["https://cdn/img.jpg"] };
+      if (url.includes("/media?")) return { id: "container-1" };
+      if (url.includes("/media_publish")) return { id: "media-1" };
+      return {};
+    });
+    await publishPlannedPost({ planned, approved: true, modelslabKey: "k", meta, store: store as never, fetchImpl });
+    expect(statuses).toEqual(["published"]);
+  });
+});
+
+
+describe("createSupabasePostStore", () => {
+  it("grava os campos do post na tabela prospect_posts", async () => {
+    let values: Record<string, unknown> = {};
+    const store = createSupabasePostStore({
+      from: () => ({
+        insert: (v: Record<string, unknown>) => {
+          values = v;
+          return Promise.resolve({ error: null });
+        },
+      }),
+    } as never);
+    await store.record({
+      planned: { dayIndex: 2, category: "buffet", handles: ["a"], imagePrompt: "p", caption: "c" },
+      status: "published",
+      imageUrl: "https://cdn/x.jpg",
+      igMediaId: "m1",
+    });
+    expect(values).toMatchObject({ status: "published", day_index: 2, categories: ["buffet"], ig_media_id: "m1" });
   });
 });
