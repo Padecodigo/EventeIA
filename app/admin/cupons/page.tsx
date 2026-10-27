@@ -1,3 +1,4 @@
+import { CouponDeleteButton } from "@/components/admin/coupon-delete-button";
 import { CreateCouponForm } from "@/components/admin/create-coupon-form";
 import { WelcomeStats } from "@/components/admin/welcome-stats";
 import { requireAdmin } from "@/lib/auth";
@@ -128,20 +129,23 @@ export default async function AdminCouponsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-3">
-                      <form action={toggleCouponAction}>
-                        <input type="hidden" name="couponId" value={coupon.id} />
-                        <input
-                          type="hidden"
-                          name="activate"
-                          value={coupon.active ? "false" : "true"}
-                        />
-                        <button
-                          type="submit"
-                          className="rounded-full border border-line-strong px-4 py-2 text-caption text-vinho/80 transition hover:bg-areia-quente"
-                        >
-                          {coupon.active ? "Desativar" : "Reativar"}
-                        </button>
-                      </form>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <form action={toggleCouponAction}>
+                          <input type="hidden" name="couponId" value={coupon.id} />
+                          <input
+                            type="hidden"
+                            name="activate"
+                            value={coupon.active ? "false" : "true"}
+                          />
+                          <button
+                            type="submit"
+                            className="rounded-full border border-line-strong px-4 py-2 text-caption text-vinho/80 transition hover:bg-areia-quente"
+                          >
+                            {coupon.active ? "Desativar" : "Reativar"}
+                          </button>
+                        </form>
+                        <CouponDeleteButton couponId={coupon.id} code={coupon.code} />
+                      </div>
                     </td>
                   </tr>
                 ))}
