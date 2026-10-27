@@ -319,6 +319,37 @@ Metodologia: **Trunk-Based Development** — `main` sempre implantável, PRs peq
 
 ---
 
+## Documentação oficial consultada (Meta / ModelsLab)
+
+Consulta em **2026-10-27** (via extrator de texto, pois as páginas são renderizadas por JavaScript).
+
+**Meta — Instagram Platform**
+- https://developers.facebook.com/docs/instagram-platform/overview
+- https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login/content-publishing
+- https://developers.facebook.com/docs/instagram-platform/instagram-graph-api/reference/ig-user/media
+- https://developers.facebook.com/docs/instagram-platform/private-replies
+- https://developers.facebook.com/docs/instagram-platform/webhooks
+
+Valores confirmados (fonte: páginas acima; constantes em `lib/meta/limits.ts`):
+
+| Item | Valor documentado |
+|---|---|
+| Versão da Graph API nos exemplos | `v26.0` |
+| Legenda | máx. 2200 caracteres, 30 hashtags, **20 @menções** |
+| Publicações | **100 posts/24h** (carrossel = 1) — a seção de carrossel cita 50; discrepância registrada |
+| Carrossel | até 20 mídias |
+| Containers | 400/24h; expiram em 24h |
+| Private reply a comentário | **7 dias**, 1 mensagem (Live: só durante a transmissão) |
+| Janela de mensagens | **24h** padrão; até 7 dias em Click-to-Direct ad / human_agent |
+| Rate limit de mensagens | 2 chamadas/s por conta; 750/h private replies (posts/reels); 100/s (Live) |
+| Imagens | JPEG, 8 MB, 4:5 a 1.91:1, 320–1440 px, sRGB |
+
+**Ainda NÃO confirmado (não presumido no código):**
+- Limite numérico de `user_tags` por post — a página consultada descreve o campo sem número; `lib/meta/limits.ts` usa teto conservador 8 e marca `USER_TAGS_MAX_CONFIRMED = false`.
+- **ModelsLab**: docs acessíveis em https://docs.modelslab.com (índice em `/llms.txt`), mas endpoint/autenticação da geração de imagem não foram extraídos nesta consulta (`MODELSLAB_ENDPOINT_CONFIRMED = false`). Nada foi implementado com valores presumidos.
+
+---
+
 ## Licença
 
 Proprietário — © 2026 EventeIA. Todos os direitos reservados.
