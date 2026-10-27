@@ -109,7 +109,7 @@ describe("meta — cliente de envio", () => {
       }) as typeof fetch,
     });
     expect(res).toEqual({ ok: true, messageId: "m_ok" });
-    expect(calls[0]?.url).toBe("https://graph.facebook.com/v21.0/1784/messages");
+    expect(calls[0]?.url).toBe("https://graph.facebook.com/v26.0/1784/messages");
     expect(JSON.parse(String(calls[0]?.init?.body))).toEqual({
       recipient: { id: "111" },
       message: { text: "olá" },

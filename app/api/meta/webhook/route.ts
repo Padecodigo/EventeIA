@@ -5,6 +5,8 @@ import { logger } from "@/lib/logger";
 import { resolveInstagramSupplier, type MetaSupplier, type MetaSupplierLookup } from "@/lib/meta/resolve";
 import { verifyChallenge, verifyHubSignature } from "@/lib/meta/signature";
 import { parseMetaWebhook } from "@/lib/meta/webhook";
+import { handleInbound } from "@/lib/prospecting/inbound";
+import { createSupabaseProspectStore } from "@/lib/prospecting/supabase-store";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/types";
 
@@ -53,7 +55,9 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   const admin = getSupabaseAdmin();
+  const store = createSupabaseProspectStore();
   const accessToken = serverEnv().META_ACCESS_TOKEN;
+  const keyword = serverEnv().META_PROSPECT_KEYWORD;
   let persisted = 0;
   let resolved = 0;
 
@@ -65,7 +69,22 @@ export async function POST(request: Request): Promise<NextResponse> {
         message.senderId,
         accessToken,
       );
-      if (supplier !== null) resolved += 1;
+      if (supplier !== null) {
+        resolved += 1;
+        // DM resolvida: registra a conversa/mensagem (idempotente por mid).
+        await handleInbound(
+          store,
+          {
+            kind: "message",
+            messageId: message.eventId,
+            senderId: message.senderId,
+            text: message.text,
+            supplierId: supplier.id,
+            channel: "instagram",
+          },
+          { keyword, now: new Date() },
+        );
+      }
     }
 
     const payload = supplier === null ? message : { ...message, supplier };

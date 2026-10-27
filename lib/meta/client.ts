@@ -25,7 +25,7 @@ const API_BASE = "https://graph.facebook.com";
 export async function sendInstagramText(input: MetaSendInput & {
   instagramBusinessId: string;
 }): Promise<MetaSendResult> {
-  const version = input.apiVersion ?? "v21.0";
+  const version = input.apiVersion ?? "v26.0";
   const url = `${API_BASE}/${version}/${input.instagramBusinessId}/messages`;
   return post(url, input.accessToken, {
     recipient: { id: input.recipientId },
@@ -37,7 +37,7 @@ export async function sendInstagramText(input: MetaSendInput & {
 export async function sendMessengerText(input: MetaSendInput & {
   pageId: string;
 }): Promise<MetaSendResult> {
-  const version = input.apiVersion ?? "v21.0";
+  const version = input.apiVersion ?? "v26.0";
   const url = `${API_BASE}/${version}/${input.pageId}/messages`;
   return post(url, input.accessToken, {
     recipient: { id: input.recipientId },
