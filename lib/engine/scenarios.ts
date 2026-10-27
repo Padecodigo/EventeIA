@@ -66,6 +66,8 @@ function better(kind: ScenarioKind, a: DpCell, b: DpCell | undefined): boolean {
 export interface ScenarioOptions {
   /** Cobertura exata: nenhuma categoria paga duas vezes (sem sobreposição entre escolhidos). */
   exactCover?: boolean;
+  /** N de convidados do evento (V_pessoa·N). 0 = propostas sem preço por cabeça. */
+  guestCount?: number;
 }
 
 function solve(
@@ -105,6 +107,7 @@ function buildCandidates(
   quotes: SupplierQuote[],
   assets: UserAssets,
   missing: MissingInfo[],
+  guestCount: number,
 ): Candidate[] {
   const candidates: Candidate[] = [];
   const sorted = [...quotes].sort((a, b) =>
@@ -116,7 +119,7 @@ function buildCandidates(
     if (categories.length === 0) continue;
     const mask = categories.reduce((acc, category) => acc | (1 << required.indexOf(category)), 0);
 
-    const cost = effectiveCost(quote, assets);
+    const cost = effectiveCost(quote, assets, guestCount);
     if (!cost.ok) {
       for (const field of cost.missing) {
         missing.push({ category: categories.join("+"), supplierId: quote.supplierId, field });
@@ -158,8 +161,13 @@ export function buildScenario(
     throw new Error(`máximo de ${String(MAX_REQUIRED_CATEGORIES)} categorias por cenário`);
   }
 
+  const guestCount = options.guestCount ?? 0;
+  if (!Number.isInteger(guestCount) || guestCount < 0) {
+    throw new Error("guestCount deve ser inteiro não-negativo");
+  }
+
   const missing: MissingInfo[] = [];
-  const candidates = buildCandidates(kind, required, quotes, assets, missing);
+  const candidates = buildCandidates(kind, required, quotes, assets, missing, guestCount);
 
   // Categorias sem nenhuma cotação utilizável.
   for (const [index, category] of required.entries()) {

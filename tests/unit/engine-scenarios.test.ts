@@ -245,3 +245,65 @@ describe("cobertura exata (sem sobreposição)", () => {
     ).toEqual(["a", "c"]);
   });
 });
+
+describe("C_total = V_base + V_pessoa·N + T_extra", () => {
+  it("soma o custo por convidado ao custo efetivo", () => {
+    const result = effectiveCost(
+      quote({
+        supplierId: "a",
+        covers: ["buffet"],
+        basePriceCents: 50_000,
+        perGuestCents: 3_200,
+        fees: [
+          { category: "cleaning", description: "limpeza", amountCents: 5_000, includedInBase: false },
+        ],
+      }),
+      noAssets,
+      120,
+    );
+    // 50_000 (base) + 3_200×120 (384_000) + 5_000 (taxa) = 439_000
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.effectiveCents).toBe(439_000);
+  });
+
+  it("sem perGuestCents, guestCount não altera o total", () => {
+    const q = quote({ supplierId: "a", covers: ["buffet"], basePriceCents: 50_000 });
+    const a = effectiveCost(q, noAssets, 120);
+    const b = effectiveCost(q, noAssets, 0);
+    expect(a.ok && b.ok && a.effectiveCents === b.effectiveCents).toBe(true);
+  });
+
+  it("rejeita guestCount inválido", () => {
+    expect(() =>
+      effectiveCost(quote({ supplierId: "a", covers: ["buffet"] }), noAssets, -1),
+    ).toThrow();
+    expect(() =>
+      effectiveCost(quote({ supplierId: "a", covers: ["buffet"] }), noAssets, 10.5),
+    ).toThrow();
+  });
+
+  it("cenário 'preco' considera V_pessoa·N no total", () => {
+    const mk = (id: string, covers: string[], base: number, perGuest: number | null) => ({
+      supplierId: id,
+      supplierName: id,
+      covers,
+      basePriceCents: base,
+      totalPriceCents: null,
+      perGuestCents: perGuest,
+      fees: [],
+      qualityBps: 9000,
+    });
+    const quotes = [mk("a", ["buffet"], 100_000, 5_000), mk("b", ["buffet"], 80_000, 8_000)];
+    const assets = { alreadyOwned: [], unneededFeeCategories: [] };
+
+    // 50 convidados: a = 100000+250000=350000; b = 80000+400000=480000 → a vence.
+    const cheap = buildScenario("preco", ["buffet"], quotes, assets, { guestCount: 50 });
+    expect(cheap.scenario?.selections[0]?.supplierId).toBe("a");
+    expect(cheap.scenario?.totalCents).toBe(350_000);
+
+    // 150 convidados: a = 100000+750000=850000; b = 80000+1200000=1280000 → a ainda vence.
+    const big = buildScenario("preco", ["buffet"], quotes, assets, { guestCount: 150 });
+    expect(big.scenario?.selections[0]?.supplierId).toBe("a");
+    expect(big.scenario?.totalCents).toBe(850_000);
+  });
+});
