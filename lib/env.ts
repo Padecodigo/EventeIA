@@ -44,7 +44,9 @@ const serverSchema = z.object({
   META_VERIFY_TOKEN: z.string().optional(),
   META_PAGE_ID: z.string().optional(),
   META_INSTAGRAM_BUSINESS_ID: z.string().optional(),
-  META_API_VERSION: z.string().regex(/^v\d+\.\d+$/).default("v21.0"),
+  META_API_VERSION: z.string().regex(/^v\d+\.\d+$/).default("v26.0"),
+  // Palavra-chave que o fornecedor comenta para receber a cotação na DM.
+  META_PROSPECT_KEYWORD: z.string().min(1).default("cotação"),
   WHATSAPP_CLOUD_API_VERSION: z
     .string()
     .regex(/^v\d+\.\d+$/)
