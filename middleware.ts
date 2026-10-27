@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 import { publicOrigin } from "@/lib/auth/oauth";
+import { sessionCookieOptions } from "@/lib/supabase/session-cookies";
 
 const PROTECTED_PREFIXES = ["/painel", "/eventos", "/creditos", "/chamados", "/admin"];
 
@@ -37,7 +38,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
         }
         response = NextResponse.next({ request });
         for (const { name, value, options } of cookiesToSet) {
-          response.cookies.set(name, value, options);
+          response.cookies.set(name, value, sessionCookieOptions(options));
         }
       },
     },
