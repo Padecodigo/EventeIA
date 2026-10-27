@@ -2,7 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 
-import { softDeleteSupplier, type OpResult, type SupplierDb } from "@/lib/admin/suppliers";
+import {
+  SUPPLIERS_CLEAR_CONFIRMATION,
+  isSuppliersClearConfirmed,
+  softDeleteAllSuppliers,
+  softDeleteSupplier,
+  type OpResult,
+  type SupplierDb,
+} from "@/lib/admin/suppliers";
 import { requireAdmin } from "@/lib/auth";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
@@ -20,4 +27,33 @@ export async function deleteSupplierAction(_prev: OpResult | null, form: FormDat
     revalidatePath("/admin/lixeira");
   }
   return res;
+}
+
+export interface SupplierClearState {
+  error?: string;
+  success?: string;
+}
+
+/**
+ * Limpa a lista de fornecedores: todos vão para a Lixeira de uma vez.
+ * Confirmação digitada porque a ação atinge todos os registros vivos.
+ */
+export async function clearSuppliersAction(
+  _prev: SupplierClearState,
+  form: FormData,
+): Promise<SupplierClearState> {
+  const admin = await requireAdmin();
+  if (!isSuppliersClearConfirmed(form.get("confirm"))) {
+    return { error: `Digite ${SUPPLIERS_CLEAR_CONFIRMATION} para confirmar.` };
+  }
+  const db = getSupabaseAdmin() as unknown as SupplierDb;
+  const { count } = await getSupabaseAdmin()
+    .from("suppliers")
+    .select("id", { count: "exact", head: true })
+    .is("deleted_at", null);
+  const res = await softDeleteAllSuppliers(db, admin.id);
+  if (!res.ok) return { error: res.error };
+  revalidatePath("/admin/fornecedores");
+  revalidatePath("/admin/lixeira");
+  return { success: `${String(count ?? 0)} fornecedor(es) enviado(s) para a Lixeira.` };
 }

@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { AdminSupplierClear } from "@/components/admin/admin-supplier-clear";
 import { requireAdmin } from "@/lib/auth";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
@@ -25,6 +26,10 @@ export default async function AdminFornecedoresPage({ searchParams }: { searchPa
   if (c) query = query.ilike("city", c);
   const { data } = await query;
   const rows = data ?? [];
+  const { count: liveTotal } = await getSupabaseAdmin()
+    .from("suppliers")
+    .select("id", { count: "exact", head: true })
+    .is("deleted_at", null);
 
   return (
     <div className="flex flex-col gap-6">
@@ -39,6 +44,12 @@ export default async function AdminFornecedoresPage({ searchParams }: { searchPa
           <input name="cidade" defaultValue={city} placeholder="Cidade" aria-label="Cidade" className="w-40 rounded-input border border-line-subtle bg-white px-3 py-2 text-sm" />
           <button type="submit" className="rounded-full bg-primaria px-4 py-2 text-sm font-semibold text-white">Filtrar</button>
         </form>
+      </Card>
+      <Card testId="suppliers-clear">
+        <h3 className="font-serif text-title-3">Limpar lista</h3>
+        <div className="mt-3">
+          <AdminSupplierClear liveCount={liveTotal ?? 0} />
+        </div>
       </Card>
       <Card testId="suppliers-list">
         {rows.length === 0 ? <p className="text-caption text-vinho/70">Nenhum fornecedor encontrado.</p> : (

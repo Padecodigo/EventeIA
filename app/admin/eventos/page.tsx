@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { AdminEventCancelAll } from "@/components/admin/admin-event-cancel-all";
+import { AdminEventClear } from "@/components/admin/admin-event-clear";
 import { AdminEventDelete } from "@/components/admin/admin-event-delete";
 import { requireAdmin } from "@/lib/auth";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -25,10 +25,10 @@ export default async function AdminEventosPage({ searchParams }: { searchParams:
   if (status) query = query.eq("status", status as never);
   const { data } = await query;
   const events = data ?? [];
-  const { count: activeTotal } = await admin
+  const { count: pendingTotal } = await admin
     .from("events")
     .select("id", { count: "exact", head: true })
-    .eq("status", "active");
+    .neq("status", "canceled");
   const ownerIds = [...new Set(events.map((e) => e.owner_profile_id))];
   const { data: owners } = ownerIds.length ? await admin.from("profiles").select("id,display_name").in("id", ownerIds) : { data: [] };
   const ownerName = new Map((owners ?? []).map((o) => [o.id, o.display_name]));
@@ -48,9 +48,9 @@ export default async function AdminEventosPage({ searchParams }: { searchParams:
         </nav>
       </Card>
       <Card testId="events-bulk">
-        <h3 className="font-serif text-title-3">Cancelar em massa</h3>
+        <h3 className="font-serif text-title-3">Limpar lista</h3>
         <div className="mt-3">
-          <AdminEventCancelAll activeCount={activeTotal ?? 0} />
+          <AdminEventClear pendingCount={pendingTotal ?? 0} />
         </div>
       </Card>
       <Card testId="events-list">

@@ -7,9 +7,9 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
 import { cancelEventFollowUp } from "@/lib/events/cancel";
 import {
-  BULK_CANCEL_CONFIRMATION,
+  BULK_CLEAR_CONFIRMATION,
   canCancelEvent,
-  isBulkCancelConfirmed,
+  isBulkClearConfirmed,
 } from "@/lib/events/lifecycle";
 import { logger } from "@/lib/logger";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -21,7 +21,7 @@ export interface AdminEventActionState {
 
 const eventIdSchema = z.object({ eventId: z.string().uuid() });
 
-/** Teto por execução: o cancelamento em massa é operação de painel, não de lote infinito. */
+/** Teto por execução: a limpeza é operação de painel, não de lote infinito. */
 const BULK_LIMIT = 200;
 
 function revalidateEvents() {
@@ -89,35 +89,36 @@ export async function deleteEventAction(
 }
 
 /**
- * Cancela em massa todos os eventos ativos.
+ * Limpa a lista: exclui (soft delete) todos os eventos que ainda não estão
+ * cancelados — rascunhos, aguardando pagamento e ativos.
  *
- * É um UPDATE filtrado (`status = 'active'`), jamais um DELETE sem WHERE: o
- * catálogo de eventos continua auditável e cada linha mantém seu histórico.
- * A confirmação digitada existe porque a ação atinge vários clientes de uma vez.
+ * É um UPDATE filtrado (`status <> 'canceled'`), jamais um DELETE sem WHERE: o
+ * histórico continua auditável e cada evento mantém seus pagamentos. A
+ * confirmação digitada existe porque a ação atinge vários clientes de uma vez.
  */
-export async function cancelActiveEventsAction(
+export async function clearEventsAction(
   _previous: AdminEventActionState,
   formData: FormData,
 ): Promise<AdminEventActionState> {
   const adminUser = await requireAdmin();
 
-  if (!isBulkCancelConfirmed(formData.get("confirm"))) {
-    return { error: `Digite ${BULK_CANCEL_CONFIRMATION} para confirmar.` };
+  if (!isBulkClearConfirmed(formData.get("confirm"))) {
+    return { error: `Digite ${BULK_CLEAR_CONFIRMATION} para confirmar.` };
   }
 
   const admin = getSupabaseAdmin();
   const { data: events, error: listError } = await admin
     .from("events")
     .select("id,owner_profile_id")
-    .eq("status", "active")
+    .neq("status", "canceled")
     .limit(BULK_LIMIT);
 
   if (listError !== null) {
-    logger.error({ code: listError.code }, "falha ao listar eventos ativos");
-    return { error: "Não foi possível listar os eventos ativos." };
+    logger.error({ code: listError.code }, "falha ao listar eventos para limpeza");
+    return { error: "Não foi possível listar os eventos." };
   }
   if (events === null || events.length === 0) {
-    return { success: "Nenhum evento ativo para cancelar." };
+    return { success: "Nenhum evento para limpar." };
   }
 
   let canceled = 0;
@@ -128,12 +129,12 @@ export async function cancelActiveEventsAction(
       .from("events")
       .update({ status: "canceled" })
       .eq("id", event.id)
-      .eq("status", "active")
+      .neq("status", "canceled")
       .select("id");
 
     if (error !== null || updated === null || updated.length === 0) {
       failed += 1;
-      logger.error({ code: error?.code, eventId: event.id }, "falha ao cancelar evento em massa");
+      logger.error({ code: error?.code, eventId: event.id }, "falha ao limpar evento");
       continue;
     }
 
@@ -151,8 +152,8 @@ export async function cancelActiveEventsAction(
   const suffix = events.length >= BULK_LIMIT ? ` (limite de ${String(BULK_LIMIT)} por execução)` : "";
   if (failed > 0) {
     return {
-      error: `${String(canceled)} evento(s) cancelado(s) e ${String(failed)} com falha.${suffix}`,
+      error: `${String(canceled)} evento(s) excluído(s) e ${String(failed)} com falha.${suffix}`,
     };
   }
-  return { success: `${String(canceled)} evento(s) cancelado(s).${suffix}` };
+  return { success: `${String(canceled)} evento(s) excluído(s).${suffix}` };
 }
