@@ -38,6 +38,13 @@ const serverSchema = z.object({
   WHATSAPP_CLOUD_PHONE_NUMBER_ID: z.string().optional(),
   WHATSAPP_CLOUD_VERIFY_TOKEN: z.string().optional(),
   WHATSAPP_CLOUD_APP_SECRET: z.string().optional(),
+  // Meta — Instagram Direct + Messenger (respostas, janela 24h; não há abordagem fria).
+  META_ACCESS_TOKEN: z.string().optional(),
+  META_APP_SECRET: z.string().optional(),
+  META_VERIFY_TOKEN: z.string().optional(),
+  META_PAGE_ID: z.string().optional(),
+  META_INSTAGRAM_BUSINESS_ID: z.string().optional(),
+  META_API_VERSION: z.string().regex(/^v\d+\.\d+$/).default("v21.0"),
   WHATSAPP_CLOUD_API_VERSION: z
     .string()
     .regex(/^v\d+\.\d+$/)
