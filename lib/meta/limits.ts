@@ -36,8 +36,8 @@ export const CAPTION = {
  * campo, mas NÃO declara um limite numérico. NÃO presumir — usar um teto
  * conservador (8) até confirmar na referência de IG User Media.
  */
-export const USER_TAGS_MAX_CONFIRMED = false;
-export const USER_TAGS_MAX_SAFE = 8;
+// `user_tags` numérico: decidido pelo dono (2026-10-27) usar o teto conservador 8.
+export const USER_TAGS_MAX = 8;
 
 /**
  * Publicações por 24h: a página de content publishing diz **100 posts/24h**
@@ -46,6 +46,8 @@ export const USER_TAGS_MAX_SAFE = 8;
  */
 export const POSTS_PER_24H = 100;
 export const POSTS_PER_24H_ALT = 50;
+// Teto rígido adotado (decisão do dono, 2026-10-27): 50, o menor dos dois valores.
+export const POSTS_PER_24H_HARD_CAP = 50;
 
 /** Carrossel: até 20 mídias; imagens/vídeos hospedados publicamente. */
 export const CAROUSEL_MAX_CHILDREN = 20;
@@ -119,4 +121,15 @@ export const AUTOMATION_DISCLOSURE_REQUIRED = true;
  * NÃO presumir — confirmar antes de implementar o gerador.
  */
 export const MODELSLAB_DOCS = "https://docs.modelslab.com/llms.txt";
-export const MODELSLAB_ENDPOINT_CONFIRMED = false;
+export const MODELSLAB_ENDPOINT_CONFIRMED = true;
+
+/** ModelsLab — Realtime Stable Diffusion (SDXL). Confirmado em 2026-10-27. */
+export const MODELSLAB = {
+  endpoint: "https://modelslab.com/api/v6/realtime/text2img",
+  /** Chave vai no corpo JSON (campo `key`), não em header. */
+  authField: "key",
+  maxWidthPx: 1024,
+  maxHeightPx: 1024,
+  maxSamples: 4,
+  formats: ["image/png", "image/jpeg"],
+} as const;

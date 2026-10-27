@@ -344,9 +344,15 @@ Valores confirmados (fonte: páginas acima; constantes em `lib/meta/limits.ts`):
 | Rate limit de mensagens | 2 chamadas/s por conta; 750/h private replies (posts/reels); 100/s (Live) |
 | Imagens | JPEG, 8 MB, 4:5 a 1.91:1, 320–1440 px, sRGB |
 
-**Ainda NÃO confirmado (não presumido no código):**
-- Limite numérico de `user_tags` por post — a página consultada descreve o campo sem número; `lib/meta/limits.ts` usa teto conservador 8 e marca `USER_TAGS_MAX_CONFIRMED = false`.
-- **ModelsLab**: docs acessíveis em https://docs.modelslab.com (índice em `/llms.txt`), mas endpoint/autenticação da geração de imagem não foram extraídos nesta consulta (`MODELSLAB_ENDPOINT_CONFIRMED = false`). Nada foi implementado com valores presumidos.
+**Decisões de limites (2026-10-27, dono do projeto):**
+- `user_tags` por post: adotado o teto **conservador 8** (`USER_TAGS_MAX`), já que a página consultada não declara o número.
+- Posts por 24h: teto rígido **50** (`POSTS_PER_24H_HARD_CAP`), o menor entre os valores documentados; a operação segue `MAX_POSTS_PER_DAY` (padrão 2).
+
+**ModelsLab — Realtime Stable Diffusion (SDXL)** — confirmado em 2026-10-27:
+- Endpoint `POST https://modelslab.com/api/v6/realtime/text2img`;
+- autenticação: chave no **corpo JSON** (campo `key`);
+- limites: width/height ≤ 1024, samples ≤ 4; formatos PNG/JPG; resposta com `output[]` de URLs.
+- Cliente em `lib/modelslab/client.ts`, config em `lib/meta/limits.ts` (`MODELSLAB`).
 
 ---
 
