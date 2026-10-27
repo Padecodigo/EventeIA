@@ -49,7 +49,7 @@ export const TESTIMONIALS: readonly Testimonial[] = [
     initials: "DN",
     name: "Débora N.",
     context: "Cerimonialista · franquia de créditos",
-    city: "Caçapava, SP",
+    city: "São Paulo, SP",
     quote:
       "Ganhei tempo para o que eu amo: cuidar de cada família. Os orçamentos chegam organizados e eu foco nos detalhes que emocionam.",
     outcome: "",
