@@ -44,6 +44,21 @@ export async function instagramHandleFromSid(
   return parsed.success ? parsed.data.username.toLowerCase() : null;
 }
 
+/** Fornecedor pelo @handle (usado em comentários, onde o username já vem no payload). */
+export async function resolveInstagramSupplierByHandle(
+  db: MetaSupplierLookup,
+  handle: string,
+): Promise<MetaSupplier> {
+  const normalized = handle.trim().toLowerCase();
+  if (normalized.length === 0) return null;
+  const { data } = await db
+    .from("suppliers")
+    .select("id,name,category")
+    .eq("source_url", instagramProfileUrl(normalized))
+    .maybeSingle();
+  return data ?? null;
+}
+
 /** Fornecedor conhecido cujo perfil bate com o IGSID; null se não houver match. */
 export async function resolveInstagramSupplier(
   db: MetaSupplierLookup,

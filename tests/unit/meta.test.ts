@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { sendInstagramText, sendMessengerText } from "@/lib/meta/client";
 import { verifyChallenge, verifyHubSignature } from "@/lib/meta/signature";
-import { parseMetaWebhook } from "@/lib/meta/webhook";
+import { parseMetaComments, parseMetaWebhook } from "@/lib/meta/webhook";
 
 const SECRET = "app-secret-123";
 
@@ -145,5 +145,42 @@ describe("meta — cliente de envio", () => {
         new Response(JSON.stringify({ error: { message: "permission denied" } }), { status: 403 })) as typeof fetch,
     });
     expect(res).toEqual({ ok: false, error: "permission denied", status: 403 });
+  });
+});
+
+
+describe("meta — parse de comentários (post de isca)", () => {
+  it("normaliza comentário com @username e mídia", () => {
+    const comments = parseMetaComments({
+      object: "instagram",
+      entry: [
+        {
+          id: "1784",
+          changes: [
+            {
+              field: "comments",
+              value: {
+                id: "c1",
+                text: "quero COTAÇÃO",
+                from: { id: "u1", username: "buffet_da_ana" },
+                media: { id: "m9" },
+              },
+            },
+          ],
+        },
+      ],
+    });
+    expect(comments).toEqual([
+      { commentId: "c1", text: "quero COTAÇÃO", senderId: "u1", senderUsername: "buffet_da_ana", mediaId: "m9" },
+    ]);
+  });
+
+  it("não trata comentário como DM", () => {
+    const payload = { object: "instagram", entry: [{ changes: [{ field: "comments", value: { id: "c1", text: "x", from: { id: "u1", username: "a" } } }] }] };
+    expect(parseMetaWebhook(payload)).toBeNull();
+  });
+
+  it("ignora payload de DM (sem field comments)", () => {
+    expect(parseMetaComments({ object: "page", entry: [{ messaging: [] }] })).toBeNull();
   });
 });
