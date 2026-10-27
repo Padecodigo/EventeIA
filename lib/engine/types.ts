@@ -104,6 +104,13 @@ export interface SupplierQuote {
   covers: string[];
   basePriceCents: number | null;
   totalPriceCents: number | null;
+  /**
+   * Custo por convidado (V_pessoa) quando a proposta é "por cabeça". Null/ausente
+   * ⇒ a proposta não precifica por pessoa (só base + taxas). Somado como
+   * `perGuestCents * guestCount` no C_total. Opcional por compatibilidade até a
+   * extração passar a emitir o campo (fase seguinte).
+   */
+  perGuestCents?: number | null;
   fees: QuoteFee[];
   /** Qualidade/confiança 0..10000 bps (ex.: confidence_score × 10000, inteiro). */
   qualityBps: number | null;

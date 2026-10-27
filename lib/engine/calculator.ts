@@ -46,12 +46,38 @@ function feeAmountCents(fee: QuoteFee, baseCents: number): number | null {
   return null;
 }
 
-export function effectiveCost(quote: SupplierQuote, assets: UserAssets): EffectiveCostResult {
+/** V_pessoa (custo por convidado) da proposta; 0 quando a proposta não precifica por cabeça. */
+export function resolvePerGuestCents(quote: SupplierQuote): number {
+  if (quote.perGuestCents === undefined || quote.perGuestCents === null) {
+    return 0;
+  }
+  assertCents(quote.perGuestCents, "perGuestCents");
+  return quote.perGuestCents;
+}
+
+/**
+ * C_total = V_base + V_pessoa·N + T_extra (centavos inteiros, determinístico).
+ *
+ * `guestCount` é o N do evento. Mantido com default 0 para não quebrar quem
+ * ainda não passa o número de convidados: com 0, o resultado é idêntico ao
+ * comportamento anterior (base + taxas obrigatórias).
+ */
+export function effectiveCost(
+  quote: SupplierQuote,
+  assets: UserAssets,
+  guestCount = 0,
+): EffectiveCostResult {
+  if (!Number.isInteger(guestCount) || guestCount < 0) {
+    throw new Error("guestCount deve ser inteiro não-negativo");
+  }
+
   const baseCents = resolveBaseCents(quote);
   if (baseCents === null) {
     return { ok: false, missing: ["base_price_cents"] };
   }
   assertCents(baseCents, "basePriceCents");
+
+  const perGuestSubtotalCents = resolvePerGuestCents(quote) * guestCount;
 
   const unneeded = new Set(assets.unneededFeeCategories);
   const missing: MissingField[] = [];
@@ -80,7 +106,7 @@ export function effectiveCost(quote: SupplierQuote, assets: UserAssets): Effecti
 
   return {
     ok: true,
-    effectiveCents: baseCents + hiddenFeesCents,
+    effectiveCents: baseCents + perGuestSubtotalCents + hiddenFeesCents,
     baseCents,
     hiddenFeesCents,
     ignoredFeesCents,
