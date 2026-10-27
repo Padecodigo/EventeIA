@@ -71,7 +71,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           // temporário até o banco receber a 0052 e os tipos serem re-gerados.
           source: "meta" as unknown as "whatsapp_cloud",
           external_event_id: externalId,
-          payload: payload as unknown as Json,
+          payload: payload as Json,
           status: "received",
         },
         { onConflict: "source,external_event_id", ignoreDuplicates: true },
