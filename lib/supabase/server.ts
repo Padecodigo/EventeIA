@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { sessionCookieOptions } from "./session-cookies";
 import type { Database } from "./types";
 
 /**
@@ -30,7 +31,8 @@ export async function createSupabaseServerClient(): Promise<SupabaseClient<Datab
       setAll(cookiesToSet) {
         try {
           for (const { name, value, options } of cookiesToSet) {
-            cookieStore.set(name, value, options);
+            // Cookie de sessão: fechar o navegador desloga (ver session-cookies.ts).
+            cookieStore.set(name, value, sessionCookieOptions(options));
           }
         } catch {
           // Server Component não pode gravar cookies; o middleware renova a sessão.
