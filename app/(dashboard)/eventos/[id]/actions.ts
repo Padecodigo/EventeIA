@@ -5,10 +5,10 @@ import { redirect } from "next/navigation";
 
 import { z } from "zod";
 
-import { cancelAsaasPayment } from "@/lib/asaas/client";
 import { requireUser } from "@/lib/auth";
+import { cancelEventFollowUp } from "@/lib/events/cancel";
 import { canCancelEvent, canCompleteEvent } from "@/lib/events/lifecycle";
-import { removeScheduledEventJobs, stopEventBackgroundWork } from "@/lib/events/stop";
+import { stopEventBackgroundWork } from "@/lib/events/stop";
 import { emitFeed } from "@/lib/feeds";
 import { logger } from "@/lib/logger";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -136,61 +136,12 @@ export async function cancelEventAction(
     return { error: "Não foi possível excluir o evento. Tente novamente." };
   }
 
-  // Pix ainda aberto não pode ser pago depois da exclusão: cancela no Asaas e localmente.
-  const admin = getSupabaseAdmin();
-  const { data: openPayments } = await admin
-    .from("payments")
-    .select("id,asaas_payment_id")
-    .eq("event_id", event.id)
-    .eq("purpose", "event_ticket")
-    .in("status", ["pending", "overdue"]);
-
-  for (const payment of openPayments ?? []) {
-    try {
-      await cancelAsaasPayment(payment.asaas_payment_id);
-      await admin.from("payments").update({ status: "canceled" }).eq("id", payment.id);
-      try {
-        await emitFeed(admin, {
-          type: "payment.canceled",
-          actorType: "user",
-          actorId: user.id,
-          aggregateType: "payment",
-          aggregateId: payment.id,
-          payload: { event_id: event.id },
-          correlationId: event.id,
-          source: "app",
-        });
-      } catch {
-        // feed não bloqueia o cancelamento
-      }
-    } catch (caught) {
-      logger.warn(
-        {
-          paymentId: payment.id,
-          reason: caught instanceof Error ? caught.message : "desconhecido",
-        },
-        "não foi possível cancelar o Pix do evento excluído",
-      );
-    }
-  }
-
-  await stopEventBackgroundWork(event.id);
-  await removeScheduledEventJobs(event.id, event.owner_profile_id);
-
-  try {
-    await emitFeed(getSupabaseAdmin(), {
-      type: "event.canceled",
-      actorType: "user",
-      actorId: user.id,
-      aggregateType: "event",
-      aggregateId: event.id,
-      payload: {},
-      correlationId: event.id,
-      source: "app",
-    });
-  } catch {
-    // feed não bloqueia a exclusão
-  }
+  await cancelEventFollowUp({
+    eventId: event.id,
+    ownerProfileId: event.owner_profile_id,
+    actorId: user.id,
+    actorType: "user",
+  });
 
   revalidatePath("/eventos");
   revalidatePath("/painel");
