@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { z } from "zod";
 
+import { recordAnalytics } from "@/lib/analytics/server";
 import { RESET_NEXT_COOKIE, buildCallbackUrl, publicOrigin } from "@/lib/auth/oauth";
 import { recordTermsAcceptance } from "@/lib/legal/acceptance-server";
 import { TERMS_COOKIE, TERMS_ERROR, TERMS_VERSION, hasAcceptedTerms } from "@/lib/legal/terms";
@@ -62,7 +63,7 @@ export async function signInAction(
   }
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email: parsed.data.email,
     password: parsed.data.password,
   });
@@ -71,6 +72,7 @@ export async function signInAction(
     return { error: friendlyAuthError(error.message) };
   }
 
+  await recordAnalytics({ event: "login", profileId: data.user?.id ?? null });
   redirect("/painel");
 }
 
@@ -110,6 +112,7 @@ export async function signUpAction(
   }
 
   if (data.user !== null) {
+    await recordAnalytics({ event: "signup", profileId: data.user.id });
     // Vincula a oferta de boas-vindas deste aparelho à nova conta (prazo original mantido).
     await bindWelcomeOfferToUser(data.user.id);
     // Prova do aceite: data/hora + versão dos termos (0041).
