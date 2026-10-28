@@ -3,6 +3,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 import { publicOrigin } from "@/lib/auth/oauth";
+import {
+  SESSION_COOKIE,
+  SESSION_COOKIE_OPTIONS,
+  isSessionCookie,
+  sessionExpired,
+} from "@/lib/auth/session-ttl";
 import { sessionCookieOptions } from "@/lib/supabase/session-cookies";
 
 const PROTECTED_PREFIXES = ["/painel", "/eventos", "/creditos", "/chamados", "/admin"];
@@ -47,6 +53,25 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // TTL curto: sessão iniciada há mais de SESSION_MAX_AGE_MINUTES é encerrada.
+  if (user !== null) {
+    const started = request.cookies.get(SESSION_COOKIE)?.value;
+    if (started === undefined) {
+      response.cookies.set(SESSION_COOKIE, String(Date.now()), SESSION_COOKIE_OPTIONS);
+    } else if (sessionExpired(started, Date.now())) {
+      const redirect = NextResponse.redirect(
+        new URL("/entrar?expirada=1", publicOrigin(request.headers, request.url)),
+      );
+      for (const cookie of request.cookies.getAll()) {
+        if (isSessionCookie(cookie.name)) {
+          redirect.cookies.delete({ name: cookie.name, path: "/" });
+        }
+      }
+      redirect.cookies.delete({ name: SESSION_COOKIE, path: "/" });
+      return redirect;
+    }
+  }
 
   const pathname = request.nextUrl.pathname;
 

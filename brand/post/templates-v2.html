@@ -1,0 +1,51 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"/>
+<style>
+@font-face{font-family:Fraunces;src:url("file:///home/fedora/Projetos/EventeIA/app/fonts/Fraunces.woff2") format("woff2");font-weight:100 900}
+@font-face{font-family:Figtree;src:url("file:///home/fedora/Projetos/EventeIA/app/fonts/Figtree.woff2") format("woff2");font-weight:300 900}
+*{box-sizing:border-box;margin:0}
+body{background:#ddd;padding:24px;font-family:Figtree,sans-serif}
+.art{position:relative;width:1080px;height:1350px;overflow:hidden;background:#2A1119;color:#FFFDFA;margin:0 auto 32px}
+.photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.mark{width:88px;height:88px;border-radius:20px;background:#D4AF37;color:#2A1119;display:flex;align-items:center;justify-content:center;font-family:Fraunces,serif;font-size:52px;font-weight:600}
+.word{font-family:Fraunces,serif;font-size:44px;font-weight:600;line-height:1}
+.word span{color:#D4AF37}
+.kicker{font-size:20px;letter-spacing:.22em;text-transform:uppercase;color:#D4AF37;font-weight:600}
+.h1{font-family:Fraunces,serif;font-size:62px;line-height:1.04;letter-spacing:-.02em}
+.meta{font-size:26px;line-height:1.5;opacity:.92}
+.cta{font-size:24px;line-height:1.4;opacity:.92}
+.tag{font-size:15px;letter-spacing:.2em;text-transform:uppercase;opacity:.7}
+.shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(42,17,25,.15) 0%,rgba(42,17,25,0) 35%,rgba(42,17,25,.92) 78%,#2A1119 100%)}
+.top{position:absolute;top:44px;left:52px;display:flex;align-items:center;gap:18px}
+.bottom{position:absolute;left:52px;right:52px;bottom:56px}
+.divider{height:2px;background:#D4AF37;width:120px;margin:26px 0}
+</style></head><body>
+
+<!-- A — novo evento -->
+<div class="art a">
+  <img class="photo" src="file:///home/fedora/Projetos/EventeIA/public/img/eventos/festa-infantil-velas.jpg"/>
+  <div class="shade"></div>
+  <div class="top"><div class="mark">E</div><div><div class="word">Evente<span>IA</span></div><div class="tag" style="margin-top:8px">Você imagina. A EventeIA faz acontecer.</div></div></div>
+  <div class="bottom">
+    <div class="kicker">Novo evento · Buffet</div>
+    <div class="h1" style="margin-top:16px">Festa infantil<br/>de 5 anos</div>
+    <div class="divider"></div>
+    <div class="meta">12 de dezembro · 40 convidados<br/>Taubaté, SP</div>
+    <div class="cta" style="margin-top:22px">Comente <strong style="color:#D4AF37">COTAÇÃO</strong> e receba o briefing.</div>
+  </div>
+</div>
+
+<!-- B — enxuto -->
+<div class="art b">
+  <img class="photo" src="file:///home/fedora/Projetos/EventeIA/public/img/eventos/festa-infantil-velas.jpg"/>
+  <div class="shade"></div>
+  <div class="top"><div class="mark" style="width:64px;height:64px;font-size:38px;border-radius:16px">E</div><div class="word" style="font-size:34px">Evente<span>IA</span></div></div>
+  <div class="bottom" style="text-align:center">
+    <div class="kicker">Novo evento · Buffet</div>
+    <div class="h1" style="margin-top:14px;font-size:66px">Festa infantil<br/>de 5 anos</div>
+    <div class="meta" style="margin-top:18px">12 de dezembro · 40 convidados · Taubaté, SP</div>
+    <div class="cta" style="margin-top:22px">Comente <strong style="color:#D4AF37">COTAÇÃO</strong> e receba o briefing</div>
+    <div class="tag" style="margin-top:26px">EventeIA — Você imagina. A EventeIA faz acontecer.</div>
+  </div>
+</div>
+
+</body></html>

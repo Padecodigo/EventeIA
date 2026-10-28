@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { recordAnalytics } from "@/lib/analytics/server";
+import { SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/auth/session-ttl";
 import { RESET_NEXT_COOKIE, buildCallbackUrl, publicOrigin } from "@/lib/auth/oauth";
 import { recordTermsAcceptance } from "@/lib/legal/acceptance-server";
 import { TERMS_COOKIE, TERMS_ERROR, TERMS_VERSION, hasAcceptedTerms } from "@/lib/legal/terms";
@@ -73,6 +74,7 @@ export async function signInAction(
   }
 
   await recordAnalytics({ event: "login", profileId: data.user?.id ?? null });
+  (await cookies()).set(SESSION_COOKIE, String(Date.now()), SESSION_COOKIE_OPTIONS);
   redirect("/painel");
 }
 

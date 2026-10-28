@@ -49,6 +49,7 @@ x-app-env: &app-env
   NVIDIA_NIM_BASE_URL: ${NVIDIA_NIM_BASE_URL:-}
   # Provedor de imagem (modelslab | nvidia) e modelo NVIDIA
   IMAGE_PROVIDER: ${IMAGE_PROVIDER:-modelslab}
+  SESSION_MAX_AGE_MINUTES: ${SESSION_MAX_AGE_MINUTES:-120}
   NVIDIA_IMAGE_MODEL: ${NVIDIA_IMAGE_MODEL:-black-forest-labs/flux-3-image-klein}
   RESEND_API_KEY: ${RESEND_API_KEY:-}
   EMAIL_FROM: ${EMAIL_FROM:-}

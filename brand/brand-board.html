@@ -1,0 +1,95 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"/>
+<style>
+@font-face{font-family:Fraunces;src:url("file:///home/fedora/Projetos/EventeIA/app/fonts/Fraunces.woff2") format("woff2");font-weight:100 900}
+@font-face{font-family:Figtree;src:url("file:///home/fedora/Projetos/EventeIA/app/fonts/Figtree.woff2") format("woff2");font-weight:300 900}
+*{box-sizing:border-box}
+body{margin:0;background:#F7F3EE;color:#2A1119;font-family:Figtree,system-ui,sans-serif;padding:40px}
+.board{max-width:1100px;margin:0 auto}
+.serif{font-family:Fraunces,Georgia,serif}
+h1{font-family:Fraunces,Georgia,serif;font-size:34px;margin:0 0 6px;letter-spacing:-.02em}
+.sub{color:#6B5A52;font-size:14px;margin:0 0 32px}
+.hero{background:#2A1119;border-radius:24px;padding:36px;display:flex;align-items:center;gap:28px;color:#FFFDFA}
+.hero .mark{width:96px;height:96px;border-radius:22px;background:#D4AF37;color:#2A1119;display:flex;align-items:center;justify-content:center;font-family:Fraunces,Georgia,serif;font-size:52px;font-weight:600}
+.hero .word{font-family:Fraunces,Georgia,serif;font-size:52px;font-weight:600;line-height:1}
+.hero .word span{color:#D4AF37}
+.hero .tag{font-size:11px;letter-spacing:.28em;color:#FFFDFA99;margin-top:10px}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:28px 0 8px}
+.sw{border-radius:14px;height:86px;display:flex;align-items:flex-end;padding:10px;font-size:11px;font-weight:700}
+.sw.dark{color:#FFFDFA}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:28px}
+.card{background:#FFFDFA;border:1px solid #E6DDD4;border-radius:18px;padding:22px}
+.label{font-size:11px;font-weight:700;letter-spacing:.16em;color:#8A7A72;text-transform:uppercase;margin:0 0 10px}
+.type-display{font-family:Fraunces,Georgia,serif;font-size:40px;line-height:1.05;letter-spacing:-.02em}
+.type-body{font-size:15px;line-height:1.6;color:#3D2A26;margin-top:12px}
+.type-small{font-size:11px;letter-spacing:.16em;color:#8A7A72;margin-top:12px}
+.voice{font-size:14px;line-height:1.6;margin:0}
+.voice strong{font-weight:700}
+.quote{border-left:3px solid #D4AF37;padding-left:14px;font-family:Fraunces,Georgia,serif;font-style:italic;font-size:17px;line-height:1.4;color:#4A2031}
+.post{background:#fff;border:1px solid #E6DDD4;border-radius:16px;overflow:hidden}
+.post img{width:100%;aspect-ratio:4/5;object-fit:cover;display:block}
+.post .cap{padding:12px 14px;font-size:12.5px;line-height:1.5}
+.post .tag{color:#A3485A;font-weight:700}
+.footer{margin-top:28px;font-size:11px;color:#8A7A72;text-align:center}
+</style></head><body>
+<div class="board">
+  <h1>EventeIA — identidade</h1>
+  <p class="sub">Sistema de marca: símbolo, tipografia, paleta, voz e aplicação editorial.</p>
+
+  <div class="hero">
+    <div class="mark">E</div>
+    <div>
+      <div class="word">Evente<span>IA</span></div>
+      <div class="tag">VOCÊ IMAGINA. A EVENTEIA FAZ ACONTECER.</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="sw dark" style="background:#2A1119">#2A1119 · Vinho</div>
+    <div class="sw dark" style="background:#A3485A">#A3485A · Coral</div>
+    <div class="sw" style="background:#D4AF37">#D4AF37 · Champagne</div>
+    <div class="sw" style="background:#F7F3EE">#F7F3EE · Areia</div>
+    <div class="sw" style="background:#FFFDFA;border:1px solid #E6DDD4">#FFFDFA · Off-white</div>
+  </div>
+
+  <div class="row">
+    <div class="card">
+      <p class="label">Tipografia</p>
+      <div class="type-display">Menos ligações, mais memórias.</div>
+      <p class="type-body">Fraunces nos títulos — serifa quente e editorial. Figtree no corpo e na interface — clara e sem atrito.</p>
+      <p class="type-small">TÍTULOS · FRAUNCES 600 · CORPO · FIGTREE 400/600</p>
+    </div>
+    <div class="card">
+      <p class="label">Voz e tom</p>
+      <p class="voice"><strong>Editorial, humano e direto.</strong> Falamos com quem organiza a festa com orçamento real. Explicamos números, nunca prometemos milagre. Sem “!!!” e sem urgência falsa.</p>
+      <p class="quote" style="margin-top:14px">“A clareza financeira e a inteligência que o seu evento merece.”</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="card">
+      <p class="label">Aplicação — post de prospecção</p>
+      <div class="post">
+        <img src="file:///home/fedora/Projetos/EventeIA/public/img/eventos/festa-infantil-velas.jpg"/>
+        <div class="cap">Festa infantil de 5 anos em Taubaté, 40 convidados. <span class="tag">@buffet.saborereal</span>, comente “COTAÇÃO” e receba o briefing. EventeIA — Você imagina. A EventeIA faz acontecer.</div>
+      </div>
+    </div>
+    <div class="card">
+      <p class="label">Aplicação — símbolo e assinatura</p>
+      <div style="display:flex;flex-direction:column;gap:18px;align-items:flex-start">
+        <div style="display:flex;align-items:center;gap:14px">
+          <div style="width:56px;height:56px;border-radius:14px;background:#2A1119;color:#D4AF37;display:flex;align-items:center;justify-content:center;font-family:Fraunces,serif;font-size:32px;font-weight:600">E</div>
+          <div class="serif" style="font-size:30px;font-weight:600">Evente<span style="color:#A3485A">IA</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <div style="width:56px;height:56px;border-radius:14px;background:#D4AF37;color:#2A1119;display:flex;align-items:center;justify-content:center;font-family:Fraunces,serif;font-size:32px;font-weight:600">E</div>
+          <div class="serif" style="font-size:30px;font-weight:600">Evente<span style="color:#A3485A">IA</span></div>
+        </div>
+        <div style="width:56px;height:56px;border-radius:50%;background:#2A1119;color:#D4AF37;display:flex;align-items:center;justify-content:center;font-family:Fraunces,serif;font-size:32px;font-weight:600">E</div>
+      </div>
+      <p class="type-small" style="margin-top:16px">SÍMBOLO EM QUADRADO, CHAMPAGNE INVERTIDO E REDONDO (PERFIL)</p>
+    </div>
+  </div>
+
+  <p class="footer">EventeIA · Você imagina. A EventeIA faz acontecer.</p>
+</div>
+</body></html>

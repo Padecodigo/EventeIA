@@ -1,0 +1,75 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"/>
+<style>
+@font-face{font-family:Fraunces;src:url("file:///home/fedora/Projetos/EventeIA/app/fonts/Fraunces.woff2") format("woff2");font-weight:100 900}
+@font-face{font-family:Figtree;src:url("file:///home/fedora/Projetos/EventeIA/app/fonts/Figtree.woff2") format("woff2");font-weight:300 900}
+*{box-sizing:border-box;margin:0}
+body{background:#ddd;padding:24px;font-family:Figtree,sans-serif}
+.art{position:relative;width:1080px;height:1350px;overflow:hidden;background:#2A1119;color:#FFFDFA;margin:0 auto 32px}
+.photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.mark{width:88px;height:88px;border-radius:20px;background:#D4AF37;color:#2A1119;display:flex;align-items:center;justify-content:center;font-family:Fraunces,serif;font-size:52px;font-weight:600}
+.word{font-family:Fraunces,serif;font-size:44px;font-weight:600;line-height:1}
+.word span{color:#D4AF37}
+.kicker{font-size:20px;letter-spacing:.22em;text-transform:uppercase;color:#D4AF37;font-weight:600}
+.h1{font-family:Fraunces,serif;font-size:64px;line-height:1.02;letter-spacing:-.02em}
+.cta{font-size:24px;line-height:1.4;color:#FFFDFA;opacity:.92}
+.handle{font-size:26px;font-weight:700;color:#D4AF37}
+.tag{font-size:15px;letter-spacing:.2em;text-transform:uppercase;opacity:.7}
+/* A — faixa inferior vinho */
+.a .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(42,17,25,.15) 0%,rgba(42,17,25,.0) 35%,rgba(42,17,25,.92) 78%,#2A1119 100%)}
+.a .top{position:absolute;top:44px;left:52px;display:flex;align-items:center;gap:18px}
+.a .bottom{position:absolute;left:52px;right:52px;bottom:56px}
+.a .divider{height:2px;background:#D4AF37;width:120px;margin:26px 0}
+/* B — barra superior + rodapé champagne */
+.b .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(42,17,25,.75) 0%,rgba(42,17,25,0) 26%,rgba(42,17,25,0) 62%,rgba(42,17,25,.9) 100%)}
+.b .top{position:absolute;top:48px;left:48px;right:48px;display:flex;align-items:center;justify-content:space-between}
+.b .badge{background:#D4AF37;color:#2A1119;padding:10px 22px;border-radius:999px;font-weight:700;font-size:22px}
+.b .bottom{position:absolute;left:48px;right:48px;bottom:54px;text-align:center}
+/* C — moldura fina champagne */
+.c{border:14px solid #D4AF37;padding:0}
+.c .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(42,17,25,.2),rgba(42,17,25,0) 30%,rgba(42,17,25,.85) 100%)}
+.c .top{position:absolute;top:36px;left:40px}
+.c .bottom{position:absolute;left:44px;right:44px;bottom:44px;text-align:center}
+.c .h1{font-size:56px}
+</style></head><body>
+
+<!-- A -->
+<div class="art a">
+  <img class="photo" src="file:///home/fedora/Projetos/EventeIA/public/img/eventos/festa-infantil-velas.jpg"/>
+  <div class="shade"></div>
+  <div class="top"><div class="mark">E</div><div><div class="word">Evente<span>IA</span></div><div class="tag" style="margin-top:8px">Você imagina. A EventeIA faz acontecer.</div></div></div>
+  <div class="bottom">
+    <div class="kicker">Buffet · Taubaté, SP</div>
+    <div class="h1" style="margin-top:14px">Festa da Lia, 5 anos.<br/>Você tem o buffet certo?</div>
+    <div class="divider"></div>
+    <div class="cta">Comente <strong style="color:#D4AF37">COTAÇÃO</strong> e receba o briefing completo. Gratuito e sem compromisso.</div>
+    <div class="handle" style="margin-top:18px">@buffet.saborereal</div>
+  </div>
+</div>
+
+<!-- B -->
+<div class="art b">
+  <img class="photo" src="file:///home/fedora/Projetos/EventeIA/public/img/eventos/festa-infantil-velas.jpg"/>
+  <div class="shade"></div>
+  <div class="top"><div style="display:flex;align-items:center;gap:14px"><div class="mark" style="width:64px;height:64px;font-size:38px;border-radius:16px">E</div><div class="word" style="font-size:34px">Evente<span>IA</span></div></div><div class="badge">COTAÇÃO ABERTA</div></div>
+  <div class="bottom">
+    <div class="kicker">Buffet</div>
+    <div class="h1" style="margin-top:12px">40 convidados.<br/>Orçamento R$ 8.000.</div>
+    <div class="cta" style="margin-top:18px">Comente <strong style="color:#D4AF37">COTAÇÃO</strong> para receber o briefing.</div>
+    <div class="handle" style="margin-top:14px">@buffet.saborereal</div>
+    <div class="tag" style="margin-top:26px">EventeIA — Você imagina. A EventeIA faz acontecer.</div>
+  </div>
+</div>
+
+<!-- C -->
+<div class="art c">
+  <img class="photo" src="file:///home/fedora/Projetos/EventeIA/public/img/eventos/festa-infantil-velas.jpg"/>
+  <div class="shade"></div>
+  <div class="top"><div style="display:flex;align-items:center;gap:12px"><div class="mark" style="width:56px;height:56px;font-size:32px;border-radius:14px">E</div><div class="word" style="font-size:30px">Evente<span>IA</span></div></div></div>
+  <div class="bottom">
+    <div class="kicker">Buffet · Festa infantil</div>
+    <div class="h1" style="margin-top:12px">A festa da Lia<br/>merece o seu buffet.</div>
+    <div class="cta" style="margin-top:16px">Comente <strong style="color:#D4AF37">COTAÇÃO</strong> · @buffet.saborereal</div>
+  </div>
+</div>
+
+</body></html>
