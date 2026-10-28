@@ -1,0 +1,2 @@
+# SDK oficial (compatível com a NVIDIA Build via base_url)
+openai>=1.40,<2
