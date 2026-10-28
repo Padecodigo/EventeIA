@@ -53,6 +53,9 @@ const serverSchema = z.object({
   MAX_TAGS_PER_POST: z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).max(20).default(8)),
   MIN_POST_INTERVAL_MINUTES: z.preprocess(emptyToUndefined, z.coerce.number().int().min(0).default(60)),
   MODELSLAB_API_KEY: z.string().optional(),
+  // Notificação de escalonamento da prospecção (opcional).
+  TELEGRAM_BOT_TOKEN: z.string().optional(),
+  TELEGRAM_CHAT_ID: z.string().optional(),
   WHATSAPP_CLOUD_API_VERSION: z
     .string()
     .regex(/^v\d+\.\d+$/)

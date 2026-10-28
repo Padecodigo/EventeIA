@@ -13,7 +13,7 @@ import { getPublishedTestimonials } from "@/lib/testimonials";
 export const revalidate = 60;
 
 export const metadata = pageMetadata({
-  title: "Orçamento de festa pelo WhatsApp",
+  title: "Orçamento de festa pelas redes sociais",
   description: SITE_DESCRIPTION,
   path: "/",
   keywords: ["orçamento de festa infantil", "orçamento de casamento", "festa de 15 anos", "formatura"],
@@ -40,7 +40,7 @@ const OPTIONS = [
 
 const STEPS = [
   { n: "1", title: "Conte sobre o evento", text: "Tipo de festa, data, cidade, convidados e o que não pode faltar. Leva poucos minutos." },
-  { n: "2", title: "A gente pede os orçamentos", text: "Falamos com fornecedores da sua região pelo WhatsApp, com calma e sem spam." },
+  { n: "2", title: "A gente pede os orçamentos", text: "Falamos com fornecedores da sua região pelas redes sociais (Instagram e Messenger), com calma e sem spam." },
   { n: "3", title: "Comparamos tudo", text: "Lemos cada resposta, achamos taxas escondidas e colocamos tudo na mesma régua." },
   { n: "4", title: "Você escolhe", text: "Receba 3 opções — preço, custo-benefício e comodidade — e decida com tranquilidade." },
 ] as const;
@@ -48,7 +48,7 @@ const STEPS = [
 const TRUST = [
   { title: "Pagamento seguro", text: "Pix seguro ou cartão, com processamento por instituição de pagamento regulada." },
   { title: "Sem spam", text: "Mensagens com intervalo; qualquer fornecedor pode pedir para sair e é respeitado na hora." },
-  { title: "Seu WhatsApp protegido", text: "A conexão é usada só durante a busca e encerrada automaticamente no final." },
+  { title: "Sem spam", text: "O fornecedor nos procura pelas redes sociais; a conversa acontece no canal dele." },
   { title: "Dados protegidos", text: "Usamos seus dados só para cotar o seu evento, conforme a LGPD." },
 ] as const;
 
@@ -105,7 +105,7 @@ export default async function LandingPage() {
               <span className="text-primaria">mais memórias.</span>
             </h1>
             <p className="mt-4 max-w-xl text-base leading-relaxed text-vinho/75 sm:mt-6 sm:text-lg">
-              A EventeIA cota pelo WhatsApp com os fornecedores da sua região — com foco no Vale do Paraíba e em São Paulo — e compara cada proposta por você. Do aniversário à formatura, você escolhe entre{" "}
+              A EventeIA cota com os fornecedores da sua região pelas redes sociais — Instagram e Messenger — com foco no Vale do Paraíba e em São Paulo — e compara cada proposta por você. Do aniversário à formatura, você escolhe entre{" "}
               <strong className="font-semibold text-vinho">3 opções prontas</strong> — melhor preço, custo-benefício e comodidade — e aproveita o que importa.
             </p>
 
@@ -270,7 +270,7 @@ export default async function LandingPage() {
               <p className="mt-1 text-sm text-vinho/75">pagamento único por evento</p>
               <ul className="mt-6 flex-1 space-y-2.5 text-sm text-vinho/80">
                 <li>✓ Sem mensalidade</li>
-                <li>✓ Cotações pelo WhatsApp</li>
+                <li>✓ Cotações pelas redes sociais</li>
                 <li>✓ 3 opções comparadas</li>
                 <li>✓ Pix ou cartão</li>
               </ul>

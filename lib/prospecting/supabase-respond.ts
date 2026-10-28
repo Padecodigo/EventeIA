@@ -1,11 +1,15 @@
 import "server-only";
 
+import { serverEnv } from "@/lib/env";
+import { emitFeed } from "@/lib/feeds";
 import { logger } from "@/lib/logger";
 import { sendInstagramText, sendMessengerText } from "@/lib/meta/client";
+import type { Json } from "@/lib/supabase/types";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 import type { AgentMessage } from "./agent";
 import type { StructuredQuote } from "./quote";
+import { notifyEscalation, type EscalationNotice } from "./notify";
 import type { RespondPorts } from "./respond";
 
 /**
@@ -65,6 +69,33 @@ export interface RespondPortsDeps {
   db: RespondDb;
   message: MetaSendConfig;
   recipientId: string;
+  /** Injetável nos testes; default = feed canônico + Telegram opcional. */
+  notify?: (notice: EscalationNotice) => Promise<void>;
+}
+
+async function defaultNotify(notice: EscalationNotice): Promise<void> {
+  const env = serverEnv();
+  const telegram =
+    env.TELEGRAM_BOT_TOKEN !== undefined && env.TELEGRAM_CHAT_ID !== undefined
+      ? { botToken: env.TELEGRAM_BOT_TOKEN, chatId: env.TELEGRAM_CHAT_ID }
+      : undefined;
+  await notifyEscalation(
+    {
+      feed: async (type, payload) => {
+        await emitFeed(getSupabaseAdmin(), {
+          type,
+          actorType: "system",
+          aggregateType: "vendor",
+          aggregateId: notice.conversationId,
+          payload: payload as Json,
+          correlationId: notice.conversationId,
+          source: "app",
+        });
+      },
+      ...(telegram !== undefined ? { telegram } : {}),
+    },
+    notice,
+  );
 }
 
 export function createSupabaseRespondPorts(deps: RespondPortsDeps): RespondPorts {
@@ -118,6 +149,7 @@ export function createSupabaseRespondPorts(deps: RespondPortsDeps): RespondPorts
 
     async escalate(conversationId, reason) {
       await deps.db.from("prospect_conversations").update({ status: "awaiting_human" }).eq("id", conversationId);
+      await (deps.notify ?? defaultNotify)({ conversationId, reason });
       logger.info({ conversationId, reason }, "prospecção: proposta escalada ao humano");
     },
   };

@@ -39,7 +39,7 @@ export default function PlansPage() {
             <li>Sem assinatura e sem renovação automática</li>
             <li>Orçamento completo e explicado</li>
             <li>Cotações ilimitadas do evento</li>
-            <li>Disparos pelo WhatsApp com consentimento</li>
+            <li>Contato com fornecedores pelas redes sociais</li>
             <li>Acesso permanente ao evento</li>
           </ul>
           <Link
