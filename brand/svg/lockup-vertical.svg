@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 260" role="img" aria-label="EventeIA">
+  <rect x="100" y="0" width="120" height="120" rx="28" fill="#2A1119"/>
+  <text x="160" y="82" text-anchor="middle" font-family="Fraunces, Georgia, serif" font-size="64" font-weight="600" fill="#D4AF37">E</text>
+  <circle cx="192" cy="30" r="4" fill="#D4AF37"/>
+  <text x="160" y="185" text-anchor="middle" font-family="Fraunces, Georgia, serif" font-size="48" font-weight="600" fill="#2A1119">Evente<tspan fill="#A3485A">IA</tspan></text>
+  <text x="160" y="218" text-anchor="middle" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="12" letter-spacing="3" fill="#6B5A52">VOCÊ IMAGINA. A EVENTEIA FAZ ACONTECER.</text>
+</svg>

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { RESET_NEXT_COOKIE, publicOrigin, safeNextPath } from "@/lib/auth/oauth";
+import { SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/auth/session-ttl";
 import { recordTermsAcceptance } from "@/lib/legal/acceptance-server";
 import { TERMS_COOKIE, isCurrentTermsCookie } from "@/lib/legal/terms";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -43,6 +44,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   const response = NextResponse.redirect(new URL(next, origin));
+  response.cookies.set(SESSION_COOKIE, String(Date.now()), SESSION_COOKIE_OPTIONS);
   if (termsCookie !== undefined)
     response.cookies.delete({ name: TERMS_COOKIE, path: "/auth/callback" });
   if (cookieNext !== undefined)
