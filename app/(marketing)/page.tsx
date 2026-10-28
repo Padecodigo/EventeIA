@@ -209,22 +209,22 @@ export default async function LandingPage() {
       </section>
 
       {/* ================= As 3 opções ================= */}
-      <section className="bg-white">
+      <section className="bg-[#2A1119]">
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-28">
-          <p className="eyebrow">O que você recebe</p>
-          <h2 className={`mt-4 max-w-2xl ${sectionTitle}`}>Três caminhos claros. Você só escolhe.</h2>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-champagne">O que você recebe</p>
+          <h2 className="mt-4 max-w-2xl font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.02em] text-off-white">Três caminhos claros. Você só escolhe.</h2>
           <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
             {OPTIONS.map((o, i) => (
               <article
                 key={o.title}
-                className="group relative overflow-hidden rounded-3xl border border-champagne-claro bg-white p-7 shadow-[0_1px_2px_rgba(59,36,32,0.04)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_50px_-24px_rgba(59,36,32,0.3)]"
+                className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] p-7 backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-champagne/30"
               >
                 <div aria-hidden="true" className={`absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br ${o.dot} opacity-10 blur-2xl transition duration-500 group-hover:opacity-25`} />
                 <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${o.dot} text-sm font-bold text-white`}>
                   {i + 1}
                 </span>
-                <h3 className="mt-6 font-display text-2xl font-bold tracking-tight text-vinho">{o.title}</h3>
-                <p className="mt-2 text-[15px] leading-relaxed text-vinho/70">{o.text}</p>
+                <h3 className="mt-6 font-display text-2xl font-bold tracking-tight text-off-white">{o.title}</h3>
+                <p className="mt-2 text-[15px] leading-relaxed text-off-white/70">{o.text}</p>
               </article>
             ))}
           </div>
@@ -271,11 +271,11 @@ export default async function LandingPage() {
       </section>
 
       {/* ================= Planos ================= */}
-      <section id="planos" className="relative isolate scroll-mt-24 overflow-hidden bg-gradient-to-b from-[#F3E6DD] to-[#FBF6F2] py-20 text-vinho lg:py-28">
+      <section id="planos" className="relative isolate scroll-mt-24 overflow-hidden bg-[#2A1119] py-20 text-off-white lg:py-28">
         <div aria-hidden="true" className="absolute left-1/2 top-0 -z-10 h-[480px] w-[900px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(163,72,90,0.14),transparent)]" />
         <div className="mx-auto w-full max-w-7xl px-5 sm:px-8">
-          <p className="eyebrow">Planos</p>
-          <h2 className="mt-4 max-w-2xl font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.02em]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-champagne">Planos</p>
+          <h2 className="mt-4 max-w-2xl font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.02em] text-off-white">
             Pague só pelo seu evento. Ou assine, se você organiza vários.
           </h2>
           <div className="mt-12 grid grid-cols-1 gap-5 lg:grid-cols-4">
@@ -349,7 +349,7 @@ export default async function LandingPage() {
           <p className="mx-auto mt-4 max-w-prose text-white/75">
             Conte o que você imagina. A EventeIA corre atrás dos orçamentos e te mostra as melhores opções.
           </p>
-          <Link prefetch={false} href="/registrar" className="group mt-9 inline-flex items-center gap-2 rounded-full bg-[#E8A587] px-7 py-3.5 font-semibold text-vinho transition hover:-translate-y-0.5 hover:bg-[#EDB89F]">
+          <Link prefetch={false} href="/registrar" className="group mt-9 inline-flex items-center gap-2 rounded-full bg-champagne px-7 py-3.5 font-semibold text-[#2A1119] transition hover:-translate-y-0.5 hover:bg-champagne-claro">
             Testar agora <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">→</span>
           </Link>
         </div>

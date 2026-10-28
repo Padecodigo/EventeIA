@@ -9,7 +9,7 @@ const navItems = [
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-line-subtle bg-white/75 backdrop-blur-xl backdrop-saturate-150">
+    <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-[#2A1119]/90 backdrop-blur-xl backdrop-saturate-150">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-8">
         <Link prefetch={false} href="/" className="flex cursor-pointer items-center gap-3">
           <Image
@@ -21,8 +21,8 @@ export function SiteHeader() {
             className="h-9 w-auto shrink-0 object-contain"
           />
           <span className="flex select-none flex-col justify-center">
-            <span className="font-brand text-xl leading-none text-vinho sm:text-2xl">EventeIA</span>
-            <span className="mt-0.5 hidden text-[9px] font-semibold sm:block uppercase leading-tight tracking-[0.15em] text-vinho/70 sm:text-[10px]">
+            <span className="font-brand text-xl leading-none text-off-white sm:text-2xl">EventeIA</span>
+            <span className="mt-0.5 hidden text-[9px] font-semibold sm:block uppercase leading-tight tracking-[0.15em] text-off-white/60 sm:text-[10px]">
               Você imagina. A EventeIA faz acontecer.
             </span>
           </span>
@@ -33,20 +33,20 @@ export function SiteHeader() {
             <Link prefetch={false}
               key={item.href}
               href={item.href}
-              className="hidden px-4 py-2 text-xs font-medium text-vinho underline decoration-transparent underline-offset-4 transition-colors hover:decoration-primaria sm:block sm:text-sm"
+              className="hidden px-4 py-2 text-xs font-medium text-off-white/80 underline decoration-transparent underline-offset-4 transition-colors hover:text-champagne hover:decoration-champagne sm:block sm:text-sm"
             >
               {item.label}
             </Link>
           ))}
           <Link prefetch={false}
             href="/entrar"
-            className="hidden px-4 py-2 text-xs font-medium text-vinho underline decoration-transparent underline-offset-4 transition-colors hover:decoration-primaria sm:block sm:text-sm"
+            className="hidden px-4 py-2 text-xs font-medium text-off-white/80 underline decoration-transparent underline-offset-4 transition-colors hover:text-champagne hover:decoration-champagne sm:block sm:text-sm"
           >
             Entrar
           </Link>
           <Link prefetch={false}
             href="/registrar"
-            className="rounded-full bg-primaria px-5 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primaria-escura active:scale-95 sm:text-sm"
+            className="rounded-full bg-champagne px-5 py-2 text-xs font-semibold text-[#2A1119] shadow-sm transition-all hover:bg-champagne-claro active:scale-95 sm:text-sm"
           >
             Começar agora
           </Link>
