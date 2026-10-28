@@ -16,6 +16,7 @@ describe("menu admin (superusuário)", () => {
       "/admin/eventos",
       "/admin/clientes",
       "/admin/fornecedores",
+      "/admin/prospeccao",
       "/admin/lixeira",
       "/admin/busca",
     ]);
