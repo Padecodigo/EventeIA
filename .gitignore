@@ -55,3 +55,6 @@ package-lock.json
 .code-graph/
 .ai-memory/**/*.db
 .ai-memory/.index*
+
+# Ferramenta local (Serena)
+.serena/
