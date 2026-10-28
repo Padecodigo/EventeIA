@@ -104,7 +104,7 @@ export default async function LandingPage() {
               Menos ligações,{" "}
               <span className="text-primaria">mais memórias.</span>
             </h1>
-            <p className="mt-4 max-w-xl text-base leading-relaxed text-vinho/75 sm:mt-6 sm:text-lg">
+            <p className="mt-4 max-w-lg text-base leading-relaxed text-vinho/75 sm:mt-6 sm:text-lg">
               A EventeIA cota com os fornecedores da sua região pelas redes sociais — Instagram e Messenger — com foco no Vale do Paraíba e em São Paulo — e compara cada proposta por você. Do aniversário à formatura, você escolhe entre{" "}
               <strong className="font-semibold text-vinho">3 opções prontas</strong> — melhor preço, custo-benefício e comodidade — e aproveita o que importa.
             </p>
@@ -122,7 +122,7 @@ export default async function LandingPage() {
               </Link>
             </div>
             <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-vinho/70">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 font-medium text-coral-escuro shadow-sm ring-1 ring-champagne-claro">
+              <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 font-medium text-vinho shadow-sm ring-1 ring-vinho/15">
                 Ticket avulso · <strong className="font-bold">{formatBRL(ticketPriceCents)}</strong> por evento
               </span>
               <span>Sem mensalidade · Pix seguro ou cartão</span>
@@ -133,7 +133,7 @@ export default async function LandingPage() {
                 <div className="flex items-start gap-4">
                   <span
                     aria-hidden="true"
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#E8A587] to-primaria text-sm font-bold text-white ring-4 ring-verde-claro"
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-champagne to-primaria text-sm font-bold text-white ring-4 ring-verde-claro"
                   >
                     {initials(mainTestimonial.name)}
                   </span>
