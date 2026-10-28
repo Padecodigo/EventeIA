@@ -1,2 +1,5 @@
 # SDK oficial (compatível com a NVIDIA Build via base_url)
 openai>=1.40,<2
+
+# Geração de imagem via NVIDIA NIM GenAI
+requests>=2.31

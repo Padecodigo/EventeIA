@@ -63,3 +63,4 @@ package-lock.json
 __pycache__/
 *.py[cod]
 .venv/
+python/artifacts/
