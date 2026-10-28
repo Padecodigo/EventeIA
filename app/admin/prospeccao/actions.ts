@@ -6,9 +6,10 @@ import type { OpResult } from "@/lib/admin/suppliers";
 import { requireAdmin } from "@/lib/auth";
 import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { cacheArt } from "@/lib/prospecting/art-cache";
+import { artForEventType } from "@/lib/prospecting/photos";
 import { createSupabasePostStore, findImageFor } from "@/lib/prospecting/posts-store";
 import { publishPlannedPost } from "@/lib/prospecting/publish-runtime";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 /**
  * Publica um post de isca aprovado por um humano (o clique é a aprovação).
@@ -49,6 +50,16 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
   const dayIndex = Number(form.get("dayIndex"));
   // Cache: reusa a imagem do mesmo evento + necessidade (novo contexto => nova imagem).
   const cachedArt = eventId !== undefined ? await findImageFor(eventId, category) : null;
+  // Arte com a identidade da EventeIA, por tipo de evento (sem valores no post).
+  let eventType: string | null = null;
+  if (eventId !== undefined) {
+    const { data } = await getSupabaseAdmin().from("events").select("event_type").eq("id", eventId).maybeSingle();
+    eventType = data?.event_type ?? null;
+  }
+  const brandedArt =
+    eventId !== undefined
+      ? { url: `${env.NEXT_PUBLIC_APP_URL}${artForEventType(eventType)}`, expiresAt: new Date(Date.now() + 365 * 86_400_000) }
+      : null;
   const outcome = await publishPlannedPost({
     planned: { dayIndex: Number.isFinite(dayIndex) ? dayIndex : 0, category, handles, imagePrompt, caption },
     approved: true,
@@ -60,8 +71,8 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
     },
     store: createSupabasePostStore(),
     eventId,
-    cachedArt,
-    persistArt: process.env.IMAGE_PROVIDER === "nvidia" ? undefined : cacheArt,
+    cachedArt: cachedArt ?? brandedArt,
+    persistArt: undefined,
   });
 
   if (!outcome.ok) {
