@@ -26,12 +26,6 @@ export interface NvidiaImageInput {
   fetchImpl?: typeof fetch;
 }
 
-interface Extracted {
-  base64: string | null;
-  url: string | null;
-  mime: string | null;
-}
-
 export async function generateNvidiaImage(input: NvidiaImageInput): Promise<NvidiaImageResult> {
   const fetcher = input.fetchImpl ?? fetch;
   const model = input.model ?? DEFAULT_NVIDIA_IMAGE_MODEL;
