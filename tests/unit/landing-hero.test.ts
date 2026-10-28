@@ -37,10 +37,10 @@ describe("landing — hero", () => {
     for (const src of srcs) expect(readFileSync(join(process.cwd(), "public", src)).length).toBeLessThan(220_000);
   });
 
-  it("proposta de valor clara: WhatsApp + 3 opções (preço, custo-benefício, comodidade)", () => {
+  it("proposta de valor clara: redes sociais + 3 opções (preço, custo-benefício, comodidade)", () => {
     const h1End = source.indexOf("</h1>");
     const hero = source.slice(source.indexOf("<h1"), source.indexOf("</p>", h1End));
-    expect(hero).toMatch(/WhatsApp/);
+    expect(hero).toMatch(/redes sociais/);
     expect(hero).toMatch(/3 opções/);
     expect(hero).not.toMatch(/\bIA\b|fila/);
     for (const word of ["preço", "custo-benefício", "comodidade"]) expect(hero).toContain(word);

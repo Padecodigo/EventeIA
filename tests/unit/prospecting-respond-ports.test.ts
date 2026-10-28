@@ -58,6 +58,7 @@ describe("portas de resposta", () => {
     db: fakeDb(),
     message: { channel: "instagram" as const, instagramBusinessId: "1784", accessToken: "tok" },
     recipientId: "u1",
+    notify: async () => {},
   });
 
   it("salva a cotação com valores em centavos", async () => {
