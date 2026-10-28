@@ -11,8 +11,8 @@ import type { StructuredQuote } from "./quote";
 
 export interface RespondPorts {
   sendReply(conversationId: string, text: string): Promise<void>;
-  saveQuote(conversationId: string, supplierId: string, quote: StructuredQuote): Promise<void>;
-  markOptOut(conversationId: string, supplierId: string): Promise<void>;
+  saveQuote(conversationId: string, supplierId: string | null, quote: StructuredQuote): Promise<void>;
+  markOptOut(conversationId: string, supplierId: string | null): Promise<void>;
   escalate(conversationId: string, reason: string): Promise<void>;
 }
 
@@ -25,7 +25,7 @@ export interface ApplyResult {
 
 export async function applyAgentReply(
   ports: RespondPorts,
-  input: { conversationId: string; supplierId: string; reply: AgentReply },
+  input: { conversationId: string; supplierId: string | null; reply: AgentReply },
 ): Promise<ApplyResult> {
   const { reply, conversationId, supplierId } = input;
 
@@ -58,7 +58,7 @@ export interface RespondInput {
   history: readonly AgentMessage[];
   ports: RespondPorts;
   conversationId: string;
-  supplierId: string;
+  supplierId: string | null;
 }
 
 /** Roda o agente e aplica o resultado; null quando o modelo devolve algo inválido. */

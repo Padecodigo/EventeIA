@@ -81,3 +81,17 @@ describe("runtime do agente", () => {
     expect(await runAgent({ client, context, history: [] })).toBeNull();
   });
 });
+
+
+describe("agente sem fornecedor identificado (Messenger)", () => {
+  it("pede nome do negócio e @ do Instagram", () => {
+    const prompt = buildSystemPrompt({ category: "evento", supplierKnown: false });
+    expect(prompt).toContain("pergunte o nome do negócio");
+    expect(prompt).toContain("@ do Instagram");
+  });
+
+  it("não pede identificação quando o fornecedor é conhecido", () => {
+    const prompt = buildSystemPrompt({ category: "buffet", supplierKnown: true });
+    expect(prompt).not.toContain("pergunte o nome do negócio");
+  });
+});

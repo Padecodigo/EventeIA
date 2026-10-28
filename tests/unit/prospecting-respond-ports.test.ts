@@ -54,7 +54,11 @@ describe("histórico da conversa", () => {
 });
 
 describe("portas de resposta", () => {
-  const deps = () => ({ db: fakeDb(), message: { instagramBusinessId: "1784", accessToken: "tok" }, recipientId: "u1" });
+  const deps = () => ({
+    db: fakeDb(),
+    message: { channel: "instagram" as const, instagramBusinessId: "1784", accessToken: "tok" },
+    recipientId: "u1",
+  });
 
   it("salva a cotação com valores em centavos", async () => {
     const d = deps();

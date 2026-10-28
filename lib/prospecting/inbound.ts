@@ -26,7 +26,7 @@ export interface ProspectConversation {
 export interface ProspectStore {
   findConversation(channel: Channel, externalUserId: string): Promise<ProspectConversation | null>;
   createConversation(input: {
-    supplierId: string;
+    supplierId: string | null;
     channel: Channel;
     externalUserId: string;
   }): Promise<ProspectConversation>;
@@ -44,7 +44,7 @@ export interface ProspectStore {
 }
 
 export type HandleInboundInput = InboundEvent & {
-  supplierId: string;
+  supplierId: string | null;
   channel: Channel;
 };
 
