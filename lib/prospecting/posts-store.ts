@@ -20,6 +20,8 @@ export interface RecordPostInput {
   error?: string;
   /** Evento de origem (necessidades) quando o plano é por evento. */
   eventId?: string;
+  /** Validade da arte em cache (1h). */
+  imageExpiresAt?: Date;
 }
 
 export interface PostStore {
@@ -46,6 +48,7 @@ export function createSupabasePostStore(
         ig_media_id: input.igMediaId ?? null,
         error: input.error ?? null,
         event_id: input.eventId ?? null,
+        image_expires_at: input.imageExpiresAt?.toISOString() ?? null,
       });
       if (error !== null) throw new Error(`falha ao registrar post (${error.code ?? "?"})`);
     },
@@ -58,10 +61,10 @@ interface PostLookupDb {
     select(columns: string): {
       eq(column: string, value: string): {
         contains(column: string, value: string[]): {
-          not(column: string, operator: string, value: null): {
+          gt(column: string, value: string): {
             order(column: string, options: { ascending: boolean }): {
               limit(n: number): {
-                maybeSingle(): Promise<{ data: { image_url: string | null } | null }>;
+                maybeSingle(): Promise<{ data: { image_url: string | null; image_expires_at: string | null } | null }>;
               };
             };
           };
@@ -75,19 +78,28 @@ interface PostLookupDb {
  * Imagem já gerada para o mesmo evento + necessidade (cache).
  * Só gera imagem nova quando muda o evento ou o tipo de fornecedor.
  */
+export interface CachedArt {
+  url: string;
+  expiresAt: Date;
+}
+
+/** Arte válida (não expirada) do mesmo evento + necessidade; null se não houver. */
 export async function findImageFor(
   eventId: string,
   category: string,
+  now: Date = new Date(),
   db: PostLookupDb = getSupabaseAdmin() as unknown as PostLookupDb,
-): Promise<string | null> {
+): Promise<CachedArt | null> {
   const { data } = await db
     .from("prospect_posts")
-    .select("image_url")
+    .select("image_url,image_expires_at")
     .eq("event_id", eventId)
     .contains("categories", [category])
-    .not("image_url", "is", null)
+    .gt("image_expires_at", now.toISOString())
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  return data?.image_url ?? null;
+  if (data?.image_url === null || data?.image_url === undefined) return null;
+  if (data.image_expires_at === null || data.image_expires_at === undefined) return null;
+  return { url: data.image_url, expiresAt: new Date(data.image_expires_at) };
 }
