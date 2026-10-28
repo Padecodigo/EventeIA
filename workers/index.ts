@@ -8,6 +8,8 @@ import { QUEUE_NAMES, getQueue, getRedisConnection } from "@/lib/queue";
 import { createDiscoveryWorker } from "@/lib/queue/discovery-worker";
 import { createQuoteExtractionWorker } from "@/lib/queue/quote-extraction-worker";
 import { purgeExpiredArt } from "@/lib/prospecting/art-cache";
+import { publishAutopilotPost } from "@/lib/marketing/autopilot";
+import { isAutopilotEnabled } from "@/lib/marketing/settings";
 
 /**
  * Processo de workers (BullMQ) — separado do runtime do Next.
@@ -43,6 +45,16 @@ const balanceWorker = new Worker(
   { connection, concurrency: 1 },
 );
 
+// Publicidade automática (só quando o botão do admin está ligado).
+const marketingAutopilotWorker = new Worker(
+  QUEUE_NAMES.marketingAutopilot,
+  async () => {
+    if (!(await isAutopilotEnabled())) return;
+    await publishAutopilotPost();
+  },
+  { connection, concurrency: 1 },
+);
+
 // Limpeza da arte em cache (TTL de 1h).
 const artCleanupWorker = new Worker(
   QUEUE_NAMES.artCleanup,
@@ -64,6 +76,11 @@ void getQueue(QUEUE_NAMES.asaasReconcile).add(
   {},
   { repeat: { pattern: "30 9 * * *", tz: "America/Sao_Paulo" }, attempts: 3 },
 );
+void getQueue(QUEUE_NAMES.marketingAutopilot).add(
+  "hourly",
+  {},
+  { repeat: { pattern: "0 * * * *", tz: "America/Sao_Paulo" }, attempts: 2 },
+);
 void getQueue(QUEUE_NAMES.artCleanup).add(
   "sweep",
   {},
@@ -83,7 +100,7 @@ void getQueue(QUEUE_NAMES.creditsExpireLegacy)
   })
   .catch(() => undefined);
 
-const workers = [asaasWorker, reconcileWorker, balanceWorker, artCleanupWorker, discoveryWorker, quoteExtractionWorker];
+const workers = [asaasWorker, reconcileWorker, balanceWorker, artCleanupWorker, marketingAutopilotWorker, discoveryWorker, quoteExtractionWorker];
 
 for (const worker of workers) {
   worker.on("error", (error) => {
