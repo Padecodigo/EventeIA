@@ -25,12 +25,14 @@ export interface PublishPlannedPostInput {
   modelslabKey: string;
   meta: MetaPublishConfig;
   store?: PostStore;
+  /** Evento de origem do plano (gravado em prospect_posts). */
+  eventId?: string;
   fetchImpl?: typeof fetch;
 }
 
 export async function publishPlannedPost(input: PublishPlannedPostInput): Promise<PublishOutcome> {
   if (!input.approved) {
-    await input.store?.record({ planned: input.planned, status: "pending_approval" });
+    await input.store?.record({ planned: input.planned, eventId: input.eventId, status: "pending_approval" });
     return { ok: false, reason: "approval_required" };
   }
 
@@ -40,7 +42,7 @@ export async function publishPlannedPost(input: PublishPlannedPostInput): Promis
     fetchImpl: input.fetchImpl,
   });
   if (!image.ok) {
-    await input.store?.record({ planned: input.planned, status: "failed", error: image.error });
+    await input.store?.record({ planned: input.planned, eventId: input.eventId, status: "failed", error: image.error });
     return { ok: false, reason: "image_failed", error: image.error };
   }
 
@@ -55,7 +57,7 @@ export async function publishPlannedPost(input: PublishPlannedPostInput): Promis
     fetchImpl: input.fetchImpl,
   });
   if (!container.ok) {
-    await input.store?.record({ planned: input.planned, status: "failed", imageUrl, error: container.error });
+    await input.store?.record({ planned: input.planned, eventId: input.eventId, status: "failed", imageUrl, error: container.error });
     return { ok: false, reason: "container_failed", error: container.error };
   }
 
@@ -65,12 +67,13 @@ export async function publishPlannedPost(input: PublishPlannedPostInput): Promis
     fetchImpl: input.fetchImpl,
   });
   if (!published.ok) {
-    await input.store?.record({ planned: input.planned, status: "failed", imageUrl, error: published.error });
+    await input.store?.record({ planned: input.planned, eventId: input.eventId, status: "failed", imageUrl, error: published.error });
     return { ok: false, reason: "publish_failed", error: published.error };
   }
 
   await input.store?.record({
     planned: input.planned,
+    eventId: input.eventId,
     status: "published",
     imageUrl,
     igMediaId: published.id,

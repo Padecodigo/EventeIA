@@ -13,12 +13,14 @@ export function PublishPostButton({
   handles,
   imagePrompt,
   caption,
+  eventId,
 }: {
   dayIndex: number;
   category: string;
   handles: string[];
   imagePrompt: string;
   caption: string;
+  eventId?: string;
 }) {
   const [state, action, pending] = useActionState<OpResult | null, FormData>(publishPostAction, null);
 
@@ -33,6 +35,7 @@ export function PublishPostButton({
       <input type="hidden" name="handles" value={JSON.stringify(handles)} />
       <input type="hidden" name="imagePrompt" value={imagePrompt} />
       <input type="hidden" name="caption" value={caption} />
+      {eventId !== undefined ? <input type="hidden" name="eventId" value={eventId} /> : null}
       {state && !state.ok ? <p role="alert" className="text-semantic-error">{state.error}</p> : null}
       <button
         disabled={pending}

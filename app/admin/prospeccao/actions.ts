@@ -43,6 +43,8 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
     }
   }
 
+  const eventIdRaw = form.get("eventId");
+  const eventId = typeof eventIdRaw === "string" && eventIdRaw.length > 0 ? eventIdRaw : undefined;
   const dayIndex = Number(form.get("dayIndex"));
   const outcome = await publishPlannedPost({
     planned: { dayIndex: Number.isFinite(dayIndex) ? dayIndex : 0, category, handles, imagePrompt, caption },
@@ -54,6 +56,7 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
       apiVersion: env.META_API_VERSION,
     },
     store: createSupabasePostStore(),
+    eventId,
   });
 
   if (!outcome.ok) {
