@@ -1,12 +1,12 @@
 # EventeIA — PRODUÇÃO (Hetzner CX33 4 vCPU / 8 GB + Coolify/Traefik).
 # Dev continua em docker-compose.dev.yml. Guia: docs/DEPLOY-PRODUCAO.md
 # Segredos: variáveis do Coolify (ou --env-file .env.production). Nada sensível aqui.
-# Só `app` e `evolution-api` recebem labels Traefik; redis/evolution-db ficam
+# Só `app` recebe labels Traefik; redis/worker ficam
 # apenas na rede interna (sem `ports:`).
 # Orçamento de RAM (~5,3 GB de limite; resto p/ SO, Docker, Coolify, Traefik):
-#   app 1536M | worker 1024M | evolution-api 1536M | evolution-db 512M | redis 640M
+#   app 1536M | worker 1024M | redis 640M
 name: eventeia
-# Hostnames internos usam aliases com prefixo `eventeia-`: app e evolution-api
+# Hostnames internos usam aliases com prefixo `eventeia-`: app e redis
 # também estão na rede `coolify`, onde `coolify-redis` responde como `redis`
 # (e `coolify-db` como `postgres`). Nomes curtos colidiriam.
 
@@ -21,17 +21,8 @@ x-app-env: &app-env
   ASAAS_API_URL: ${ASAAS_API_URL:-}
   ASAAS_API_KEY: ${ASAAS_API_KEY:?}
   ASAAS_WEBHOOK_TOKEN: ${ASAAS_WEBHOOK_TOKEN:?}
-  EVOLUTION_API_URL: http://eventeia-evolution-api:8080
-  EVOLUTION_API_KEY: ${EVOLUTION_API_KEY:?}
-  EVOLUTION_INSTANCE: ${EVOLUTION_INSTANCE:-}
-  EVOLUTION_WEBHOOK_TOKEN: ${EVOLUTION_WEBHOOK_TOKEN:?}
-  EVOLUTION_WEBHOOK_ALLOW_QUERY_TOKEN: ${EVOLUTION_WEBHOOK_ALLOW_QUERY_TOKEN:-true}
   B2C_TICKET_PRICE_CENTS: ${B2C_TICKET_PRICE_CENTS:-}
   ENGINE_TIMEZONE: ${ENGINE_TIMEZONE:-America/Sao_Paulo}
-  WHATSAPP_MIN_INTERVAL_SECONDS: ${WHATSAPP_MIN_INTERVAL_SECONDS:-}
-  WHATSAPP_CREDENTIALS_KEY: ${WHATSAPP_CREDENTIALS_KEY:?}
-  WHATSAPP_COLLECTION_WINDOW_MINUTES: ${WHATSAPP_COLLECTION_WINDOW_MINUTES:-}
-  WHATSAPP_PROSPECTING_CONCURRENCY: ${WHATSAPP_PROSPECTING_CONCURRENCY:-}
   DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
   SERPER_API_KEY: ${SERPER_API_KEY:-}
   SERPER_MIN_CREDITS: ${SERPER_MIN_CREDITS:-100}
@@ -41,6 +32,8 @@ x-app-env: &app-env
   META_VERIFY_TOKEN: ${META_VERIFY_TOKEN:-}
   META_PAGE_ID: ${META_PAGE_ID:-}
   META_INSTAGRAM_BUSINESS_ID: ${META_INSTAGRAM_BUSINESS_ID:-}
+  EVOLUTION_WEBHOOK_TOKEN: ${EVOLUTION_WEBHOOK_TOKEN:-}
+  EVOLUTION_WEBHOOK_ALLOW_QUERY_TOKEN: ${EVOLUTION_WEBHOOK_ALLOW_QUERY_TOKEN:-false}
   META_PROSPECT_KEYWORD: ${META_PROSPECT_KEYWORD:-cotação}
   MODELSLAB_API_KEY: ${MODELSLAB_API_KEY:-}
   REQUIRE_APPROVAL: ${REQUIRE_APPROVAL:-true}
@@ -162,93 +155,6 @@ services:
     logging: *logging
     labels: [traefik.enable=false]
 
-  evolution-db:
-    image: postgres:16-alpine
-    # Opt-in: só sobe com `docker compose --profile whatsapp up` (WhatsApp desligado por padrão).
-    profiles: ["whatsapp"]
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: evolution
-      POSTGRES_PASSWORD: ${EVOLUTION_DB_PASSWORD:?}
-      POSTGRES_DB: evolution
-    volumes: [evolution-db-data:/var/lib/postgresql/data]
-    networks:
-      internal: { aliases: [eventeia-evolution-db] }
-    command: ["postgres", "-c", "shared_buffers=128MB", "-c", "max_connections=50"]
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U evolution -d evolution"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-    deploy:
-      resources: { limits: { memory: 512M } }
-    logging: *logging
-    labels: [traefik.enable=false]
-
-  evolution-api:
-    image: evoapicloud/evolution-api:v2.3.7
-    # Opt-in: só sobe com `docker compose --profile whatsapp up` (WhatsApp desligado por padrão).
-    profiles: ["whatsapp"]
-    restart: unless-stopped
-    depends_on:
-      evolution-db: { condition: service_healthy }
-      redis: { condition: service_healthy }
-    environment:
-      SERVER_URL: https://${EVOLUTION_DOMAIN:?}
-      SERVER_PORT: "8080"
-      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY:?}
-      AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES: "false"
-      DEL_INSTANCE: "false"
-      DATABASE_ENABLED: "true"
-      DATABASE_PROVIDER: postgresql
-      DATABASE_CONNECTION_URI: postgresql://evolution:${EVOLUTION_DB_PASSWORD:?}@eventeia-evolution-db:5432/evolution?schema=public
-      DATABASE_CONNECTION_CLIENT_NAME: evolution_eventeia
-      DATABASE_SAVE_DATA_INSTANCE: "true"
-      DATABASE_SAVE_DATA_NEW_MESSAGE: "true"
-      DATABASE_SAVE_MESSAGE_UPDATE: "false"
-      DATABASE_SAVE_DATA_CONTACTS: "true"
-      DATABASE_SAVE_DATA_CHATS: "true"
-      CACHE_REDIS_ENABLED: "true"
-      CACHE_REDIS_URI: redis://:${REDIS_PASSWORD:?}@eventeia-redis:6379/6
-      CACHE_REDIS_PREFIX_KEY: evolution
-      CACHE_REDIS_SAVE_INSTANCES: "false"
-      CACHE_LOCAL_ENABLED: "false"
-      # Webhook global pela rede interna (não passa por Cloudflare).
-      WEBHOOK_GLOBAL_ENABLED: "true"
-      WEBHOOK_GLOBAL_URL: http://eventeia-app:3000/api/webhooks/evolution?token=${EVOLUTION_WEBHOOK_TOKEN:?}
-      WEBHOOK_GLOBAL_WEBHOOK_BY_EVENTS: "false"
-      WEBHOOK_EVENTS_MESSAGES_UPSERT: "true"
-      WEBHOOK_EVENTS_CONNECTION_UPDATE: "true"
-      WEBHOOK_EVENTS_QRCODE_UPDATED: "true"
-      # Só chamadas servidor→servidor (app/worker com apikey). Com uma lista de
-      # origens, a Evolution rejeita requisições SEM header Origin ("Not allowed
-      # by CORS" → 500), quebrando app, healthcheck e Traefik. A proteção é a apikey.
-      CORS_ORIGIN: "*"
-      LOG_LEVEL: ERROR,WARN,INFO
-      LOG_BAILEYS: error
-      TELEMETRY_ENABLED: "false"
-    volumes: [evolution-instances:/evolution/instances]
-    networks:
-      internal: { aliases: [eventeia-evolution-api] }
-      coolify: {}
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/ >/dev/null || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 40s
-    deploy:
-      resources: { limits: { memory: 1536M, cpus: "1.5" } }
-    logging: *logging
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=coolify
-      - traefik.http.routers.eventeia-evolution.rule=Host(`${EVOLUTION_DOMAIN:?}`)
-      - traefik.http.routers.eventeia-evolution.entrypoints=https
-      - traefik.http.routers.eventeia-evolution.tls=true
-      - traefik.http.routers.eventeia-evolution.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}
-      - traefik.http.services.eventeia-evolution.loadbalancer.server.port=8080
-
 networks:
   internal:
     driver: bridge
@@ -259,5 +165,3 @@ networks:
 
 volumes:
   redis-data:
-  evolution-db-data:
-  evolution-instances:

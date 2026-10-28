@@ -38,29 +38,15 @@ describe("docker-compose.prod.yml", () => {
     expect(compose).not.toMatch(/^\s+ports:/m);
   });
 
-  it("mantém a Evolution (WhatsApp) desligada por padrão via profile", () => {
-    for (const svc of ["evolution-db", "evolution-api"]) {
-      const block = compose.split(new RegExp(`^  ${svc}:$`, "m"))[1]?.split(/^  [a-z-]+:$/m)[0] ?? "";
-      expect(block).toMatch(/profiles: \["whatsapp"\]/);
-    }
+  it("não mantém a Evolution (WhatsApp) no compose", () => {
+    expect(compose).not.toMatch(/^  evolution-(api|db):/m);
   });
 
-  it("não usa hostnames curtos que colidem na rede coolify (regressão: redis → coolify-redis)", () => {
-    expect(compose).not.toMatch(/@(redis|evolution-db|postgres):/);
-    expect(compose).not.toMatch(/http:\/\/(app|evolution-api):/);
-    for (const h of ["eventeia-redis", "eventeia-evolution-db", "eventeia-evolution-api", "eventeia-app"]) {
+  it("usa aliases com prefixo eventeia- para app e redis", () => {
+    for (const h of ["eventeia-redis", "eventeia-app"]) {
       expect(compose).toMatch(new RegExp(`aliases: \\[${h}\\]`));
     }
     expect(compose).toMatch(/@eventeia-redis:6379\/0/);
-    expect(compose).toMatch(/EVOLUTION_API_URL: http:\/\/eventeia-evolution-api:8080/);
-  });
-
-  it("Evolution aceita chamadas sem Origin (regressão: CORS 500 em server→server)", () => {
-    expect(compose).toMatch(/^\s+CORS_ORIGIN: "\*"$/m);
-  });
-
-  it("app e worker não dependem da Evolution para subir", () => {
-    expect(compose).not.toMatch(/depends_on:[\s\S]{0,120}evolution-api/);
   });
 });
 

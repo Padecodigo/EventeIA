@@ -1,6 +1,6 @@
 import { formatEventDate, type SupplierReply, type SupplierReplyContext } from "@/lib/quotes/triage";
 import { EMPTY_QUOTATION, type NuancedQuotation } from "@/lib/schemas/quotation-extraction";
-import { detectOptOut } from "@/lib/schemas/whatsapp";
+import { detectOptOut } from "@/lib/prospecting/opt-out";
 
 /** Parsers determinísticos: o fluxo nunca trava quando todos os LLMs falham. */
 

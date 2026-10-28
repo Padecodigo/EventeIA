@@ -71,16 +71,8 @@ export async function stopEventBackgroundWork(eventId: string): Promise<void> {
 }
 
 /** Remove os jobs de fim da coleta (24h/meta) de um evento excluído. */
-export async function removeScheduledEventJobs(
-  eventId: string,
-  ownerProfileId: string,
-): Promise<void> {
-  // A instância é por usuário: `eventeia-<id8>` (ver lib/discovery/runtime.ts).
-  const instance = `eventeia-${ownerProfileId.slice(0, 8)}`;
-  await removeQueuedJob(QUEUE_NAMES.whatsappSessionLifecycle, `collection-deadline-${eventId}`);
-  await removeQueuedJob(QUEUE_NAMES.whatsappSessionLifecycle, `collection-complete-${eventId}`);
-  await removeQueuedJob(
-    QUEUE_NAMES.whatsappSessionLifecycle,
-    `window-end-${instance}-${eventId}`,
-  );
+export function removeScheduledEventJobs(eventId: string, ownerProfileId: string): void {
+  // WhatsApp/Evolution removidos: não há mais jobs de sessão a remover.
+  void eventId;
+  void ownerProfileId;
 }

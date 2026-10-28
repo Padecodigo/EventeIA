@@ -8,8 +8,6 @@ import { BudgetTable } from "@/components/domain/budget-table";
 import { BuyTicketForm } from "@/components/domain/buy-ticket-form";
 import { ChoicesPanel } from "@/components/domain/choices-panel";
 import { EventLifecycleActions } from "@/components/domain/event-lifecycle-actions";
-import { ProspectRepliesPanel } from "@/components/domain/prospect-replies-panel";
-import { ProspectingPanel } from "@/components/domain/prospecting-panel";
 import { QuotationsPanel } from "@/components/domain/quotations-panel";
 import { QuotePreparingNotice } from "@/components/domain/quote-preparing-notice";
 import { ScenariosPanel } from "@/components/domain/scenarios-panel";
@@ -20,7 +18,6 @@ import { calculate } from "@/lib/engine";
 import type { EngineItemSelection, EventType, RegionCode } from "@/lib/engine/types";
 import { serverEnv } from "@/lib/env";
 import { canCancelEvent, canCompleteEvent } from "@/lib/events/lifecycle";
-import { getConnectionState, getInstanceOwnerJid } from "@/lib/evolution-api/client";
 import { luckyDiscountCents } from "@/lib/lucky/pure";
 import { lookupLuckyCoupon } from "@/lib/lucky/server";
 import { formatBRL } from "@/lib/money";
@@ -30,9 +27,7 @@ import { parseQuotationOptions } from "@/lib/quotes/choices";
 import { categoryLabel } from "@/lib/quotes/labels";
 import { latestScenarios } from "@/lib/quotes/scenarios";
 import { canEditSearchStart, spDateKey } from "@/lib/search-start";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { formatWhatsappNumber, resolvePanelConnection } from "@/lib/whatsapp/panel-status";
 
 const eventTypeSchema = z.enum([
   "festa_infantil",
@@ -117,7 +112,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     notFound();
   }
 
-  const [ticketResult, profileResult, quotationsResult, prospectsResult, instancesResult] =
+  const [ticketResult, profileResult, quotationsResult] =
     await Promise.all([
       supabase.from("event_tickets").select("status").eq("event_id", event.id).maybeSingle(),
       supabase
@@ -130,38 +125,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
         .select("id,category,vendor_name,vendor_contact,amount_cents,status,created_at,extraction")
         .eq("event_id", event.id)
         .order("created_at", { ascending: true }),
-      supabase
-        .from("vendor_prospects")
-        .select(
-          "id,vendor_name,vendor_category,phone_e164,status,created_at,pending_reply,pending_reply_kind",
-        )
-        .eq("event_id", event.id)
-        // Prospects fictícios de simulação (dry-run) não aparecem no painel.
-        .eq("dry_run", false)
-        .is("hidden_at", null)
-        .order("created_at", { ascending: false }),
-      getSupabaseAdmin()
-        .from("whatsapp_instances")
-        .select("status,number_mode,instance_name")
-        .eq("profile_id", event.owner_profile_id)
-        .limit(1)
-        .maybeSingle(),
     ]);
-
-  // Estado real na Evolution (o banco pode estar atrasado) + número conectado.
-  const instanceName = instancesResult.data?.instance_name ?? null;
-  const [evolutionState, ownerJid] =
-    instanceName === null
-      ? [null, null]
-      : await Promise.all([
-          getConnectionState(instanceName).catch(() => null),
-          getInstanceOwnerJid(instanceName).catch(() => null),
-        ]);
-  const panel = resolvePanelConnection(instancesResult.data?.status ?? null, evolutionState);
-  const connection = {
-    ...panel,
-    phone: panel.connected ? formatWhatsappNumber(ownerJid) : null,
-  };
 
   const eventType: EventType = eventTypeSchema.safeParse(event.event_type).data ?? "casamento";
   const region: RegionCode = regionSchema.safeParse(event.region_code).data ?? "outros";
@@ -206,18 +170,6 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   const chosenByQuotation = new Map(
     (choiceRows ?? []).map((row) => [row.quotation_id, row.option_index]),
   );
-  const pendingReplyViews = (prospectsResult.data ?? [])
-    .filter(
-      (prospect) =>
-        typeof prospect.pending_reply === "string" && prospect.pending_reply.trim().length > 0,
-    )
-    .map((prospect) => ({
-      prospectId: prospect.id,
-      vendorName: prospect.vendor_name,
-      categoryLabel: categoryLabel(prospect.vendor_category),
-      kind: prospect.pending_reply_kind ?? "question",
-      reply: prospect.pending_reply ?? "",
-    }));
   const choiceViews = (quotationsResult.data ?? [])
     .filter((q) => q.status === "draft")
     .map((q) => {
@@ -326,14 +278,6 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           <ScenariosPanel eventId={event.id} scenarios={scenarios} />
           <QuotationsPanel eventId={event.id} quotations={quotationsResult.data ?? []} />
           <ChoicesPanel eventId={event.id} rows={choiceViews} />
-          <ProspectRepliesPanel eventId={event.id} rows={pendingReplyViews} />
-          <ProspectingPanel
-            eventId={event.id}
-            prospects={prospectsResult.data ?? []}
-            instanceStatus={instancesResult.data?.status ?? null}
-            numberMode={instancesResult.data?.number_mode ?? null}
-            connection={connection}
-          />
         </>
       ) : null}
     </div>
