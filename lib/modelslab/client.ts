@@ -1,4 +1,6 @@
 import { MODELSLAB } from "@/lib/meta/limits";
+import { generateNvidiaImage } from "@/lib/nvidia/image";
+import { storeArtBytes } from "@/lib/prospecting/art-cache";
 
 /**
  * Cliente ModelsLab — FLUX, endpoint oficial `POST /api/v6/images/text2img`
@@ -9,7 +11,7 @@ import { MODELSLAB } from "@/lib/meta/limits";
  */
 
 export type ModelsLabResult =
-  | { ok: true; images: string[]; id: number | null }
+  | { ok: true; images: string[]; id: number | null; expiresAt?: Date }
   | { ok: false; error: string; status: number | null };
 
 export interface GenerateImageInput {
@@ -30,6 +32,19 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 export async function generateImage(input: GenerateImageInput): Promise<ModelsLabResult> {
+  // Provedor de imagem por env: nvidia (NIM) ou modelslab (padrão).
+  if (process.env.IMAGE_PROVIDER === "nvidia" && process.env.NVIDIA_NIM_API_KEY !== undefined) {
+    const result = await generateNvidiaImage({
+      apiKey: process.env.NVIDIA_NIM_API_KEY,
+      prompt: input.prompt,
+      model: process.env.NVIDIA_IMAGE_MODEL,
+      fetchImpl: input.fetchImpl,
+    });
+    if (!result.ok) return { ok: false, error: result.error, status: result.status };
+    const stored = await storeArtBytes(result.bytes, result.mime);
+    return { ok: true, images: [stored.url], id: null, expiresAt: stored.expiresAt };
+  }
+
   const fetcher = input.fetchImpl ?? fetch;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);

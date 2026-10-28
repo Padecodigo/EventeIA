@@ -163,3 +163,8 @@ networks:
 
 volumes:
   redis-data:
+
+      # Provedor de imagem (modelslab | nvidia)
+      IMAGE_PROVIDER: ${IMAGE_PROVIDER:-modelslab}
+      NVIDIA_NIM_API_KEY: ${NVIDIA_NIM_API_KEY:-}
+      NVIDIA_IMAGE_MODEL: ${NVIDIA_IMAGE_MODEL:-black-forest-labs/flux-3-image-klein}

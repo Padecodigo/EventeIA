@@ -43,3 +43,24 @@ export async function purgeExpiredArt(now: Date = new Date()): Promise<number> {
   const { error } = await storage.remove(old);
   return error === null ? old.length : 0;
 }
+
+const EXT_BY_MIME: Record<string, string> = {
+  "image/png": ".png",
+  "image/jpeg": ".jpg",
+  "image/webp": ".webp",
+  "image/gif": ".gif",
+};
+
+/** Sobe os bytes já gerados (ex.: NVIDIA) e devolve URL pública + validade de 1h. */
+export async function storeArtBytes(
+  bytes: Buffer,
+  mime: string,
+): Promise<{ url: string; expiresAt: Date }> {
+  const storage = getSupabaseAdmin().storage.from(ART_BUCKET);
+  const extension = EXT_BY_MIME[mime] ?? ".bin";
+  const path = `${randomUUID()}${extension}`;
+  const { error } = await storage.upload(path, bytes, { contentType: mime, upsert: false });
+  if (error !== null) throw new Error(`upload da arte falhou (${error.message})`);
+  const { data } = storage.getPublicUrl(path);
+  return { url: data.publicUrl, expiresAt: artExpiresAt() };
+}
