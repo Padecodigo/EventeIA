@@ -61,7 +61,7 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
     store: createSupabasePostStore(),
     eventId,
     cachedArt,
-    persistArt: cacheArt,
+    persistArt: process.env.IMAGE_PROVIDER === "nvidia" ? undefined : cacheArt,
   });
 
   if (!outcome.ok) {

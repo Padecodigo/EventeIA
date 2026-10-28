@@ -65,6 +65,9 @@ export async function publishPlannedPost(input: PublishPlannedPostInput): Promis
       const stored = await input.persistArt(imageUrl);
       imageUrl = stored.url;
       imageExpiresAt = stored.expiresAt;
+    } else if (image.expiresAt !== undefined) {
+      // Provedor já persistiu (ex.: NVIDIA → Storage) e informou a validade.
+      imageExpiresAt = image.expiresAt;
     }
   }
 

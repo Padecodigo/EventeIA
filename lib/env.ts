@@ -63,6 +63,9 @@ const serverSchema = z.object({
   DISCOVERY_DAILY_CALL_CAP: z.coerce.number().int().min(1).max(10000).default(300),
   // Fallback LLM: NVIDIA NIM (OpenAI-compatível). Sem busca ao vivo — só estrutura/valida.
   NVIDIA_NIM_API_KEY: z.string().optional(),
+  /** Provedor de imagem: modelslab (padrão) ou nvidia (NIM GenAI). */
+  IMAGE_PROVIDER: z.enum(["modelslab", "nvidia"]).default("modelslab"),
+  NVIDIA_IMAGE_MODEL: z.string().default("black-forest-labs/flux-3-image-klein"),
   NIM_MODEL: z.string().optional(),
   // Orçamento diário de chamadas Grok e % de uso a partir do qual troca para o NIM.
   XAI_DAILY_BUDGET: z.coerce.number().int().min(1).max(100000).default(200),
