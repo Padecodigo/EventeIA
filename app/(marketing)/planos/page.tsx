@@ -18,12 +18,13 @@ export const metadata = pageMetadata({
 
 export default function PlansPage() {
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-8">
-      <p className="eyebrow">Planos</p>
-      <h1 className="mt-3 max-w-prose font-serif text-display-2 font-display">
+    <div className="bg-[#2A1119]">
+      <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-8">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-champagne">Planos</p>
+      <h1 className="mt-3 max-w-prose font-serif text-display-2 font-display text-off-white">
         Planos para festas de todos os tamanhos.
       </h1>
-      <p className="mt-4 max-w-prose text-vinho/75">
+      <p className="mt-4 max-w-prose text-off-white/85">
         Anfitriões pagam por evento, sem mensalidade. Cada crédito equivale a um evento ativado.
       </p>
 
@@ -100,16 +101,17 @@ export default function PlansPage() {
       </div>
 
       <div className="mt-10 flex flex-wrap items-center justify-between gap-4">
-        <p className="text-caption text-vinho/70">
+        <p className="text-caption text-off-white/80">
           Seus créditos não expiram: use quando quiser.
         </p>
         <Link
           prefetch={false}
           href="/para-planners"
-          className="text-sm font-medium text-vinho underline decoration-champagne underline-offset-8"
+          className="text-sm font-medium text-champagne underline decoration-champagne/50 underline-offset-8"
         >
           Entender o plano de planners
         </Link>
+      </div>
       </div>
     </div>
   );

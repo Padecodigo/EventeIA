@@ -72,25 +72,26 @@ export const metadata = pageMetadata({
 export default function ComoFuncionaPage() {
   return (
     <>
-      <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-8 sm:py-24">
-        <p className="eyebrow">Como a EventeIA faz acontecer</p>
-        <h1 className="mt-5 max-w-4xl font-serif text-[clamp(2.4rem,5vw,4.4rem)] font-display leading-[1.02] tracking-[-0.03em] text-vinho">
-          Da primeira ideia à proposta que faz <em className="italic">sentido.</em>
+      <section className="bg-[#2A1119]">
+        <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-8 sm:py-24">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-champagne">Como a EventeIA faz acontecer</p>
+        <h1 className="mt-5 max-w-4xl font-serif text-[clamp(2.4rem,5vw,4.4rem)] font-display leading-[1.02] tracking-[-0.03em] text-off-white">
+          Da primeira ideia à proposta que faz <em className="italic text-champagne">sentido.</em>
         </h1>
-        <p className="mt-8 max-w-2xl text-lg leading-8 text-vinho/70">
+        <p className="mt-8 max-w-2xl text-lg leading-8 text-off-white/85">
           O trabalho de encontrar, contatar e organizar fornecedores acontece nos bastidores. Você
           recebe clareza para tomar a decisão certa — sem planilhas e sem achismo.
         </p>
 
-        <div className="mt-16 grid grid-cols-1 gap-10 border-t border-line-subtle pt-8 md:grid-cols-3">
+        <div className="mt-16 grid grid-cols-1 gap-10 border-t border-white/10 pt-8 md:grid-cols-3">
           {STEPS.map((step) => (
-            <article key={step.number} className="border-t border-champagne/60 pt-5">
-              <span className="text-xs font-semibold tracking-[0.16em] text-vinho/70">
+            <article key={step.number} className="border-t border-champagne/40 pt-5">
+              <span className="text-xs font-semibold tracking-[0.16em] text-champagne">
                 {step.number}
               </span>
-              <h2 className="mt-6 font-serif text-2xl leading-tight text-vinho">{step.title}</h2>
-              <p className="mt-3 text-sm leading-6 text-vinho/75">{step.text}</p>
-              <ul className="mt-5 space-y-2 text-caption leading-5 text-vinho/75">
+              <h2 className="mt-6 font-serif text-2xl leading-tight text-off-white">{step.title}</h2>
+              <p className="mt-3 text-sm leading-6 text-off-white/85">{step.text}</p>
+              <ul className="mt-5 space-y-2 text-caption leading-5 text-off-white/80">
                 {step.details.map((detail) => (
                   <li key={detail} className="flex gap-2">
                     <span
@@ -103,6 +104,7 @@ export default function ComoFuncionaPage() {
               </ul>
             </article>
           ))}
+        </div>
         </div>
       </section>
 

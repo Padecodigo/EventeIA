@@ -101,7 +101,7 @@ export default async function LandingPage() {
               <br />
               <span className="text-champagne">mais memórias.</span>
             </h1>
-            <p className="mt-5 max-w-lg text-[17px] leading-relaxed text-off-white/75">
+            <p className="mt-5 max-w-lg text-[17px] leading-relaxed text-off-white/85">
               A EventeIA cota com os fornecedores da sua região pelas redes sociais — Instagram e Messenger — com foco no Vale do Paraíba e em São Paulo, e compara cada proposta por você. Você escolhe entre{" "}
               <strong className="font-semibold text-off-white">3 opções prontas</strong> — melhor preço, custo-benefício e
               comodidade — e aproveita o que importa.
@@ -124,7 +124,7 @@ export default async function LandingPage() {
               </Link>
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-off-white/70">
+            <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-off-white/85">
               <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 font-medium text-off-white">
                 Ticket avulso · <strong className="font-bold text-champagne">{formatBRL(ticketPriceCents)}</strong> por evento
               </span>
@@ -143,7 +143,7 @@ export default async function LandingPage() {
                   <div className="min-w-0">
                     <Stars />
                     <blockquote className="mt-2 text-[15px] leading-relaxed text-off-white/85">“{mainTestimonial.quote}”</blockquote>
-                    <figcaption className="mt-3 text-sm text-off-white/65">
+                    <figcaption className="mt-3 text-sm text-off-white/80">
                       <strong className="font-semibold text-off-white">{mainTestimonial.name}</strong> · {mainTestimonial.context}
                       {mainTestimonial.city.length > 0 ? ` · ${mainTestimonial.city}` : ""}
                     </figcaption>
@@ -181,7 +181,7 @@ export default async function LandingPage() {
         </div>
 
         <div className="relative border-y border-white/10 bg-white/[0.03] py-4 [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
-          <ul className="ev-marquee flex w-max gap-10 whitespace-nowrap font-display text-xl italic font-medium text-off-white/60">
+          <ul className="ev-marquee flex w-max gap-10 whitespace-nowrap font-display text-xl italic font-medium text-off-white/80">
             {[...EVENT_TYPES, ...EVENT_TYPES].map((e, i) => (
               <li key={`${e.label}-${i}`} aria-hidden={i >= EVENT_TYPES.length} className="flex items-center gap-10">
                 {e.label}
@@ -209,22 +209,22 @@ export default async function LandingPage() {
       </section>
 
       {/* ================= As 3 opções ================= */}
-      <section className="bg-white">
+      <section className="bg-[#2A1119]">
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-28">
-          <p className="eyebrow">O que você recebe</p>
-          <h2 className={`mt-4 max-w-2xl ${sectionTitle}`}>Três caminhos claros. Você só escolhe.</h2>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-champagne">O que você recebe</p>
+          <h2 className="mt-4 max-w-2xl font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.02em] text-off-white">Três caminhos claros. Você só escolhe.</h2>
           <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
             {OPTIONS.map((o, i) => (
               <article
                 key={o.title}
-                className="group relative overflow-hidden rounded-3xl border border-champagne-claro bg-white p-7 shadow-[0_1px_2px_rgba(59,36,32,0.04)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_50px_-24px_rgba(59,36,32,0.3)]"
+                className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] p-7 backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-champagne/30"
               >
                 <div aria-hidden="true" className={`absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br ${o.dot} opacity-10 blur-2xl transition duration-500 group-hover:opacity-25`} />
                 <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${o.dot} text-sm font-bold text-white`}>
                   {i + 1}
                 </span>
-                <h3 className="mt-6 font-display text-2xl font-bold tracking-tight text-vinho">{o.title}</h3>
-                <p className="mt-2 text-[15px] leading-relaxed text-vinho/70">{o.text}</p>
+                <h3 className="mt-6 font-display text-2xl font-bold tracking-tight text-off-white">{o.title}</h3>
+                <p className="mt-2 text-[15px] leading-relaxed text-off-white/85">{o.text}</p>
               </article>
             ))}
           </div>
@@ -271,11 +271,11 @@ export default async function LandingPage() {
       </section>
 
       {/* ================= Planos ================= */}
-      <section id="planos" className="relative isolate scroll-mt-24 overflow-hidden bg-gradient-to-b from-[#F3E6DD] to-[#FBF6F2] py-20 text-vinho lg:py-28">
+      <section id="planos" className="relative isolate scroll-mt-24 overflow-hidden bg-[#2A1119] py-20 text-off-white lg:py-28">
         <div aria-hidden="true" className="absolute left-1/2 top-0 -z-10 h-[480px] w-[900px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(163,72,90,0.14),transparent)]" />
         <div className="mx-auto w-full max-w-7xl px-5 sm:px-8">
-          <p className="eyebrow">Planos</p>
-          <h2 className="mt-4 max-w-2xl font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.02em]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-champagne">Planos</p>
+          <h2 className="mt-4 max-w-2xl font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.02em] text-off-white">
             Pague só pelo seu evento. Ou assine, se você organiza vários.
           </h2>
           <div className="mt-12 grid grid-cols-1 gap-5 lg:grid-cols-4">
@@ -299,10 +299,10 @@ export default async function LandingPage() {
               <article
                 key={plan.code}
                 className={`flex flex-col rounded-3xl p-7 backdrop-blur transition duration-300 hover:-translate-y-1 ${
-                  plan.featured ? "bg-white/90 ring-1 ring-champagne shadow-[0_24px_50px_-30px_rgba(59,36,32,0.45)]" : "bg-white/70 ring-1 ring-champagne-claro"
+                  plan.featured ? "bg-white ring-1 ring-champagne shadow-[0_24px_50px_-30px_rgba(59,36,32,0.45)]" : "bg-off-white ring-1 ring-champagne-claro"
                 }`}
               >
-                <p className="text-xs font-bold uppercase tracking-wider text-vinho/55">
+                <p className="text-xs font-bold uppercase tracking-wider text-vinho/70">
                   {plan.featured ? "Planners · mais escolhido" : "Planners"}
                 </p>
                 <h3 className="mt-2 font-display text-xl font-bold">{plan.name}</h3>
@@ -346,10 +346,10 @@ export default async function LandingPage() {
           <h2 className="font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.02em]">
             Seu evento merece ser curtido, não administrado.
           </h2>
-          <p className="mx-auto mt-4 max-w-prose text-white/75">
+          <p className="mx-auto mt-4 max-w-prose text-white/85">
             Conte o que você imagina. A EventeIA corre atrás dos orçamentos e te mostra as melhores opções.
           </p>
-          <Link prefetch={false} href="/registrar" className="group mt-9 inline-flex items-center gap-2 rounded-full bg-[#E8A587] px-7 py-3.5 font-semibold text-vinho transition hover:-translate-y-0.5 hover:bg-[#EDB89F]">
+          <Link prefetch={false} href="/registrar" className="group mt-9 inline-flex items-center gap-2 rounded-full bg-champagne px-7 py-3.5 font-semibold text-[#2A1119] transition hover:-translate-y-0.5 hover:bg-champagne-claro">
             Testar agora <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">→</span>
           </Link>
         </div>
