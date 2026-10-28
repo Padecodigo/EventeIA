@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/auth";
 import { serverEnv } from "@/lib/env";
-import { buildPublishPlan } from "@/lib/prospecting/publish-plan";
+import { buildPostContent } from "@/lib/prospecting/content";
+import { normalizeNeeds, planNeedPosts } from "@/lib/prospecting/plan-needs";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 import { Card } from "../ui";
@@ -40,11 +41,19 @@ export default async function ProspeccaoPage() {
     suppliers.push({ handle, category: row.category });
   }
 
-  const plan = buildPublishPlan(suppliers, {
-    keyword: env.META_PROSPECT_KEYWORD,
+  const needs = normalizeNeeds(suppliers.map((supplier) => supplier.category));
+  const plan = planNeedPosts(needs, suppliers, {
     maxTagsPerPost: env.MAX_TAGS_PER_POST,
     maxPostsPerDay: env.MAX_POSTS_PER_DAY,
-  });
+  }).map((post) => ({
+    ...post,
+    ...buildPostContent({
+      category: post.category,
+      keyword: env.META_PROSPECT_KEYWORD,
+      handles: post.handles,
+      variant: post.dayIndex,
+    }),
+  }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -68,7 +77,7 @@ export default async function ProspeccaoPage() {
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="max-w-2xl">
                 <p className="text-caption font-semibold uppercase tracking-wide text-vinho/60">
-                  Dia {post.dayIndex + 1} · {post.category}
+                  Dia {post.dayIndex + 1} · {post.category} · parte {post.part}/{post.totalParts}
                 </p>
                 <p className="mt-2 whitespace-pre-line text-body text-vinho">{post.caption}</p>
                 <p className="mt-2 text-caption text-vinho/60">
