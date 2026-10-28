@@ -7,7 +7,6 @@ import { requireUser } from "@/lib/auth";
 import { personalEventsFilter } from "@/lib/auth/personal-scope-server";
 import { formatBRL } from "@/lib/money";
 import { categoryLabel } from "@/lib/quotes/export";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const statusLabels: Record<string, string> = {
@@ -48,12 +47,6 @@ export default async function DashboardPage() {
   const events = eventsResult.data ?? [];
   const activeTickets = activeTicketsResult.count ?? 0;
   const totalEvents = countResult.count ?? 0;
-  const { data: instances } = await getSupabaseAdmin()
-    .from("whatsapp_instances")
-    .select("instance_name,status")
-    .eq("profile_id", user.id)
-    .limit(1);
-  const disconnectedInstance = instances?.find((item) => item.status === "disconnected") ?? null;
   const [activity, quotesResult] = await Promise.all([
     getUserActivity(user.id, 10),
     supabase
@@ -67,13 +60,6 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-10">
-      {disconnectedInstance !== null ? (
-        <p role="alert" className="rounded-card border border-semantic-error/30 bg-semantic-error/10 px-5 py-4 text-sm text-semantic-error">
-          Seu WhatsApp desconectou (sessão expirada ou sem internet). A prospecção de fornecedores
-          está pausada — reconecte a instância para retomar automaticamente.
-        </p>
-      ) : null}
-
       <section>
         <p className="text-overline uppercase tracking-[0.14em] text-vinho/75">O seu ateliê</p>
         <h1 className="mt-2 font-serif text-display-2 font-display">A clareza começa aqui.</h1>
@@ -156,7 +142,7 @@ export default async function DashboardPage() {
         <h2 className="font-serif text-title-1">Cotações recebidas</h2>
         {quotes.length === 0 ? (
           <p className="mt-4 rounded-card border border-dashed border-line-strong bg-off-white p-8 text-sm text-vinho/75">
-            As cotações dos fornecedores aparecem aqui assim que chegarem pelo WhatsApp.
+            As cotações dos fornecedores aparecem aqui assim que chegarem pelas redes sociais.
           </p>
         ) : (
           <ul className="mt-5 divide-y divide-line-subtle rounded-card border border-line-subtle bg-off-white">
