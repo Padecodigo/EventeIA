@@ -62,7 +62,7 @@ export async function cancelEventFollowUp(input: CancelEventFollowUpInput): Prom
   }
 
   await stopEventBackgroundWork(input.eventId);
-  await removeScheduledEventJobs(input.eventId, input.ownerProfileId);
+  removeScheduledEventJobs(input.eventId, input.ownerProfileId);
 
   try {
     await emitFeed(admin, {
