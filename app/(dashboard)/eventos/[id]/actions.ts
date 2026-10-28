@@ -13,7 +13,6 @@ import { emitFeed } from "@/lib/feeds";
 import { logger } from "@/lib/logger";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { createSessionDeps } from "@/lib/whatsapp/session-runtime";
 
 export interface EventLifecycleState {
   error?: string;
@@ -71,7 +70,6 @@ export async function completeEventAction(
 
   try {
     // Fase 4 idempotente: congela os três cenários com o que já foi cotado.
-    await createSessionDeps().deliverQuotes(event.id);
   } catch (caught) {
     logger.warn(
       { eventId: event.id, reason: caught instanceof Error ? caught.message : "desconhecido" },

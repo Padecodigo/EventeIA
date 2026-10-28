@@ -7,11 +7,10 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { emitFeed } from "@/lib/feeds";
 import { logger } from "@/lib/logger";
-import { parseQuotationOptions, renderChoiceMessage, resolveChoiceOption } from "@/lib/quotes/choices";
+import { parseQuotationOptions, resolveChoiceOption } from "@/lib/quotes/choices";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/types";
-import { lastInboundAt, resolveEventChannel, sendTextVia } from "@/lib/whatsapp/provider";
 
 export interface QuotationChoiceState {
   error?: string;
@@ -114,50 +113,8 @@ export async function chooseQuotationOptionAction(
     // feed não bloqueia a escolha
   }
 
-  // Relay: avisa o fornecedor pelo canal do evento (Cloud/Evolution), se possível.
-  let relayed = false;
-  const phone = quotation.vendor_contact;
-  if (phone !== null && /^\+\d{10,15}$/.test(phone)) {
-    const message = renderChoiceMessage({
-      vendorName: quotation.vendor_name,
-      eventTitle: event.title,
-      option,
-    });
-    try {
-      const channel = await resolveEventChannel(event.id);
-      await sendTextVia(channel, {
-        instance: `eventeia-${event.owner_profile_id.slice(0, 8)}`,
-        to: phone,
-        text: message,
-        eventId: event.id,
-        lastInboundAt: channel === "cloud" ? await lastInboundAt(phone) : null,
-      });
-      relayed = true;
-      await getSupabaseAdmin()
-        .from("whatsapp_messages")
-        .upsert(
-          {
-            event_id: event.id,
-            direction: "outbound",
-            template: "choice_selected",
-            to_number_e164: phone,
-            body: message,
-            status: "sent",
-            sent_at: new Date().toISOString(),
-            idempotency_key: `choice:${quotation.id}:${String(parsed.data.optionIndex)}`,
-          },
-          { onConflict: "idempotency_key", ignoreDuplicates: true },
-        );
-    } catch (caught) {
-      logger.warn(
-        {
-          quotationId: quotation.id,
-          reason: caught instanceof Error ? caught.message : "desconhecido",
-        },
-        "escolha salva, mas o fornecedor não foi avisado",
-      );
-    }
-  }
+  // WhatsApp removido: não há relay ao fornecedor.
+  const relayed = false;
 
   revalidatePath(`/eventos/${event.id}`);
   return { ok: true, relayed };

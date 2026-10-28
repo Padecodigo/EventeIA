@@ -107,13 +107,6 @@ describe("custo por evento", () => {
 });
 
 describe("medição com event_id", () => {
-  it("WhatsApp (Evolution) grava o evento e marca como estimado", async () => {
-    const { sendTextVia, sendFirstContactVia } = await import("@/lib/whatsapp/provider");
-    await sendFirstContactVia("evolution", { instance: "i", to: "+5511999999999", text: "oi", eventId: EV });
-    await sendTextVia("evolution", { instance: "i", to: "+5511999999999", text: "oi", lastInboundAt: null, eventId: EV });
-    await vi.waitFor(() => expect(recorded).toHaveLength(2));
-    expect(recorded.every((r) => r.event_id === EV && r.is_estimate === true && r.provider === "evolution")).toBe(true);
-  });
   it("e-mail via Resend grava o evento informado", async () => {
     const { createResendAdapter } = await import("@/lib/notifications/email");
     const fetchImpl = (() => Promise.resolve(new Response(JSON.stringify({ id: "m1" }), { status: 200 }))) as typeof fetch;

@@ -1,5 +1,4 @@
 import { QuotationForm } from "@/components/domain/quotation-form";
-import { SendQuotationSummary } from "@/components/domain/send-quotation-summary";
 import { formatBRL } from "@/lib/money";
 
 const categoryLabels: Record<string, string> = {
@@ -47,7 +46,6 @@ export function QuotationsPanel({
             Registre as propostas recebidas e compare os caminhos.
           </p>
         </div>
-        {quotations.length > 0 ? <SendQuotationSummary eventId={eventId} /> : null}
       </header>
 
       {quotations.length > 0 ? (
