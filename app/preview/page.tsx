@@ -163,6 +163,51 @@ function VariantB() {
   );
 }
 
+/** VARIANTE C — Mistura: hero claro (A) + faixa escura premium (B) logo abaixo. */
+function VariantC() {
+  return (
+    <section className="bg-areia-quente">
+      <div className="px-5 pt-16 sm:px-8">
+        <div className="mx-auto max-w-6xl">
+          <Label letter="C" title="Mistura — hero claro (A) + faixa escura (B)" tone="light" />
+        </div>
+      </div>
+      <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-5 py-12 sm:px-8 lg:grid-cols-[1fr_1fr]">
+        <div>
+          <h1 className="font-display text-[clamp(2.2rem,4.4vw,3.6rem)] font-semibold leading-[1.02] tracking-[-0.03em] text-vinho">
+            Menos ligações,
+            <br />
+            mais memórias.
+          </h1>
+          <p className="mt-5 max-w-md text-[17px] leading-relaxed text-vinho/70">
+            A EventeIA cota pelas redes sociais e compara cada proposta por você. Escolha entre
+            três opções prontas e aproveite o evento.
+          </p>
+          <div className="mt-8 text-vinho">
+            <Cta />
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          {PHOTOS.slice(0, 6).map((photo) => (
+            <figure key={photo.src} className="overflow-hidden rounded-2xl bg-white shadow-soft">
+              <Image src={photo.src} alt={photo.label} width={320} height={320} className="h-28 w-full object-cover sm:h-36" />
+            </figure>
+          ))}
+        </div>
+      </div>
+      <div className="bg-[#2A1119] px-5 py-10 sm:px-8">
+        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 text-off-white sm:flex-row sm:items-center">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-champagne">Sempre 3 opções prontas</p>
+            <p className="mt-1 font-display text-2xl font-semibold">Melhor preço · Custo-benefício · Comodidade</p>
+          </div>
+          <span className="rounded-full bg-champagne px-6 py-3 text-sm font-semibold text-vinho">Começar agora →</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function PreviewPage() {
   return (
     <main className="min-h-screen">
@@ -174,6 +219,7 @@ export default function PreviewPage() {
       </div>
       <VariantA />
       <VariantB />
+      <VariantC />
       <div className="bg-off-white px-5 py-8 text-center text-sm text-vinho/60 sm:px-8">
         Diga A, B ou uma mistura — e eu aplico no site inteiro.
       </div>
