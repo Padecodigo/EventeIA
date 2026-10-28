@@ -17,16 +17,6 @@ export default async function ProfilePage() {
     .maybeSingle();
 
   const phone = profile?.phone_e164 ?? "";
-  const { data: consent } =
-    phone.length > 0
-      ? await supabase
-          .from("consents")
-          .select("status")
-          .eq("profile_id", user.id)
-          .eq("phone_e164", phone)
-          .maybeSingle()
-      : { data: null };
-
   const { data: authData } = await supabase.auth.getUser();
   const hasPassword = await accountHasPassword(authData.user);
   const hasGoogle = (authData.user?.identities ?? []).some((i) => i.provider === "google");
@@ -38,7 +28,7 @@ export default async function ProfilePage() {
         <h1 className="mt-3 font-serif text-display-2 font-display">Seu perfil.</h1>
         <p className="mt-3 text-sm leading-6 text-vinho/75">
           Mantenha o telefone e o CPF atualizados. O CPF é usado só para emitir a cobrança; o
-          WhatsApp só recebe mensagens com o seu consentimento.
+          telefone é usado para contato sobre os seus eventos.
         </p>
       </header>
 
@@ -47,7 +37,6 @@ export default async function ProfilePage() {
           defaultName={profile?.display_name ?? ""}
           defaultPhone={phone}
           defaultCpf={profile?.document_number ?? ""}
-          whatsappOptIn={consent?.status === "opted_in"}
         />
       </section>
 

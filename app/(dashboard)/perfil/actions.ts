@@ -50,12 +50,6 @@ export async function updateProfileAction(
     return { error: "CPF deve ter 11 dígitos." };
   }
 
-  const wantsWhatsapp = formData.get("consent") === "on";
-
-  if (wantsWhatsapp && phone === null) {
-    return { error: "Informe um telefone para autorizar o contato pelo WhatsApp." };
-  }
-
   const supabase = await createSupabaseServerClient();
   const { error: profileError } = await supabase
     .from("profiles")
@@ -75,32 +69,6 @@ export async function updateProfileAction(
         .from("profiles")
         .update({ document_number: cpfRaw, document_type: "cpf" })
         .eq("id", user.id);
-    }
-
-    if (phone !== null) {
-      const status = wantsWhatsapp ? "opted_in" : "opted_out";
-      await admin.from("consents").upsert(
-        {
-          profile_id: user.id,
-          phone_e164: phone,
-          channel: "whatsapp",
-          status,
-          source: "profile",
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "phone_e164,channel" },
-      );
-
-      await emitFeed(admin, {
-        type: wantsWhatsapp ? "consent.opted_in" : "consent.opted_out",
-        actorType: "user",
-        actorId: user.id,
-        aggregateType: "profile",
-        aggregateId: user.id,
-        payload: { channel: "whatsapp" },
-        correlationId: user.id,
-        source: "app",
-      });
     }
 
     await emitFeed(admin, {
