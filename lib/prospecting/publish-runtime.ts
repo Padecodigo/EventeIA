@@ -27,6 +27,8 @@ export interface PublishPlannedPostInput {
   store?: PostStore;
   /** Evento de origem do plano (gravado em prospect_posts). */
   eventId?: string;
+  /** Imagem já gerada para o mesmo evento + necessidade (evita nova geração). */
+  cachedImageUrl?: string | null;
   fetchImpl?: typeof fetch;
 }
 
@@ -36,18 +38,20 @@ export async function publishPlannedPost(input: PublishPlannedPostInput): Promis
     return { ok: false, reason: "approval_required" };
   }
 
-  const image = await generateImage({
-    apiKey: input.modelslabKey,
-    prompt: input.planned.imagePrompt,
-    fetchImpl: input.fetchImpl,
-  });
-  if (!image.ok) {
-    await input.store?.record({ planned: input.planned, eventId: input.eventId, status: "failed", error: image.error });
-    return { ok: false, reason: "image_failed", error: image.error };
+  let imageUrl = input.cachedImageUrl ?? null;
+  if (imageUrl === null) {
+    const image = await generateImage({
+      apiKey: input.modelslabKey,
+      prompt: input.planned.imagePrompt,
+      fetchImpl: input.fetchImpl,
+    });
+    if (!image.ok) {
+      await input.store?.record({ planned: input.planned, eventId: input.eventId, status: "failed", error: image.error });
+      return { ok: false, reason: "image_failed", error: image.error };
+    }
+    imageUrl = image.images[0] ?? null;
+    if (imageUrl === null) return { ok: false, reason: "image_failed", error: "resposta sem URL de imagem" };
   }
-
-  const imageUrl = image.images[0];
-  if (imageUrl === undefined) return { ok: false, reason: "image_failed", error: "resposta sem URL de imagem" };
 
   const container = await createMediaContainer({
     ...input.meta,

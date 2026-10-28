@@ -116,18 +116,20 @@ export const IMAGE_SPECS = {
 export const AUTOMATION_DISCLOSURE_REQUIRED = true;
 
 /**
- * ModelsLab (SDXL): docs acessíveis em https://docs.modelslab.com, mas o
+ * ModelsLab (FLUX): docs em https://docs.modelslab.com (endpoint confirmado em 2026-10-28).
  * endpoint/autenticação da geração de imagem NÃO foram extraídos nesta consulta.
  * NÃO presumir — confirmar antes de implementar o gerador.
  */
 export const MODELSLAB_DOCS = "https://docs.modelslab.com/llms.txt";
 export const MODELSLAB_ENDPOINT_CONFIRMED = true;
 
-/** ModelsLab — Realtime Stable Diffusion (SDXL). Confirmado em 2026-10-27. */
+/** ModelsLab — FLUX (`model_id: "flux"`). Endpoint confirmado em 2026-10-28. */
 export const MODELSLAB = {
-  endpoint: "https://modelslab.com/api/v6/realtime/text2img",
+  endpoint: "https://modelslab.com/api/v6/images/text2img",
   /** Chave vai no corpo JSON (campo `key`), não em header. */
   authField: "key",
+  /** Modelo FLUX (doc: model_id "flux"). */
+  modelId: "flux",
   maxWidthPx: 1024,
   maxHeightPx: 1024,
   maxSamples: 4,

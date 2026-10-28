@@ -6,7 +6,7 @@ import type { OpResult } from "@/lib/admin/suppliers";
 import { requireAdmin } from "@/lib/auth";
 import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { createSupabasePostStore } from "@/lib/prospecting/posts-store";
+import { createSupabasePostStore, findImageFor } from "@/lib/prospecting/posts-store";
 import { publishPlannedPost } from "@/lib/prospecting/publish-runtime";
 
 /**
@@ -46,6 +46,8 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
   const eventIdRaw = form.get("eventId");
   const eventId = typeof eventIdRaw === "string" && eventIdRaw.length > 0 ? eventIdRaw : undefined;
   const dayIndex = Number(form.get("dayIndex"));
+  // Cache: reusa a imagem do mesmo evento + necessidade (novo contexto => nova imagem).
+  const cachedImageUrl = eventId !== undefined ? await findImageFor(eventId, category) : null;
   const outcome = await publishPlannedPost({
     planned: { dayIndex: Number.isFinite(dayIndex) ? dayIndex : 0, category, handles, imagePrompt, caption },
     approved: true,
@@ -57,6 +59,7 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
     },
     store: createSupabasePostStore(),
     eventId,
+    cachedImageUrl,
   });
 
   if (!outcome.ok) {

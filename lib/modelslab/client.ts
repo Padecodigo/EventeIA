@@ -1,8 +1,8 @@
 import { MODELSLAB } from "@/lib/meta/limits";
 
 /**
- * Cliente ModelsLab — Realtime Stable Diffusion (SDXL), endpoint oficial
- * `POST /api/v6/realtime/text2img` (confirmado em 2026-10-27).
+ * Cliente ModelsLab — FLUX, endpoint oficial `POST /api/v6/images/text2img`
+ * com `model_id: "flux"` (confirmado em 2026-10-28).
  *
  * A chave vai no CORPO JSON (campo `key`), não em header. Os limites de
  * largura/altura/amostras vêm de `lib/meta/limits.ts`.
@@ -41,12 +41,15 @@ export async function generateImage(input: GenerateImageInput): Promise<ModelsLa
       signal: controller.signal,
       body: JSON.stringify({
         key: input.apiKey,
+        model_id: MODELSLAB.modelId,
         prompt: input.prompt,
         ...(input.negativePrompt !== undefined ? { negative_prompt: input.negativePrompt } : {}),
         width: clamp(input.width ?? MODELSLAB.maxWidthPx, 64, MODELSLAB.maxWidthPx),
         height: clamp(input.height ?? MODELSLAB.maxHeightPx, 64, MODELSLAB.maxHeightPx),
         samples: clamp(input.samples ?? 1, 1, MODELSLAB.maxSamples),
-        safety_checker: true,
+        num_inference_steps: 31,
+        guidance_scale: 7.5,
+        safety_checker: "yes",
         base64: false,
       }),
     });
