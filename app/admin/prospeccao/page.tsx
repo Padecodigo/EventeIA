@@ -1,6 +1,11 @@
+import Link from "next/link";
+
 import { requireAdmin } from "@/lib/auth";
+import { EVENT_TYPE_LABELS } from "@/lib/catalog/v1";
+import { getDeepSeekClient } from "@/lib/deepseek/client";
 import { serverEnv } from "@/lib/env";
 import { buildPostContent } from "@/lib/prospecting/content";
+import { generatePlanContent, type PlanContentEvent } from "@/lib/prospecting/content-llm";
 import { normalizeNeeds, planNeedPosts } from "@/lib/prospecting/plan-needs";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
@@ -16,23 +21,34 @@ function handleFromUrl(url: string): string | null {
 }
 
 /**
- * Prospecção: mostra o plano de posts de isca (lotes + legenda) e permite a um
- * humano aprovar e publicar cada post. O plano é derivado dos fornecedores
- * públicos do Instagram já descobertos.
+ * Prospecção: plano de posts por NECESSIDADE.
+ * Sem `?evento=`: necessidades = categorias do acervo de fornecedores.
+ * Com `?evento=<id>`: necessidades = categorias da entrevista do evento e a LLM
+ * escreve o prompt visual + a legenda de cada post.
  */
-export default async function ProspeccaoPage() {
+export default async function ProspeccaoPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ evento?: string | string[] }>;
+}) {
   await requireAdmin();
   const env = serverEnv();
+  const rawEvento = (await searchParams).evento;
+  const eventId = typeof rawEvento === "string" && rawEvento.length > 0 ? rawEvento : undefined;
+  const admin = getSupabaseAdmin();
 
-  const { data } = await getSupabaseAdmin()
-    .from("suppliers")
-    .select("name,category,source_url")
-    .like("source_url", "https://www.instagram.com/%")
-    .limit(300);
+  const [suppliersResult, eventsResult] = await Promise.all([
+    admin
+      .from("suppliers")
+      .select("name,category,source_url")
+      .like("source_url", "https://www.instagram.com/%")
+      .limit(300),
+    admin.from("events").select("id,title,event_type,guest_count").order("created_at", { ascending: false }).limit(20),
+  ]);
 
   const seen = new Set<string>();
-  const suppliers: { handle: string; category: string }[] = [];
-  for (const row of data ?? []) {
+  let suppliers: { handle: string; category: string }[] = [];
+  for (const row of suppliersResult.data ?? []) {
     const handle = handleFromUrl(row.source_url);
     if (handle === null) continue;
     const key = `${row.category}:${handle}`;
@@ -41,34 +57,98 @@ export default async function ProspeccaoPage() {
     suppliers.push({ handle, category: row.category });
   }
 
-  const needs = normalizeNeeds(suppliers.map((supplier) => supplier.category));
-  const plan = planNeedPosts(needs, suppliers, {
+  let needs: string[];
+  let eventInfo: PlanContentEvent | null = null;
+  if (eventId !== undefined) {
+    const { data: requirements } = await admin
+      .from("event_requirements")
+      .select("category")
+      .eq("event_id", eventId)
+      .eq("selected", true);
+    needs = normalizeNeeds((requirements ?? []).map((row) => row.category));
+
+    const selected = eventsResult.data?.find((event) => event.id === eventId) ?? null;
+    if (selected !== null) {
+      eventInfo = {
+        title: selected.title,
+        typeLabel: EVENT_TYPE_LABELS[selected.event_type as keyof typeof EVENT_TYPE_LABELS] ?? selected.event_type,
+        guestCount: selected.guest_count,
+      };
+    }
+    const needSet = new Set(needs);
+    suppliers = suppliers.filter((supplier) => needSet.has(supplier.category));
+  } else {
+    needs = normalizeNeeds(suppliers.map((supplier) => supplier.category));
+  }
+
+  const posts = planNeedPosts(needs, suppliers, {
     maxTagsPerPost: env.MAX_TAGS_PER_POST,
     maxPostsPerDay: env.MAX_POSTS_PER_DAY,
-  }).map((post) => ({
-    ...post,
-    ...buildPostContent({
+  });
+
+  const llmContent =
+    eventInfo !== null && posts.length > 0
+      ? await generatePlanContent(
+          {
+            event: eventInfo,
+            posts: posts.map((post, index) => ({ ...post, index })),
+            keyword: env.META_PROSPECT_KEYWORD,
+          },
+          getDeepSeekClient(),
+        )
+      : null;
+
+  const plan = posts.map((post, index) => {
+    const generated = llmContent?.find((item) => item.index === index);
+    const template = buildPostContent({
       category: post.category,
+      guestCount: eventInfo?.guestCount,
       keyword: env.META_PROSPECT_KEYWORD,
       handles: post.handles,
       variant: post.dayIndex,
-    }),
-  }));
+    });
+    return {
+      ...post,
+      imagePrompt: generated?.imagePrompt ?? template.imagePrompt,
+      caption: generated?.caption ?? template.caption,
+    };
+  });
 
   return (
     <div className="flex flex-col gap-6">
       <header>
         <h1 className="font-serif text-title-2 text-vinho">Prospecção — posts de isca</h1>
         <p className="mt-1 text-caption text-vinho/70">
-          {suppliers.length} fornecedor(es) do Instagram no plano · {plan.length} post(s) sugerido(s) · até{" "}
+          {suppliers.length} fornecedor(es) no plano · {plan.length} post(s) sugerido(s) · até{" "}
           {env.MAX_POSTS_PER_DAY} por dia, no máximo {env.MAX_TAGS_PER_POST} marcações por post.
+          {eventInfo !== null ? ` · Evento: ${eventInfo.title}` : ""}
         </p>
       </header>
+
+      <nav className="flex flex-wrap gap-2 text-caption" aria-label="Escolher evento">
+        <Link
+          href="/admin/prospeccao"
+          className={`rounded-full border px-3 py-1.5 ${eventId === undefined ? "border-vinho bg-vinho text-off-white" : "border-line-strong text-vinho"}`}
+        >
+          Acervo geral
+        </Link>
+        {(eventsResult.data ?? []).map((event) => (
+          <Link
+            key={event.id}
+            href={`/admin/prospeccao?evento=${event.id}`}
+            className={`rounded-full border px-3 py-1.5 ${eventId === event.id ? "border-vinho bg-vinho text-off-white" : "border-line-strong text-vinho"}`}
+          >
+            {event.title}
+          </Link>
+        ))}
+      </nav>
 
       {plan.length === 0 ? (
         <Card>
           <p className="text-caption text-vinho/70">
-            Nenhum fornecedor público do Instagram disponível. Rode a descoberta primeiro.
+            {eventId !== undefined
+              ? "Este evento não tem necessidades com fornecedores do Instagram no acervo."
+              : "Nenhum fornecedor público do Instagram disponível. Rode a descoberta primeiro."}
           </p>
         </Card>
       ) : (
@@ -90,6 +170,7 @@ export default async function ProspeccaoPage() {
                 handles={post.handles}
                 imagePrompt={post.imagePrompt}
                 caption={post.caption}
+                eventId={eventId}
               />
             </div>
           </Card>

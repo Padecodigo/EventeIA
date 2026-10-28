@@ -18,6 +18,8 @@ export interface RecordPostInput {
   imageUrl?: string;
   igMediaId?: string;
   error?: string;
+  /** Evento de origem (necessidades) quando o plano é por evento. */
+  eventId?: string;
 }
 
 export interface PostStore {
@@ -43,6 +45,7 @@ export function createSupabasePostStore(
         status: input.status,
         ig_media_id: input.igMediaId ?? null,
         error: input.error ?? null,
+        event_id: input.eventId ?? null,
       });
       if (error !== null) throw new Error(`falha ao registrar post (${error.code ?? "?"})`);
     },
