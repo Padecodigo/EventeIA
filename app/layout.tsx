@@ -2,6 +2,7 @@ import localFont from "next/font/local";
 
 import type { Metadata } from "next";
 
+import { AnalyticsTracker } from "@/components/analytics/tracker";
 import { OG_IMAGE, SEO_KEYWORDS, SITE_DESCRIPTION, SITE_NAME, siteUrl } from "@/lib/seo/site";
 
 import "./globals.css";
@@ -65,7 +66,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt-BR" className={`${display.variable} ${displayItalic.variable} ${body.variable}`}>
-      <body>{children}</body>
+      <body>
+        <AnalyticsTracker />
+        {children}
+      </body>
     </html>
   );
 }
