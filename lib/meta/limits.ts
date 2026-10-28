@@ -123,7 +123,7 @@ export const AUTOMATION_DISCLOSURE_REQUIRED = true;
 export const MODELSLAB_DOCS = "https://docs.modelslab.com/llms.txt";
 export const MODELSLAB_ENDPOINT_CONFIRMED = true;
 
-/** ModelsLab — Realtime Stable Diffusion (SDXL). Confirmado em 2026-10-27. */
+/** ModelsLab — FLUX (`model_id: "flux"`). Endpoint confirmado em 2026-10-28. */
 export const MODELSLAB = {
   endpoint: "https://modelslab.com/api/v6/images/text2img",
   /** Chave vai no corpo JSON (campo `key`), não em header. */
