@@ -299,10 +299,10 @@ export default async function LandingPage() {
               <article
                 key={plan.code}
                 className={`flex flex-col rounded-3xl p-7 backdrop-blur transition duration-300 hover:-translate-y-1 ${
-                  plan.featured ? "bg-white/90 ring-1 ring-champagne shadow-[0_24px_50px_-30px_rgba(59,36,32,0.45)]" : "bg-white/70 ring-1 ring-champagne-claro"
+                  plan.featured ? "bg-white ring-1 ring-champagne shadow-[0_24px_50px_-30px_rgba(59,36,32,0.45)]" : "bg-off-white ring-1 ring-champagne-claro"
                 }`}
               >
-                <p className="text-xs font-bold uppercase tracking-wider text-vinho/55">
+                <p className="text-xs font-bold uppercase tracking-wider text-vinho/70">
                   {plan.featured ? "Planners · mais escolhido" : "Planners"}
                 </p>
                 <h3 className="mt-2 font-display text-xl font-bold">{plan.name}</h3>
