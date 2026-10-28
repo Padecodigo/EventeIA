@@ -101,7 +101,7 @@ export default async function LandingPage() {
               <br />
               <span className="text-champagne">mais memórias.</span>
             </h1>
-            <p className="mt-5 max-w-lg text-[17px] leading-relaxed text-off-white/75">
+            <p className="mt-5 max-w-lg text-[17px] leading-relaxed text-off-white/85">
               A EventeIA cota com os fornecedores da sua região pelas redes sociais — Instagram e Messenger — com foco no Vale do Paraíba e em São Paulo, e compara cada proposta por você. Você escolhe entre{" "}
               <strong className="font-semibold text-off-white">3 opções prontas</strong> — melhor preço, custo-benefício e
               comodidade — e aproveita o que importa.
@@ -124,7 +124,7 @@ export default async function LandingPage() {
               </Link>
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-off-white/70">
+            <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-off-white/85">
               <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 font-medium text-off-white">
                 Ticket avulso · <strong className="font-bold text-champagne">{formatBRL(ticketPriceCents)}</strong> por evento
               </span>
@@ -143,7 +143,7 @@ export default async function LandingPage() {
                   <div className="min-w-0">
                     <Stars />
                     <blockquote className="mt-2 text-[15px] leading-relaxed text-off-white/85">“{mainTestimonial.quote}”</blockquote>
-                    <figcaption className="mt-3 text-sm text-off-white/65">
+                    <figcaption className="mt-3 text-sm text-off-white/80">
                       <strong className="font-semibold text-off-white">{mainTestimonial.name}</strong> · {mainTestimonial.context}
                       {mainTestimonial.city.length > 0 ? ` · ${mainTestimonial.city}` : ""}
                     </figcaption>
@@ -181,7 +181,7 @@ export default async function LandingPage() {
         </div>
 
         <div className="relative border-y border-white/10 bg-white/[0.03] py-4 [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
-          <ul className="ev-marquee flex w-max gap-10 whitespace-nowrap font-display text-xl italic font-medium text-off-white/60">
+          <ul className="ev-marquee flex w-max gap-10 whitespace-nowrap font-display text-xl italic font-medium text-off-white/80">
             {[...EVENT_TYPES, ...EVENT_TYPES].map((e, i) => (
               <li key={`${e.label}-${i}`} aria-hidden={i >= EVENT_TYPES.length} className="flex items-center gap-10">
                 {e.label}
@@ -224,7 +224,7 @@ export default async function LandingPage() {
                   {i + 1}
                 </span>
                 <h3 className="mt-6 font-display text-2xl font-bold tracking-tight text-off-white">{o.title}</h3>
-                <p className="mt-2 text-[15px] leading-relaxed text-off-white/70">{o.text}</p>
+                <p className="mt-2 text-[15px] leading-relaxed text-off-white/85">{o.text}</p>
               </article>
             ))}
           </div>
@@ -346,7 +346,7 @@ export default async function LandingPage() {
           <h2 className="font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.02em]">
             Seu evento merece ser curtido, não administrado.
           </h2>
-          <p className="mx-auto mt-4 max-w-prose text-white/75">
+          <p className="mx-auto mt-4 max-w-prose text-white/85">
             Conte o que você imagina. A EventeIA corre atrás dos orçamentos e te mostra as melhores opções.
           </p>
           <Link prefetch={false} href="/registrar" className="group mt-9 inline-flex items-center gap-2 rounded-full bg-champagne px-7 py-3.5 font-semibold text-[#2A1119] transition hover:-translate-y-0.5 hover:bg-champagne-claro">

@@ -22,7 +22,7 @@ export function SiteHeader() {
           />
           <span className="flex select-none flex-col justify-center">
             <span className="font-brand text-xl leading-none text-off-white sm:text-2xl">EventeIA</span>
-            <span className="mt-0.5 hidden text-[9px] font-semibold sm:block uppercase leading-tight tracking-[0.15em] text-off-white/60 sm:text-[10px]">
+            <span className="mt-0.5 hidden text-[9px] font-semibold sm:block uppercase leading-tight tracking-[0.15em] text-off-white/80 sm:text-[10px]">
               Você imagina. A EventeIA faz acontecer.
             </span>
           </span>

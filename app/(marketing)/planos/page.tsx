@@ -24,7 +24,7 @@ export default function PlansPage() {
       <h1 className="mt-3 max-w-prose font-serif text-display-2 font-display text-off-white">
         Planos para festas de todos os tamanhos.
       </h1>
-      <p className="mt-4 max-w-prose text-off-white/70">
+      <p className="mt-4 max-w-prose text-off-white/85">
         Anfitriões pagam por evento, sem mensalidade. Cada crédito equivale a um evento ativado.
       </p>
 
@@ -101,7 +101,7 @@ export default function PlansPage() {
       </div>
 
       <div className="mt-10 flex flex-wrap items-center justify-between gap-4">
-        <p className="text-caption text-off-white/60">
+        <p className="text-caption text-off-white/80">
           Seus créditos não expiram: use quando quiser.
         </p>
         <Link
