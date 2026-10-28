@@ -30,8 +30,9 @@ describe("ModelsLab — texto para imagem", () => {
     });
 
     expect(result).toEqual({ ok: true, images: ["https://img/1.jpg"], id: 7 });
-    expect(captured.url).toBe("https://modelslab.com/api/v6/realtime/text2img");
+    expect(captured.url).toBe("https://modelslab.com/api/v6/images/text2img");
     expect(captured.body.key).toBe("k123");
+    expect(captured.body.model_id).toBe("flux");
     expect(captured.body.width).toBe(MODELSLAB.maxWidthPx);
   });
 

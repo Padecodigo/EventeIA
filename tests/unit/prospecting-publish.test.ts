@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildPublishPlan } from "@/lib/prospecting/publish-plan";
-import { createSupabasePostStore } from "@/lib/prospecting/posts-store";
+import { createSupabasePostStore, findImageFor } from "@/lib/prospecting/posts-store";
 import { publishPlannedPost } from "@/lib/prospecting/publish-runtime";
 
 const suppliers = [
@@ -139,5 +139,66 @@ describe("createSupabasePostStore", () => {
       igMediaId: "m1",
     });
     expect(values).toMatchObject({ status: "published", day_index: 2, categories: ["buffet"], ig_media_id: "m1" });
+  });
+});
+
+describe("cache de imagem por necessidade", () => {
+  const planned = { dayIndex: 0, category: "buffet", handles: ["buffet_b"], imagePrompt: "salao", caption: "Comente COTAÇÃO" };
+  const meta = { igUserId: "1784", accessToken: "tok" };
+
+  it("com imagem em cache, NÃO chama o gerador", async () => {
+    let chamouModelsLab = false;
+    const fetchImpl = fakeFetch((url) => {
+      if (url.includes("modelslab.com")) chamouModelsLab = true;
+      if (url.includes("/media?")) return { id: "container-1" };
+      if (url.includes("/media_publish")) return { id: "media-1" };
+      return {};
+    });
+    const outcome = await publishPlannedPost({
+      planned,
+      approved: true,
+      modelslabKey: "k",
+      meta,
+      cachedImageUrl: "https://cdn/cache.jpg",
+      fetchImpl,
+    });
+    expect(chamouModelsLab).toBe(false);
+    expect(outcome).toEqual({ ok: true, mediaId: "media-1", imageUrl: "https://cdn/cache.jpg" });
+  });
+
+  it("sem cache, gera a imagem", async () => {
+    let chamouModelsLab = false;
+    const fetchImpl = fakeFetch((url) => {
+      if (url.includes("modelslab.com")) {
+        chamouModelsLab = true;
+        return { status: "success", output: ["https://cdn/nova.jpg"] };
+      }
+      if (url.includes("/media?")) return { id: "c" };
+      if (url.includes("/media_publish")) return { id: "m" };
+      return {};
+    });
+    await publishPlannedPost({ planned, approved: true, modelslabKey: "k", meta, fetchImpl });
+    expect(chamouModelsLab).toBe(true);
+  });
+});
+
+describe("findImageFor (cache por evento+necessidade)", () => {
+  it("devolve a imagem mais recente do evento+categoria", async () => {
+    const db = {
+      from: () => ({
+        select: () => ({
+          eq: (col: string, val: string) => ({
+            contains: (c: string, v: string[]) => ({
+              not: () => ({
+                order: () => ({
+                  limit: () => ({ maybeSingle: async () => ({ data: { image_url: "https://cdn/x.jpg" } }) }),
+                }),
+              }),
+            }),
+          }),
+        }),
+      }),
+    } as never;
+    expect(await findImageFor("ev-1", "buffet", db)).toBe("https://cdn/x.jpg");
   });
 });

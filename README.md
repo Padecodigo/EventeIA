@@ -337,7 +337,7 @@ Metodologia: **Trunk-Based Development** — `main` sempre implantável, PRs peq
 flowchart LR
   A[Lista de fornecedores\n(CSV/banco — etapa separada)] --> B[Plano de posts\nplanPostBatches + buildPostContent]
   B --> C[Aprovação humana\nREQUIRE_APPROVAL=true]
-  C --> D[Imagem SDXL\nModelsLab]
+  C --> D[Imagem FLUX\nModelsLab]
   D --> E[Container + publish\nInstagram Content Publishing]
   E --> F[Post no perfil]
   F --> G{Fornecedor\ncomenta ou manda DM}
@@ -363,7 +363,7 @@ flowchart LR
 | `lib/meta/webhook.ts` | Normaliza DMs (`parseMetaWebhook`) e comentários (`parseMetaComments`). |
 | `lib/meta/resolve.ts` | IGSID → fornecedor (Graph API + `source_url`) e @handle → fornecedor. |
 | `lib/meta/client.ts` · `lib/meta/publishing.ts` | Envio de DM, container, publish e private reply. |
-| `lib/modelslab/client.ts` | Geração de imagem SDXL (`/api/v6/realtime/text2img`). |
+| `lib/modelslab/client.ts` | Geração de imagem FLUX (`POST /api/v6/images/text2img`, `model_id: flux`). |
 | `lib/prospecting/batch.ts` | Divisão em lotes por limite de marcações e posts por dia. |
 | `lib/prospecting/window.ts` | Janela de 24h e prazo de 7 dias da private reply. |
 | `lib/prospecting/opt-out.ts` · `router.ts` | Detecção de parada e roteamento do evento. |
@@ -405,7 +405,7 @@ flowchart LR
 | `META_INSTAGRAM_BUSINESS_ID` | — | Conta profissional do Instagram (envio). |
 | `META_API_VERSION` | `v26.0` | Versão da Graph API. |
 | `META_PROSPECT_KEYWORD` | `cotação` | Palavra-chave do CTA/private reply. |
-| `MODELSLAB_API_KEY` | — | Geração de imagem SDXL. |
+| `MODELSLAB_API_KEY` | — | Geração de imagem FLUX (ModelsLab). |
 | `REQUIRE_APPROVAL` | `true` | Exige aprovação humana antes de publicar. |
 | `MAX_POSTS_PER_DAY` | `2` | Posts por dia (máx. 50). |
 | `MAX_TAGS_PER_POST` | `8` | Marcações por post. |
@@ -513,8 +513,8 @@ Valores confirmados (fonte: páginas acima; constantes em `lib/meta/limits.ts`):
 - `user_tags` por post: adotado o teto **conservador 8** (`USER_TAGS_MAX`), já que a página consultada não declara o número.
 - Posts por 24h: teto rígido **50** (`POSTS_PER_24H_HARD_CAP`), o menor entre os valores documentados; a operação segue `MAX_POSTS_PER_DAY` (padrão 2).
 
-**ModelsLab — Realtime Stable Diffusion (SDXL)** — confirmado em 2026-10-27:
-- Endpoint `POST https://modelslab.com/api/v6/realtime/text2img`;
+**ModelsLab — FLUX** — confirmado em 2026-10-28:
+- Endpoint `POST https://modelslab.com/api/v6/images/text2img` com `model_id: "flux"`;
 - autenticação: chave no **corpo JSON** (campo `key`);
 - limites: width/height ≤ 1024, samples ≤ 4; formatos PNG/JPG; resposta com `output[]` de URLs.
 - Cliente em `lib/modelslab/client.ts`, config em `lib/meta/limits.ts` (`MODELSLAB`).

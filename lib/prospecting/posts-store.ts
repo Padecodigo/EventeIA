@@ -51,3 +51,43 @@ export function createSupabasePostStore(
     },
   };
 }
+
+/** Interface mínima para buscar a imagem já gerada de um evento + necessidade. */
+interface PostLookupDb {
+  from(table: "prospect_posts"): {
+    select(columns: string): {
+      eq(column: string, value: string): {
+        contains(column: string, value: string[]): {
+          not(column: string, operator: string, value: null): {
+            order(column: string, options: { ascending: boolean }): {
+              limit(n: number): {
+                maybeSingle(): Promise<{ data: { image_url: string | null } | null }>;
+              };
+            };
+          };
+        };
+      };
+    };
+  };
+}
+
+/**
+ * Imagem já gerada para o mesmo evento + necessidade (cache).
+ * Só gera imagem nova quando muda o evento ou o tipo de fornecedor.
+ */
+export async function findImageFor(
+  eventId: string,
+  category: string,
+  db: PostLookupDb = getSupabaseAdmin() as unknown as PostLookupDb,
+): Promise<string | null> {
+  const { data } = await db
+    .from("prospect_posts")
+    .select("image_url")
+    .eq("event_id", eventId)
+    .contains("categories", [category])
+    .not("image_url", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data?.image_url ?? null;
+}
