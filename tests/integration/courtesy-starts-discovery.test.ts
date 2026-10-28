@@ -96,15 +96,12 @@ function form(): FormData {
 }
 
 describe("cortesia ⇒ descoberta de fornecedores", () => {
-  it("entrevista já concluída: enfileira a 1ª rodada e o prazo de coleta", async () => {
+  it("entrevista já concluída: enfileira a 1ª rodada da descoberta", async () => {
     const { buyTicketAction } = await import("@/app/(dashboard)/eventos/actions");
     const state = await buyTicketAction({}, form());
     expect(state.courtesy).toEqual({ activated: true });
-    expect(enqueued.map((e) => `${e.queue}:${e.job}`)).toEqual([
-      "whatsapp-session-lifecycle:collection-deadline",
-      "supplier-discovery-queue:discover",
-    ]);
-    expect(enqueued[1]?.data).toEqual({ eventId: EVENT, round: 0 });
+    expect(enqueued.map((e) => `${e.queue}:${e.job}`)).toEqual(["supplier-discovery-queue:discover"]);
+    expect(enqueued[0]?.data).toEqual({ eventId: EVENT, round: 0 });
   });
 
   it("entrevista ainda não feita: não enfileira (a entrevista inicia depois)", async () => {

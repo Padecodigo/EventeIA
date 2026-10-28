@@ -5,8 +5,6 @@ import { z } from "zod";
 
 import { msUntilBusinessWindow, OUTREACH_WINDOW } from "@/lib/business-days";
 import { CATEGORY_LABELS, type CategoryCode, type Unit } from "@/lib/catalog/v1";
-import { firstContactMessageSchema } from "@/lib/schemas/whatsapp";
-import { buildFirstContactText, quoteSubjectWithItems } from "@/lib/whatsapp/first-contact";
 
 /** Meta de coleta: 5 cotações por categoria OU 24h. */
 export const QUOTES_TARGET_PER_CATEGORY = 5;
@@ -120,13 +118,6 @@ export function shouldAutoPause(stats: { contacted: number; optOuts: number }): 
   );
 }
 
-const SOURCE_LABELS: Record<string, string> = {
-  grok: "uma busca na internet e redes sociais",
-  overpass: "o OpenStreetMap",
-  mock: "um cadastro público",
-  ingest: "uma busca na internet",
-};
-
 export interface FirstContactInput {
   vendorName: string;
   category: string;
@@ -148,34 +139,21 @@ export interface FirstContactInput {
  * sendo detectado nas respostas — ver detectOptOut em lib/schemas/whatsapp.ts).
  */
 export function renderDiscoveryFirstContact(input: FirstContactInput): string {
-  // Respostas da entrevista refletidas nos itens (observações) + demanda específica.
+  const details = input.specialRequest?.replace(/(https?:\/\/|www\.)\S*/gi, "").trim();
   const notes = input.items
     .map((i) => i.notes?.trim() ?? "")
     .filter((n) => n.length > 0)
     .slice(0, 2)
     .join("; ");
-  const parts = [
-    notes.length > 0 ? `Detalhes: ${notes.slice(0, 160)}` : "",
-    input.specialRequest !== undefined && input.specialRequest.length > 0
-      ? `Também procuramos: ${input.specialRequest.replace(/(https?:\/\/|www\.)\S*/gi, "").slice(0, 160)}`
-      : "",
-  ].filter((p) => p.length > 0);
-  const special = parts.length > 0 ? parts.join(". ") : undefined;
-  const source = SOURCE_LABELS[input.sourceProvider] ?? "uma busca pública";
-  const body = buildFirstContactText({
-    now: input.now ?? new Date(),
-    quoteSubject: quoteSubjectWithItems(input.category, input.items),
-    eventTypeLabel: input.eventTypeLabel,
-    eventDateIso: input.eventDateIso,
-    city: input.city,
-    guestCount: input.guestCount,
-    details: special,
-    category: input.category,
-    seed: input.vendorName,
-  });
-  const text = `${body} Encontramos seu contato em ${source}.`;
-  const clipped = text.length > 900 ? `${text.slice(0, 895).trimEnd()}…` : text;
-  return firstContactMessageSchema.parse(clipped);
+  const extra = [notes, details ?? ""].filter((v) => v.length > 0).join(". ").slice(0, 160);
+  const text = [
+    "Olá! Aqui é da EventeIA.",
+    `Procuramos ${input.category} para ${input.eventTypeLabel} em ${input.city}, para ${String(input.guestCount)} convidados.`,
+    extra.length > 0 ? `Detalhes: ${extra}.` : "",
+  ]
+    .filter((part) => part.length > 0)
+    .join(" ");
+  return text.length > 900 ? `${text.slice(0, 895).trimEnd()}…` : text;
 }
 
 export interface SearchCity {

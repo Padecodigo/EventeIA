@@ -5,14 +5,9 @@ import { ALL_EVENT_TYPES } from "@/lib/catalog/v1";
 import type { EventType } from "@/lib/engine/types";
 import { serverEnv } from "@/lib/env";
 import { findMunicipioByCode } from "@/lib/geo/municipios";
-import { logger } from "@/lib/logger";
 import { enqueue, getQueue, getRedisConnection, QUEUE_NAMES } from "@/lib/queue";
 import { msUntilSearchStart } from "@/lib/search-start";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
-import { ensureUserInstance } from "@/lib/whatsapp/instance-store";
-import { supabaseInstanceStore } from "@/lib/whatsapp/instance-store-supabase";
-import { resolveCollectionWindowMinutes } from "@/lib/whatsapp/session-lifecycle";
-import { scheduleCollectionDeadline } from "@/lib/whatsapp/session-runtime";
 
 import type { DiscoveryDeps } from "./engine";
 import type { LlmUsageStore } from "./providers/fallback";
@@ -30,8 +25,6 @@ export async function startDiscovery(eventId: string, now: Date = new Date()): P
   // (o worker re-checa na execução) e o prazo da coleta conta a partir do início real.
   const { data } = await getSupabaseAdmin().from("events").select("search_start_date").eq("id", eventId).maybeSingle();
   const startDelay = msUntilSearchStart(now, data?.search_start_date ?? null);
-  const windowMs = resolveCollectionWindowMinutes(serverEnv().WHATSAPP_COLLECTION_WINDOW_MINUTES) * 60_000;
-  await scheduleCollectionDeadline(eventId, startDelay + windowMs);
   return enqueue(QUEUE_NAMES.supplierDiscovery, "discover", { eventId, round: 0 }, { jobId: discoveryJobId(eventId, 0), delayMs: startDelay });
 }
 
@@ -45,10 +38,6 @@ export async function rescheduleDiscovery(eventId: string, searchStartDate: stri
   const job = await queue.getJob(discoveryJobId(eventId, 0));
   if (job === undefined || !(await job.isDelayed())) return false;
   await job.changeDelay(startDelay);
-  const deadline = await getQueue(QUEUE_NAMES.whatsappSessionLifecycle).getJob(`collection-deadline-${eventId}`);
-  if (deadline !== undefined && (await deadline.isDelayed())) {
-    await deadline.changeDelay(startDelay + resolveCollectionWindowMinutes(serverEnv().WHATSAPP_COLLECTION_WINDOW_MINUTES) * 60_000);
-  }
   return true;
 }
 
@@ -186,11 +175,9 @@ export function createDiscoveryDeps(): DiscoveryDeps {
         }));
     },
 
-    async ensureInstance(ownerId, eventId) {
-      // Revincula como o pareamento; se o WhatsApp coleta para OUTRO evento, não sequestra.
-      const { instance, binding } = await ensureUserInstance(supabaseInstanceStore(), { userId: ownerId, eventId, onBusy: "keep" });
-      if (binding === "busy") logger.warn({ eventId }, "descoberta: instância ocupada por outro evento");
-      return instance;
+    ensureInstance(ownerId) {
+      // WhatsApp/Evolution removidos: não há instância a conectar.
+      return Promise.resolve(`eventeia-${ownerId.slice(0, 8)}`);
     },
 
     async insertProspect(p) {

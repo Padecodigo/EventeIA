@@ -3,7 +3,6 @@ import "server-only";
 import { logger } from "@/lib/logger";
 import { getQueue, QUEUE_NAMES, type QueueName } from "@/lib/queue";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
-import { pauseEventJobs } from "@/lib/whatsapp/session-runtime";
 
 /**
  * Para o trabalho de bastidor de um evento encerrado/excluído.
@@ -47,15 +46,6 @@ export async function stopEventBackgroundWork(eventId: string): Promise<void> {
     logger.warn(
       { eventId, reason: caught instanceof Error ? caught.message : "desconhecido" },
       "não foi possível encerrar coleta/descoberta do evento",
-    );
-  }
-
-  try {
-    await pauseEventJobs(eventId);
-  } catch (caught) {
-    logger.warn(
-      { eventId, reason: caught instanceof Error ? caught.message : "desconhecido" },
-      "não foi possível pausar os jobs do evento",
     );
   }
 

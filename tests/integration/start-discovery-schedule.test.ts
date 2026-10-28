@@ -44,12 +44,10 @@ describe("startDiscovery com agendamento", () => {
     startDate = null;
   });
 
-  it("domingo 'o quanto antes' → job atrasado até segunda 9h; prazo conta a partir daí", async () => {
+  it("domingo 'o quanto antes' → job atrasado até segunda 9h", async () => {
     await startDiscovery("ev-1", SUN);
     const discover = added.find((a) => a.name === "discover");
-    const deadline = added.find((a) => a.name === "collection-deadline");
     expect(discover?.opts).toMatchObject({ delayMs: MON_9 - SUN.getTime() });
-    expect(deadline?.opts).toMatchObject({ delayMs: MON_9 - SUN.getTime() + WINDOW });
   });
 
   it("data agendada → 9h daquele dia", async () => {
@@ -58,15 +56,12 @@ describe("startDiscovery com agendamento", () => {
     expect(added.find((a) => a.name === "discover")?.opts).toMatchObject({ delayMs: Date.parse("2026-11-04T12:00:00Z") - SUN.getTime() });
   });
 
-  it("reagendar muda o atraso do job pendente e do prazo", async () => {
+  it("reagendar muda o atraso do job pendente", async () => {
     const job = { isDelayed: async () => true, changeDelay: vi.fn(async () => undefined) };
-    const dl = { isDelayed: async () => true, changeDelay: vi.fn(async () => undefined) };
     jobs.set("discover-ev-1-r0", job);
-    jobs.set("collection-deadline-ev-1", dl);
     expect(await rescheduleDiscovery("ev-1", "2026-11-04", SUN)).toBe(true);
     const ms = Date.parse("2026-11-04T12:00:00Z") - SUN.getTime();
     expect(job.changeDelay).toHaveBeenCalledWith(ms);
-    expect(dl.changeDelay).toHaveBeenCalledWith(ms + WINDOW);
   });
 
   it("sem job pendente não faz nada", async () => {

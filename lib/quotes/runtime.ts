@@ -15,21 +15,10 @@ import {
 } from "@/lib/ai/tasks";
 import { buildExtractionMessages } from "@/lib/deepseek/extractor";
 import { ENGINE_VERSION } from "@/lib/engine";
-import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { enqueue, QUEUE_NAMES } from "@/lib/queue";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/types";
-import { recipientOptedOut } from "@/lib/whatsapp/opt-out-runtime";
-import {
-  lastInboundAt,
-  resolveEventChannel,
-  sendTextVia,
-  WindowClosedError,
-} from "@/lib/whatsapp/provider";
-import { toSessionState } from "@/lib/whatsapp/session-lifecycle";
-import { completeCollectionIfReady } from "@/lib/whatsapp/session-manager";
-import { createSessionDeps, findEventInstance } from "@/lib/whatsapp/session-runtime";
 
 import { countUsableByCategory, quotableCategories, type CollectorDeps } from "./collector";
 import { buildSupplierReplyMessages } from "./triage";
@@ -185,82 +174,25 @@ export function createCollectorDeps(): CollectorDeps {
       if (error !== null) throw new Error(`falha ao salvar rascunho de cotação (${error.code})`);
     },
 
-    async sendFollowUp({ eventId, prospectId, phone, text, n }) {
-      const env = serverEnv();
-      const { data: p } = await admin
-        .from("vendor_prospects")
-        .select("dry_run,status,supplier_id")
-        .eq("id", prospectId)
-        .maybeSingle();
-      if (p === null) return "skipped";
-      if (await recipientOptedOut({ phoneE164: phone, prospectStatus: p.status, supplierId: p.supplier_id }))
-        return "skipped";
-      const channel = await resolveEventChannel(eventId);
-      const instance = await findEventInstance(eventId);
-      const { data: inst } =
-        channel === "cloud" || instance === null
-          ? { data: null }
-          : await admin
-              .from("whatsapp_instances")
-              .select("status")
-              .eq("instance_name", instance)
-              .maybeSingle();
-      const live =
-        !env.DISCOVERY_DRY_RUN &&
-        !p.dry_run &&
-        (channel === "cloud" ||
-          (instance !== null && toSessionState(inst?.status ?? "") === "active"));
+    async sendFollowUp({ eventId, prospectId, text, n }) {
+      // WhatsApp removido: não há canal de saída. Registra a intenção cancelada (auditoria).
       const idempotencyKey = `followup:${prospectId}:${String(n)}`;
-      const base = {
-        event_id: eventId,
-        prospect_id: prospectId,
-        direction: "outbound" as const,
-        template: "quote_followup",
-        channel,
-        to_number_e164: phone,
-        body: text,
-        idempotency_key: idempotencyKey,
-      };
-      if (!live) {
-        // Dry-run/simulação: NUNCA envia; só registra a pergunta que seria feita.
-        await admin
-          .from("whatsapp_messages")
-          .upsert(
-            { ...base, status: "canceled", error: "dry_run" },
-            { onConflict: "idempotency_key", ignoreDuplicates: true },
-          );
-        return "dry_run";
-      }
-      let sent: { externalMessageId?: string };
-      try {
-        sent = await sendTextVia(channel, {
-          instance: instance ?? "",
-          to: phone,
-          text,
-          lastInboundAt: channel === "cloud" ? await lastInboundAt(phone) : null,
-          eventId,
-        });
-      } catch (error) {
-        if (!(error instanceof WindowClosedError)) throw error;
-        // Cloud API fora da janela de 24h: não envia texto livre.
-        await admin
-          .from("whatsapp_messages")
-          .upsert(
-            { ...base, status: "canceled", error: "window_closed" },
-            { onConflict: "idempotency_key", ignoreDuplicates: true },
-          );
-        return "skipped";
-      }
       await admin.from("whatsapp_messages").upsert(
         {
-          ...base,
-          status: "sent",
-          sent_at: new Date().toISOString(),
-          external_message_id: sent.externalMessageId ?? null,
+          event_id: eventId,
+          prospect_id: prospectId,
+          direction: "outbound" as const,
+          template: "quote_followup",
+          channel: "cloud",
+          to_number_e164: "",
+          body: text,
+          idempotency_key: idempotencyKey,
+          status: "canceled",
+          error: "whatsapp_removed",
         },
         { onConflict: "idempotency_key", ignoreDuplicates: true },
       );
-      return "sent";
+      return "skipped";
     },
 
     async checkCollectionEnd(eventId) {
@@ -276,22 +208,9 @@ export function createCollectorDeps(): CollectorDeps {
         .eq("status", "draft");
       const quotesByCategory = countUsableByCategory(rows ?? []);
       const categories = quotableCategories(reqs ?? []);
-      const instance = await findEventInstance(eventId);
-      const deps = createSessionDeps();
-      if (instance !== null) {
-        const r = await completeCollectionIfReady(deps, {
-          instance,
-          eventId,
-          quotesByCategory,
-          categories,
-        });
-        if (r !== "not_active") return r;
-      }
-      // Sem sessão ativa (simulação/sessão perdida): encerra direto quando a meta for atingida.
       const done =
         categories.length > 0 && categories.every((c) => (quotesByCategory[c] ?? 0) >= 5);
       if (!done) return "pending";
-      await deps.triggerCollectionEnd(null, eventId);
       logger.info({ eventId }, "meta de cotações atingida — encerrando coleta");
       return "triggered";
     },

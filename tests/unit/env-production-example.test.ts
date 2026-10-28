@@ -43,7 +43,6 @@ describe(".env.production.example", () => {
       "AI_USE_DEEPSEEK", "XAI_API_KEY", "XAI_MODEL", "XAI_USAGE_SWITCH_PCT",
       "NVIDIA_NIM_API_KEY", "NIM_MODEL", "AI_GROK_BOOTSTRAP_MICROUSD",
       "FINANCE_PRICES_JSON", "FINANCE_FX_BRL_PER_USD_MICRO",
-      "WHATSAPP_COLLECTION_WINDOW_MINUTES",
     ]) {
       expect(prod.has(k), k).toBe(true);
     }

@@ -21,36 +21,6 @@ export function verifyAsaasWebhookToken(received: string | null): boolean {
   return timingSafeEqualStrings(received, expected);
 }
 
-/** Valida o token do webhook Evolution API. Falha fechada. */
-export function verifyEvolutionWebhookToken(received: string | null): boolean {
-  const expected = process.env.EVOLUTION_WEBHOOK_TOKEN;
-  if (received === null || expected === undefined || expected.length === 0) {
-    return false;
-  }
-  return timingSafeEqualStrings(received, expected);
-}
-
-/**
- * Token do webhook Evolution. Preferência: header `x-evolution-token` ou
- * `Authorization: Bearer`. Fallback TEMPORÁRIO: `?token=` — o webhook GLOBAL da
- * Evolution (WEBHOOK_GLOBAL_URL) não envia headers customizados; só o webhook
- * por instância envia. Desligue com EVOLUTION_WEBHOOK_ALLOW_QUERY_TOKEN=false
- * quando migrar para webhook por instância com headers.
- */
-export function readEvolutionWebhookToken(
-  headers: Headers,
-  url: URL,
-): { token: string | null; via: "header" | "query" | null } {
-  const header = headers.get("x-evolution-token");
-  if (header !== null && header.length > 0) return { token: header, via: "header" };
-  const auth = headers.get("authorization");
-  const bearer = auth !== null && /^Bearer\s+/i.test(auth) ? auth.replace(/^Bearer\s+/i, "").trim() : "";
-  if (bearer.length > 0) return { token: bearer, via: "header" };
-  if (process.env.EVOLUTION_WEBHOOK_ALLOW_QUERY_TOKEN === "false") return { token: null, via: null };
-  const query = url.searchParams.get("token");
-  return query !== null && query.length > 0 ? { token: query, via: "query" } : { token: null, via: null };
-}
-
 const SECRET_QUERY_PARAM = /([?&](?:token|apikey|api_key|access_token|secret)=)[^&#\s"']*/gi;
 
 /** Mascara segredos em query strings (para logs). */

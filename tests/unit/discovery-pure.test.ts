@@ -11,7 +11,6 @@ import {
   supplierCandidateSchema,
 } from "@/lib/discovery/pure";
 import { extractBrazilPhones, parseBrazilPhone } from "@/lib/phone";
-import { firstContactMessageSchema } from "@/lib/schemas/whatsapp";
 
 describe("telefone BR / DDD", () => {
   it("aceita celular com DDD válido e normaliza E.164", () => {
@@ -86,30 +85,9 @@ describe("regras de coleta", () => {
   });
 });
 
-describe("primeiro contato da descoberta", () => {
-  it("traz detalhes do evento e origem, sem rodapé de opt-out, e passa no schema", () => {
-    const text = renderDiscoveryFirstContact({
-      vendorName: "Buffet Sabor",
-      category: "buffet",
-      eventTypeLabel: "Casamento",
-      eventDateIso: "2026-12-12",
-      city: "Taubaté",
-      guestCount: 120,
-      items: [{ label: "Buffet completo", quantity: 120, unit: "por_pessoa" }],
-      sourceProvider: "grok",
-    });
-    expect(text).toContain("Taubaté");
-    expect(text).toContain("120");
-    expect(text).toMatch(/internet/);
-    expect(text).toContain("Aqui é da EventeIA.");
-    expect(text).toContain("orçamento de buffet");
-    expect(text).not.toContain("SAIR");
-    expect(firstContactMessageSchema.safeParse(text).success).toBe(true);
-  });
   it("candidato exige source_url válida", () => {
     expect(
       supplierCandidateSchema.safeParse({ name: "X Festas", category: "dj", sourceUrl: "nao-url" })
         .success,
     ).toBe(false);
   });
-});
