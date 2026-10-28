@@ -11,6 +11,7 @@ from unittest.mock import patch
 from nvidia_image_service import NvidiaImageService
 
 PNG = base64.b64encode(b"\x89PNG\r\n\x1a\nfake-image-bytes").decode("ascii")
+JPEG = base64.b64encode(b"\xff\xd8\xff\xe0fake-jpeg-bytes").decode("ascii")
 
 
 class _Response:
@@ -40,6 +41,13 @@ class NvidiaImageServiceTest(unittest.TestCase):
         self.assertTrue(result["success"])
         self.assertTrue(Path(result["image_data"]["path"]).exists())
         self.assertEqual(result["image_data"]["mime"], "image/png")
+
+    def test_sniff_detecta_jpeg_quando_api_nao_informa(self) -> None:
+        with patch("requests.post", return_value=_Response(payload={"artifacts": [{"base64": JPEG}]})):
+            result = self.svc.gerar_imagem("um buffet")
+        self.assertTrue(result["success"])
+        self.assertEqual(result["image_data"]["mime"], "image/jpeg")
+        self.assertTrue(result["image_data"]["path"].endswith(".jpg"))
 
     def test_data_uri_decodifica(self) -> None:
         with patch("requests.post", return_value=_Response(payload={"image": f"data:image/jpeg;base64,{PNG}"})):

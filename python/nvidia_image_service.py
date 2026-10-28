@@ -36,7 +36,14 @@ DEFAULT_MODEL = "black-forest-labs/flux-3-image-klein"
 DEFAULT_TIMEOUT_SECONDS = 120
 
 _DATA_URI = re.compile(r"^data:(?P<mime>image/[\w.+-]+);base64,(?P<data>.+)$", re.DOTALL)
-_EXT_BY_MIME = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp"}
+_EXT_BY_MIME = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/gif": ".gif"}
+
+# Assinaturas dos formatos mais comuns (a API nem sempre informa o MIME).
+_MAGIC = [
+    (b"\x89PNG\r\n\x1a\n", "image/png"),
+    (b"\xff\xd8\xff", "image/jpeg"),
+    (b"GIF8", "image/gif"),
+]
 
 
 class NvidiaImageService:
@@ -74,7 +81,7 @@ class NvidiaImageService:
         self,
         prompt: str,
         model: str = DEFAULT_MODEL,
-        mode: str | None = "base",
+        mode: str | None = "t2i",
         **params: Any,
     ) -> dict[str, Any]:
         """Gera uma imagem a partir do prompt.
@@ -82,7 +89,7 @@ class NvidiaImageService:
         Args:
             prompt: descrição da imagem.
             model: id do modelo no NIM (ex.: black-forest-labs/flux-3-image-klein).
-            mode: modo do NIM quando o modelo exige (ex.: "base"); None omite.
+            mode: modo do NIM ("t2i" texto→imagem, "i2i" imagem→imagem); None omite.
             **params: parâmetros específicos do modelo (cfg_scale, aspect_ratio,
                 seed, steps, ...).
 
@@ -129,7 +136,6 @@ class NvidiaImageService:
         if extracted is None:
             return {"success": False, "image_data": None, "error": "Resposta sem imagem reconhecível."}
 
-        mime = extracted.get("mime") or "image/png"
         raw_b64 = extracted.get("base64")
         url_out = extracted.get("url")
 
@@ -147,6 +153,7 @@ class NvidiaImageService:
         except (binascii.Error, ValueError) as exc:
             return {"success": False, "image_data": None, "error": f"Base64 inválido: {exc}"}
 
+        mime = extracted.get("mime") or self._sniff_mime(data) or "image/png"
         path = self._save(data, mime)
         logger.info("Imagem salva em %s (%d bytes)", path, len(data))
         return {
@@ -207,6 +214,16 @@ class NvidiaImageService:
         if value.startswith("http://") or value.startswith("https://"):
             return {"base64": None, "url": value, "mime": None}
         return {"base64": value, "url": None, "mime": None}
+
+    @staticmethod
+    def _sniff_mime(data: bytes) -> str | None:
+        """Descobre o formato pelos bytes mágicos (JPEG/PNG/GIF/WebP)."""
+        for signature, mime in _MAGIC:
+            if data.startswith(signature):
+                return mime
+        if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+            return "image/webp"
+        return None
 
     @staticmethod
     def _decode_b64(raw: str) -> bytes:
