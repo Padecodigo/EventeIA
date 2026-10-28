@@ -1,6 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
 
-import { HeroMosaic } from "@/components/marketing/hero-mosaic";
 import { TESTIMONIALS, Testimonials } from "@/components/marketing/testimonials";
 import { JsonLd } from "@/components/seo/json-ld";
 import { formatBRL } from "@/lib/money";
@@ -54,9 +54,6 @@ const TRUST = [
 
 const FAQ = buildFaq(ticketPriceCents);
 
-const primaryCta =
-  "group inline-flex items-center justify-center gap-2 rounded-full bg-primaria px-7 py-3.5 text-[15px] font-semibold text-white shadow-[0_12px_28px_-10px_rgba(163,72,90,0.6)] transition duration-300 hover:-translate-y-0.5 hover:bg-primaria-escura hover:shadow-[0_14px_32px_-8px_rgba(59,36,32,0.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral-escuro focus-visible:ring-offset-2 active:translate-y-0";
-
 const sectionTitle = "font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.02em] text-vinho";
 
 function Stars() {
@@ -88,60 +85,66 @@ export default async function LandingPage() {
   return (
     <>
       {/* ================= HERO (acima da dobra) ================= */}
-      <section className="relative isolate overflow-hidden bg-gradient-to-b from-[#F7EBE4] via-[#FAF2ED] to-[#FBF6F2]">
+      <section className="relative isolate overflow-hidden bg-[#2A1119]">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute -top-32 right-[-8%] h-[560px] w-[560px] rounded-full bg-[radial-gradient(closest-side,rgba(163,72,90,0.16),transparent)]" />
-          <div className="absolute -left-32 bottom-0 h-[460px] w-[460px] rounded-full bg-[radial-gradient(closest-side,rgba(201,115,79,0.22),transparent)]" />
+          <div className="absolute -top-40 right-[-10%] h-[620px] w-[620px] rounded-full bg-[radial-gradient(closest-side,rgba(212,175,55,0.18),transparent)]" />
+          <div className="absolute -left-40 bottom-[-25%] h-[540px] w-[540px] rounded-full bg-[radial-gradient(closest-side,rgba(163,72,90,0.4),transparent)]" />
         </div>
 
-        <div className="mx-auto grid grid-cols-1 w-full max-w-7xl gap-6 px-5 pb-14 pt-4 sm:px-8 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:gap-12 lg:pb-20 lg:pt-10">
-          <div className="ev-rise">
-            <p className="eyebrow hidden sm:inline-flex">
-              <span aria-hidden="true" className="text-coral-escuro">♥</span>
-              Festa infantil · 15 anos · Formatura · Casamento · Corporativo
+        <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-10 px-5 pb-14 pt-14 sm:px-8 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-14 lg:pb-20 lg:pt-20">
+          <div className="ev-rise text-off-white">
+            <p className="inline-flex items-center gap-2 rounded-full border border-champagne/30 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-champagne">
+              Inteligência de custos para eventos
             </p>
-            <h1 className="mt-0 font-display text-[clamp(2.1rem,4.8vw,3.9rem)] font-semibold leading-[1.04] tracking-[-0.02em] text-vinho sm:mt-5">
-              Menos ligações,{" "}
-              <span className="text-primaria">mais memórias.</span>
+            <h1 className="mt-6 font-display text-[clamp(2.4rem,5vw,4.2rem)] font-semibold leading-[1.0] tracking-[-0.03em]">
+              Menos ligações,
+              <br />
+              <span className="text-champagne">mais memórias.</span>
             </h1>
-            <p className="mt-4 max-w-lg text-base leading-relaxed text-vinho/75 sm:mt-6 sm:text-lg">
-              A EventeIA cota com os fornecedores da sua região pelas redes sociais — Instagram e Messenger — com foco no Vale do Paraíba e em São Paulo — e compara cada proposta por você. Do aniversário à formatura, você escolhe entre{" "}
-              <strong className="font-semibold text-vinho">3 opções prontas</strong> — melhor preço, custo-benefício e comodidade — e aproveita o que importa.
+            <p className="mt-5 max-w-lg text-[17px] leading-relaxed text-off-white/75">
+              A EventeIA cota com os fornecedores da sua região pelas redes sociais — Instagram e Messenger — com foco no Vale do Paraíba e em São Paulo, e compara cada proposta por você. Você escolhe entre{" "}
+              <strong className="font-semibold text-off-white">3 opções prontas</strong> — melhor preço, custo-benefício e
+              comodidade — e aproveita o que importa.
             </p>
 
-            <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:items-center">
-              <Link prefetch={false} href="/registrar" className={primaryCta}>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link
+                prefetch={false}
+                href="/registrar"
+                className="group inline-flex items-center justify-center gap-2 rounded-full bg-champagne px-6 py-3.5 text-[15px] font-semibold text-[#2A1119] shadow-[0_10px_30px_-12px_rgba(212,175,55,0.65)] transition hover:bg-champagne-claro active:scale-[0.98]"
+              >
                 Começar agora
                 <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">→</span>
               </Link>
               <Link prefetch={false}
                 href="#planos"
-                className="inline-flex items-center justify-center rounded-full border border-champagne-claro bg-white/80 px-6 py-3.5 text-[15px] font-semibold text-vinho backdrop-blur transition hover:border-champagne hover:bg-white"
+                className="inline-flex items-center justify-center rounded-full border border-white/25 px-6 py-3.5 text-[15px] font-semibold text-off-white transition hover:border-champagne hover:text-champagne"
               >
                 Ver planos e preços
               </Link>
             </div>
-            <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-vinho/70">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 font-medium text-vinho shadow-sm ring-1 ring-vinho/15">
-                Ticket avulso · <strong className="font-bold">{formatBRL(ticketPriceCents)}</strong> por evento
+
+            <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-off-white/70">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 font-medium text-off-white">
+                Ticket avulso · <strong className="font-bold text-champagne">{formatBRL(ticketPriceCents)}</strong> por evento
               </span>
               <span>Sem mensalidade · Pix seguro ou cartão</span>
             </div>
 
             {mainTestimonial ? (
-              <figure className="mt-7 max-w-xl rounded-3xl border border-white bg-white/80 p-5 shadow-[0_24px_50px_-28px_rgba(163,72,90,0.45)] backdrop-blur-xl">
+              <figure className="mt-8 max-w-lg rounded-3xl border border-white/12 bg-white/[0.06] p-5 backdrop-blur-xl">
                 <div className="flex items-start gap-4">
                   <span
                     aria-hidden="true"
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-champagne to-primaria text-sm font-bold text-white ring-4 ring-verde-claro"
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-champagne text-sm font-bold text-[#2A1119] ring-4 ring-white/10"
                   >
                     {initials(mainTestimonial.name)}
                   </span>
                   <div className="min-w-0">
                     <Stars />
-                    <blockquote className="mt-2 text-[15px] leading-relaxed text-vinho/85">“{mainTestimonial.quote}”</blockquote>
-                    <figcaption className="mt-3 text-sm text-vinho/75">
-                      <strong className="font-semibold text-vinho">{mainTestimonial.name}</strong> · {mainTestimonial.context}
+                    <blockquote className="mt-2 text-[15px] leading-relaxed text-off-white/85">“{mainTestimonial.quote}”</blockquote>
+                    <figcaption className="mt-3 text-sm text-off-white/65">
+                      <strong className="font-semibold text-off-white">{mainTestimonial.name}</strong> · {mainTestimonial.context}
                       {mainTestimonial.city.length > 0 ? ` · ${mainTestimonial.city}` : ""}
                     </figcaption>
                   </div>
@@ -150,32 +153,45 @@ export default async function LandingPage() {
             ) : null}
           </div>
 
-          {/* Colagem polaroid — sobreposição com profundidade; hover endireita, aproxima e traz pra frente */}
-          <div className="order-first lg:order-none">
-            <HeroMosaic />
-            <div className="mx-auto mt-4 hidden w-fit items-center gap-3 rounded-full bg-white/85 px-4 py-2 shadow-[0_14px_30px_-18px_rgba(59,36,32,0.5)] ring-1 ring-champagne-claro backdrop-blur lg:flex">
-              <span className="text-sm font-semibold text-vinho">Você recebe 3 opções prontas</span>
-              {OPTIONS.map((o) => (
-                <span key={o.title} className={`rounded-full bg-gradient-to-r ${o.dot} px-2.5 py-0.5 text-[11px] font-semibold text-white`}>
-                  {o.title}
-                </span>
-              ))}
+          <div className="order-first grid grid-cols-2 gap-3 lg:order-none">
+            <div className="col-span-2 overflow-hidden rounded-3xl ring-1 ring-white/10">
+              <Image src="/img/eventos/festa-infantil-velas.jpg" alt="Festa infantil" width={720} height={480} className="h-48 w-full object-cover sm:h-56" priority />
+            </div>
+            {[
+              { src: "/img/eventos/casamento.jpg", label: "Casamento" },
+              { src: "/img/eventos/15-anos.jpg", label: "15 anos" },
+              { src: "/img/eventos/festa-formatura-baile.jpg", label: "Formatura" },
+              { src: "/img/eventos/corporativo.webp", label: "Corporativo" },
+            ].map((photo) => (
+              <div key={photo.src} className="overflow-hidden rounded-2xl ring-1 ring-white/10">
+                <Image src={photo.src} alt={photo.label} width={360} height={240} className="h-24 w-full object-cover sm:h-28" />
+              </div>
+            ))}
+            <div className="col-span-2 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+              <span className="text-sm font-semibold text-off-white">Você recebe 3 opções prontas</span>
+              <span className="flex gap-2">
+                {OPTIONS.map((o) => (
+                  <span key={o.title} className="rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-semibold text-champagne ring-1 ring-champagne/30">
+                    {o.title}
+                  </span>
+                ))}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Faixa de tipos de evento em movimento */}
-        <div className="relative border-y border-champagne-claro bg-white/60 py-4 backdrop-blur [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
-          <ul className="ev-marquee flex w-max gap-10 whitespace-nowrap font-display text-xl italic font-medium text-vinho/75">
+        <div className="relative border-y border-white/10 bg-white/[0.03] py-4 [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
+          <ul className="ev-marquee flex w-max gap-10 whitespace-nowrap font-display text-xl italic font-medium text-off-white/60">
             {[...EVENT_TYPES, ...EVENT_TYPES].map((e, i) => (
               <li key={`${e.label}-${i}`} aria-hidden={i >= EVENT_TYPES.length} className="flex items-center gap-10">
                 {e.label}
-                <span aria-hidden="true" className="text-coral">♥</span>
+                <span aria-hidden="true" className="text-champagne/70">♥</span>
               </li>
             ))}
           </ul>
         </div>
       </section>
+
 
       {/* ================= Selos de confiança ================= */}
       <section aria-label="Por que confiar" className="bg-white">
