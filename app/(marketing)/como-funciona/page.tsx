@@ -51,7 +51,7 @@ const DELIVERABLES = [
   },
   {
     title: "Disparos com consentimento",
-    text: "Envio das propostas por WhatsApp apenas para quem autorizou — sem listas, sem spam.",
+    text: "Contato com as propostas pelas redes sociais apenas para quem autorizou — sem listas, sem spam.",
   },
   {
     title: "Histórico do evento",
@@ -64,7 +64,7 @@ const testimonial = TESTIMONIALS.find((item) => item.id === "camila");
 export const metadata = pageMetadata({
   title: "Como funciona",
   description:
-    "Veja como a EventeIA monta o orçamento da sua festa: você conta o que imagina, cotamos fornecedores pelo WhatsApp e entregamos 3 opções comparadas.",
+    "Veja como a EventeIA monta o orçamento da sua festa: você conta o que imagina, cotamos fornecedores pelas redes sociais e entregamos 3 opções comparadas.",
   path: "/como-funciona",
   keywords: ["como fazer orçamento de festa", "cotação de fornecedores"],
 });
