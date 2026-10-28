@@ -1,7 +1,7 @@
 import "server-only";
 
 import { logger } from "@/lib/logger";
-import { sendInstagramText } from "@/lib/meta/client";
+import { sendInstagramText, sendMessengerText } from "@/lib/meta/client";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 import type { AgentMessage } from "./agent";
@@ -52,9 +52,12 @@ export async function loadHistory(db: RespondDb, conversationId: string): Promis
 }
 
 export interface MetaSendConfig {
-  instagramBusinessId: string;
+  channel: "instagram" | "messenger";
+  /** Obrigatório no Instagram. */
+  instagramBusinessId?: string;
+  /** Obrigatório no Messenger. */
+  pageId?: string;
   accessToken: string;
-  apiHost?: string;
   apiVersion?: string;
 }
 
@@ -67,13 +70,22 @@ export interface RespondPortsDeps {
 export function createSupabaseRespondPorts(deps: RespondPortsDeps): RespondPorts {
   return {
     async sendReply(_conversationId, text) {
-      const result = await sendInstagramText({
-        accessToken: deps.message.accessToken,
-        instagramBusinessId: deps.message.instagramBusinessId,
-        recipientId: deps.recipientId,
-        text,
-        apiVersion: deps.message.apiVersion,
-      });
+      const result =
+        deps.message.channel === "messenger"
+          ? await sendMessengerText({
+              accessToken: deps.message.accessToken,
+              pageId: deps.message.pageId ?? "",
+              recipientId: deps.recipientId,
+              text,
+              apiVersion: deps.message.apiVersion,
+            })
+          : await sendInstagramText({
+              accessToken: deps.message.accessToken,
+              instagramBusinessId: deps.message.instagramBusinessId ?? "",
+              recipientId: deps.recipientId,
+              text,
+              apiVersion: deps.message.apiVersion,
+            });
       if (!result.ok) {
         logger.warn({ status: result.status }, "falha ao responder DM do fornecedor");
       }
@@ -99,7 +111,9 @@ export function createSupabaseRespondPorts(deps: RespondPortsDeps): RespondPorts
 
     async markOptOut(conversationId, supplierId) {
       await deps.db.from("prospect_conversations").update({ status: "opted_out" }).eq("id", conversationId);
-      await deps.db.from("suppliers").update({ opt_out_at: new Date().toISOString() }).eq("id", supplierId);
+      if (supplierId !== null) {
+        await deps.db.from("suppliers").update({ opt_out_at: new Date().toISOString() }).eq("id", supplierId);
+      }
     },
 
     async escalate(conversationId, reason) {

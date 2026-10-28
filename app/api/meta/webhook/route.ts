@@ -67,6 +67,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   const respondDb = defaultRespondDb();
   const accessToken = serverEnv().META_ACCESS_TOKEN;
   const igBusinessId = serverEnv().META_INSTAGRAM_BUSINESS_ID;
+  const pageId = serverEnv().META_PAGE_ID;
   const keyword = serverEnv().META_PROSPECT_KEYWORD;
   const lookup = admin as unknown as MetaSupplierLookup;
   let persisted = 0;
@@ -126,7 +127,7 @@ export async function POST(request: Request): Promise<NextResponse> {
             history,
             ports: createSupabaseRespondPorts({
               db: respondDb,
-              message: { instagramBusinessId: igBusinessId, accessToken },
+              message: { channel: "instagram", instagramBusinessId: igBusinessId, accessToken },
               recipientId: message.senderId,
             }),
             conversationId: outcome.conversation.id,
@@ -135,6 +136,37 @@ export async function POST(request: Request): Promise<NextResponse> {
         }
       }
     }
+    // Messenger: PSID não mapeia para @handle; atende a DM e o agente pede a identificação.
+    if (message.source === "messenger" && supplier === null && accessToken !== undefined && accessToken.length > 0 && pageId !== undefined && pageId.length > 0) {
+      const outcome = await handleInbound(
+        store,
+        {
+          kind: "message",
+          messageId: message.eventId,
+          senderId: message.senderId,
+          text: message.text,
+          supplierId: null,
+          channel: "messenger",
+        },
+        { keyword, now: new Date() },
+      );
+      if (outcome.recorded) {
+        const history = await loadHistory(respondDb, outcome.conversation.id);
+        await respondToInbound({
+          client: getDeepSeekClient(),
+          context: { category: "evento", supplierKnown: false },
+          history,
+          ports: createSupabaseRespondPorts({
+            db: respondDb,
+            message: { channel: "messenger", pageId, accessToken },
+            recipientId: message.senderId,
+          }),
+          conversationId: outcome.conversation.id,
+          supplierId: null,
+        });
+      }
+    }
+
     const payload = supplier === null ? message : { ...message, supplier };
     if (!(await persist(message.eventId, payload))) {
       return NextResponse.json({ error: "persist_failed" }, { status: 500 });
