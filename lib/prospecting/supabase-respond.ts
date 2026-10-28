@@ -138,12 +138,18 @@ export function createSupabaseRespondPorts(deps: RespondPortsDeps): RespondPorts
         status: "draft",
       });
       if (error !== null) throw new Error(`falha ao salvar cotação (${error.code ?? "?"})`);
+      if (supplierId !== null) {
+        await deps.db.from("suppliers").update({ status: "cotou" }).eq("id", supplierId);
+      }
     },
 
     async markOptOut(conversationId, supplierId) {
       await deps.db.from("prospect_conversations").update({ status: "opted_out" }).eq("id", conversationId);
       if (supplierId !== null) {
-        await deps.db.from("suppliers").update({ opt_out_at: new Date().toISOString() }).eq("id", supplierId);
+        await deps.db
+          .from("suppliers")
+          .update({ opt_out_at: new Date().toISOString(), status: "opt-out" })
+          .eq("id", supplierId);
       }
     },
 
