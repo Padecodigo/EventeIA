@@ -58,3 +58,9 @@ package-lock.json
 
 # Ferramenta local (Serena)
 .serena/
+
+# Python (módulo de simulação)
+__pycache__/
+*.py[cod]
+.venv/
+python/artifacts/
