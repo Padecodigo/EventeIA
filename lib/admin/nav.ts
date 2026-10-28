@@ -13,6 +13,7 @@ export const ADMIN_NAV = [
   { href: "/admin/eventos", label: "Eventos", description: "Todos os eventos (somente leitura)." },
   { href: "/admin/clientes", label: "Clientes", description: "Contas, eventos e pagamentos (somente leitura)." },
   { href: "/admin/fornecedores", label: "Fornecedores", description: "Fornecedores encontrados (somente leitura)." },
+  { href: "/admin/prospeccao", label: "Prospecção", description: "Posts de isca: aprovar e publicar no Instagram." },
   { href: "/admin/lixeira", label: "Lixeira", description: "Itens excluídos: ver e restaurar." },
   { href: "/admin/busca", label: "Busca", description: "Busca geral: clientes, eventos, chamados e fornecedores." },
 ] as const;
