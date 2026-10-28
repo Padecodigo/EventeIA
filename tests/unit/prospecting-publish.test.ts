@@ -159,7 +159,7 @@ describe("cache de imagem por necessidade", () => {
       approved: true,
       modelslabKey: "k",
       meta,
-      cachedImageUrl: "https://cdn/cache.jpg",
+      cachedArt: { url: "https://cdn/cache.jpg", expiresAt: new Date(Date.now() + 3_600_000) },
       fetchImpl,
     });
     expect(chamouModelsLab).toBe(false);
@@ -189,9 +189,13 @@ describe("findImageFor (cache por evento+necessidade)", () => {
         select: () => ({
           eq: (col: string, val: string) => ({
             contains: (c: string, v: string[]) => ({
-              not: () => ({
+              gt: () => ({
                 order: () => ({
-                  limit: () => ({ maybeSingle: async () => ({ data: { image_url: "https://cdn/x.jpg" } }) }),
+                  limit: () => ({
+                    maybeSingle: async () => ({
+                      data: { image_url: "https://cdn/x.jpg", image_expires_at: new Date(Date.now() + 3_600_000).toISOString() },
+                    }),
+                  }),
                 }),
               }),
             }),
@@ -199,6 +203,7 @@ describe("findImageFor (cache por evento+necessidade)", () => {
         }),
       }),
     } as never;
-    expect(await findImageFor("ev-1", "buffet", db)).toBe("https://cdn/x.jpg");
+    const cached = await findImageFor("ev-1", "buffet", new Date(), db);
+    expect(cached?.url).toBe("https://cdn/x.jpg");
   });
 });

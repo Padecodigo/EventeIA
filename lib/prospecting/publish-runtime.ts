@@ -27,18 +27,27 @@ export interface PublishPlannedPostInput {
   store?: PostStore;
   /** Evento de origem do plano (gravado em prospect_posts). */
   eventId?: string;
-  /** Imagem já gerada para o mesmo evento + necessidade (evita nova geração). */
-  cachedImageUrl?: string | null;
+  /** Arte em cache (mesmo evento + necessidade) com validade. */
+  cachedArt?: { url: string; expiresAt: Date } | null;
+  /** Persiste a arte gerada (Storage) e devolve URL + validade. */
+  persistArt?: (sourceUrl: string) => Promise<{ url: string; expiresAt: Date }>;
   fetchImpl?: typeof fetch;
 }
 
 export async function publishPlannedPost(input: PublishPlannedPostInput): Promise<PublishOutcome> {
+  let imageUrl = input.cachedArt?.url ?? null;
+  let imageExpiresAt: Date | null = input.cachedArt?.expiresAt ?? null;
+
   if (!input.approved) {
-    await input.store?.record({ planned: input.planned, eventId: input.eventId, status: "pending_approval" });
+    await input.store?.record({
+      planned: input.planned,
+      eventId: input.eventId,
+      imageExpiresAt: imageExpiresAt ?? undefined,
+      status: "pending_approval",
+    });
     return { ok: false, reason: "approval_required" };
   }
 
-  let imageUrl = input.cachedImageUrl ?? null;
   if (imageUrl === null) {
     const image = await generateImage({
       apiKey: input.modelslabKey,
@@ -46,11 +55,17 @@ export async function publishPlannedPost(input: PublishPlannedPostInput): Promis
       fetchImpl: input.fetchImpl,
     });
     if (!image.ok) {
-      await input.store?.record({ planned: input.planned, eventId: input.eventId, status: "failed", error: image.error });
+      await input.store?.record({ planned: input.planned, eventId: input.eventId,
+    imageExpiresAt: imageExpiresAt ?? undefined, status: "failed", error: image.error });
       return { ok: false, reason: "image_failed", error: image.error };
     }
     imageUrl = image.images[0] ?? null;
     if (imageUrl === null) return { ok: false, reason: "image_failed", error: "resposta sem URL de imagem" };
+    if (input.persistArt !== undefined) {
+      const stored = await input.persistArt(imageUrl);
+      imageUrl = stored.url;
+      imageExpiresAt = stored.expiresAt;
+    }
   }
 
   const container = await createMediaContainer({
@@ -61,7 +76,8 @@ export async function publishPlannedPost(input: PublishPlannedPostInput): Promis
     fetchImpl: input.fetchImpl,
   });
   if (!container.ok) {
-    await input.store?.record({ planned: input.planned, eventId: input.eventId, status: "failed", imageUrl, error: container.error });
+    await input.store?.record({ planned: input.planned, eventId: input.eventId,
+    imageExpiresAt: imageExpiresAt ?? undefined, status: "failed", imageUrl, error: container.error });
     return { ok: false, reason: "container_failed", error: container.error };
   }
 
@@ -71,13 +87,15 @@ export async function publishPlannedPost(input: PublishPlannedPostInput): Promis
     fetchImpl: input.fetchImpl,
   });
   if (!published.ok) {
-    await input.store?.record({ planned: input.planned, eventId: input.eventId, status: "failed", imageUrl, error: published.error });
+    await input.store?.record({ planned: input.planned, eventId: input.eventId,
+    imageExpiresAt: imageExpiresAt ?? undefined, status: "failed", imageUrl, error: published.error });
     return { ok: false, reason: "publish_failed", error: published.error };
   }
 
   await input.store?.record({
     planned: input.planned,
     eventId: input.eventId,
+    imageExpiresAt: imageExpiresAt ?? undefined,
     status: "published",
     imageUrl,
     igMediaId: published.id,

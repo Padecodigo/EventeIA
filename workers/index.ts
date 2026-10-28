@@ -7,6 +7,7 @@ import { logger } from "@/lib/logger";
 import { QUEUE_NAMES, getQueue, getRedisConnection } from "@/lib/queue";
 import { createDiscoveryWorker } from "@/lib/queue/discovery-worker";
 import { createQuoteExtractionWorker } from "@/lib/queue/quote-extraction-worker";
+import { purgeExpiredArt } from "@/lib/prospecting/art-cache";
 
 /**
  * Processo de workers (BullMQ) — separado do runtime do Next.
@@ -42,6 +43,15 @@ const balanceWorker = new Worker(
   { connection, concurrency: 1 },
 );
 
+// Limpeza da arte em cache (TTL de 1h).
+const artCleanupWorker = new Worker(
+  QUEUE_NAMES.artCleanup,
+  async () => {
+    await purgeExpiredArt();
+  },
+  { connection, concurrency: 1 },
+);
+
 // Descoberta automática de fornecedores e extração de cotações.
 const discoveryWorker = createDiscoveryWorker(connection);
 const quoteExtractionWorker = createQuoteExtractionWorker(connection);
@@ -53,6 +63,11 @@ void getQueue(QUEUE_NAMES.asaasReconcile).add(
   "sweep",
   {},
   { repeat: { pattern: "30 9 * * *", tz: "America/Sao_Paulo" }, attempts: 3 },
+);
+void getQueue(QUEUE_NAMES.artCleanup).add(
+  "sweep",
+  {},
+  { repeat: { pattern: "*/30 * * * *", tz: "America/Sao_Paulo" }, attempts: 3 },
 );
 void getQueue(QUEUE_NAMES.financeBalanceCheck).add(
   "check",
@@ -68,7 +83,7 @@ void getQueue(QUEUE_NAMES.creditsExpireLegacy)
   })
   .catch(() => undefined);
 
-const workers = [asaasWorker, reconcileWorker, balanceWorker, discoveryWorker, quoteExtractionWorker];
+const workers = [asaasWorker, reconcileWorker, balanceWorker, artCleanupWorker, discoveryWorker, quoteExtractionWorker];
 
 for (const worker of workers) {
   worker.on("error", (error) => {
