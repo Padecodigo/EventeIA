@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "code-graph": {
+      "command": "npx",
+      "args": ["-y", "@sdsrs/code-graph"]
+    },
+    "ai-memory": {
+      "command": "npx",
+      "args": ["-y", "ai-memory-mcp"],
+      "env": {
+        "AI_MEMORY_ROOT": "${workspaceFolder}/.ai-memory",
+        "AI_MEMORY_AUTO_COMMIT": "1"
+      }
+    }
+  }
+}

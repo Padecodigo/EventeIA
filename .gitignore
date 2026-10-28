@@ -50,3 +50,8 @@ blob-report/
 .env.*.bak
 *.bak
 package-lock.json
+
+# Ferramentas do agente (índices/banco locais — nunca versionar)
+.code-graph/
+.ai-memory/**/*.db
+.ai-memory/.index*

@@ -438,6 +438,52 @@ npx vitest run tests/unit/prospecting*.test.ts tests/unit/meta*.test.ts tests/un
 
 ---
 
+## Ambiente do agente (CodeGraph + ai-memory)
+
+O repositório usa **orientação centralizada**: as regras ficam no [`AGENTS.md`](AGENTS.md) §10 e no guia
+[`.context/AGENT_TOOLING.md`](.context/AGENT_TOOLING.md). Os servidores MCP estão declarados em
+[`.cursor/mcp.json`](.cursor/mcp.json).
+
+| Servidor | Pacote | Função |
+|---|---|---|
+| `code-graph` | `@sdsrs/code-graph` | grafo AST (símbolos, chamadas, rotas) + busca semântica |
+| `ai-memory` | `ai-memory-mcp` | memória persistente em markdown + handoff |
+
+### Como rodar
+
+```bash
+# CodeGraph — índice local em .code-graph/ (fora do Git)
+npx -y @sdsrs/code-graph
+
+# ai-memory — raiz .ai-memory/
+AI_MEMORY_ROOT="$(pwd)/.ai-memory" npx -y ai-memory-mcp
+```
+
+Recarregue o cliente MCP para ler `.cursor/mcp.json`. As ferramentas aparecem como
+`mcp__code-graph__*` e, no ai-memory, `capture_context`, `save_memory`, `search_memories`, etc.
+
+> `AI_MEMORY_ROOT` usa `${workspaceFolder}/.ai-memory`. Se o seu cliente não expandir a variável,
+> troque por caminho absoluto em `.cursor/mcp.json`.
+
+### Memória e handoff
+
+- `.ai-memory/TASKS.md` — estado para a próxima sessão (pronto / travado / próximo passo).
+- `.ai-memory/DECISIONS.md` — índice das decisões (detalhe em `.ai-memory/decisions/`).
+- `.ai-memory/README.md` — layout e regras de segurança.
+
+### O que NÃO é versionado
+
+`.code-graph/` (índice/DB), `.ai-memory/**/*.db` e `.ai-memory/.index*`. O markdown da memória é versionável.
+
+### Verificação
+
+```bash
+git status          # nenhum .code-graph/ nem *.db no diff
+pnpm lint && pnpm typecheck
+```
+
+---
+
 ## Documentação oficial consultada (Meta / ModelsLab)
 
 Consulta em **2026-10-27** (via extrator de texto, pois as páginas são renderizadas por JavaScript).
