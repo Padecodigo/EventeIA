@@ -106,24 +106,28 @@ services:
       - traefik.http.services.eventeia-app.loadbalancer.server.port=3000
 
   worker:
-    image: eventeia-app:latest
+    image: eventeia-worker:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
     pull_policy: never
-    command: ["node", "workers.cjs"]
     restart: unless-stopped
     environment: *app-env
+    volumes:
+      - instagram-session:/data
     depends_on:
       app: { condition: service_started }
       redis: { condition: service_healthy }
     networks: [internal]
     healthcheck:
-      # Processo vivo + Redis alcançável (o worker não expõe HTTP).
-      test: ["CMD-SHELL", "pgrep -f workers.cjs >/dev/null"]
+      # Processo vivo (tsx) — o worker não expõe HTTP.
+      test: ["CMD-SHELL", "pgrep -f 'tsx workers/index.ts' >/dev/null"]
       interval: 30s
       timeout: 5s
       retries: 3
     stop_grace_period: 30s
     deploy:
-      resources: { limits: { memory: 1024M, cpus: "1.5" } }
+      resources: { limits: { memory: 1536M, cpus: "1.5" } }
     logging: *logging
     labels: [traefik.enable=false]
 
@@ -167,4 +171,5 @@ networks:
 
 volumes:
   redis-data:
+  instagram-session:
 
