@@ -37,6 +37,7 @@ describe("checkbox de aceite no /registrar", () => {
     );
 
     fireEvent.click(terms());
+    fireEvent.click(screen.getByRole("checkbox", { name: /Já sigo @eventeia/ }));
     expect(google).toBeEnabled();
     expect(email).toBeEnabled();
     // o aceite segue para o servidor nos dois formulários

@@ -107,3 +107,33 @@ describe("AuthForm — esqueci minha senha", () => {
     expect(screen.queryByRole("link", { name: "Esqueci minha senha" })).toBeNull();
   });
 });
+
+describe("AuthForm — passo do Instagram no cadastro", () => {
+  it("bloqueia a criação de conta até seguir + enviar mensagem", () => {
+    render(<AuthForm mode="registrar" />);
+
+    const emailButton = screen.getByRole("button", { name: "Criar conta com e-mail" });
+    const googleButton = screen.getByRole("button", { name: /Criar conta com Google/ });
+    expect(emailButton).toBeDisabled();
+    expect(googleButton).toBeDisabled();
+
+    fireEvent.click(screen.getByLabelText(/Li e aceito os Termos/));
+    fireEvent.click(screen.getByLabelText(/Já sigo @eventeia/));
+
+    expect(emailButton).toBeEnabled();
+    expect(googleButton).toBeEnabled();
+  });
+
+  it("mostra os links de seguir e enviar mensagem", () => {
+    render(<AuthForm mode="registrar" />);
+
+    expect(screen.getByRole("link", { name: /Siga @eventeia/ })).toHaveAttribute(
+      "href",
+      "https://www.instagram.com/eventeia",
+    );
+    expect(screen.getByRole("link", { name: /Envie uma mensagem para @eventeia/ })).toHaveAttribute(
+      "href",
+      expect.stringContaining("https://ig.me/m/eventeia"),
+    );
+  });
+});

@@ -6,6 +6,25 @@
  * Quem dispara a primeira mensagem é a pessoa, respeitando a plataforma.
  */
 
+/** Perfil oficial da EventeIA — o cliente segue e manda a DM no cadastro. */
+export const INSTAGRAM_HANDLE = "eventeia";
+
+/** Mensagem pré-preenchida na DM de cadastro (identifica a origem do contato). */
+export const INSTAGRAM_SIGNUP_MESSAGE = "Olá! Quero criar minha conta na EventeIA.";
+
+/** URL pública do perfil da EventeIA (para o botão "Seguir"). */
+export function instagramProfileUrl(handle: string = INSTAGRAM_HANDLE): string {
+  return `https://www.instagram.com/${handle.replace(/^@/, "")}`;
+}
+
+/** Deep link da DM com a EventeIA (com mensagem opcional pré-preenchida). */
+export function instagramDmUrl(handle: string = INSTAGRAM_HANDLE, message?: string): string {
+  const clean = handle.replace(/^@/, "");
+  const query =
+    message !== undefined && message.trim().length > 0 ? `?text=${encodeURIComponent(message)}` : "";
+  return `https://ig.me/m/${clean}${query}`;
+}
+
 export type SocialPlatform = "instagram" | "facebook" | "tiktok";
 
 export interface SocialContact {
