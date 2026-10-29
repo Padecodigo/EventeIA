@@ -35,6 +35,9 @@ function chain(table: string) {
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: () => Promise.resolve({ from: chain }),
 }));
+vi.mock("@/lib/workspace/server", () => ({
+  ensureWorkspace: () => Promise.resolve(workspace),
+}));
 
 import CreditsPage from "@/app/(dashboard)/creditos/page";
 
