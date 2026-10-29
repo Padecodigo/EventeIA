@@ -30,36 +30,17 @@ import { attachUserOffer, releaseUserOffer } from "@/lib/offers/server";
 import { CREDIT_PACKAGES, PLANS } from "@/lib/plans";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { ensureWorkspace } from "@/lib/workspace/server";
 
 export async function createWorkspaceAction(): Promise<void> {
   const user = await requireUser();
-  const admin = getSupabaseAdmin();
 
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("display_name")
-    .eq("id", user.id)
-    .maybeSingle();
+  const workspace = await ensureWorkspace(user.id);
 
-  const firstName = (profile?.display_name ?? "Meu").trim().split(/\s+/)[0] ?? "Meu";
-
-  const { data: workspace, error } = await admin
-    .from("workspaces")
-    .insert({ owner_id: user.id, name: `Ateliê de ${firstName}`, plan_code: "essencial" })
-    .select("id")
-    .single();
-
-  if (error !== null || workspace === null) {
-    logger.error({ code: error?.code }, "falha ao criar workspace");
+  if (workspace === null) {
+    logger.error("falha ao criar workspace");
     redirect("/creditos?erro=workspace");
   }
-
-  await admin
-    .from("workspace_members")
-    .upsert(
-      { workspace_id: workspace.id, profile_id: user.id, member_role: "owner" },
-      { onConflict: "workspace_id,profile_id" },
-    );
 
   revalidatePath("/creditos");
   redirect("/creditos");
