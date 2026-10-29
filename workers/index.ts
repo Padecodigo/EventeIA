@@ -2,6 +2,7 @@ import { Worker } from "bullmq";
 
 import { serverEnv } from "@/lib/env";
 import { runBalanceCheck } from "@/lib/finance/balance-monitor";
+import { publishWithBrowser } from "@/lib/instagram-browser/publish";
 import { runAsaasReconcileSweep } from "@/lib/jobs/asaas-reconcile";
 import { handleAsaasWebhookJob, type AsaasWebhookJob } from "@/lib/jobs/asaas-webhook";
 import { logger } from "@/lib/logger";
@@ -89,6 +90,17 @@ const prospectPostDeleteWorker = new Worker(
   { connection, concurrency: 1 },
 );
 
+// Publicação de isca via navegador logado (Playwright no container do worker).
+const instagramPublishWorker = new Worker(
+  QUEUE_NAMES.instagramPublish,
+  async (job) => {
+    const data = job.data as { imageUrl: string; caption: string };
+    const result = await publishWithBrowser({ imageUrl: data.imageUrl, caption: data.caption });
+    if (!result.ok) throw new Error(result.error);
+  },
+  { connection, concurrency: 1 },
+);
+
 // Descoberta automática de fornecedores e extração de cotações.
 const discoveryWorker = createDiscoveryWorker(connection);
 const quoteExtractionWorker = createQuoteExtractionWorker(connection);
@@ -130,7 +142,7 @@ void getQueue(QUEUE_NAMES.creditsExpireLegacy)
   })
   .catch(() => undefined);
 
-const workers = [asaasWorker, reconcileWorker, balanceWorker, artCleanupWorker, prospectPostDeleteWorker, marketingAutopilotWorker, discoveryWorker, quoteExtractionWorker];
+const workers = [asaasWorker, reconcileWorker, balanceWorker, artCleanupWorker, prospectPostDeleteWorker, instagramPublishWorker, marketingAutopilotWorker, discoveryWorker, quoteExtractionWorker];
 
 for (const worker of workers) {
   worker.on("error", (error) => {
