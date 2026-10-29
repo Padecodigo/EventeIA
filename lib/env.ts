@@ -44,6 +44,8 @@ const serverSchema = z.object({
   INSTAGRAM_PROVIDER: z.enum(["graph", "browser"]).default("graph"),
   /** storageState (cookies) da sessão logada no Instagram (volume no worker). */
   INSTAGRAM_SESSION_FILE: z.string().default(".data/instagram-session.json"),
+  /** storageState (cookies) da sessão logada no Facebook (volume no worker). */
+  FACEBOOK_SESSION_FILE: z.string().default(".data/facebook-session.json"),
   INSTAGRAM_BROWSER_HEADLESS: z
     .enum(["true", "false"])
     .default("true")

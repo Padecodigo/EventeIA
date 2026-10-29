@@ -4,7 +4,7 @@ import { chromium } from "playwright";
 
 import { logger } from "@/lib/logger";
 
-import { saveInstagramSession } from "./session";
+import { saveFacebookSession, saveInstagramSession } from "./session";
 
 /**
  * Login headless no Instagram a partir do painel admin.
@@ -82,6 +82,63 @@ export async function loginWithBrowser(input: {
     logger.warn(
       { reason: caught instanceof Error ? caught.message : "desconhecido" },
       "loginWithBrowser falhou",
+    );
+    return { ok: false, error: caught instanceof Error ? caught.message : "falha no navegador" };
+  } finally {
+    await context.close().catch(() => undefined);
+    await browser.close().catch(() => undefined);
+  }
+}
+
+const FB_LOGIN = "https://www.facebook.com/login";
+
+/** Login headless no Facebook (página Eventeia) a partir do painel admin. */
+export async function loginFacebookWithBrowser(input: {
+  email: string;
+  password: string;
+}): Promise<LoginWithBrowserResult> {
+  const browser = await chromium.launch({ headless: true, args: STEALTH_ARGS });
+  const context = await browser.newContext({
+    locale: "pt-BR",
+    timezoneId: "America/Sao_Paulo",
+    userAgent: USER_AGENT,
+    viewport: { width: 1280, height: 900 },
+  });
+  const page = await context.newPage();
+
+  try {
+    await page.goto(FB_LOGIN, { waitUntil: "domcontentloaded", timeout: 60_000 });
+
+    const emailInput = page.locator('input[name="email"]').first();
+    await emailInput.waitFor({ state: "visible", timeout: 30_000 });
+    await emailInput.fill(input.email);
+    await page.locator('input[name="pass"]').first().fill(input.password);
+    await page.locator('button[name="login"]').first().click();
+
+    await page.waitForTimeout(5_000);
+    const url = page.url();
+    if (/checkpoint|two_factor|two-step/i.test(url)) {
+      return {
+        ok: false,
+        error: "Facebook pediu verificação (2FA/checkpoint). Faça o login num ambiente com tela.",
+      };
+    }
+    if (url.includes("/login")) {
+      const errorText = await page
+        .locator('#error_box, [role="alert"]')
+        .first()
+        .textContent()
+        .catch(() => null);
+      return { ok: false, error: errorText?.trim() || "Login falhou (e-mail/senha ou bloqueio do Facebook)." };
+    }
+
+    const state = await context.storageState();
+    await saveFacebookSession(state);
+    return { ok: true };
+  } catch (caught) {
+    logger.warn(
+      { reason: caught instanceof Error ? caught.message : "desconhecido" },
+      "loginFacebookWithBrowser falhou",
     );
     return { ok: false, error: caught instanceof Error ? caught.message : "falha no navegador" };
   } finally {
