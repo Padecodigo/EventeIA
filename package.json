@@ -29,7 +29,7 @@
     "instagram:login": "tsx --env-file=.env.local scripts/instagram-login.ts",
     "seo:indexnow": "tsx --env-file=.env.local scripts/indexnow-ping.ts",
     "geo:municipios": "tsx scripts/gen-municipios.ts",
-    "build:workers": "esbuild workers/index.ts --bundle --platform=node --target=node20 --format=cjs --tsconfig=tsconfig.workers.json --outfile=dist/workers.cjs"
+    "build:workers": "esbuild workers/index.ts --bundle --platform=node --target=node20 --format=cjs --tsconfig=tsconfig.workers.json --outfile=dist/workers.cjs --external:playwright"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
