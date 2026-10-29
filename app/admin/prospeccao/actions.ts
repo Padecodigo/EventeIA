@@ -9,6 +9,7 @@ import { logger } from "@/lib/logger";
 import { artForEventType } from "@/lib/prospecting/photos";
 import { createSupabasePostStore, findImageFor } from "@/lib/prospecting/posts-store";
 import { publishPlannedPost } from "@/lib/prospecting/publish-runtime";
+import { QUEUE_NAMES, enqueue } from "@/lib/queue";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 /**
@@ -63,17 +64,19 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
       ? { url: `${env.NEXT_PUBLIC_APP_URL}${artForEventType(eventType)}`, expiresAt: new Date(Date.now() + 365 * 86_400_000) }
       : null;
 
-  // Provedor browser (grokbot-style): publica via sessão logada, sem Graph API.
+  // Provedor browser (grokbot-style): o worker (imagem Playwright) publica; o app enfileira.
   if (env.INSTAGRAM_PROVIDER === "browser") {
     const imageUrl = cachedArt?.url ?? brandedArt?.url ?? null;
     if (imageUrl === null) {
       return { ok: false, error: "Sem imagem para publicar no navegador (use um evento com arte da marca)." };
     }
-    const { publishWithBrowser } = await import("@/lib/instagram-browser/publish");
-    const browserOutcome = await publishWithBrowser({ imageUrl, caption });
-    if (!browserOutcome.ok) {
-      logger.warn({ reason: browserOutcome.error }, "falha ao publicar post de isca (browser)");
-      return { ok: false, error: `Falha ao publicar (browser): ${browserOutcome.error}` };
+    const queued = await enqueue(QUEUE_NAMES.instagramPublish, "publish", {
+      imageUrl,
+      caption,
+      eventId: eventId ?? null,
+    });
+    if (!queued) {
+      return { ok: false, error: "Fila indisponível — tente novamente." };
     }
     revalidatePath("/admin/prospeccao");
     return { ok: true };
