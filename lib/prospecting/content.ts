@@ -42,7 +42,7 @@ export function buildImagePrompt(input: {
   const guests =
     input.guestCount !== undefined && input.guestCount > 0 ? ` para ${String(input.guestCount)} convidados` : "";
   const scene = (input.variant ?? 0) % 2 === 0 ? "ambiente decorado, luz natural" : "mesa posta, detalhes em close";
-  return `fotografia profissional de ${category}${where}${guests}, ${scene}, estilo editorial, alta qualidade, foco no produto`;
+  return `fotografia profissional de ${category}${where}${guests}, ${scene}, estilo editorial, alta qualidade, foco no produto, sem texto, sem números, sem preços, sem logotipos, sem marca d'água`;
 }
 
 export function buildCaption(input: ContentInput): string {

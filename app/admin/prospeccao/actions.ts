@@ -21,10 +21,9 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
   const env = serverEnv();
   if (
     env.META_ACCESS_TOKEN === undefined ||
-    env.META_INSTAGRAM_BUSINESS_ID === undefined ||
-    env.MODELSLAB_API_KEY === undefined
+    env.META_INSTAGRAM_BUSINESS_ID === undefined
   ) {
-    return { ok: false, error: "Configure META_ACCESS_TOKEN, META_INSTAGRAM_BUSINESS_ID e MODELSLAB_API_KEY." };
+    return { ok: false, error: "Configure META_ACCESS_TOKEN e META_INSTAGRAM_BUSINESS_ID." };
   }
 
   const caption = form.get("caption");
@@ -68,10 +67,12 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
       igUserId: env.META_INSTAGRAM_BUSINESS_ID,
       accessToken: env.META_ACCESS_TOKEN,
       apiVersion: env.META_API_VERSION,
+      apiHost: env.META_API_HOST,
     },
     store: createSupabasePostStore(),
     eventId,
-    cachedArt: cachedArt ?? brandedArt,
+    cachedArt,
+    fallbackArt: brandedArt !== null ? { url: brandedArt.url } : undefined,
     persistArt: undefined,
   });
 

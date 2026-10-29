@@ -22,6 +22,7 @@ export const QUEUE_NAMES = {
   financeBalanceCheck: "finance-balance-check",
   artCleanup: "art-cleanup",
   marketingAutopilot: "marketing-autopilot",
+  prospectPostDelete: "prospect-post-delete",
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];

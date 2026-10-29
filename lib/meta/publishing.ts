@@ -102,6 +102,35 @@ export async function publishContainer(
   return postJson(`${baseUrl(input)}/media_publish?${params.toString()}`, input.accessToken, {}, input.fetchImpl);
 }
 
+/**
+ * Exclui uma mídia publicada — `DELETE /{ig-media-id}`.
+ * Usado para apagar o post de isca quando a prospecção do evento termina.
+ */
+export async function deleteMedia(
+  input: MetaPublishConfig & { mediaId: string; fetchImpl?: typeof fetch },
+): Promise<PublishResult> {
+  const host = input.apiHost ?? "graph.facebook.com";
+  const version = input.apiVersion ?? GRAPH_API_VERSION;
+  const url = `https://${host}/${version}/${input.mediaId}`;
+  const fetcher = input.fetchImpl ?? fetch;
+
+  let response: Response;
+  try {
+    response = await fetcher(url, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${input.accessToken}` },
+    });
+  } catch (error) {
+    return { ok: false, error: String(error), status: null };
+  }
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { error?: { message?: string } } | null;
+    return { ok: false, error: payload?.error?.message ?? `HTTP ${String(response.status)}`, status: response.status };
+  }
+  return { ok: true, id: input.mediaId };
+}
+
 /** Private reply a um comentário (1 mensagem, até 7 dias após o comentário). */
 export async function sendPrivateReply(
   input: MetaPublishConfig & { commentId: string; text: string; fetchImpl?: typeof fetch },
