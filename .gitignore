@@ -8,6 +8,7 @@ node_modules/
 .tmp/
 .npm-cache/
 .pnpm-home/
+.xdg/
 
 # Next.js
 .next/

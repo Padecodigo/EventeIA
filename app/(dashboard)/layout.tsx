@@ -12,6 +12,7 @@ import { isAdminUser, requireUser } from "@/lib/auth";
 import { offerHeadline } from "@/lib/offers/pure";
 import { activeUserOffer, startWelcomeOffer } from "@/lib/offers/server";
 import { bindWelcomeOfferToUser } from "@/lib/welcome/server";
+import { ensureWorkspace } from "@/lib/workspace/server";
 
 import { signOutAction } from "./actions";
 
@@ -24,6 +25,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   // Vínculo da oferta de boas-vindas no 1º acesso autenticado — cobre cadastro via Google OAuth
   // (/auth/callback redireciona para cá) sem depender do caminho de criação do perfil.
   await bindWelcomeOfferToUser(user.id);
+  // Workspace B2B padrão no 1º acesso: planos e créditos ficam disponíveis para
+  // todo usuário logado sem o passo manual de "Criar meu workspace". Idempotente.
+  await ensureWorkspace(user.id);
   const isAdmin = await isAdminUser(user.id);
   // 1º acesso logado inicia a janela de 48h no BANCO (idempotente; contas antigas
   // começam agora, no próximo acesso). Recarregar/trocar de aparelho não reinicia.
