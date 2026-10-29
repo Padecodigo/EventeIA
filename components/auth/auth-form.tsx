@@ -10,6 +10,7 @@ import {
   signUpAction,
   type AuthActionState,
 } from "@/app/(auth)/actions";
+import { InstagramStep } from "@/components/auth/instagram-step";
 import { TermsCheckbox } from "@/components/legal/terms-checkbox";
 import { TERMS_FIELD } from "@/lib/legal/terms";
 
@@ -29,7 +30,9 @@ export function AuthForm({ mode, oauthError }: { mode: AuthMode; oauthError?: st
   );
   const [showPassword, setShowPassword] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [confirmedInstagram, setConfirmedInstagram] = useState(false);
   const termsBlocked = isSignUp && !acceptedTerms;
+  const instagramBlocked = isSignUp && !confirmedInstagram;
   const termsHidden =
     isSignUp && acceptedTerms ? <input type="hidden" name={TERMS_FIELD} value="on" /> : null;
   const googleError = googleState.error ?? oauthError;
@@ -57,12 +60,20 @@ export function AuthForm({ mode, oauthError }: { mode: AuthMode; oauthError?: st
         />
       ) : null}
 
+      {isSignUp ? (
+        <InstagramStep
+          checked={confirmedInstagram}
+          onChange={setConfirmedInstagram}
+          className="mt-4"
+        />
+      ) : null}
+
       <form action={googleAction} className={isSignUp ? "mt-4" : "mt-8"}>
         {isSignUp ? <input type="hidden" name="intent" value="signup" /> : null}
         {termsHidden}
         <button
           type="submit"
-          disabled={googlePending || termsBlocked}
+          disabled={googlePending || termsBlocked || instagramBlocked}
           className="flex h-14 w-full items-center justify-center gap-3 rounded-full bg-primaria text-base font-semibold text-white shadow-[0_10px_24px_-12px_rgba(163,72,90,0.7)] transition hover:bg-primaria-escura disabled:cursor-not-allowed disabled:opacity-50"
         >
           <span className="flex size-8 items-center justify-center rounded-full bg-white">
@@ -206,7 +217,7 @@ export function AuthForm({ mode, oauthError }: { mode: AuthMode; oauthError?: st
 
         <button
           type="submit"
-          disabled={pending || termsBlocked}
+          disabled={pending || termsBlocked || instagramBlocked}
           className="mt-2 h-12 rounded-full border border-primaria/40 bg-off-white text-sm font-semibold text-primaria transition hover:bg-areia-secundaria/60 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {pending ? "Aguarde…" : isSignUp ? "Criar conta com e-mail" : "Entrar com e-mail"}

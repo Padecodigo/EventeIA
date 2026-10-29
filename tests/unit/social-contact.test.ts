@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { socialContactUrl, SOCIAL_FIRST_CONTACT } from "@/lib/social/contact";
+import {
+  INSTAGRAM_HANDLE,
+  instagramDmUrl,
+  instagramProfileUrl,
+  socialContactUrl,
+  SOCIAL_FIRST_CONTACT,
+} from "@/lib/social/contact";
 
 describe("contato por redes sociais", () => {
   it("Instagram vira deep link de DM", () => {
@@ -48,5 +54,22 @@ describe("mensagem pré-preenchida no Instagram", () => {
 
   it("documenta a copy padrão de primeiro contato", () => {
     expect(SOCIAL_FIRST_CONTACT).toContain("EventeIA");
+  });
+});
+
+describe("perfil oficial da EventeIA (cadastro)", () => {
+  it("gera o link de seguir e o deep link de DM", () => {
+    expect(instagramProfileUrl()).toBe("https://www.instagram.com/eventeia");
+    expect(instagramDmUrl()).toBe("https://ig.me/m/eventeia");
+    expect(instagramDmUrl("eventeia", "Olá!")).toBe("https://ig.me/m/eventeia?text=Ol%C3%A1!");
+  });
+
+  it("normaliza handle com @", () => {
+    expect(instagramProfileUrl("@eventeia")).toBe("https://www.instagram.com/eventeia");
+    expect(instagramDmUrl("@eventeia")).toBe("https://ig.me/m/eventeia");
+  });
+
+  it("expõe o handle usado no passo de cadastro", () => {
+    expect(INSTAGRAM_HANDLE).toBe("eventeia");
   });
 });
