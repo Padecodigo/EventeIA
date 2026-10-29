@@ -40,6 +40,14 @@ const serverSchema = z.object({
   META_API_HOST: z.enum(["graph.facebook.com", "graph.instagram.com"]).default("graph.facebook.com"),
   // Palavra-chave que o fornecedor comenta para receber a cotação na DM.
   META_PROSPECT_KEYWORD: z.string().min(1).default("cotação"),
+  // Publicação Instagram: graph (API oficial) | browser (sessão logada, grokbot-style).
+  INSTAGRAM_PROVIDER: z.enum(["graph", "browser"]).default("graph"),
+  /** storageState (cookies) da sessão logada no Instagram (volume no worker). */
+  INSTAGRAM_SESSION_FILE: z.string().default(".data/instagram-session.json"),
+  INSTAGRAM_BROWSER_HEADLESS: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((v) => v === "true"),
   // Prospecção: posts de isca (aprovação humana por padrão) e imagem SDXL.
   REQUIRE_APPROVAL: z.enum(["true", "false"]).default("true").transform((v) => v === "true"),
   MAX_POSTS_PER_DAY: z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).max(50).default(2)),

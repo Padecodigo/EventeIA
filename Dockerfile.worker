@@ -1,0 +1,25 @@
+# syntax=docker/dockerfile:1.7
+# EventeIA — imagem do WORKER (BullMQ + Playwright/Chromium para automação
+# de Instagram/Facebook com sessão logada). O app Next.js continua na imagem
+# Alpine normal (Dockerfile); só o worker precisa de Chromium.
+ARG PLAYWRIGHT_VERSION=1.64.1
+FROM mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+
+WORKDIR /app
+ENV NODE_ENV=production
+
+RUN corepack enable
+
+# Só manifests → cache de camada estável (mesmo padrão do Dockerfile principal).
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile --config.strict-dep-builds=false
+
+# Código do worker + lib (executado via tsx; Playwright já vem na imagem base).
+COPY tsconfig.json tsconfig.workers.json ./
+COPY lib ./lib
+COPY workers ./workers
+
+# storageState da sessão logada (monte um volume em /data).
+ENV INSTAGRAM_SESSION_FILE=/data/instagram-session.json
+
+CMD ["pnpm", "exec", "tsx", "workers/index.ts"]

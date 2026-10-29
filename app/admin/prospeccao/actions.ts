@@ -19,11 +19,14 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
   await requireAdmin();
 
   const env = serverEnv();
-  if (
-    env.META_ACCESS_TOKEN === undefined ||
-    env.META_INSTAGRAM_BUSINESS_ID === undefined
-  ) {
-    return { ok: false, error: "Configure META_ACCESS_TOKEN e META_INSTAGRAM_BUSINESS_ID." };
+  // Provedor graph exige token/ID da Graph API; o browser usa a sessão logada.
+  if (env.INSTAGRAM_PROVIDER === "graph") {
+    if (
+      env.META_ACCESS_TOKEN === undefined ||
+      env.META_INSTAGRAM_BUSINESS_ID === undefined
+    ) {
+      return { ok: false, error: "Configure META_ACCESS_TOKEN e META_INSTAGRAM_BUSINESS_ID." };
+    }
   }
 
   const caption = form.get("caption");
@@ -59,13 +62,36 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
     eventId !== undefined
       ? { url: `${env.NEXT_PUBLIC_APP_URL}${artForEventType(eventType)}`, expiresAt: new Date(Date.now() + 365 * 86_400_000) }
       : null;
+
+  // Provedor browser (grokbot-style): publica via sessão logada, sem Graph API.
+  if (env.INSTAGRAM_PROVIDER === "browser") {
+    const imageUrl = cachedArt?.url ?? brandedArt?.url ?? null;
+    if (imageUrl === null) {
+      return { ok: false, error: "Sem imagem para publicar no navegador (use um evento com arte da marca)." };
+    }
+    const { publishWithBrowser } = await import("@/lib/instagram-browser/publish");
+    const browserOutcome = await publishWithBrowser({ imageUrl, caption });
+    if (!browserOutcome.ok) {
+      logger.warn({ reason: browserOutcome.error }, "falha ao publicar post de isca (browser)");
+      return { ok: false, error: `Falha ao publicar (browser): ${browserOutcome.error}` };
+    }
+    revalidatePath("/admin/prospeccao");
+    return { ok: true };
+  }
+
+  const accessToken = env.META_ACCESS_TOKEN;
+  const igUserId = env.META_INSTAGRAM_BUSINESS_ID;
+  if (accessToken === undefined || igUserId === undefined) {
+    return { ok: false, error: "Configure META_ACCESS_TOKEN e META_INSTAGRAM_BUSINESS_ID." };
+  }
+
   const outcome = await publishPlannedPost({
     planned: { dayIndex: Number.isFinite(dayIndex) ? dayIndex : 0, category, handles, imagePrompt, caption },
     approved: true,
     modelslabKey: env.MODELSLAB_API_KEY,
     meta: {
-      igUserId: env.META_INSTAGRAM_BUSINESS_ID,
-      accessToken: env.META_ACCESS_TOKEN,
+      igUserId,
+      accessToken,
       apiVersion: env.META_API_VERSION,
       apiHost: env.META_API_HOST,
     },

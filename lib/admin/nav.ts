@@ -14,6 +14,7 @@ export const ADMIN_NAV = [
   { href: "/admin/clientes", label: "Clientes", description: "Contas, eventos e pagamentos (somente leitura)." },
   { href: "/admin/fornecedores", label: "Fornecedores", description: "Fornecedores encontrados (somente leitura)." },
   { href: "/admin/prospeccao", label: "Prospecção", description: "Posts de isca: aprovar e publicar no Instagram." },
+  { href: "/admin/instagram", label: "Instagram", description: "Sessão do navegador: logar, deslogar e trocar conta." },
   { href: "/admin/metricas", label: "Métricas", description: "Acessos, logins e cadastros do site." },
   { href: "/admin/marketing", label: "Publicações", description: "Autopilot de publicidade: ligar/desligar e temas." },
   { href: "/admin/lixeira", label: "Lixeira", description: "Itens excluídos: ver e restaurar." },
