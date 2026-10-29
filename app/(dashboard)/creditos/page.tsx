@@ -12,6 +12,7 @@ import { activeUserOffer } from "@/lib/offers/server";
 import { PLANS } from "@/lib/plans";
 import { ticketPriceCents } from "@/lib/seo/pricing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { ensureWorkspace } from "@/lib/workspace/server";
 
 import { createWorkspaceAction } from "./actions";
 
@@ -30,12 +31,10 @@ export default async function CreditsPage() {
   const user = await requireUser();
   const supabase = await createSupabaseServerClient();
 
-  const { data: workspace } = await supabase
-    .from("workspaces")
-    .select("id,name,plan_code")
-    .eq("owner_id", user.id)
-    .limit(1)
-    .maybeSingle();
+  // Idempotente: garante o workspace antes de consultar os créditos. Sem isto,
+  // na 1ª visita a página consultava antes do layout criar o workspace (corrida)
+  // e exibia "Criar meu workspace" mesmo com o workspace sendo criado.
+  const workspace = await ensureWorkspace(user.id);
 
   if (workspace === null) {
     return (
