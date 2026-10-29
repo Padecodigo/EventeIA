@@ -22,13 +22,16 @@ export type PublishOutcome =
 export interface PublishPlannedPostInput {
   planned: PlannedPost;
   approved: boolean;
-  modelslabKey: string;
+  /** Chave do gerador de imagem (ModelsLab/NVIDIA). Sem chave, usa o fallback. */
+  modelslabKey?: string;
   meta: MetaPublishConfig;
   store?: PostStore;
   /** Evento de origem do plano (gravado em prospect_posts). */
   eventId?: string;
   /** Arte em cache (mesmo evento + necessidade) com validade. */
   cachedArt?: { url: string; expiresAt: Date } | null;
+  /** Arte da marca usada quando não há chave de geração ou a geração falha. */
+  fallbackArt?: { url: string };
   /** Persiste a arte gerada (Storage) e devolve URL + validade. */
   persistArt?: (sourceUrl: string) => Promise<{ url: string; expiresAt: Date }>;
   fetchImpl?: typeof fetch;
@@ -49,25 +52,56 @@ export async function publishPlannedPost(input: PublishPlannedPostInput): Promis
   }
 
   if (imageUrl === null) {
-    const image = await generateImage({
-      apiKey: input.modelslabKey,
-      prompt: input.planned.imagePrompt,
-      fetchImpl: input.fetchImpl,
-    });
-    if (!image.ok) {
-      await input.store?.record({ planned: input.planned, eventId: input.eventId,
-    imageExpiresAt: imageExpiresAt ?? undefined, status: "failed", error: image.error });
-      return { ok: false, reason: "image_failed", error: image.error };
-    }
-    imageUrl = image.images[0] ?? null;
-    if (imageUrl === null) return { ok: false, reason: "image_failed", error: "resposta sem URL de imagem" };
-    if (input.persistArt !== undefined) {
-      const stored = await input.persistArt(imageUrl);
-      imageUrl = stored.url;
-      imageExpiresAt = stored.expiresAt;
-    } else if (image.expiresAt !== undefined) {
-      // Provedor já persistiu (ex.: NVIDIA → Storage) e informou a validade.
-      imageExpiresAt = image.expiresAt;
+    const hasGenerationKey = (input.modelslabKey ?? "").length > 0;
+    if (hasGenerationKey) {
+      const image = await generateImage({
+        apiKey: input.modelslabKey as string,
+        prompt: input.planned.imagePrompt,
+        fetchImpl: input.fetchImpl,
+      });
+      if (image.ok) {
+        if (image.images.length > 0) {
+          imageUrl = image.images[0];
+          if (input.persistArt !== undefined) {
+            const stored = await input.persistArt(imageUrl);
+            imageUrl = stored.url;
+            imageExpiresAt = stored.expiresAt;
+          } else if (image.expiresAt !== undefined) {
+            // Provedor já persistiu (ex.: NVIDIA → Storage) e informou a validade.
+            imageExpiresAt = image.expiresAt;
+          }
+        } else if (input.fallbackArt !== undefined) {
+          imageUrl = input.fallbackArt.url;
+          imageExpiresAt = null;
+        } else {
+          const reason = "resposta sem URL de imagem";
+          await input.store?.record({
+            planned: input.planned,
+            eventId: input.eventId,
+            imageExpiresAt: imageExpiresAt ?? undefined,
+            status: "failed",
+            error: reason,
+          });
+          return { ok: false, reason: "image_failed", error: reason };
+        }
+      } else if (input.fallbackArt !== undefined) {
+        imageUrl = input.fallbackArt.url;
+        imageExpiresAt = null;
+      } else {
+        await input.store?.record({
+          planned: input.planned,
+          eventId: input.eventId,
+          imageExpiresAt: imageExpiresAt ?? undefined,
+          status: "failed",
+          error: image.error,
+        });
+        return { ok: false, reason: "image_failed", error: image.error };
+      }
+    } else if (input.fallbackArt !== undefined) {
+      imageUrl = input.fallbackArt.url;
+      imageExpiresAt = null;
+    } else {
+      return { ok: false, reason: "image_failed", error: "sem chave de geração e sem arte de fallback" };
     }
   }
 

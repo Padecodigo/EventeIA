@@ -1,5 +1,6 @@
 import { Worker } from "bullmq";
 
+import { serverEnv } from "@/lib/env";
 import { runBalanceCheck } from "@/lib/finance/balance-monitor";
 import { runAsaasReconcileSweep } from "@/lib/jobs/asaas-reconcile";
 import { handleAsaasWebhookJob, type AsaasWebhookJob } from "@/lib/jobs/asaas-webhook";
@@ -8,6 +9,7 @@ import { QUEUE_NAMES, getQueue, getRedisConnection } from "@/lib/queue";
 import { createDiscoveryWorker } from "@/lib/queue/discovery-worker";
 import { createQuoteExtractionWorker } from "@/lib/queue/quote-extraction-worker";
 import { purgeExpiredArt } from "@/lib/prospecting/art-cache";
+import { deleteFinishedProspectPosts } from "@/lib/prospecting/delete-posts";
 import { publishAutopilotPost } from "@/lib/marketing/autopilot";
 import { isAutopilotEnabled } from "@/lib/marketing/settings";
 
@@ -64,6 +66,29 @@ const artCleanupWorker = new Worker(
   { connection, concurrency: 1 },
 );
 
+// Exclusão dos posts de isca quando a prospecção do evento termina.
+const prospectPostDeleteWorker = new Worker(
+  QUEUE_NAMES.prospectPostDelete,
+  async () => {
+    const env = serverEnv();
+    if (env.META_ACCESS_TOKEN === undefined || env.META_INSTAGRAM_BUSINESS_ID === undefined) {
+      return; // Meta não configurada: não há mídia para apagar.
+    }
+    const deleted = await deleteFinishedProspectPosts({
+      meta: {
+        igUserId: env.META_INSTAGRAM_BUSINESS_ID,
+        accessToken: env.META_ACCESS_TOKEN,
+        apiVersion: env.META_API_VERSION,
+        apiHost: env.META_API_HOST,
+      },
+    });
+    if (deleted > 0) {
+      logger.info({ deleted }, "posts de isca excluídos após prospecção");
+    }
+  },
+  { connection, concurrency: 1 },
+);
+
 // Descoberta automática de fornecedores e extração de cotações.
 const discoveryWorker = createDiscoveryWorker(connection);
 const quoteExtractionWorker = createQuoteExtractionWorker(connection);
@@ -86,6 +111,11 @@ void getQueue(QUEUE_NAMES.artCleanup).add(
   {},
   { repeat: { pattern: "*/30 * * * *", tz: "America/Sao_Paulo" }, attempts: 3 },
 );
+void getQueue(QUEUE_NAMES.prospectPostDelete).add(
+  "sweep",
+  {},
+  { repeat: { pattern: "0 * * * *", tz: "America/Sao_Paulo" }, attempts: 3 },
+);
 void getQueue(QUEUE_NAMES.financeBalanceCheck).add(
   "check",
   {},
@@ -100,7 +130,7 @@ void getQueue(QUEUE_NAMES.creditsExpireLegacy)
   })
   .catch(() => undefined);
 
-const workers = [asaasWorker, reconcileWorker, balanceWorker, artCleanupWorker, marketingAutopilotWorker, discoveryWorker, quoteExtractionWorker];
+const workers = [asaasWorker, reconcileWorker, balanceWorker, artCleanupWorker, prospectPostDeleteWorker, marketingAutopilotWorker, discoveryWorker, quoteExtractionWorker];
 
 for (const worker of workers) {
   worker.on("error", (error) => {

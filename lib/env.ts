@@ -36,6 +36,8 @@ const serverSchema = z.object({
   META_PAGE_ID: z.string().optional(),
   META_INSTAGRAM_BUSINESS_ID: z.string().optional(),
   META_API_VERSION: z.string().regex(/^v\d+\.\d+$/).default("v26.0"),
+  // Host da Graph API: Facebook Login usa graph.facebook.com; Instagram Login usa graph.instagram.com.
+  META_API_HOST: z.enum(["graph.facebook.com", "graph.instagram.com"]).default("graph.facebook.com"),
   // Palavra-chave que o fornecedor comenta para receber a cotação na DM.
   META_PROSPECT_KEYWORD: z.string().min(1).default("cotação"),
   // Prospecção: posts de isca (aprovação humana por padrão) e imagem SDXL.
