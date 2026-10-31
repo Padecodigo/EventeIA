@@ -37,7 +37,7 @@ const body = localFont({
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
   title: {
-    default: "EventeIA — Orçamento de festa pelas redes sociais no Vale do Paraíba e em São Paulo",
+    default: "EventeIA — Fornecedores e orçamento pronto para o seu evento no Vale do Paraíba e em São Paulo",
     template: "%s · EventeIA",
   },
   description: SITE_DESCRIPTION,
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
   // Favicons: app/icon.png (64px) e app/apple-icon.png (180px) — antes era o logo de 325 KB.
   alternates: { canonical: "/" },
   openGraph: {
-    title: "EventeIA — Orçamento de festa pelas redes sociais",
+    title: "EventeIA — Fornecedores encontrados, preços comparados, orçamento pronto",
     description: SITE_DESCRIPTION,
     siteName: SITE_NAME,
     type: "website",
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "EventeIA — Orçamento de festa pelas redes sociais",
+    title: "EventeIA — Fornecedores encontrados, preços comparados, orçamento pronto",
     description: SITE_DESCRIPTION,
     images: [OG_IMAGE.url],
   },

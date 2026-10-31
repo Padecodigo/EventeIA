@@ -14,7 +14,7 @@ export function absoluteUrl(path: string, base: string = siteUrl()): string {
 export const SITE_NAME = "EventeIA";
 
 export const SITE_DESCRIPTION =
-  "Orçamento de festa sem dor de cabeça: a EventeIA pede e compara orçamentos de fornecedores pelo Instagram e pelo Messenger para festa infantil, aniversário, 15 anos, formatura, casamento e evento corporativo com foco no Vale do Paraíba (São José dos Campos, Taubaté, Jacareí e região) e na cidade de São Paulo.";
+  "Vai organizar um casamento, aniversário, 15 anos, formatura ou evento corporativo? Você conta como é o evento e a EventeIA encontra os fornecedores, compara os preços e entrega o orçamento pronto, com foco no Vale do Paraíba (São José dos Campos, Taubaté, Jacareí e região) e na cidade de São Paulo.";
 
 export const SEO_KEYWORDS = [
   "orçamento de festa",

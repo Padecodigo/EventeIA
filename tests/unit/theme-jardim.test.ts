@@ -30,7 +30,7 @@ describe("tema Areia & Coral (layout Jardim)", () => {
     for (const old of ["Plus_Jakarta_Sans", "Caveat", "Inter"]) expect(layout).not.toContain(old);
   });
   it("hero usa a headline nova", () => {
-    expect(read("app/(marketing)/page.tsx")).toContain("Menos ligações,");
+    expect(read("app/(marketing)/page.tsx")).toContain("Você conta como é seu evento.");
   });
   it("auth e 404 compartilham header e rodapé do site", () => {
     for (const p of ["app/(auth)/layout.tsx", "app/not-found.tsx", "app/(marketing)/layout.tsx"]) {

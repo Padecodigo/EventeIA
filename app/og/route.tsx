@@ -22,10 +22,10 @@ export function GET(): ImageResponse {
       >
         <div style={{ fontSize: 34, letterSpacing: 6, color: PALETTE.coralEscuro, fontWeight: 700 }}>EVENTEIA</div>
         <div style={{ fontSize: 76, fontWeight: 700, lineHeight: 1.05, marginTop: 24, maxWidth: 980 }}>
-          Orçamento de festa sem dor de cabeça.
+          Você conta como é seu evento.
         </div>
         <div style={{ fontSize: 34, marginTop: 28, maxWidth: 1000, color: PALETTE.ink }}>
-          Cotamos fornecedores pelo Instagram e entregamos 3 opções: preço, custo-benefício e comodidade.
+          A gente encontra os fornecedores, compara os preços e entrega o orçamento pronto.
         </div>
         <div style={{ fontSize: 28, marginTop: 40, color: PALETTE.coralEscuro }}>
           Vale do Paraíba · São Paulo
