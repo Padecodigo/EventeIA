@@ -52,10 +52,10 @@ jobs:
         run: pnpm knip
 
       - name: Auditoria de segurança de dependências
-        run: pnpm audit --audit-level high
+        run: pnpm run audit
 
       - name: Testes (unitários + integração com mocks)
-        run: pnpm test -- --run --coverage
+        run: pnpm test --coverage
 
       - name: Build de produção
         run: pnpm build
@@ -90,7 +90,7 @@ jobs:
       - name: Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.122.0
 
       - name: pnpm
         uses: pnpm/action-setup@v4
@@ -110,8 +110,17 @@ jobs:
       - name: Aplicar migrações do zero (db reset)
         run: supabase db reset
 
-      - name: Validar geração de tipos do banco
-        run: supabase gen types typescript --local > /dev/null
+      - name: Gerar tipos e detectar drift
+        run: |
+          supabase gen types typescript --local > lib/supabase/database.types.ts
+          git diff --exit-code lib/supabase/database.types.ts
+
+      - name: Enviar tipos gerados como artefato (drift)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-types
+          path: lib/supabase/database.types.ts
 
       - name: Testes de políticas RLS (pgTAP)
         run: pnpm test:rls

@@ -1,0 +1,3 @@
+# Gerado pela Supabase CLI — mantido byte-idêntico à saída de `pnpm gen:types`
+# para o check de drift no CI (ver .github/workflows/ci.yml).
+lib/supabase/database.types.ts

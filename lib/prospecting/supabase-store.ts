@@ -34,6 +34,12 @@ interface ProspectDb {
     insert(values: Record<string, unknown>): {
       select(columns: string): { single(): Promise<{ data: Row | null }> };
     };
+    upsert(
+      values: Record<string, unknown>,
+      options: { onConflict: string; ignoreDuplicates: boolean },
+    ): {
+      select(columns: string): { single(): Promise<{ data: Row | null }> };
+    };
     update(values: Record<string, unknown>): {
       eq(column: string, value: string): Promise<{ error: { code?: string } | null }>;
     };
@@ -60,13 +66,19 @@ export function createSupabaseProspectStore(
     },
 
     async createConversation(input): Promise<ProspectConversation> {
+      // Upsert atômico por (channel, external_user_id): em criação concorrente
+      // (find→create race), o segundo create resolve para a MESMA linha em vez
+      // de estourar unique violation 23505.
       const { data } = await db
         .from("prospect_conversations")
-        .insert({
-          supplier_id: input.supplierId,
-          channel: input.channel,
-          external_user_id: input.externalUserId,
-        })
+        .upsert(
+          {
+            supplier_id: input.supplierId,
+            channel: input.channel,
+            external_user_id: input.externalUserId,
+          },
+          { onConflict: "channel,external_user_id", ignoreDuplicates: false },
+        )
         .select("id,status")
         .single();
       if (data === null) throw new Error("falha ao criar conversa");

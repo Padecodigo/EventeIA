@@ -37,7 +37,7 @@ export default async function AdminLixeiraPage() {
   const sections: Record<TrashKind, Item[]> = {
     custos: (costs.data ?? []).map((r) => ({ id: r.id, deletedAt: r.deleted_at ?? "", text: `${r.kind === "fixed" ? "Fixo" : "Variável"} · ${p(r.provider)} · ${formatBRL(r.cost_brl_cents)} · ${fmtDate(r.occurred_at)}${r.note ? ` · ${r.note}` : ""}` })),
     ia: (llm.data ?? []).map((r) => ({ id: r.id, deletedAt: r.deleted_at ?? "", text: `${p(r.provider)} · ${r.task} · ${formatBRL(r.cost_brl_cents ?? 0)} · ${fmtDate(r.created_at)}` })),
-    alertas: (alerts.data ?? []).map((r) => ({ id: r.id, deletedAt: r.deleted_at ?? "", text: `${p(r.provider)} · ${r.kind === "low_balance" ? "saldo baixo" : r.kind === "low_runway" ? "fôlego curto" : r.kind} · ${r.balance_brl_cents === null ? "" : formatBRL(r.balance_brl_cents)} · ${fmtDate(r.created_at)}` })),
+    alertas: (alerts.data ?? []).map((r) => ({ id: r.id, deletedAt: r.deleted_at ?? "", text: `${p(r.provider)} · ${r.kind === "low_balance" ? "saldo baixo" : r.kind === "low_runway" ? "fôlego curto" : r.kind === "meta_token" ? "token Meta" : r.kind} · ${r.balance_brl_cents === null ? "" : formatBRL(r.balance_brl_cents)} · ${fmtDate(r.created_at)}` })),
     chamados: (tickets.data ?? []).map((r) => ({ id: r.id, deletedAt: r.deleted_at ?? "", text: `${r.subject} · ${r.status} · ${fmtDate(r.created_at)}` })),
     fornecedores: (suppliers.data ?? []).map((r) => ({ id: r.id, deletedAt: r.deleted_at ?? "", text: `${r.name} · ${r.category} · ${r.city ?? "sem cidade"}` })),
   };

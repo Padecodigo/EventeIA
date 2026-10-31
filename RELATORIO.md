@@ -108,7 +108,7 @@ pnpm workers                             # filas/jobs (requer Redis)
 pnpm test                                # testes · pnpm e2e:local · bash scripts/validate-sql.sh
 ```
 
-**Demo:** `ana@eventeia.com` / `EventeIA@2026` · **Admin:** `admin@eventeia.com` / `Admin@2026`
+**Demo:** `ana@eventeia.com` / senha definida em `DEMO_SEED_PASSWORD` · **Admin:** `admin@eventeia.com` / senha definida em `DEMO_SEED_ADMIN_PASSWORD`
 **Atalhos:** `/demo/entrar?secret=dev-demo-2026&user=ana` · `?…user=admin` (⚠️ remover antes de produção)
 
 ---
