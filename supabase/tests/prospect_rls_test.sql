@@ -116,56 +116,72 @@ select is((select count(*) from public.prospect_posts), 0::bigint, 'não-admin n
 select throws_ok($$
   insert into public.prospect_posts (caption) values ('Isca')
 $$, '42501', null, 'não-admin não insere prospect_posts');
-select is(
-  (select count(*) from (update public.prospect_posts set status = 'failed'
-   where id = 'eeeeeeee-0000-4000-8000-000000000002' returning 1) as x),
-  0::bigint, 'não-admin não atualiza prospect_posts');
-select is(
-  (select count(*) from (delete from public.prospect_posts
-   where id = 'eeeeeeee-0000-4000-8000-000000000002' returning 1) as x),
-  0::bigint, 'não-admin não apaga prospect_posts');
+select results_eq(
+  $$ with x as (update public.prospect_posts set status = 'failed'
+   where id = 'eeeeeeee-0000-4000-8000-000000000002' returning 1) select count(*) from x $$,
+  $$ values (0::bigint) $$,
+  'não-admin não atualiza prospect_posts'
+);
+select results_eq(
+  $$ with x as (delete from public.prospect_posts
+   where id = 'eeeeeeee-0000-4000-8000-000000000002' returning 1) select count(*) from x $$,
+  $$ values (0::bigint) $$,
+  'não-admin não apaga prospect_posts'
+);
 
 select is((select count(*) from public.prospect_conversations), 0::bigint, 'não-admin não vê prospect_conversations');
 select throws_ok($$
   insert into public.prospect_conversations (supplier_id, channel, external_user_id)
   values ('eeeeeeee-0000-4000-8000-000000000001', 'instagram', 'ext-x')
 $$, '42501', null, 'não-admin não insere prospect_conversations');
-select is(
-  (select count(*) from (update public.prospect_conversations set status = 'closed'
-   where id = 'eeeeeeee-0000-4000-8000-000000000003' returning 1) as x),
-  0::bigint, 'não-admin não atualiza prospect_conversations');
-select is(
-  (select count(*) from (delete from public.prospect_conversations
-   where id = 'eeeeeeee-0000-4000-8000-000000000003' returning 1) as x),
-  0::bigint, 'não-admin não apaga prospect_conversations');
+select results_eq(
+  $$ with x as (update public.prospect_conversations set status = 'closed'
+   where id = 'eeeeeeee-0000-4000-8000-000000000003' returning 1) select count(*) from x $$,
+  $$ values (0::bigint) $$,
+  'não-admin não atualiza prospect_conversations'
+);
+select results_eq(
+  $$ with x as (delete from public.prospect_conversations
+   where id = 'eeeeeeee-0000-4000-8000-000000000003' returning 1) select count(*) from x $$,
+  $$ values (0::bigint) $$,
+  'não-admin não apaga prospect_conversations'
+);
 
 select is((select count(*) from public.prospect_messages), 0::bigint, 'não-admin não vê prospect_messages');
 select throws_ok($$
   insert into public.prospect_messages (conversation_id, direction, body)
   values ('eeeeeeee-0000-4000-8000-000000000003', 'out', 'oi')
 $$, '42501', null, 'não-admin não insere prospect_messages');
-select is(
-  (select count(*) from (update public.prospect_messages set body = 'alterado'
-   where id = 'eeeeeeee-0000-4000-8000-000000000004' returning 1) as x),
-  0::bigint, 'não-admin não atualiza prospect_messages');
-select is(
-  (select count(*) from (delete from public.prospect_messages
-   where id = 'eeeeeeee-0000-4000-8000-000000000004' returning 1) as x),
-  0::bigint, 'não-admin não apaga prospect_messages');
+select results_eq(
+  $$ with x as (update public.prospect_messages set body = 'alterado'
+   where id = 'eeeeeeee-0000-4000-8000-000000000004' returning 1) select count(*) from x $$,
+  $$ values (0::bigint) $$,
+  'não-admin não atualiza prospect_messages'
+);
+select results_eq(
+  $$ with x as (delete from public.prospect_messages
+   where id = 'eeeeeeee-0000-4000-8000-000000000004' returning 1) select count(*) from x $$,
+  $$ values (0::bigint) $$,
+  'não-admin não apaga prospect_messages'
+);
 
 select is((select count(*) from public.prospect_quotes), 0::bigint, 'não-admin não vê prospect_quotes');
 select throws_ok($$
   insert into public.prospect_quotes (conversation_id, supplier_id, product)
   values ('eeeeeeee-0000-4000-8000-000000000003', 'eeeeeeee-0000-4000-8000-000000000001', 'Buffet')
 $$, '42501', null, 'não-admin não insere prospect_quotes');
-select is(
-  (select count(*) from (update public.prospect_quotes set status = 'expired'
-   where id = 'eeeeeeee-0000-4000-8000-000000000005' returning 1) as x),
-  0::bigint, 'não-admin não atualiza prospect_quotes');
-select is(
-  (select count(*) from (delete from public.prospect_quotes
-   where id = 'eeeeeeee-0000-4000-8000-000000000005' returning 1) as x),
-  0::bigint, 'não-admin não apaga prospect_quotes');
+select results_eq(
+  $$ with x as (update public.prospect_quotes set status = 'expired'
+   where id = 'eeeeeeee-0000-4000-8000-000000000005' returning 1) select count(*) from x $$,
+  $$ values (0::bigint) $$,
+  'não-admin não atualiza prospect_quotes'
+);
+select results_eq(
+  $$ with x as (delete from public.prospect_quotes
+   where id = 'eeeeeeee-0000-4000-8000-000000000005' returning 1) select count(*) from x $$,
+  $$ values (0::bigint) $$,
+  'não-admin não apaga prospect_quotes'
+);
 
 reset role;
 
