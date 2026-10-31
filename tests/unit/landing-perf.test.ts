@@ -40,9 +40,17 @@ function localGraph(entry: string, seen = new Set<string>()): Set<string> {
 }
 
 describe("páginas públicas", () => {
+  // O menu móvel do cabeçalho é o único componente "use client" de navegação
+  // permitido no grafo público; o Reveal é o wrapper de scroll (progressivo,
+  // conteúdo visível sem JS e respeita prefers-reduced-motion).
+  const ALLOWED_CLIENTS = ["components/site-header-mobile-menu.tsx", "components/marketing/reveal.tsx"];
+
   it.each(ENTRIES)("%s não importa componentes \"use client\" próprios", (entry) => {
     const clients = [...localGraph(entry)].filter((f) => /^\s*["']use client["']/.test(readFileSync(f, "utf8")));
-    expect(clients.map((f) => f.replace(`${ROOT}/`, ""))).toEqual([]);
+    const unexpected = clients
+      .map((f) => f.replace(`${ROOT}/`, ""))
+      .filter((f) => !ALLOWED_CLIENTS.includes(f));
+    expect(unexpected).toEqual([]);
   });
 
   it.each([...ENTRIES, "components/site-header.tsx", "components/site-footer.tsx"])("%s: todo <Link> tem prefetch={false}", (file) => {

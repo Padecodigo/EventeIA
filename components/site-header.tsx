@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { SiteHeaderMobileMenu } from "@/components/site-header-mobile-menu";
+
 const navItems = [
   { href: "/como-funciona", label: "Como funciona" },
   { href: "/para-planners", label: "Para planners" },
@@ -9,7 +11,7 @@ const navItems = [
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-[#2A1119]/90 backdrop-blur-xl backdrop-saturate-150">
+    <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-vinho/90 backdrop-blur-xl backdrop-saturate-150">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-8">
         <Link prefetch={false} href="/" className="flex cursor-pointer items-center gap-3">
           <Image
@@ -28,29 +30,32 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        <nav aria-label="Navegação principal" className="flex items-center gap-1 sm:gap-2">
-          {navItems.map((item) => (
+        <div className="flex items-center gap-2">
+          <nav aria-label="Navegação principal" className="hidden items-center gap-1 sm:gap-2 md:flex">
+            {navItems.map((item) => (
+              <Link prefetch={false}
+                key={item.href}
+                href={item.href}
+                className="px-4 py-2 text-xs font-medium text-off-white/80 underline decoration-transparent underline-offset-4 transition-colors hover:text-champagne hover:decoration-champagne md:text-sm"
+              >
+                {item.label}
+              </Link>
+            ))}
             <Link prefetch={false}
-              key={item.href}
-              href={item.href}
-              className="hidden px-4 py-2 text-xs font-medium text-off-white/80 underline decoration-transparent underline-offset-4 transition-colors hover:text-champagne hover:decoration-champagne sm:block sm:text-sm"
+              href="/entrar"
+              className="px-4 py-2 text-xs font-medium text-off-white/80 underline decoration-transparent underline-offset-4 transition-colors hover:text-champagne hover:decoration-champagne md:text-sm"
             >
-              {item.label}
+              Entrar
             </Link>
-          ))}
-          <Link prefetch={false}
-            href="/entrar"
-            className="hidden px-4 py-2 text-xs font-medium text-off-white/80 underline decoration-transparent underline-offset-4 transition-colors hover:text-champagne hover:decoration-champagne sm:block sm:text-sm"
-          >
-            Entrar
-          </Link>
-          <Link prefetch={false}
-            href="/registrar"
-            className="rounded-full bg-champagne px-5 py-2 text-xs font-semibold text-[#2A1119] shadow-sm transition-all hover:bg-champagne-claro active:scale-95 sm:text-sm"
-          >
-            Começar agora
-          </Link>
-        </nav>
+            <Link prefetch={false}
+              href="/registrar"
+              className="rounded-full bg-champagne px-5 py-2 text-xs font-semibold text-noite shadow-sm transition-all hover:bg-champagne-claro active:scale-95 md:text-sm"
+            >
+              Começar agora
+            </Link>
+          </nav>
+          <SiteHeaderMobileMenu />
+        </div>
       </div>
     </header>
   );

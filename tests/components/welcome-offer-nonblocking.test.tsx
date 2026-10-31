@@ -66,3 +66,34 @@ describe("regressão: oferta de boas-vindas não bloqueia a navegação", () => 
     expect(localStorage.getItem("ev-offer-minimized")).toBeNull();
   });
 });
+
+describe("regressão: faixa de boas-vindas cabe numa linha no mobile (390px)", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    mount();
+  });
+
+  it("usa copy curta no mobile e copy completa a partir de sm", () => {
+    const short = document.querySelector("#ev-welcome-banner span.sm\\:hidden");
+    const full = document.querySelector("#ev-welcome-banner span.hidden.sm\\:inline");
+    expect(short).not.toBeNull();
+    expect(short?.className).toContain("whitespace-nowrap");
+    expect(short?.textContent).toBe("Ganhe R$ 40 no 1º evento · 48h");
+    expect(full).not.toBeNull();
+    expect(full?.textContent).toBe(
+      "Crie sua conta e ganhe R$ 40 no evento avulso ou 30% nos pacotes por 48h.",
+    );
+  });
+
+  it("mantém Criar conta e o botão de dispensar na mesma linha (flex-nowrap, hit area 44px)", () => {
+    const banner = document.getElementById("ev-welcome-banner");
+    const row = banner?.querySelector("div");
+    expect(row?.className).toContain("flex-nowrap");
+    const dismiss = document.querySelector("[data-welcome-dismiss]");
+    expect(dismiss?.className).toContain("size-11");
+    expect(dismiss?.getAttribute("aria-label")).toBe("Minimizar faixa da oferta");
+    expect(dismiss?.parentElement).toBe(row);
+    const cta = banner?.querySelector('a[href="/registrar"]');
+    expect(cta?.parentElement).toBe(row);
+  });
+});

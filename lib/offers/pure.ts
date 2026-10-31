@@ -67,3 +67,9 @@ export function welcomeVisitorCopy(): string {
   const reais = (WELCOME_AVULSO_OFF_CENTS / 100).toLocaleString("pt-BR");
   return `Crie sua conta e ganhe R$ ${reais} no evento avulso ou ${WELCOME_PACK_PERCENT}% nos pacotes por ${OFFER_WINDOW_HOURS}h.`;
 }
+
+/** Versão curta para faixa no mobile (< sm): cabe numa linha em 390 px. */
+export function welcomeVisitorShortCopy(): string {
+  const reais = (WELCOME_AVULSO_OFF_CENTS / 100).toLocaleString("pt-BR");
+  return `Ganhe R$ ${reais} no 1º evento · ${OFFER_WINDOW_HOURS}h`;
+}

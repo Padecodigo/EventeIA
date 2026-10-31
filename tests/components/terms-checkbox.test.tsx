@@ -24,7 +24,7 @@ afterEach(cleanup);
 const terms = () => screen.getByRole("checkbox", { name: /Li e aceito/ });
 
 describe("checkbox de aceite no /registrar", () => {
-  it("bloqueia Google e e-mail até marcar, com links para /termos e /privacidade", () => {
+  it("bloqueia Google e e-mail até marcar os termos (sem etapa de Instagram)", () => {
     render(<AuthForm mode="registrar" />);
     const google = screen.getByRole("button", { name: /Criar conta com Google/ });
     const email = screen.getByRole("button", { name: /Criar conta com e-mail/ });
@@ -35,9 +35,10 @@ describe("checkbox de aceite no /registrar", () => {
       "href",
       "/privacidade",
     );
+    // Só o aceite dos termos destrava o cadastro — não há etapa de seguir/DM no Instagram.
+    expect(screen.queryByText(/Já sigo @eventeia/)).toBeNull();
 
     fireEvent.click(terms());
-    fireEvent.click(screen.getByRole("checkbox", { name: /Já sigo @eventeia/ }));
     expect(google).toBeEnabled();
     expect(email).toBeEnabled();
     // o aceite segue para o servidor nos dois formulários

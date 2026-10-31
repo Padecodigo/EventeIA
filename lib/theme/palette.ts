@@ -1,30 +1,30 @@
 /**
- * Terra Rosé — tokens que mudam com o tema (claro/escuro).
+ * Maison Vinho & Ouro — tokens que mudam com o tema (claro/escuro).
  * Espelhado em app/globals.css (variáveis --tr-*, canais RGB). Teste garante a paridade e o contraste AA.
  */
 export const THEME_TOKENS = ["vinho", "areia-quente", "areia-secundaria", "off-white", "champagne-claro", "primaria", "primaria-escura", "semantic-error"] as const;
 export type ThemeToken = (typeof THEME_TOKENS)[number];
 
 export const LIGHT: Record<ThemeToken, string> = {
-  vinho: "#3B2420",
-  "areia-quente": "#FBF6F2",
-  "areia-secundaria": "#F3E6DD",
+  vinho: "#6B1E2E",
+  "areia-quente": "#FAF6EF",
+  "areia-secundaria": "#F1E9DC",
   "off-white": "#FFFFFF",
-  "champagne-claro": "#F6E1D8",
-  primaria: "#A3485A",
-  "primaria-escura": "#86374A",
+  "champagne-claro": "#E9D9B8",
+  primaria: "#6B1E2E",
+  "primaria-escura": "#4A1420",
   "semantic-error": "#B3261E",
 };
 
-/** Escuro: cacau profundo de fundo, texto rosé-claro, rosé mais luminoso para acentos. */
+/** Escuro: fundo ink profundo, texto linho claro, ouro mais luminoso para acentos. */
 export const DARK: Record<ThemeToken, string> = {
-  vinho: "#F6E9E3",
-  "areia-quente": "#1C1311",
-  "areia-secundaria": "#2C1F1B",
-  "off-white": "#261A17",
-  "champagne-claro": "#3D2924",
-  primaria: "#E58C9D",
-  "primaria-escura": "#F2B0BC",
+  vinho: "#F1E9DC",
+  "areia-quente": "#2A1A1D",
+  "areia-secundaria": "#3A2A2D",
+  "off-white": "#352628",
+  "champagne-claro": "#4A3A2C",
+  primaria: "#E9D9B8",
+  "primaria-escura": "#B8925A",
   "semantic-error": "#FF8A80",
 };
 
