@@ -36,7 +36,7 @@ describe("FollowInstagramCard", () => {
 
     for (const link of [instagram, facebook]) {
       expect(link).toHaveAttribute("target", "_blank");
-      expect(link).toHaveAttribute("rel", "noopener");
+      expect(link).toHaveAttribute("rel", "noopener noreferrer");
     }
   });
 

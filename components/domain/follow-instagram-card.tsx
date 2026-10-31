@@ -18,7 +18,7 @@ export function FollowInstagramCard() {
         <a
           href={INSTAGRAM_DM_URL}
           target="_blank"
-          rel="noopener"
+          rel="noopener noreferrer"
           className={`${primaryClasses} w-full sm:w-auto`}
         >
           Instagram
@@ -26,7 +26,7 @@ export function FollowInstagramCard() {
         <a
           href={FACEBOOK_MESSENGER_URL}
           target="_blank"
-          rel="noopener"
+          rel="noopener noreferrer"
           className={`${secondaryClasses} w-full sm:w-auto`}
         >
           Facebook
