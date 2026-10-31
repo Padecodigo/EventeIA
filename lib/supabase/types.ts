@@ -117,7 +117,7 @@ export interface Database {
         vendor_name: string;
         vendor_contact: string | null;
         amount_cents: number;
-        status: "draft" | "sent" | "confirmed" | "declined" | "expired";
+        status: "draft" | "sent" | "confirmed" | "declined" | "expired" | "repassado";
         engine_version: string;
         prospect_id: string | null;
         supplier_id: string | null;
@@ -128,8 +128,25 @@ export interface Database {
         fees_cents: number;
         needs_followup: boolean;
         followup_count: number;
+        repassado_at: string | null;
         updated_at: string;
         created_at: string;
+      }>;
+      contact_handoff_consents: Table<{
+        id: string;
+        event_id: string;
+        quotation_id: string;
+        supplier_id: string | null;
+        profile_id: string;
+        consent_text: string;
+        consent_version: string;
+        accepted_at: string;
+        delivery_status: "consentido" | "repassado" | "link" | "canal_fechado" | "indisponivel";
+        delivery_channel: "instagram" | "messenger" | "email" | "link" | null;
+        delivered_at: string | null;
+        fallback_url: string | null;
+        created_at: string;
+        updated_at: string;
       }>;
       quotation_choices: Table<{
         id: string;
@@ -353,6 +370,7 @@ export interface Database {
         source_url: string;
         source_provider: string;
         external_id: string | null;
+        contact_email: string | null;
         city: string | null;
         region_code: string | null;
         opt_out_at: string | null;
