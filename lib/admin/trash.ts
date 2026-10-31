@@ -21,6 +21,22 @@ export const PURGE_BLOCKED: Partial<Record<TrashKind, string>> = {
 export const SUPPLIER_IN_USE_REASON =
   "Fornecedores já contatados em algum evento ficam guardados (histórico de contatos e orçamentos do cliente). Eles continuam fora da busca e dos contatos.";
 
+/**
+ * Tabelas com FK para suppliers. Fornecedor referenciado em QUALQUER uma delas é mantido:
+ * as FKs sem cascade (ex.: prospect_conversations) fariam o DELETE do lote inteiro falhar,
+ * e as com cascade/set null apagariam ou esvaziariam histórico do cliente.
+ */
+export const SUPPLIER_REFERENCING_TABLES = [
+  "vendor_prospects",
+  "prospect_conversations",
+  "prospect_quotes",
+  "quotations",
+  "supplier_conversations",
+  "supplier_options",
+  "supplier_selections",
+  "contact_handoff_consents",
+] as const;
+
 export function parseTrashKind(v: unknown): TrashKind | null {
   return typeof v === "string" && Object.hasOwn(TRASH_KINDS, v) ? (v as TrashKind) : null;
 }
@@ -96,9 +112,12 @@ export async function purgeItems(db: PurgeDb, kind: TrashKind, ids: readonly unk
   let skipped = 0;
   let reason: string | undefined;
   if (kind === "fornecedores" && targets.length) {
-    const used = await db.from("vendor_prospects").select("supplier_id").in("supplier_id", targets).limit(5000);
-    if (used.error) throw new Error(used.error.message);
-    const inUse = new Set((used.data ?? []).map((r) => String(r.supplier_id)));
+    const inUse = new Set<string>();
+    for (const ref of SUPPLIER_REFERENCING_TABLES) {
+      const used = await db.from(ref).select("supplier_id").in("supplier_id", targets).limit(5000);
+      if (used.error) throw new Error(used.error.message);
+      for (const r of used.data ?? []) inUse.add(String(r.supplier_id));
+    }
     skipped = targets.filter((id) => inUse.has(id)).length;
     targets = targets.filter((id) => !inUse.has(id));
     if (skipped) reason = SUPPLIER_IN_USE_REASON;

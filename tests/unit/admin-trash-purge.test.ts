@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { softDeleteSupplier, supplierBlockedAt, type SupplierDb } from "@/lib/admin/suppliers";
-import { PURGE_BLOCKED, purgeConfirmed, purgeItems, purgeSummary, type PurgeDb } from "@/lib/admin/trash";
+import { PURGE_BLOCKED, SUPPLIER_REFERENCING_TABLES, purgeConfirmed, purgeItems, purgeSummary, type PurgeDb } from "@/lib/admin/trash";
 
 import { memDb } from "./helpers/mem-db";
 
@@ -36,6 +36,18 @@ describe("exclusão definitiva da lixeira", () => {
     expect(r).toMatchObject({ deleted: 1, skipped: 1 });
     expect(db.tables.suppliers.map((x) => x.id)).toEqual([id(4), id(6)]);
     expect(purgeSummary([r])).toMatch(/1 item apagado.*Fornecedores: 1 item mantido/);
+  });
+
+  it("regressão 31/10: fornecedor só em prospect_conversations (FK sem cascade) é mantido e não derruba o esvaziamento", async () => {
+    const db = memDb({
+      suppliers: [{ id: id(10), deleted_at: T }, { id: id(11), deleted_at: T }, { id: id(12), deleted_at: T }],
+      prospect_conversations: [{ id: id(20), supplier_id: id(10) }],
+      supplier_selections: [{ id: id(21), supplier_id: id(11) }],
+    });
+    const r = await purgeItems(db as unknown as PurgeDb, "fornecedores", "all", "admin1");
+    expect(r).toMatchObject({ deleted: 1, skipped: 2 });
+    expect(db.tables.suppliers.map((x) => x.id)).toEqual([id(10), id(11)]);
+    expect(SUPPLIER_REFERENCING_TABLES).toContain("prospect_conversations");
   });
 
   it("chamados apagados devolvem os anexos para remoção", async () => {
