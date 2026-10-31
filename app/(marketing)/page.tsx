@@ -40,9 +40,9 @@ const OPTIONS = [
 ] as const;
 
 const STEPS = [
-  { n: "1", title: "Conte seu evento", text: "Tipo de festa, data, cidade, número de convidados e o que não pode faltar. Leva poucos minutos." },
-  { n: "2", title: "A EventeIA busca e compara", text: "Encontramos fornecedores da sua região, pedimos orçamento a cada um pelas redes sociais e comparamos os preços — taxas escondidas incluídas." },
-  { n: "3", title: "Você recebe e escolhe", text: "O orçamento chega pronto, em 3 opções: melhor preço, custo-benefício e comodidade. Você escolhe e só fecha com o seu “sim”." },
+  { n: "1", title: "Conte seu evento", text: "Tipo de festa, data, cidade, número de convidados e o que não pode faltar. Leva poucos minutos.", photo: "/img/eventos/passo-1-planejando-no-celular.webp", alt: "Mulher sorrindo no sofá enquanto conta pelo celular como vai ser a festa" },
+  { n: "2", title: "A EventeIA busca e compara", text: "Encontramos fornecedores da sua região, pedimos orçamento a cada um pelas redes sociais e comparamos os preços — taxas escondidas incluídas.", photo: "/img/eventos/passo-2-buffet-orcamento.webp", alt: "Mesa de doces com brigadeiros, bolos e flores montada por um fornecedor de festa" },
+  { n: "3", title: "Você recebe e escolhe", text: "O orçamento chega pronto, em 3 opções: melhor preço, custo-benefício e comodidade. Você escolhe e só fecha com o seu “sim”.", photo: "/img/eventos/passo-3-festa-celebrando.webp", alt: "Amigos de diferentes origens brindando em uma festa de aniversário com balões" },
 ] as const;
 
 const TRUST = [
@@ -208,10 +208,23 @@ export default async function LandingPage() {
           </div>
           <ol className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
             {STEPS.map((s) => (
-              <li key={s.n} className="rounded-3xl p-7 ring-1 ring-champagne-claro bg-areia-quente">
-                <span className="font-display text-sm font-bold text-coral-escuro">Passo {s.n}</span>
-                <h3 className="mt-3 font-display text-xl font-bold tracking-tight text-vinho">{s.title}</h3>
-                <p className="mt-2 text-[15px] leading-relaxed text-vinho/70">{s.text}</p>
+              <li key={s.n} className="overflow-hidden rounded-3xl ring-1 ring-champagne-claro bg-areia-quente">
+                <Image
+                  src={s.photo}
+                  alt={s.alt}
+                  width={1280}
+                  height={853}
+                  loading="lazy"
+                  quality={70}
+                  sizes="(min-width: 768px) 33vw, calc(100vw - 40px)"
+                  className="aspect-[3/2] h-auto w-full object-cover"
+                  data-testid={`passo-foto-${s.n}`}
+                />
+                <div className="p-6 sm:p-7">
+                  <span className="font-display text-sm font-bold text-coral-escuro">Passo {s.n}</span>
+                  <h3 className="mt-3 font-display text-xl font-bold tracking-tight text-vinho">{s.title}</h3>
+                  <p className="mt-2 text-[15px] leading-relaxed text-vinho/80">{s.text}</p>
+                </div>
               </li>
             ))}
           </ol>

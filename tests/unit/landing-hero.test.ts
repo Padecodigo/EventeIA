@@ -152,3 +152,15 @@ describe("hero mobile-first", () => {
     expect(src).toContain("mt-6 flex flex-col gap-3 sm:mt-8");
   });
 });
+
+describe("fotos dos passos", () => {
+  it("usam next/image com lazy, sizes responsivo e alt descritivo; hero sem novas fotos prioritárias", async () => {
+    const { readFileSync } = await import("node:fs");
+    const src = readFileSync("app/(marketing)/page.tsx", "utf8");
+    expect(src).toContain('loading="lazy"');
+    expect(src).toContain('sizes="(min-width: 768px) 33vw, calc(100vw - 40px)"');
+    expect(src).toContain("data-testid={`passo-foto-${s.n}`}");
+    expect((src.match(/\bpriority\b/g) ?? []).length).toBe(1);
+    expect(src).toContain("HowItWorksAnimation");
+  });
+});
