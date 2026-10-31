@@ -5,6 +5,7 @@ import { runBalanceCheck } from "@/lib/finance/balance-monitor";
 import { publishWithBrowser } from "@/lib/instagram-browser/publish";
 import { runAsaasReconcileSweep } from "@/lib/jobs/asaas-reconcile";
 import { handleAsaasWebhookJob, type AsaasWebhookJob } from "@/lib/jobs/asaas-webhook";
+import { runEventHistoryPurge } from "@/lib/jobs/event-history-purge";
 import {
   externalEventIdOf,
   handleMetaWebhookJob,
@@ -157,6 +158,15 @@ const instagramPublishWorker = new Worker(
   { connection, concurrency: 1 },
 );
 
+// Expurgo do histórico apagado pelo usuário (carência de 30 dias, 0073).
+const eventHistoryPurgeWorker = new Worker(
+  QUEUE_NAMES.eventHistoryPurge,
+  async () => {
+    await runEventHistoryPurge();
+  },
+  { connection, concurrency: 1 },
+);
+
 // Descoberta automática de fornecedores e extração de cotações.
 const discoveryWorker = createDiscoveryWorker(connection);
 const quoteExtractionWorker = createQuoteExtractionWorker(connection);
@@ -200,6 +210,11 @@ void getQueue(QUEUE_NAMES.metaWindowSweep).add(
   {},
   { repeat: { pattern: "*/15 * * * *", tz: "America/Sao_Paulo" }, attempts: 3 },
 );
+void getQueue(QUEUE_NAMES.eventHistoryPurge).add(
+  "purge",
+  {},
+  { repeat: { pattern: "40 3 * * *", tz: "America/Sao_Paulo" }, attempts: 3 },
+);
 // Créditos nunca expiram (0037): remove o agendamento legado de expiração, se existir.
 void getQueue(QUEUE_NAMES.creditsExpireLegacy)
   .getRepeatableJobs()
@@ -209,7 +224,7 @@ void getQueue(QUEUE_NAMES.creditsExpireLegacy)
   })
   .catch(() => undefined);
 
-const workers = [asaasWorker, metaWebhooksWorker, prospectReplyWorker, reconcileWorker, balanceWorker, metaTokenHealthWorker, metaWindowSweepWorker, artCleanupWorker, prospectPostDeleteWorker, instagramPublishWorker, marketingAutopilotWorker, discoveryWorker, quoteExtractionWorker];
+const workers = [asaasWorker, metaWebhooksWorker, prospectReplyWorker, reconcileWorker, balanceWorker, metaTokenHealthWorker, metaWindowSweepWorker, artCleanupWorker, prospectPostDeleteWorker, instagramPublishWorker, marketingAutopilotWorker, eventHistoryPurgeWorker, discoveryWorker, quoteExtractionWorker];
 
 for (const worker of workers) {
   worker.on("error", (error) => {
