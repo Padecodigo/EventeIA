@@ -93,9 +93,12 @@ export async function listEventChatConversations(
 
   return conversations.map((conversation) => {
     const supplier = conversation.supplier_id !== null ? suppliers.get(conversation.supplier_id) : undefined;
+    // No painel do evento a resposta é sempre digitada pelo usuário: dentro da
+    // janela aberta ela pode sair fora do horário comercial (ver send-guard).
     const decision = canSend(
       { status: conversation.status, windowExpiresAt: conversation.window_expires_at },
       now,
+      { allowOutsideBusinessHours: true },
     );
     return {
       id: conversation.id,

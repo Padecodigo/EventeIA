@@ -97,7 +97,7 @@ describe("GET /admin/consumo/csv", () => {
     expect(res.headers.get("content-type")).toContain("text/csv");
     expect(res.headers.get("cache-control")).toBe("private, no-store");
     const lines = (await res.text()).replace("\uFEFF", "").trim().split("\r\n");
-    expect(lines[0]).toContain("operacao;resultado;estagio;canal_whatsapp");
+    expect(lines[0]).toContain("operacao;resultado;estagio;canal_legado");
     expect(lines).toHaveLength(2);
     expect(lines[1]).toContain("quotation_extraction;ok;quote_collection;evolution");
     expect(lines[1]).toContain(";0,01");

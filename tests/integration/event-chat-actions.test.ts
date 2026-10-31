@@ -158,12 +158,26 @@ describe("chat mediado do evento — server actions", () => {
     expect(sendMock).not.toHaveBeenCalled();
   });
 
-  it("fora do horário comercial: bloqueia sem fechar a conversa", async () => {
-    vi.setSystemTime(new Date("2026-10-31T14:00:00Z")); // sábado
+  it("resposta digitada pelo usuário pode sair fora do horário comercial (janela aberta)", async () => {
+    vi.setSystemTime(new Date("2026-10-31T14:00:00Z")); // sábado, mas janela aberta
 
     const result = await sendEventChatMessageAction(
       {},
       form({ eventId: EVENT, conversationId: CONVERSATION, body: "Oi" }),
+    );
+
+    expect(result).toEqual({ ok: true, masked: false });
+    expect(sendMock).toHaveBeenCalledOnce();
+    expect(db.tables.supplier_conversations?.[0]?.status).toBe("open");
+  });
+
+  it("automação/agente fora do horário comercial: bloqueia sem fechar a conversa", async () => {
+    sessionUser = ADMIN;
+    vi.setSystemTime(new Date("2026-10-31T14:00:00Z")); // sábado
+
+    const result = await adminSendEventChatMessageAction(
+      {},
+      form({ conversationId: CONVERSATION, body: "Sou da EventeIA" }),
     );
 
     expect(result.closed).toBe(false);

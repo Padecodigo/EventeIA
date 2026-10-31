@@ -88,7 +88,10 @@ function blockMessage(reason: SendBlockReason): { error: string; closed: boolean
 /**
  * Relaya uma mensagem do usuário (ou de um agente) ao fornecedor.
  * - modera o texto antes de enviar/gravar;
- * - respeita opt-out, janela e horário comercial (send-guard);
+ * - respeita opt-out e janela (send-guard);
+ * - mensagem digitada pelo próprio usuário (`author: "user"`) pode sair fora do
+ *   horário comercial dentro de uma janela aberta (resposta humana direta);
+ *   agentes/automação continuam restritos ao horário comercial;
  * - quando a janela fechou, marca a conversa como `canal_fechado`.
  */
 export async function sendChatMessage(
@@ -115,6 +118,7 @@ export async function sendChatMessage(
   const decision = canSend(
     { status: conversation.status, windowExpiresAt: conversation.window_expires_at },
     deps.now,
+    { allowOutsideBusinessHours: input.author === "user" },
   );
 
   if (!decision.ok) {

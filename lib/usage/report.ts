@@ -2,7 +2,7 @@ import type { LlmProviderName } from "@/lib/ai/router";
 import { DEFAULT_FX_BRL_PER_USD_MICRO, microUsdToBrlCents } from "@/lib/finance/pricing";
 import { resolvePeriod } from "@/lib/finance/report";
 
-import { isProcessStage, isWhatsAppChannel, type ProcessStage, type WhatsAppChannel } from "./stages";
+import { isLegacyChannel, isProcessStage, type LegacyChannel, type ProcessStage } from "./stages";
 
 /** Uma linha de llm_usage_events já enriquecida (usuário/canal herdados do evento quando ausentes). */
 export interface UsageRow {
@@ -13,7 +13,7 @@ export interface UsageRow {
   profileId: string | null;
   eventId: string | null;
   stage: ProcessStage | null;
-  channel: WhatsAppChannel | null;
+  channel: LegacyChannel | null;
   inputTokens: number;
   outputTokens: number;
   costMicroUsd: number;
@@ -26,7 +26,7 @@ export interface UsageFilters {
   task?: string;
   user?: string;
   stage?: ProcessStage | "none";
-  channel?: WhatsAppChannel | "none";
+  channel?: LegacyChannel | "none";
   provider?: LlmProviderName;
 }
 
@@ -52,7 +52,7 @@ export function parseUsageFilters(p: Params, now = new Date()): UsageFilters {
   const stage = one(p, "stage");
   if (stage === "none" || isProcessStage(stage)) f.stage = stage;
   const channel = one(p, "channel");
-  if (channel === "none" || isWhatsAppChannel(channel)) f.channel = channel;
+  if (channel === "none" || isLegacyChannel(channel)) f.channel = channel;
   const provider = one(p, "provider");
   if (provider !== undefined && PROVIDERS.has(provider)) f.provider = provider as LlmProviderName;
   return f;
@@ -161,12 +161,12 @@ export interface ClosedOutsideRow {
   eventId: string;
   at: string;
   stage: ProcessStage | null;
-  channel: WhatsAppChannel | null;
+  channel: LegacyChannel | null;
 }
 
 /** Contagem de "fechamentos por fora" por estágio × canal. */
-export function closedOutsideSummary(rows: readonly ClosedOutsideRow[]): { stage: ProcessStage | null; channel: WhatsAppChannel | null; count: number }[] {
-  const m = new Map<string, { stage: ProcessStage | null; channel: WhatsAppChannel | null; count: number }>();
+export function closedOutsideSummary(rows: readonly ClosedOutsideRow[]): { stage: ProcessStage | null; channel: LegacyChannel | null; count: number }[] {
+  const m = new Map<string, { stage: ProcessStage | null; channel: LegacyChannel | null; count: number }>();
   for (const r of rows) {
     const k = `${r.stage ?? ""}|${r.channel ?? ""}`;
     const e = m.get(k) ?? { stage: r.stage, channel: r.channel, count: 0 };

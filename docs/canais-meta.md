@@ -52,6 +52,12 @@ RLS: escrita somente `service_role`; leitura por **admin** ou pelo **dono do eve
 `AUTOMATION_MESSAGING_TYPE = "RESPONSE"` e `isHumanAgentTag()` documentam/rejeitam a tag
 `HUMAN_AGENT` — a automação nunca a usa.
 
+**Exceção documentada (resposta humana direta):** uma mensagem que o próprio usuário digitou
+no chat do app, dentro de uma janela Meta aberta, pode ser relayada fora do horário comercial
+(`canSend(..., { allowOutsideBusinessHours: true })`). Isso vale somente para o autor `user`:
+automação, seleção de fornecedor e repasse de contato continuam restritos a dias úteis,
+09:00–18:00 America/Sao_Paulo, inclusive feriados nacionais.
+
 ## 4. Webhook (`app/api/meta/webhook`)
 
 A rota valida a assinatura (`X-Hub-Signature-256`), normaliza mensagens/comentários, persiste

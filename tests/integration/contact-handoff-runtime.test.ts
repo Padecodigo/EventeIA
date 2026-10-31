@@ -117,6 +117,16 @@ describe("repasse de contato — runtime", () => {
     expect(db.tables.contact_handoff_consents ?? []).toHaveLength(0);
   });
 
+  it("consentimento de outro fornecedor não autoriza o repasse", async () => {
+    seed({ consents: [consentRow({ supplier_id: "s2222222-2222-4222-8222-222222222222" })] });
+
+    await expect(deliverContactHandoff(request)).rejects.toThrow(/consentimento/);
+
+    expect(sendMock).not.toHaveBeenCalled();
+    expect(emailMock).not.toHaveBeenCalled();
+    expect(db.tables.supplier_conversation_messages ?? []).toHaveLength(0);
+  });
+
   it("com consentimento e janela aberta, envia o contato no Instagram e marca repassado", async () => {
     const result = await deliverContactHandoff(request);
 

@@ -79,7 +79,7 @@ export async function deliverContactHandoff(
 
   const { data: consent } = await admin
     .from("contact_handoff_consents")
-    .select("id,event_id,quotation_id,profile_id,accepted_at")
+    .select("id,event_id,quotation_id,supplier_id,profile_id,accepted_at")
     .eq("id", input.consentId)
     .maybeSingle();
 
@@ -87,6 +87,8 @@ export async function deliverContactHandoff(
     consent === null ||
     consent.event_id !== input.eventId ||
     consent.quotation_id !== input.quotationId ||
+    // O aceite é POR FORNECEDOR: um consentimento para outro fornecedor não vale.
+    consent.supplier_id !== input.supplierId ||
     consent.profile_id !== input.profileId ||
     !isContactHandoffConsentValid({ acceptedAt: consent.accepted_at })
   ) {

@@ -8,12 +8,12 @@ import { requireAdmin } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { deriveEventStage, PROCESS_STAGES, WHATSAPP_CHANNELS } from "@/lib/usage/stages";
+import { deriveEventStage, LEGACY_CHANNELS, PROCESS_STAGES } from "@/lib/usage/stages";
 
 const schema = z.object({
   eventId: z.string().uuid(),
   stage: z.enum(PROCESS_STAGES).optional(),
-  channel: z.enum(WHATSAPP_CHANNELS).optional(),
+  channel: z.enum(LEGACY_CHANNELS).optional(),
 });
 
 /** Admin marca que o cliente fechou direto com o fornecedor (estágio/canal padrão = os atuais do evento). */

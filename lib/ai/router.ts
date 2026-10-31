@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { ProcessStage, WhatsAppChannel } from "@/lib/usage/stages";
+import type { LegacyChannel, ProcessStage } from "@/lib/usage/stages";
 
 import { parseFencedJson } from "./fence-json";
 
@@ -22,7 +22,7 @@ export interface UsageMeta {
   reason?: string;
   profileId?: string;
   stage?: ProcessStage;
-  channel?: WhatsAppChannel;
+  channel?: LegacyChannel;
 }
 
 export type LlmProviderName = "nim" | "grok" | "deepseek";
@@ -112,7 +112,7 @@ export interface UsageLedger {
     /** Contexto opcional para o painel de consumo (admin/consumo). */
     profileId?: string;
     stage?: ProcessStage;
-    channel?: WhatsAppChannel;
+    channel?: LegacyChannel;
   }): Promise<void>;
 }
 

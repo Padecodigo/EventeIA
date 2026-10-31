@@ -107,6 +107,9 @@ export function createDiscoveryDeps(): DiscoveryDeps {
     },
 
     async isPhoneOptedOut(phone) {
+      // O WhatsApp foi removido como canal de saída, mas os consentimentos
+      // legados (channel = "whatsapp") continuam valendo: quem pediu opt-out
+      // nunca deve ser contatado por nenhum canal. Não filtre por canal novo.
       const { data } = await admin
         .from("consents")
         .select("status")
@@ -156,7 +159,8 @@ export function createDiscoveryDeps(): DiscoveryDeps {
         .eq("category", category)
         .is("opt_out_at", null)
         .is("deleted_at", null)
-        .neq("whatsapp_verified", false)
+        // A coluna legada `whatsapp_verified` fica no banco, mas não filtra mais:
+        // fornecedor sem esse selo ainda pode ser contatado por Instagram/Messenger.
         .neq("source_provider", "mock")
         .gte("last_seen_at", since)
         .limit(limit + excludePhones.length);

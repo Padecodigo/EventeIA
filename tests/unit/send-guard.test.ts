@@ -53,9 +53,39 @@ describe("canSend (guarda de envio da automação Meta)", () => {
     expect(canSend(conv(), saturday)).toEqual({ ok: false, reason: "outside_business_hours" });
   });
 
-  it("bloqueia em feriado nacional (Finados, segunda 02/11)", () => {
+  it("bloqueia em feriado nacional fixo (Finados, segunda 02/11)", () => {
     const holiday = new Date("2026-11-02T14:00:00Z");
     expect(canSend(conv(), holiday)).toEqual({ ok: false, reason: "outside_business_hours" });
+  });
+
+  it("bloqueia nos feriados móveis calculados pela Páscoa (Carnaval/Sexta Santa/Corpus Christi)", () => {
+    for (const holiday of [
+      "2026-02-16T14:00:00Z", // Carnaval (segunda)
+      "2026-02-17T14:00:00Z", // Carnaval (terça)
+      "2026-04-03T14:00:00Z", // Sexta-feira Santa
+      "2026-06-04T14:00:00Z", // Corpus Christi
+    ]) {
+      expect(canSend(conv(), new Date(holiday))).toEqual({
+        ok: false,
+        reason: "outside_business_hours",
+      });
+    }
+  });
+
+  it("resposta humana direta (usuário) pode sair fora do horário comercial dentro da janela", () => {
+    const saturday = new Date("2026-10-31T14:00:00Z");
+    expect(canSend(conv(), saturday, { allowOutsideBusinessHours: true }).ok).toBe(true);
+    // Mas nunca com janela vencida ou opt-out.
+    expect(
+      canSend(
+        conv({ windowExpiresAt: "2026-10-31T13:00:00.000Z" }),
+        saturday,
+        { allowOutsideBusinessHours: true },
+      ),
+    ).toEqual({ ok: false, reason: "window_closed" });
+    expect(
+      canSend(conv({ status: "opted_out" }), saturday, { allowOutsideBusinessHours: true }),
+    ).toEqual({ ok: false, reason: "opted_out" });
   });
 
   it("bloqueia antes das 09:00 de Brasília", () => {
