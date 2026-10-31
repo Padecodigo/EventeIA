@@ -71,8 +71,8 @@ select results_eq(
 select throws_ok($$ insert into public.event_budget_limit_history (event_id, new_cents, source)
   values ('a1b22222-0000-4000-8000-000000000001', 1, 'owner') $$, '42501', null, 'dono não insere histórico direto');
 select throws_ok($$ delete from public.event_budget_limit_history $$, '42501', null, 'dono não apaga histórico');
-select throws_ok($$ select public.set_event_budget_limit('a1b22222-0000-4000-8000-000000000002', 5000000) $$,
-  '42501', null, 'evento encerrado não aceita novo limite');
+select lives_ok($$ select public.set_event_budget_limit('a1b22222-0000-4000-8000-000000000002', 5000000) $$,
+  'evento encerrado ainda aceita novo limite (0074)');
 select throws_ok($$ select public.set_event_budget_limit('a1b22222-0000-4000-8000-000000000001', 10) $$,
   '22023', null, 'RPC valida faixa');
 reset role;

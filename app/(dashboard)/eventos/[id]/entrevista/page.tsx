@@ -20,7 +20,7 @@ export default async function EventInterviewPage({ params }: { params: Promise<{
   const supabase = await createSupabaseServerClient();
   const { data: event } = await supabase
     .from("events")
-    .select("id,title,event_type,guest_count,city,city_uf,city_ibge_code,search_city_codes,interview_answers,status,discovery_started_at,interview_completed_at")
+    .select("id,title,event_type,guest_count,city,city_uf,city_ibge_code,search_city_codes,interview_answers,status,discovery_started_at,search_start_date")
     .eq("id", idParsed.data)
     .maybeSingle();
   if (event === null) notFound();

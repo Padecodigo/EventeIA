@@ -5,9 +5,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * de busca (search_city_codes). Supabase/next mockados.
  */
 const updates: Record<string, unknown>[] = [];
-const lock: { discovery_started_at: string | null; interview_completed_at: string | null } = {
+const lock: { discovery_started_at: string | null; search_start_date: string | null } = {
   discovery_started_at: null,
-  interview_completed_at: null,
+  search_start_date: null,
 };
 const startDiscovery = vi.fn(async () => undefined);
 
@@ -56,7 +56,7 @@ describe("entrevista: cidade IBGE + cidades de busca", () => {
     updates.length = 0;
     startDiscovery.mockClear();
     lock.discovery_started_at = null;
-    lock.interview_completed_at = null;
+    lock.search_start_date = null;
   });
 
   it("grava cidade/UF/IBGE e extras válidos; dispara a descoberta", async () => {
@@ -90,7 +90,7 @@ describe("regressão 31/10: entrevista de evento iniciado (0073)", () => {
   });
 
   it("não regrava a entrevista de evento ativo com entrevista concluída", async () => {
-    lock.interview_completed_at = "2026-10-31T16:00:00Z";
+    lock.search_start_date = "2026-01-05";
     lock.discovery_started_at = "2026-10-31T16:05:00Z";
     const r = await submit({ cityCode: "3554102" });
     expect(r).toEqual({ error: expect.stringMatching(/só o orçamento limite/i) as unknown });

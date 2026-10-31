@@ -1,5 +1,6 @@
 "use server";
 
+import { isEventStarted } from "@/lib/events/edit-lock";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -813,11 +814,11 @@ export async function updateSearchStartAction(
   const supabase = await createSupabaseServerClient();
   const { data: event } = await supabase
     .from("events")
-    .select("id,event_date,discovery_started_at,quotes_delivered_at")
+    .select("id,status,event_date,discovery_started_at,quotes_delivered_at,search_start_date")
     .eq("id", parsed.data.eventId)
     .maybeSingle();
   if (event === null) return { error: "Evento não encontrado." };
-  if (!canEditSearchStart(event)) return { error: "A busca já começou — a data não pode mais ser alterada." };
+  if (!canEditSearchStart(event) || isEventStarted(event)) return { error: "A busca já começou — a data não pode mais ser alterada." };
 
   const searchStart = parseSearchStartInput(formData.get("searchStartMode"), formData.get("searchStartDate"), event.event_date);
   if (!searchStart.ok) return { error: searchStart.error };

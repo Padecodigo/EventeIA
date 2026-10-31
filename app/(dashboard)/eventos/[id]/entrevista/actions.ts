@@ -57,7 +57,7 @@ export async function saveInterviewAction(
   const supabase = await createSupabaseServerClient();
   const { data: event } = await supabase
     .from("events")
-    .select("id,event_type,guest_count,status,discovery_started_at,interview_completed_at")
+    .select("id,event_type,guest_count,status,discovery_started_at,search_start_date")
     .eq("id", parsed.data.eventId)
     .maybeSingle();
   if (event === null) {
