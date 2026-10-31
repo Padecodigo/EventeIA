@@ -373,6 +373,9 @@ export interface Database {
         contact_email: string | null;
         city: string | null;
         region_code: string | null;
+        inclui: string[];
+        capacidade: number | null;
+        tipo_espaco: string | null;
         opt_out_at: string | null;
         last_contacted_at: string | null;
         first_seen_at: string;

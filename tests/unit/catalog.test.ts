@@ -8,7 +8,19 @@ import {
   validateCatalog,
   visibleQuestions,
 } from "@/lib/catalog/rules";
-import { ALL_EVENT_TYPES, CATEGORY_LABELS, EVENT_TYPE_LABELS, ITEMS, VALE_DO_PARAIBA_CITIES } from "@/lib/catalog/v1";
+import {
+  ALL_EVENT_TYPES,
+  CATEGORY_LABELS,
+  EVENT_TYPE_LABELS,
+  ITEMS,
+  SPACE_TYPES,
+  SUPPLIER_INCLUI_COVERS,
+  SUPPLIER_INCLUI_LABELS,
+  SUPPLIER_INCLUI_TAGS,
+  VALE_DO_PARAIBA_CITIES,
+  normalizeCategoryCode,
+  normalizeSupplierIncluiTag,
+} from "@/lib/catalog/v1";
 
 describe("catálogo v1", () => {
   it("é íntegro (códigos únicos, condições válidas, overrides válidos)", () => {
@@ -105,7 +117,7 @@ describe("regras condicionais", () => {
     const reqs = resolveRequirements("casamento", 100, { ...defaultAnswers("casamento"), musica: "ambos" });
     const cats = reqs.map((r) => r.category);
     expect(cats).toContain("som_dj");
-    expect(cats).toContain("musica_ao_vivo");
+    expect(cats).toContain("banda");
     expect(new Set(reqs.map((r) => r.itemCode)).size).toBe(reqs.length);
   });
 });
@@ -137,5 +149,75 @@ describe("pergunta aberta final (demanda específica)", () => {
   it("rejeita texto acima de 500 caracteres", () => {
     const parsed = parseAnswers("casamento", { ...defaultAnswers("casamento"), demanda_especifica: "x".repeat(501) });
     expect(parsed.success).toBe(false);
+  });
+});
+
+describe("taxonomia de fornecedor e nuances de música/bar", () => {
+  it("novas categorias têm rótulo e não se confundem com DJ", () => {
+    for (const c of ["banda", "cantor_cerimonia", "barman"] as const) {
+      expect(CATEGORY_LABELS[c]).toBeTruthy();
+    }
+    expect(CATEGORY_LABELS.banda).not.toBe(CATEGORY_LABELS.som_dj);
+    const cats = new Set(ITEMS.map((i) => i.category));
+    expect(cats.has("banda")).toBe(true);
+    expect(cats.has("cantor_cerimonia")).toBe(true);
+    expect(cats.has("barman")).toBe(true);
+  });
+
+  it("banda e DJ usam categorias distintas; barman é categoria própria", () => {
+    const comBanda = resolveRequirements("casamento", 100, {
+      ...defaultAnswers("casamento"),
+      musica: "ambos",
+      bebida_alcoolica: true,
+      bar_terceirizado: true,
+    });
+    const byCode = new Map(comBanda.map((r) => [r.itemCode, r.category]));
+    expect(byCode.get("banda_combo")).toBe("banda");
+    expect(byCode.get("dj_som_combo")).toBe("som_dj");
+    expect(byCode.get("bar_drinks")).toBe("barman");
+  });
+
+  it("cantor de cerimônia só entra quando pedido, em casamento/batizado", () => {
+    const sem = resolveRequirements("casamento", 100, defaultAnswers("casamento"));
+    expect(sem.map((r) => r.itemCode)).not.toContain("cantor_cerimonia");
+    const com = resolveRequirements("casamento", 100, {
+      ...defaultAnswers("casamento"),
+      cantor_cerimonia: true,
+    });
+    expect(com.find((r) => r.itemCode === "cantor_cerimonia")?.category).toBe("cantor_cerimonia");
+    const corporativo = resolveRequirements("corporativo", 100, {
+      ...defaultAnswers("corporativo"),
+      cantor_cerimonia: true,
+    });
+    expect(corporativo.map((r) => r.itemCode)).not.toContain("cantor_cerimonia");
+  });
+
+  it("tags de 'inclui' normalizam sinônimos e apontam para a categoria certa", () => {
+    for (const tag of SUPPLIER_INCLUI_TAGS) {
+      expect(SUPPLIER_INCLUI_LABELS[tag]).toBeTruthy();
+    }
+    expect(normalizeSupplierIncluiTag("Garçons")).toBe("servico");
+    expect(normalizeSupplierIncluiTag("Louça e talheres")).toBe("louca");
+    expect(normalizeSupplierIncluiTag("Bartender")).toBe("barman");
+    expect(normalizeSupplierIncluiTag("Cantor de cerimônia")).toBe("cantor_cerimonia");
+    expect(normalizeSupplierIncluiTag("desconhecido")).toBeNull();
+    expect(SUPPLIER_INCLUI_COVERS.comida).toBe("buffet");
+    expect(SUPPLIER_INCLUI_COVERS.banda).toBe("banda");
+    expect(SUPPLIER_INCLUI_COVERS.som).toBe("som_dj");
+    expect(SUPPLIER_INCLUI_COVERS.barman).toBe("barman");
+  });
+
+  it("categorias legadas continuam apontando para a taxonomia atual", () => {
+    expect(normalizeCategoryCode("musica_ao_vivo")).toBe("banda");
+    expect(normalizeCategoryCode("Música ao Vivo")).toBe("banda");
+    expect(normalizeCategoryCode("bartender")).toBe("barman");
+    expect(normalizeCategoryCode("cantor")).toBe("cantor_cerimonia");
+    expect(normalizeCategoryCode("buffet")).toBe("buffet");
+    expect(normalizeCategoryCode("desconhecida")).toBeNull();
+  });
+
+  it("espaço tem tipos canônicos para a tag de capacidade", () => {
+    expect(SPACE_TYPES).toContain("chacara");
+    expect(SPACE_TYPES).toContain("salao");
   });
 });
