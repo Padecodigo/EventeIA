@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { requireUser } from "@/lib/auth";
 import { EVENT_STYLES, SPACE_TYPES } from "@/lib/catalog/v1";
+import { parseBudgetLimitInput } from "@/lib/events/budget-limit";
 import { cancelEventFollowUp } from "@/lib/events/cancel";
 import { canCancelEvent, canCompleteEvent } from "@/lib/events/lifecycle";
 import { stopEventBackgroundWork } from "@/lib/events/stop";
@@ -239,5 +240,42 @@ export async function updateEventDetailsAction(
   revalidatePath(`/eventos/${event.id}`);
   revalidatePath("/eventos");
   revalidatePath("/painel");
+  return { saved: true };
+}
+
+export interface BudgetLimitState {
+  error?: string;
+  saved?: boolean;
+}
+
+/**
+ * Edita o orçamento limite do evento (0072). Só dono ou admin: a RPC
+ * `set_event_budget_limit` valida a posse e o trigger grava o histórico.
+ * Vazio = remover o limite.
+ */
+export async function updateBudgetLimitAction(
+  _previous: BudgetLimitState,
+  formData: FormData,
+): Promise<BudgetLimitState> {
+  await requireUser();
+  const idParsed = eventIdSchema.safeParse({ eventId: formData.get("eventId") });
+  if (!idParsed.success) return { error: "Evento não encontrado." };
+  const limit = parseBudgetLimitInput(formData.get("budgetLimit"));
+  if (!limit.ok) return { error: limit.error };
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("set_event_budget_limit", {
+    p_event_id: idParsed.data.eventId,
+    p_cents: limit.cents,
+  });
+  if (error !== null) {
+    if (error.code === "42501") {
+      return { error: "Só o dono do evento pode alterar o orçamento limite (eventos encerrados não aceitam mudanças)." };
+    }
+    logger.error({ code: error.code }, "falha ao editar orçamento limite");
+    return { error: "Não foi possível salvar o orçamento limite. Tente novamente." };
+  }
+
+  revalidatePath(`/eventos/${idParsed.data.eventId}`);
   return { saved: true };
 }

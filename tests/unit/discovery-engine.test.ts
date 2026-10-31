@@ -97,6 +97,27 @@ describe("runDiscoveryRound", () => {
   });
 });
 
+describe("orçamento limite na prospecção (0072)", () => {
+  it("o job recebe o limite como contexto, mas a mensagem ao fornecedor não o revela", async () => {
+    const { deps, jobs } = makeDeps({}, { budgetLimitCents: 2_500_000 });
+    await runDiscoveryRound(deps, [fixed("grok", ["(12) 99111-0001"])], {
+      eventId: "11111111-1111-4111-8111-111111111111",
+      round: 0,
+    });
+    expect(jobs[0]?.budgetLimitCents).toBe(2_500_000);
+    expect(jobs[0]?.messageText).not.toMatch(/25\.000|or[çc]amento|limite/i);
+  });
+
+  it("regressão: evento sem limite segue com null", async () => {
+    const { deps, jobs } = makeDeps();
+    await runDiscoveryRound(deps, [fixed("grok", ["(12) 99111-0001"])], {
+      eventId: "11111111-1111-4111-8111-111111111111",
+      round: 0,
+    });
+    expect(jobs[0]?.budgetLimitCents).toBeNull();
+  });
+});
+
 describe("ingestBatch", () => {
   it("contabiliza resultados por desfecho", async () => {
     const { deps } = makeDeps();

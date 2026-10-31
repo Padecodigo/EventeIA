@@ -74,6 +74,7 @@ export interface Database {
         venue_capacity: number | null;
         venue_type: string | null;
         event_style: string | null;
+        budget_limit_cents: number | null;
         status: "draft" | "awaiting_payment" | "active" | "completed" | "canceled";
         city: string | null;
         city_uf: string | null;
@@ -134,6 +135,15 @@ export interface Database {
         repassado_at: string | null;
         updated_at: string;
         created_at: string;
+      }>;
+      event_budget_limit_history: Table<{
+        id: string;
+        event_id: string;
+        old_cents: number | null;
+        new_cents: number | null;
+        changed_by: string | null;
+        source: "owner" | "admin" | "system";
+        changed_at: string;
       }>;
       contact_handoff_consents: Table<{
         id: string;
@@ -685,6 +695,10 @@ export interface Database {
     };
     Views: { [_ in never]: never };
     Functions: {
+      set_event_budget_limit: {
+        Args: { p_event_id: string; p_cents: number | null };
+        Returns: number | null;
+      };
       support_ticket_owner_edit: {
         Args: { p_ticket_id: string; p_subject: string; p_message: string };
         Returns: boolean;

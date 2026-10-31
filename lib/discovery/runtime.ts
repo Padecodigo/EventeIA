@@ -53,7 +53,7 @@ export function createDiscoveryDeps(): DiscoveryDeps {
     async loadEvent(eventId) {
       const { data: e } = await admin
         .from("events")
-        .select("id,title,event_type,event_date,guest_count,city,city_uf,search_city_codes,region_code,status,owner_profile_id,workspace_id,interview_completed_at,discovery_started_at")
+        .select("id,title,event_type,event_date,guest_count,budget_limit_cents,city,city_uf,search_city_codes,region_code,status,owner_profile_id,workspace_id,interview_completed_at,discovery_started_at")
         .eq("id", eventId)
         .maybeSingle();
       if (e === null) return null;
@@ -69,6 +69,7 @@ export function createDiscoveryDeps(): DiscoveryDeps {
         eventType,
         eventDateIso: e.event_date,
         guestCount: e.guest_count,
+        budgetLimitCents: e.budget_limit_cents ?? null,
         city: e.city ?? "",
         cityUf: e.city_uf,
         searchCities: (e.search_city_codes ?? [])
