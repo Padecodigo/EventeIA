@@ -11,6 +11,7 @@ import { EventChat } from "@/components/domain/event-chat";
 import { EventDetailsEditor } from "@/components/domain/event-details-editor";
 import { EventLifecycleActions } from "@/components/domain/event-lifecycle-actions";
 import { EventSupportChat } from "@/components/domain/event-support-chat";
+import { FollowInstagramCard } from "@/components/domain/follow-instagram-card";
 import { QuotationsPanel } from "@/components/domain/quotations-panel";
 import { QuotePreparingNotice } from "@/components/domain/quote-preparing-notice";
 import { ScenariosPanel } from "@/components/domain/scenarios-panel";
@@ -245,6 +246,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           />
         </div>
       </header>
+
+      <FollowInstagramCard />
 
       <EventDetailsEditor
         eventId={event.id}
