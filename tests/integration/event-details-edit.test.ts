@@ -4,7 +4,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * Integração: edição pós-criação dos dados do evento (convidados, local e estilo).
  * Supabase/Next mockados; valida update e mensagens em pt-BR.
  */
-let eventRow: { id: string; status: string } | null = null;
+let eventRow: {
+  id: string;
+  status: string;
+  discovery_started_at?: string | null;
+  interview_completed_at?: string | null;
+} | null = null;
 const updates: Record<string, unknown>[] = [];
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
@@ -54,7 +59,7 @@ async function submit(fields: Record<string, string>) {
 }
 
 beforeEach(() => {
-  eventRow = { id: EVENT_ID, status: "active" };
+  eventRow = { id: EVENT_ID, status: "active", discovery_started_at: null, interview_completed_at: null };
   updates.length = 0;
 });
 
@@ -127,6 +132,22 @@ describe("editar dados do evento", () => {
     expect((await submit({ guestCount: "50" })).error).toBe(
       "Um evento excluído não pode ser editado.",
     );
+    expect(updates).toHaveLength(0);
+  });
+});
+
+describe("evento iniciado (0073)", () => {
+  it("bloqueia edição quando a entrevista já foi concluída", async () => {
+    eventRow = { id: EVENT_ID, status: "active", discovery_started_at: null, interview_completed_at: "2026-10-31T16:00:00Z" };
+    const result = await submit({ guestCount: "150" });
+    expect(result.error).toMatch(/só o orçamento limite/i);
+    expect(updates).toHaveLength(0);
+  });
+
+  it("bloqueia edição com a busca em andamento", async () => {
+    eventRow = { id: EVENT_ID, status: "active", discovery_started_at: "2026-10-31T16:00:00Z", interview_completed_at: null };
+    const result = await submit({ guestCount: "150" });
+    expect(result.error).toMatch(/já começou/i);
     expect(updates).toHaveLength(0);
   });
 });

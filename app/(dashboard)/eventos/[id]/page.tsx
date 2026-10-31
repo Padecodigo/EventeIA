@@ -27,6 +27,7 @@ import { isAboveBudgetLimit } from "@/lib/events/budget-limit";
 import { canCancelEvent, canCompleteEvent } from "@/lib/events/lifecycle";
 import { luckyDiscountCents } from "@/lib/lucky/pure";
 import { lookupLuckyCoupon } from "@/lib/lucky/server";
+import { isEventStarted, STARTED_EVENT_LOCK_MESSAGE } from "@/lib/events/edit-lock";
 import { formatBRL } from "@/lib/money";
 import { offerDiscountCents } from "@/lib/offers/pure";
 import { activeUserOffer } from "@/lib/offers/server";
@@ -199,6 +200,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
   const requirementCategories = [...new Set((requirementRows ?? []).map((r) => r.category))];
   const interviewDone = event.interview_completed_at !== null;
+  const editLocked = isEventStarted(event);
 
   // Escolhas do fornecedor: opções/pacotes extraídos de cada cotação + a escolhida.
   const { data: choiceRows } = await supabase
@@ -304,13 +306,23 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
         history={budgetHistory}
       />
 
-      <EventDetailsEditor
-        eventId={event.id}
-        guestCount={event.guest_count}
-        venueCapacity={event.venue_capacity}
-        venueType={event.venue_type}
-        eventStyle={event.event_style}
-      />
+      {editLocked ? (
+        <p
+          role="note"
+          data-testid="event-edit-locked"
+          className="rounded-card border border-line-subtle bg-off-white p-6 text-sm text-vinho/80 shadow-soft"
+        >
+          {STARTED_EVENT_LOCK_MESSAGE}
+        </p>
+      ) : (
+        <EventDetailsEditor
+          eventId={event.id}
+          guestCount={event.guest_count}
+          venueCapacity={event.venue_capacity}
+          venueType={event.venue_type}
+          eventStyle={event.event_style}
+        />
+      )}
 
       <section className="scroll-mt-24 flex flex-wrap items-center justify-between gap-4 rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
         <div>
@@ -323,12 +335,16 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
               : "Responda algumas perguntas para o agente saber o que cotar e em qual cidade."}
           </p>
         </div>
-        <Link
-          href={`/eventos/${event.id}/entrevista`}
-          className="rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-on-primary hover:bg-primaria-escura"
-        >
-          {interviewDone ? "Revisar respostas" : "Começar entrevista"}
-        </Link>
+        {editLocked ? (
+          <span className="text-caption text-vinho/70">Entrevista travada: o evento já começou.</span>
+        ) : (
+          <Link
+            href={`/eventos/${event.id}/entrevista`}
+            className="rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-on-primary hover:bg-primaria-escura"
+          >
+            {interviewDone ? "Revisar respostas" : "Começar entrevista"}
+          </Link>
+        )}
       </section>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-start">
