@@ -16,9 +16,17 @@ alter table public.suppliers
   add column if not exists capacidade integer,
   add column if not exists tipo_espaco text;
 
-alter table public.suppliers
-  add constraint suppliers_capacidade_check
-  check (capacidade is null or capacidade > 0) not valid;
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'suppliers_capacidade_check'
+  ) then
+    alter table public.suppliers
+      add constraint suppliers_capacidade_check
+      check (capacidade is null or capacidade > 0) not valid;
+  end if;
+end;
+$$;
 
 comment on column public.suppliers.inclui is
   'Tags do que o serviço inclui (comida, servico, louca, bebidas, som, barman, banda, cantor_cerimonia, ...).';

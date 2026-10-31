@@ -20,6 +20,13 @@ describe("migração 0069 (taxonomia de fornecedor)", () => {
     expect(lower).toContain("check (capacidade is null or capacidade > 0)");
   });
 
+  it("adiciona a constraint sob guarda de idempotência", () => {
+    expect(lower).toMatch(
+      /do \$\$\s*begin\s*if not exists \(\s*select 1 from pg_constraint where conname = 'suppliers_capacidade_check'\s*\)/,
+    );
+    expect(lower).toContain("add constraint suppliers_capacidade_check");
+  });
+
   it("é aditiva e não destrutiva", () => {
     expect(lower).not.toMatch(/\b(drop table|drop column|truncate|delete from)\b/);
     expect(lower).not.toMatch(/\bupdate public\.suppliers\b/);
