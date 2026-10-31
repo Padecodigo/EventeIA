@@ -375,6 +375,24 @@ export interface Database {
         error: string | null;
         created_at: string;
       }>;
+      prospecting_posts: Table<{
+        id: string;
+        event_id: string;
+        event_code: string;
+        event_type: string;
+        event_date: string;
+        city: string | null;
+        region: string | null;
+        caption: string;
+        image_url: string | null;
+        image_params: Json;
+        status: "draft" | "pending_approval" | "approved" | "published" | "failed";
+        ig_media_id: string | null;
+        error: string | null;
+        published_at: string | null;
+        created_at: string;
+        updated_at: string;
+      }>;
       supplier_conversations: Table<{
         id: string;
         event_id: string | null;

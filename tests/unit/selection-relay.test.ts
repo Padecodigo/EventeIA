@@ -36,6 +36,19 @@ describe("relayDecision (escolha enviada só dentro da janela aberta)", () => {
     expect(decision.nextStatus).toBe("canal_fechado");
   });
 
+  it("marca indisponivel quando o fornecedor já contatado fica em silêncio até a janela vencer", () => {
+    for (const status of ["enviado_ao_fornecedor", "aguardando_resposta"] as const) {
+      const decision = relayDecision(
+        status,
+        openConversation({ windowExpiresAt: "2026-10-26T13:00:00.000Z" }),
+        now,
+      );
+      expect(decision.action).toBe("close");
+      expect(decision.nextStatus).toBe("indisponivel");
+      expect(decision.reason).toBe("window_closed");
+    }
+  });
+
   it("marca indisponivel no opt-out do fornecedor", () => {
     const decision = relayDecision("pendente", openConversation({ status: "opted_out" }), now);
     expect(decision.action).toBe("close");

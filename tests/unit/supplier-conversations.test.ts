@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   ingestSupplierMessage,
   markExpiredWindows,
+  markSilentSupplierSelections,
+  type SilentSelectionSweepDb,
   type SupplierConversationStore,
   type WindowSweepDb,
 } from "@/lib/outreach/supplier-conversations";
@@ -131,5 +133,58 @@ describe("markExpiredWindows", () => {
       }),
     };
     await expect(markExpiredWindows(db, NOW)).resolves.toBe(0);
+  });
+});
+
+
+describe("markSilentSupplierSelections", () => {
+  it("marca indisponivel as seleções enviadas cuja janela venceu", async () => {
+    let updated: Record<string, unknown> | null = null;
+    const db: SilentSelectionSweepDb = {
+      from: (table) =>
+        table === "supplier_conversations"
+          ? {
+              select: () => ({
+                lt: async () => ({ data: [{ id: "c1" }, { id: "c2" }] }),
+              }),
+            }
+          : {
+              update: (values) => {
+                updated = values;
+                return {
+                  in: () => ({
+                    in: () => ({
+                      select: async () => ({ data: [{ id: "s1" }], error: null }),
+                    }),
+                  }),
+                };
+              },
+            },
+    } as SilentSelectionSweepDb;
+
+    await expect(markSilentSupplierSelections(db, NOW)).resolves.toBe(1);
+    expect(updated).toMatchObject({ status: "indisponivel" });
+  });
+
+  it("não atualiza seleções quando não há conversa vencida", async () => {
+    let touched = false;
+    const db: SilentSelectionSweepDb = {
+      from: (table) =>
+        table === "supplier_conversations"
+          ? {
+              select: () => ({
+                lt: async () => ({ data: [] }),
+              }),
+            }
+          : {
+              update: () => {
+                touched = true;
+                return { in: () => ({ in: () => ({ select: async () => ({ data: [], error: null }) }) }) };
+              },
+            },
+    } as SilentSelectionSweepDb;
+
+    await expect(markSilentSupplierSelections(db, NOW)).resolves.toBe(0);
+    expect(touched).toBe(false);
   });
 });

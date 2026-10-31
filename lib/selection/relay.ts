@@ -38,6 +38,19 @@ export function relayDecision(
   conversation: SendGuardConversation,
   now: Date,
 ): RelayDecision {
+  // Fornecedor já contatado e sem resposta até a janela vencer → indisponível.
+  if (status === "enviado_ao_fornecedor" || status === "aguardando_resposta") {
+    const contact = canSend(conversation, now);
+    if (!contact.ok && contact.reason !== "outside_business_hours") {
+      return {
+        action: "close",
+        nextStatus: nextStatus(status, { type: "indisponivel" }),
+        reason: contact.reason,
+      };
+    }
+    return { action: "wait", nextStatus: status };
+  }
+
   if (status !== "pendente") {
     return { action: "wait", nextStatus: status };
   }

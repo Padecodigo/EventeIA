@@ -6,10 +6,12 @@ import { getDeepSeekClient } from "@/lib/deepseek/client";
 import { serverEnv } from "@/lib/env";
 import { buildPostContent } from "@/lib/prospecting/content";
 import { generatePlanContent, type PlanContentEvent } from "@/lib/prospecting/content-llm";
+import { buildEventPostContent } from "@/lib/prospecting/event-post";
 import { normalizeNeeds, planNeedPosts } from "@/lib/prospecting/plan-needs";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 import { Card } from "../ui";
+import { EventPostApproval } from "./event-post-approval";
 import { PublishPostButton } from "./publish-post-button";
 
 export const dynamic = "force-dynamic";
@@ -43,7 +45,11 @@ export default async function ProspeccaoPage({
       .select("name,category,source_url")
       .like("source_url", "https://www.instagram.com/%")
       .limit(300),
-    admin.from("events").select("id,title,event_type,guest_count").order("created_at", { ascending: false }).limit(20),
+    admin
+      .from("events")
+      .select("id,title,event_type,event_date,city,city_uf,region_code,guest_count")
+      .order("created_at", { ascending: false })
+      .limit(20),
   ]);
 
   const seen = new Set<string>();
@@ -59,6 +65,7 @@ export default async function ProspeccaoPage({
 
   let needs: string[];
   let eventInfo: PlanContentEvent | null = null;
+  let eventPost: ReturnType<typeof buildEventPostContent> | null = null;
   if (eventId !== undefined) {
     const { data: requirements } = await admin
       .from("event_requirements")
@@ -74,6 +81,13 @@ export default async function ProspeccaoPage({
         typeLabel: EVENT_TYPE_LABELS[selected.event_type as keyof typeof EVENT_TYPE_LABELS] ?? selected.event_type,
         guestCount: selected.guest_count,
       };
+      eventPost = buildEventPostContent({
+        eventId: selected.id,
+        eventType: selected.event_type,
+        eventDate: selected.event_date,
+        city: selected.city,
+        region: selected.city_uf ?? selected.region_code,
+      });
     }
     const needSet = new Set(needs);
     suppliers = suppliers.filter((supplier) => needSet.has(supplier.category));
@@ -142,6 +156,25 @@ export default async function ProspeccaoPage({
           </Link>
         ))}
       </nav>
+
+      {eventPost !== null && eventId !== undefined ? (
+        <Card>
+          <p className="text-caption font-semibold uppercase tracking-wide text-vinho/60">
+            Post de prospecção do evento
+          </p>
+          <p className="mt-1 text-caption text-vinho/70">
+            Imagem da marca por tipo de evento, data e cidade/região. A legenda não usa dados
+            pessoais do cliente.
+          </p>
+          <div className="mt-3">
+            <EventPostApproval
+              eventId={eventId}
+              caption={eventPost.caption}
+              eventCode={eventPost.eventCode}
+            />
+          </div>
+        </Card>
+      ) : null}
 
       {plan.length === 0 ? (
         <Card>

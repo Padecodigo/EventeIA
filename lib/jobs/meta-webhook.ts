@@ -15,8 +15,10 @@ import {
   ingestSupplierMessage,
   type SupplierConversationStore,
 } from "@/lib/outreach/supplier-conversations";
-import { windowKindFromReferral } from "@/lib/outreach/window";
+import { eventIdFromRef, windowKindFromReferral } from "@/lib/outreach/window";
 import { PRIVATE_REPLY_OPENER } from "@/lib/prospecting/content";
+import { eventCodesFromText } from "@/lib/prospecting/event-post";
+import { createSupabaseProspectingPostStore } from "@/lib/prospecting/event-post-store";
 import { handleInbound, type ProspectStore } from "@/lib/prospecting/inbound";
 import { shouldAgentRespond } from "@/lib/prospecting/respond";
 import {
@@ -79,6 +81,8 @@ export interface MetaWebhookJobDeps {
   lookup: MetaSupplierLookup;
   webhookEvents: WebhookEventsDb;
   supplierConversations: SupplierConversationStore;
+  /** Resolve o evento a partir do código público do post de prospecção. */
+  findEventIdByCode?: (code: string) => Promise<string | null>;
   resolveSupplier: (
     lookup: MetaSupplierLookup,
     igSid: string,
@@ -103,6 +107,7 @@ function configured(value: string | undefined): value is string {
 export function defaultMetaWebhookJobDeps(): MetaWebhookJobDeps {
   const admin = getSupabaseAdmin();
   const env = serverEnv();
+  const prospectingPosts = createSupabaseProspectingPostStore();
   return {
     env: {
       keyword: env.META_PROSPECT_KEYWORD,
@@ -115,6 +120,7 @@ export function defaultMetaWebhookJobDeps(): MetaWebhookJobDeps {
     lookup: admin as unknown as MetaSupplierLookup,
     webhookEvents: admin as unknown as WebhookEventsDb,
     supplierConversations: createSupabaseSupplierConversationStore(),
+    findEventIdByCode: (code) => prospectingPosts.findEventIdByCode(code),
     resolveSupplier: resolveInstagramSupplier,
     resolveSupplierByHandle: resolveInstagramSupplierByHandle,
     inbound: handleInbound,
@@ -248,7 +254,16 @@ async function processMessage(message: MetaInboundMessage, deps: MetaWebhookJobD
 
   // Conversa de fornecedor (modelo canônico): registra a mensagem e abre/estende a
   // janela de resposta. O `ref` do link (ig.me/m.me) ou do anúncio vincula a
-  // conversa ao evento quando codificado como `event:<id>`.
+  // conversa ao evento quando codificado como `event:<id>`. Sem ref, o código
+  // público do post de prospecção (ex.: EVT-AB12CD34) na mensagem faz o vínculo.
+  let linkedEventId = eventIdFromRef(message.referral?.ref ?? null);
+  if (linkedEventId === null && deps.findEventIdByCode !== undefined) {
+    for (const code of eventCodesFromText(message.text)) {
+      linkedEventId = await deps.findEventIdByCode(code);
+      if (linkedEventId !== null) break;
+    }
+  }
+
   await ingestSupplierMessage(deps.supplierConversations, {
     channel: message.source,
     externalUserId: message.senderId,
@@ -256,6 +271,7 @@ async function processMessage(message: MetaInboundMessage, deps: MetaWebhookJobD
     windowKind: windowKindFromReferral(message.referral?.source),
     body: message.text,
     externalId: message.eventId,
+    eventId: linkedEventId,
     supplierId: supplier?.id ?? null,
     now: deps.now(),
   });

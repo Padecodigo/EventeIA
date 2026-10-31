@@ -229,7 +229,54 @@ export async function markExpiredWindows(
   return data?.length ?? 0;
 }
 
+export interface SilentSelectionSweepDb {
+  from(table: "supplier_conversations"): {
+    select(columns: string): {
+      lt(column: string, value: string): Promise<{ data: { id: string }[] | null }>;
+    };
+  };
+  from(table: "supplier_selections"): {
+    update(values: Record<string, unknown>): {
+      in(column: string, values: string[]): {
+        in(column: string, values: string[]): {
+          select(columns: string): Promise<{ data: { id: string }[] | null; error: { code?: string } | null }>;
+        };
+      };
+    };
+  };
+}
+
+/**
+ * Silêncio do fornecedor: seleção já enviada cuja janela venceu sem resposta
+ * vira `indisponivel` (o usuário segue com outro fornecedor). Retorna o total.
+ */
+export async function markSilentSupplierSelections(
+  db: SilentSelectionSweepDb,
+  now: Date = new Date(),
+): Promise<number> {
+  const { data: expired } = await db
+    .from("supplier_conversations")
+    .select("id")
+    .lt("window_expires_at", now.toISOString());
+  const conversationIds = (expired ?? []).map((conversation) => conversation.id);
+  if (conversationIds.length === 0) return 0;
+
+  const { data, error } = await db
+    .from("supplier_selections")
+    .update({ status: "indisponivel", updated_at: now.toISOString() })
+    .in("conversation_id", conversationIds)
+    .in("status", ["enviado_ao_fornecedor", "aguardando_resposta"])
+    .select("id");
+  if (error !== null) {
+    throw new Error(`falha ao marcar seleções em silêncio (${error.code ?? "?"})`);
+  }
+  return data?.length ?? 0;
+}
+
 /** Varredura em produção: usa o client admin (service_role) do Supabase. */
 export async function runSupplierWindowSweep(now: Date = new Date()): Promise<number> {
-  return markExpiredWindows(getSupabaseAdmin() as unknown as WindowSweepDb, now);
+  const admin = getSupabaseAdmin();
+  const closed = await markExpiredWindows(admin as unknown as WindowSweepDb, now);
+  await markSilentSupplierSelections(admin as unknown as SilentSelectionSweepDb, now);
+  return closed;
 }

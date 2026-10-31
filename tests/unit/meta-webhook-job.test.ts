@@ -250,6 +250,62 @@ describe("handleMetaWebhookJob", () => {
     });
   });
 
+  it("DM com o código do post de prospecção vincula a conversa ao evento", async () => {
+    const recording: SupplierConversationStore = {
+      find: async () => null,
+      upsert: async (input) => ({
+        id: "sc1",
+        channel: input.channel,
+        externalUserId: input.externalUserId,
+        eventId: input.eventId ?? null,
+        supplierId: input.supplierId ?? null,
+        ref: input.ref ?? null,
+        lastInboundAt: input.lastInboundAt.toISOString(),
+        windowExpiresAt: input.windowExpiresAt.toISOString(),
+        windowKind: input.windowKind,
+        status: input.status ?? "open",
+      }),
+      insertMessage: async () => true,
+    };
+    const spy = vi.fn(recording.upsert);
+    const store: SupplierConversationStore = { ...recording, upsert: spy };
+    const eventUuid = "aaaaaaaa-0000-4000-8000-000000000001";
+    const findEventIdByCode = vi.fn(async () => eventUuid);
+    const { deps } = makeDeps({ supplierConversations: store, findEventIdByCode });
+
+    await handleMetaWebhookJob(
+      {
+        kind: "message",
+        webhookEventId: "wh1",
+        event: msg("m1", "instagram", "tenho interesse, meu código é EVT-AAAAAAAA"),
+      },
+      deps,
+    );
+
+    expect(findEventIdByCode).toHaveBeenCalledWith("EVT-AAAAAAAA");
+    expect(spy.mock.calls[0]?.[0]).toMatchObject({ eventId: eventUuid });
+  });
+
+  it("referral tem prioridade sobre o código na mensagem", async () => {
+    const eventUuid = "aaaaaaaa-0000-4000-8000-000000000001";
+    const findEventIdByCode = vi.fn(async () => "outro-evento");
+    const { deps } = makeDeps({ findEventIdByCode });
+
+    await handleMetaWebhookJob(
+      {
+        kind: "message",
+        webhookEventId: "wh1",
+        event: {
+          ...msg("m1", "instagram", "código EVT-AAAAAAAA"),
+          referral: { ref: `event:${eventUuid}`, source: "SHORTLINK" },
+        },
+      },
+      deps,
+    );
+
+    expect(findEventIdByCode).not.toHaveBeenCalled();
+  });
+
   it("erros durante o processamento propagam para o BullMQ repetir", async () => {
     const { deps } = makeDeps({
       enqueueReply: vi.fn(async () => {
