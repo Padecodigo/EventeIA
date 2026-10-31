@@ -71,6 +71,9 @@ export interface Database {
         event_date: string;
         region_code: string;
         guest_count: number;
+        venue_capacity: number | null;
+        venue_type: string | null;
+        event_style: string | null;
         status: "draft" | "awaiting_payment" | "active" | "completed" | "canceled";
         city: string | null;
         city_uf: string | null;

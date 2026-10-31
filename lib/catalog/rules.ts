@@ -141,13 +141,23 @@ function quantityFor(item: CatalogItem, guestCount: number, answers: Answers): n
   }
 }
 
+/** Avisos da entrevista (pt-BR) que não bloqueiam o salvamento. */
+export function interviewWarnings(answers: Answers): string[] {
+  const warnings: string[] = [];
+  if (answers.buffet_inclui === "so_comida") {
+    warnings.push(
+      "Buffet só com comida: garçons/copeiras e louça entram automaticamente como itens à parte.",
+    );
+  }
+  return warnings;
+}
+
 /** Itens que o agente vai cotar para este evento. */
 export function resolveRequirements(eventType: EventType, guestCount: number, answers: Answers): Requirement[] {
   const seen = new Set<string>();
   const out: Requirement[] = [];
-  for (const item of ITEMS) {
-    if (!applies(item.appliesTo, eventType) || !conditionsMet(item.when, answers)) continue;
-    if (seen.has(item.code)) continue;
+  const pushItem = (item: CatalogItem) => {
+    if (seen.has(item.code)) return;
     seen.add(item.code);
     out.push({
       itemCode: item.code,
@@ -157,6 +167,17 @@ export function resolveRequirements(eventType: EventType, guestCount: number, an
       quantity: quantityFor(item, guestCount, answers),
       mandatory: item.mandatory,
     });
+  };
+  for (const item of ITEMS) {
+    if (!applies(item.appliesTo, eventType) || !conditionsMet(item.when, answers)) continue;
+    pushItem(item);
+  }
+  // Buffet "só comida" não traz equipe nem louça: entram automaticamente.
+  if (answers.buffet_inclui === "so_comida") {
+    for (const code of ["garcons_copeiras", "louca_talheres"]) {
+      const item = ITEMS.find((candidate) => candidate.code === code);
+      if (item !== undefined && applies(item.appliesTo, eventType)) pushItem(item);
+    }
   }
   const special = answers[SPECIAL_REQUEST_QUESTION];
   if (typeof special === "string" && special.trim().length > 0) {

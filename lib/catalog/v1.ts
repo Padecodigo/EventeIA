@@ -286,6 +286,48 @@ export const SPACE_TYPE_LABELS: Record<SpaceType, string> = {
 export const VENUE_CAPACITY_FIELD = "capacidade";
 export const VENUE_TYPE_FIELD = "tipo_espaco";
 
+/** Estilos de festa aceitos no evento (gravados em events.event_style). */
+export const EVENT_STYLES = [
+  "rustico_chique",
+  "classico",
+  "moderno",
+  "boho",
+  "praia",
+  "industrial",
+  "outro",
+] as const;
+
+export type EventStyle = (typeof EVENT_STYLES)[number];
+
+export const EVENT_STYLE_LABELS: Record<EventStyle, string> = {
+  rustico_chique: "Rústico-chique",
+  classico: "Clássico",
+  moderno: "Moderno",
+  boho: "Boho",
+  praia: "Praia",
+  industrial: "Industrial",
+  outro: "Outro",
+};
+
+/**
+ * Alerta determinístico de capacidade: o local informado pelo cliente comporta
+ * menos convidados do que o evento espera.
+ */
+export function venueCapacityWarning(
+  capacity: number | null | undefined,
+  guestCount: number,
+): string | null {
+  if (
+    typeof capacity !== "number" ||
+    !Number.isInteger(capacity) ||
+    capacity <= 0 ||
+    guestCount <= capacity
+  ) {
+    return null;
+  }
+  return `O local comporta até ${capacity} convidados; o evento tem ${guestCount}. Considere um espaço maior.`;
+}
+
 export type Unit = "por_pessoa" | "por_hora" | "unidade" | "pacote";
 
 export const UNIT_LABELS: Record<Unit, string> = {
@@ -422,6 +464,19 @@ export const QUESTIONS: Question[] = [
       { value: "finger_food", label: "Finger food / food truck" },
     ],
     defaultValue: "coquetel",
+  },
+  {
+    id: "buffet_inclui",
+    step: "comida",
+    kind: "single",
+    label: "O buffet inclui serviço e louça?",
+    hint: "Buffet completo já traz garçons, copeiras, louça e talheres. Se for só comida, cotamos a equipe e a louça à parte.",
+    appliesTo: "all",
+    options: [
+      { value: "completo", label: "Completo (comida + serviço + louça)" },
+      { value: "so_comida", label: "Só comida" },
+    ],
+    defaultValue: "completo",
   },
   {
     id: "bebida_alcoolica",
@@ -561,10 +616,23 @@ export const QUESTIONS: Question[] = [
     defaultValue: "foto",
   },
   {
+    id: "aniversario_publico",
+    step: "extras",
+    kind: "single",
+    label: "Aniversário de criança ou adulto?",
+    appliesTo: ["aniversario"],
+    options: [
+      { value: "crianca", label: "Criança" },
+      { value: "adulto", label: "Adulto" },
+    ],
+    defaultValue: "adulto",
+  },
+  {
     id: "recreacao",
     step: "extras",
     kind: "boolean",
     label: "Quer recreação para as crianças (monitores, brinquedos)?",
+    hint: "Para aniversário de adulto, deixamos desligado por padrão.",
     appliesTo: [...KIDS, "casamento", "quinze_anos"],
     defaultValue: true,
   },
@@ -656,6 +724,8 @@ export const DEFAULT_OVERRIDES: Partial<Record<EventType, Record<string, AnswerV
   formatura: { cerimonial: true, estilo_comida: "jantar", bebida_alcoolica: true, iluminacao: true },
   corporativo: { audiovisual: true, estilo_comida: "finger_food", musica: "nenhuma" },
   festa_infantil: { recreacao: true, musica: "nenhuma" },
+  // Aniversário é adulto por padrão (40º, 50º…): recreação infantil desligada.
+  aniversario: { aniversario_publico: "adulto", recreacao: false },
 };
 
 export const FORMAL_EVENT_TYPES = FORMAL;

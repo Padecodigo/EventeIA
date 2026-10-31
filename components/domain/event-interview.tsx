@@ -9,7 +9,12 @@ import {
 import { CityPicker, type Municipio } from "@/components/domain/city-picker";
 import { SearchCitiesPicker } from "@/components/domain/search-cities-picker";
 import { Button } from "@/components/ui/button";
-import { resolveRequirements, visibleQuestions, type Answers } from "@/lib/catalog/rules";
+import {
+  interviewWarnings,
+  resolveRequirements,
+  visibleQuestions,
+  type Answers,
+} from "@/lib/catalog/rules";
 import { formatSchedule } from "@/lib/catalog/time";
 import {
   CATEGORY_LABELS,
@@ -145,7 +150,21 @@ export function EventInterview({
   const isReview = step === STEPS.length;
   const current = STEPS[step];
 
-  const setAnswer = (id: string, v: AnswerValue) => setAnswers((prev) => ({ ...prev, [id]: v }));
+  const setAnswer = (id: string, v: AnswerValue) =>
+    setAnswers((prev) => {
+      const next = { ...prev, [id]: v };
+      // Buffet só com comida: garçons e louça passam a ser cotados à parte.
+      if (id === "buffet_inclui" && v === "so_comida") {
+        next.garcons = true;
+        next.louca = true;
+      }
+      // Aniversário de criança liga a recreação; de adulto desliga.
+      if (id === "aniversario_publico") {
+        next.recreacao = v === "crianca";
+      }
+      return next;
+    });
+  const warnings = interviewWarnings(answers);
 
   return (
     <section className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
@@ -228,6 +247,21 @@ export function EventInterview({
           </ul>
         </div>
       )}
+
+      {warnings.length > 0 ? (
+        <div className="mt-4 flex flex-col gap-2">
+          {warnings.map((warning) => (
+            <p
+              key={warning}
+              role="status"
+              data-testid="interview-warning"
+              className="rounded-xl bg-champagne/30 px-4 py-3 text-sm text-vinho"
+            >
+              {warning}
+            </p>
+          ))}
+        </div>
+      ) : null}
 
       {state.error !== undefined ? (
         <p role="alert" className="mt-4 rounded-xl bg-semantic-error/10 px-4 py-3 text-sm text-semantic-error">

@@ -8,6 +8,7 @@ import { BudgetTable } from "@/components/domain/budget-table";
 import { BuyTicketForm } from "@/components/domain/buy-ticket-form";
 import { ChoicesPanel } from "@/components/domain/choices-panel";
 import { EventChat } from "@/components/domain/event-chat";
+import { EventDetailsEditor } from "@/components/domain/event-details-editor";
 import { EventLifecycleActions } from "@/components/domain/event-lifecycle-actions";
 import { EventSupportChat } from "@/components/domain/event-support-chat";
 import { QuotationsPanel } from "@/components/domain/quotations-panel";
@@ -222,8 +223,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     : [];
 
   return (
-    <div className="flex flex-col gap-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+    <div className="flex scroll-mt-24 flex-col gap-8">
+      <header id="evento-topo" className="scroll-mt-24 flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
           <p className="text-overline uppercase tracking-[0.14em] text-vinho/75">Evento</p>
           <h1 className="mt-2 break-words font-serif text-title-1 font-display [overflow-wrap:anywhere] sm:text-display-2">{event.title}</h1>
@@ -245,7 +246,15 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
         </div>
       </header>
 
-      <section className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
+      <EventDetailsEditor
+        eventId={event.id}
+        guestCount={event.guest_count}
+        venueCapacity={event.venue_capacity}
+        venueType={event.venue_type}
+        eventStyle={event.event_style}
+      />
+
+      <section className="scroll-mt-24 flex flex-wrap items-center justify-between gap-4 rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
         <div>
           <h2 className="font-serif text-title-2">Entrevista do evento</h2>
           <p className="mt-1 text-sm text-vinho/75">
