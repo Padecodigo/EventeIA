@@ -5,6 +5,12 @@ import { runBalanceCheck } from "@/lib/finance/balance-monitor";
 import { publishWithBrowser } from "@/lib/instagram-browser/publish";
 import { runAsaasReconcileSweep } from "@/lib/jobs/asaas-reconcile";
 import { handleAsaasWebhookJob, type AsaasWebhookJob } from "@/lib/jobs/asaas-webhook";
+import {
+  externalEventIdOf,
+  handleMetaWebhookJob,
+  markMetaWebhookFailed,
+  type MetaWebhookJobData,
+} from "@/lib/jobs/meta-webhook";
 import { logger } from "@/lib/logger";
 import { QUEUE_NAMES, getQueue, getRedisConnection } from "@/lib/queue";
 import { createDiscoveryWorker } from "@/lib/queue/discovery-worker";
@@ -30,6 +36,26 @@ const asaasWorker = new Worker<AsaasWebhookJob>(
   },
   { connection, concurrency: 2 },
 );
+
+const metaWebhooksWorker = new Worker<MetaWebhookJobData>(
+  QUEUE_NAMES.metaWebhooks,
+  async (job) => {
+    await handleMetaWebhookJob(job.data);
+  },
+  { connection, concurrency: 2 },
+);
+
+metaWebhooksWorker.on("failed", (job, error) => {
+  if (job === undefined) return;
+  if (job.attemptsMade >= (job.opts.attempts ?? 1)) {
+    void markMetaWebhookFailed(job.data).catch((caught: unknown) => {
+      logger.error(
+        { externalEventId: externalEventIdOf(job.data), reason: caught instanceof Error ? caught.message : "?" },
+        "falha ao marcar webhook meta como failed",
+      );
+    });
+  }
+});
 
 const reconcileWorker = new Worker(
   QUEUE_NAMES.asaasReconcile,
@@ -142,7 +168,7 @@ void getQueue(QUEUE_NAMES.creditsExpireLegacy)
   })
   .catch(() => undefined);
 
-const workers = [asaasWorker, reconcileWorker, balanceWorker, artCleanupWorker, prospectPostDeleteWorker, instagramPublishWorker, marketingAutopilotWorker, discoveryWorker, quoteExtractionWorker];
+const workers = [asaasWorker, metaWebhooksWorker, reconcileWorker, balanceWorker, artCleanupWorker, prospectPostDeleteWorker, instagramPublishWorker, marketingAutopilotWorker, discoveryWorker, quoteExtractionWorker];
 
 for (const worker of workers) {
   worker.on("error", (error) => {

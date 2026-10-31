@@ -1,27 +1,11 @@
 import { NextResponse } from "next/server";
 
-import { getDeepSeekClient } from "@/lib/deepseek/client";
 import { serverEnv } from "@/lib/env";
+import type { MetaWebhookJobData } from "@/lib/jobs/meta-webhook";
 import { logger } from "@/lib/logger";
-import { sendPrivateReply } from "@/lib/meta/publishing";
-import {
-  resolveInstagramSupplier,
-  resolveInstagramSupplierByHandle,
-  type MetaSupplier,
-  type MetaSupplierLookup,
-} from "@/lib/meta/resolve";
 import { verifyChallenge, verifyHubSignature } from "@/lib/meta/signature";
 import { parseMetaComments, parseMetaWebhook } from "@/lib/meta/webhook";
-import { PRIVATE_REPLY_OPENER } from "@/lib/prospecting/content";
-import { handleInbound } from "@/lib/prospecting/inbound";
-import { respondToInbound, shouldAgentRespond } from "@/lib/prospecting/respond";
-import {
-  createSupabaseRespondPorts,
-  defaultRespondDb,
-  loadHistory,
-  markSupplierOptOut,
-} from "@/lib/prospecting/supabase-respond";
-import { createSupabaseProspectStore } from "@/lib/prospecting/supabase-store";
+import { getQueue, QUEUE_NAMES } from "@/lib/queue";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/types";
 
@@ -30,10 +14,11 @@ export const runtime = "nodejs";
 /**
  * Webhook único do Meta (Instagram + Messenger).
  *
- * Verifica a assinatura, normaliza DMs e comentários, resolve o fornecedor e
- * persiste em `webhook_events` (dedup por source + external_event_id). A DM
- * resolvida também entra na conversa (`prospect_conversations`/`messages`) de
- * forma idempotente. A interpretação do texto entra na etapa seguinte.
+ * Verifica a assinatura, normaliza DMs e comentários e persiste cada evento em
+ * `webhook_events` (dedup por source + external_event_id) ANTES de enfileirar o
+ * processamento assíncrono (BullMQ) e responder 200 rápido. A resolução do
+ * fornecedor, a interpretação do texto e o envio de respostas acontecem no
+ * worker `meta-webhooks` — nunca nesta rota.
  */
 
 /** Verificação do webhook pela Meta (hub.challenge). */
@@ -48,7 +33,85 @@ export function GET(request: Request): NextResponse {
   return new NextResponse(challenge, { status: 200, headers: { "Content-Type": "text/plain" } });
 }
 
-/** Recebe eventos do Instagram/Messenger, valida, resolve o fornecedor e persiste. */
+/** JobId do BullMQ deduplica por chave; ':' é reservado internamente pelo BullMQ. */
+function metaJobId(externalEventId: string): string {
+  return `meta_${externalEventId.replaceAll(":", "_")}`;
+}
+
+/**
+ * Persiste o evento e enfileira o processamento. Retorna true quando um job foi
+ * enfileirado (false para duplicado já processado).
+ */
+async function persistAndEnqueue(
+  admin: ReturnType<typeof getSupabaseAdmin>,
+  kind: MetaWebhookJobData["kind"],
+  externalEventId: string,
+  event: MetaWebhookJobData["event"],
+): Promise<boolean> {
+  const { data: inserted, error } = await admin
+    .from("webhook_events")
+    .upsert(
+      {
+        // A migração 0052 relaxa o CHECK para incluir 'meta'; os tipos gerados
+        // (`supabase gen types`) ainda não foram regenerados, então o cast é
+        // temporário até o banco receber a 0052 e os tipos serem re-gerados.
+        source: "meta" as unknown as "whatsapp_cloud",
+        external_event_id: externalEventId,
+        payload: event as unknown as Json,
+        status: "received",
+      },
+      { onConflict: "source,external_event_id", ignoreDuplicates: true },
+    )
+    .select("id")
+    .maybeSingle();
+
+  if (error !== null) {
+    logger.error({ code: error.code }, "falha ao persistir webhook meta");
+    throw new Error("persist_failed");
+  }
+
+  let webhookEventId: string | null = null;
+  if (inserted !== null) {
+    webhookEventId = inserted.id;
+  } else {
+    // Duplicado: reenfileira apenas se o evento ainda está "received" (nunca
+    // processado); o jobId mantém a operação idempotente.
+    const { data: existing } = await admin
+      .from("webhook_events")
+      .select("id,status")
+      .eq("source", "meta" as unknown as "whatsapp_cloud")
+      .eq("external_event_id", externalEventId)
+      .maybeSingle();
+    if (existing === null || existing.status !== "received") {
+      logger.info({ externalEventId }, "webhook meta duplicado já processado — ignorando");
+      return false;
+    }
+    webhookEventId = existing.id;
+  }
+
+  try {
+    await getQueue(QUEUE_NAMES.metaWebhooks).add(
+      "process",
+      { kind, webhookEventId, event },
+      {
+        jobId: metaJobId(externalEventId),
+        attempts: 5,
+        backoff: { type: "exponential", delay: 5_000 },
+        removeOnComplete: 1000,
+        removeOnFail: false,
+      },
+    );
+  } catch (caught) {
+    logger.error(
+      { externalEventId, reason: caught instanceof Error ? caught.message : "desconhecido" },
+      "fila indisponível ao enfileirar webhook meta",
+    );
+    throw new Error("enqueue_failed");
+  }
+  return true;
+}
+
+/** Recebe eventos do Instagram/Messenger, valida, persiste e enfileira. */
 export async function POST(request: Request): Promise<NextResponse> {
   const raw = await request.text();
   if (!verifyHubSignature(raw, request.headers.get("x-hub-signature-256"), serverEnv().META_APP_SECRET)) {
@@ -64,175 +127,44 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   const admin = getSupabaseAdmin();
-  const store = createSupabaseProspectStore();
-  const respondDb = defaultRespondDb();
-  const accessToken = serverEnv().META_ACCESS_TOKEN;
-  const igBusinessId = serverEnv().META_INSTAGRAM_BUSINESS_ID;
-  const pageId = serverEnv().META_PAGE_ID;
-  const keyword = serverEnv().META_PROSPECT_KEYWORD;
-  const lookup = admin as unknown as MetaSupplierLookup;
-  let persisted = 0;
-  let resolved = 0;
-
-  const persist = async (externalId: string, payload: unknown): Promise<boolean> => {
-    const { data: inserted, error } = await admin
-      .from("webhook_events")
-      .upsert(
-        {
-          // A migração 0052 relaxa o CHECK para incluir 'meta'; os tipos gerados
-          // (`supabase gen types`) ainda não foram regenerados, então o cast é
-          // temporário até o banco receber a 0052 e os tipos serem re-gerados.
-          source: "meta" as unknown as "whatsapp_cloud",
-          external_event_id: externalId,
-          payload: payload as Json,
-          status: "received",
-        },
-        { onConflict: "source,external_event_id", ignoreDuplicates: true },
-      )
-      .select("id")
-      .maybeSingle();
-    if (error !== null) {
-      logger.error({ code: error.code }, "falha ao persistir webhook meta");
-      return false;
-    }
-    if (inserted !== null) persisted += 1;
-    return true;
-  };
-
-  // DMs (Instagram + Messenger).
   const messages = parseMetaWebhook(json);
-  for (const message of messages ?? []) {
-    let supplier: MetaSupplier = null;
-    if (message.source === "instagram" && accessToken !== undefined && accessToken.length > 0) {
-      supplier = await resolveInstagramSupplier(lookup, message.senderId, accessToken);
-      if (supplier !== null) {
-        resolved += 1;
-        const outcome = await handleInbound(
-          store,
-          {
-            kind: "message",
-            messageId: message.eventId,
-            senderId: message.senderId,
-            text: message.text,
-            supplierId: supplier.id,
-            channel: "instagram",
-          },
-          { keyword, now: new Date() },
-        );
-        // Opt-out determinístico (isOptOut em handleInbound): marca e NÃO responde.
-        if (outcome.recorded && outcome.action.action === "opt_out") {
-          await markSupplierOptOut(respondDb, outcome.conversation.id, supplier.id);
-        }
-        // Só responde uma vez por evento (idempotente), se não for opt-out e se houver como enviar.
-        else if (shouldAgentRespond(outcome) && accessToken !== undefined && accessToken.length > 0 && igBusinessId !== undefined && igBusinessId.length > 0) {
-          const history = await loadHistory(respondDb, outcome.conversation.id);
-          await respondToInbound({
-            client: getDeepSeekClient(),
-            context: { category: supplier.category },
-            history,
-            ports: createSupabaseRespondPorts({
-              db: respondDb,
-              message: { channel: "instagram", instagramBusinessId: igBusinessId, accessToken },
-              recipientId: message.senderId,
-            }),
-            conversationId: outcome.conversation.id,
-            supplierId: supplier.id,
-          });
-        }
-      }
-    }
-    // Messenger: PSID não mapeia para @handle; atende a DM e o agente pede a identificação.
-    if (message.source === "messenger" && supplier === null && accessToken !== undefined && accessToken.length > 0 && pageId !== undefined && pageId.length > 0) {
-      const outcome = await handleInbound(
-        store,
-        {
-          kind: "message",
-          messageId: message.eventId,
-          senderId: message.senderId,
-          text: message.text,
-          supplierId: null,
-          channel: "messenger",
-        },
-        { keyword, now: new Date() },
-      );
-      if (outcome.recorded && outcome.action.action === "opt_out") {
-        await markSupplierOptOut(respondDb, outcome.conversation.id, null);
-      } else if (shouldAgentRespond(outcome)) {
-        const history = await loadHistory(respondDb, outcome.conversation.id);
-        await respondToInbound({
-          client: getDeepSeekClient(),
-          context: { category: "evento", supplierKnown: false },
-          history,
-          ports: createSupabaseRespondPorts({
-            db: respondDb,
-            message: { channel: "messenger", pageId, accessToken },
-            recipientId: message.senderId,
-          }),
-          conversationId: outcome.conversation.id,
-          supplierId: null,
-        });
-      }
-    }
-
-    const payload = supplier === null ? message : { ...message, supplier };
-    if (!(await persist(message.eventId, payload))) {
-      return NextResponse.json({ error: "persist_failed" }, { status: 500 });
-    }
-  }
-
-  // Comentários em posts de isca (o @username já vem no payload).
   const comments = parseMetaComments(json);
-  for (const comment of comments ?? []) {
-    const supplier = await resolveInstagramSupplierByHandle(lookup, comment.senderUsername);
-    if (supplier !== null) {
-      resolved += 1;
-      const outcome = await handleInbound(
-        store,
-        {
-          kind: "comment",
-          commentId: comment.commentId,
-          senderId: comment.senderId,
-          text: comment.text,
-          supplierId: supplier.id,
-          channel: "instagram",
-        },
-        { keyword, now: new Date() },
-      );
-      // Comentário com a palavra-chave: envia a DM de abertura (1x, 7 dias).
-      if (
-        outcome.recorded &&
-        outcome.action.action === "private_reply" &&
-        accessToken !== undefined &&
-        accessToken.length > 0 &&
-        igBusinessId !== undefined &&
-        igBusinessId.length > 0
-      ) {
-        const sent = await sendPrivateReply({
-          igUserId: igBusinessId,
-          accessToken,
-          commentId: comment.commentId,
-          text: PRIVATE_REPLY_OPENER,
-        });
-        if (!sent.ok) logger.warn({ error: sent.error }, "falha ao enviar private reply");
-      }
-    }
-    const payload = supplier === null ? comment : { ...comment, supplier };
-    if (!(await persist(comment.commentId, payload))) {
-      return NextResponse.json({ error: "persist_failed" }, { status: 500 });
-    }
-  }
 
   if (messages === null && comments === null) {
     // echo/read/delivery ou payload não reconhecido: confirma e ignora.
     return NextResponse.json({ received: true }, { status: 200 });
   }
 
+  let enqueued = 0;
+  for (const message of messages ?? []) {
+    try {
+      if (await persistAndEnqueue(admin, "message", message.eventId, message)) enqueued += 1;
+    } catch (caught) {
+      const reason = caught instanceof Error ? caught.message : "desconhecido";
+      return NextResponse.json({ error: reason }, { status: 500 });
+    }
+  }
+
+  for (const comment of comments ?? []) {
+    try {
+      if (await persistAndEnqueue(admin, "comment", comment.commentId, comment)) enqueued += 1;
+    } catch (caught) {
+      const reason = caught instanceof Error ? caught.message : "desconhecido";
+      return NextResponse.json({ error: reason }, { status: 500 });
+    }
+  }
+
   logger.info(
-    { messages: messages?.length ?? 0, comments: comments?.length ?? 0, persisted, resolved },
-    "webhook meta: eventos processados",
+    { messages: messages?.length ?? 0, comments: comments?.length ?? 0, enqueued },
+    "webhook meta: eventos persistidos e enfileirados",
   );
   return NextResponse.json(
-    { received: true, messages: messages?.length ?? 0, comments: comments?.length ?? 0 },
+    {
+      received: true,
+      messages: messages?.length ?? 0,
+      comments: comments?.length ?? 0,
+      enqueued,
+    },
     { status: 200 },
   );
 }

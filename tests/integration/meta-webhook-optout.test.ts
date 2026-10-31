@@ -1,17 +1,15 @@
-import { createHmac } from "node:crypto";
-
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createFakeDb, fakeClient } from "./helpers/fake-supabase";
+import { handleMetaWebhookJob } from "@/lib/jobs/meta-webhook";
+import type { MetaInboundMessage } from "@/lib/meta/webhook";
 
 /**
- * Regressão LGPD: o webhook do Meta NUNCA chama o agente (respondToInbound)
- * quando a mensagem é um pedido de parada ("PARAR") ou quando a conversa já
- * está `opted_out`. O opt-out determinístico vive em `handleInbound`; aqui
- * validamos que a rota respeita a guarda `shouldAgentRespond`.
+ * Regressão LGPD: o processamento do webhook do Meta NUNCA chama o agente
+ * (respondToInbound) quando a mensagem é um pedido de parada ("PARAR") ou
+ * quando a conversa já está `opted_out`. O opt-out determinístico vive em
+ * `handleInbound`; aqui validamos que o job `handleMetaWebhookJob` respeita a
+ * guarda `shouldAgentRespond` (a rota apenas persiste e enfileira).
  */
-
-const SECRET = "app-secret-teste";
 
 const state = vi.hoisted(() => ({
   respondCalls: 0,
@@ -22,7 +20,7 @@ const state = vi.hoisted(() => ({
 
 vi.mock("@/lib/env", () => ({
   serverEnv: () => ({
-    META_APP_SECRET: SECRET,
+    META_APP_SECRET: "app-secret-teste",
     META_VERIFY_TOKEN: "verify-token",
     META_ACCESS_TOKEN: "access-token",
     META_INSTAGRAM_BUSINESS_ID: "ig-biz-1",
@@ -31,7 +29,8 @@ vi.mock("@/lib/env", () => ({
   }),
 }));
 
-vi.mock("@/lib/supabase/admin", () => {
+vi.mock("@/lib/supabase/admin", async () => {
+  const { createFakeDb, fakeClient } = await import("./helpers/fake-supabase");
   const db = createFakeDb({});
   return { getSupabaseAdmin: () => fakeClient(db) };
 });
@@ -100,41 +99,17 @@ vi.mock("@/lib/prospecting/supabase-respond", async (importOriginal) => {
   };
 });
 
-function sign(body: string): string {
-  return `sha256=${createHmac("sha256", SECRET).update(body, "utf8").digest("hex")}`;
-}
-
-function call(body: unknown): Request {
-  const raw = JSON.stringify(body);
-  return new Request("http://localhost/api/meta/webhook", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-hub-signature-256": sign(raw) },
-    body: raw,
-  });
-}
-
-function igDm(text: string): unknown {
+function igDm(text: string): MetaInboundMessage {
   return {
-    object: "instagram",
-    entry: [
-      {
-        id: "1784",
-        changes: [
-          {
-            field: "messages",
-            value: {
-              sender: { id: "111" },
-              recipient: { id: "1784" },
-              message: { mid: `mid-${text}`, text },
-            },
-          },
-        ],
-      },
-    ],
+    source: "instagram",
+    eventId: `mid-${text}`,
+    senderId: "111",
+    recipientId: "1784",
+    text,
   };
 }
 
-describe("POST /api/meta/webhook — opt-out bloqueia a resposta do agente", () => {
+describe("handleMetaWebhookJob — opt-out bloqueia a resposta do agente", () => {
   beforeEach(() => {
     state.respondCalls = 0;
     state.markOptOutCalls = [];
@@ -143,25 +118,23 @@ describe("POST /api/meta/webhook — opt-out bloqueia a resposta do agente", () 
   });
 
   it("DM 'PARAR' ⇒ respondToInbound NÃO é chamado e marca opt-out com o supplier id", async () => {
-    const { POST } = await import("@/app/api/meta/webhook/route");
-    const res = await POST(call(igDm("PARAR")));
-    expect(res.status).toBe(200);
+    await handleMetaWebhookJob({ kind: "message", webhookEventId: "wh1", event: igDm("PARAR") });
     expect(state.respondCalls).toBe(0);
     expect(state.markOptOutCalls).toEqual([{ conversationId: "c1", supplierId: "s1" }]);
   });
 
   it("conversa já opted_out com texto normal ⇒ respondToInbound NÃO é chamado", async () => {
     state.conversations.set("instagram:111", { id: "c1", status: "opted_out" });
-    const { POST } = await import("@/app/api/meta/webhook/route");
-    const res = await POST(call(igDm("olá, tudo bem?")));
-    expect(res.status).toBe(200);
+    await handleMetaWebhookJob({ kind: "message", webhookEventId: "wh1", event: igDm("olá, tudo bem?") });
     expect(state.respondCalls).toBe(0);
   });
 
   it("texto normal em conversa nova ⇒ respondToInbound É chamado e opt-out NÃO é marcado", async () => {
-    const { POST } = await import("@/app/api/meta/webhook/route");
-    const res = await POST(call(igDm("tem buffet para 100 pessoas?")));
-    expect(res.status).toBe(200);
+    await handleMetaWebhookJob({
+      kind: "message",
+      webhookEventId: "wh1",
+      event: igDm("tem buffet para 100 pessoas?"),
+    });
     expect(state.respondCalls).toBe(1);
     expect(state.markOptOutCalls).toEqual([]);
   });
