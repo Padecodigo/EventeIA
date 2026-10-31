@@ -1,13 +1,18 @@
 import type { Config } from "tailwindcss";
 
+import { PALETTE } from "./lib/design/palette";
+
 /**
- * EventeIA — Design System "Terra Rosé" (v4, out/2026) — derivado do monograma dourado/terra do logo.
- * Nomes históricos dos tokens mantidos; valores:
- *   vinho/noite/ink → cacau #3B2420 (texto; 13:1 no fundo)
- *   primaria        → vinho-rosé #A3485A (CTA; texto branco 5,8:1) · primaria-escura #86374A
- *   champagne/coral → blush-terracota #E8A587 (acento; só com texto cacau, 7:1)
- *   champagne-claro → blush #F6E1D8 · terracota #C9734F (decorativo) · dourado do logo #BF986B
- *   areia-quente    → #FBF6F2 (fundo) · areia-secundaria/verde-claro → #F3E6DD (faixas)
+ * EventeIA — Design System "Areia & Coral" (v5, out/2026).
+ * Nomes históricos dos tokens mantidos; valores novos (fonte: lib/design/palette.ts):
+ *   vinho/noite/ink → charcoal #2B2724 (texto; 13,3:1 no fundo areia)
+ *   primaria        → coral-terracota #F0A070 (CTA; texto charcoal 7,0:1) · primaria-escura #E88B55 (5,8:1)
+ *   champagne/coral → #F0A070 (acento preenchido; texto charcoal) · champagne-claro #FBE3D3
+ *   coral-escuro    → terracota profundo #A4481F (texto de acento sobre claro)
+ *   teal/teal-soft  → #38706A / #D7E7E3 (secundário frio, badges, anel de foco)
+ *   terracota #D9784A (decorativo) · dourado do logo #BF986B (somente logo)
+ *   areia-quente #F7F2EA (fundo) · areia-secundaria/verde-claro #EEE5D6 (faixas)
+ *   surface.dark #2B2724 (seções editoriais escuras; texto inverso branco)
  * Tipografia: Fraunces (títulos) · Figtree (corpo/UI).
  */
 const config: Config = {
@@ -27,41 +32,46 @@ const config: Config = {
        * ====================================================== */
       colors: {
         /* ---- Paleta canônica (hex oficial) ---- */
-        vinho: "rgb(var(--tr-vinho) / <alpha-value>)", // azul-noite (nome histórico mantido)
+        vinho: "rgb(var(--tr-vinho) / <alpha-value>)", // charcoal (nome histórico mantido)
         "areia-quente": "rgb(var(--tr-areia-quente) / <alpha-value>)",
         "areia-secundaria": "rgb(var(--tr-areia-secundaria) / <alpha-value>)",
         "off-white": "rgb(var(--tr-off-white) / <alpha-value>)",
-        champagne: "#E8A587", // coral
-        coral: "#E8A587",
-        "coral-escuro": "#A3485A", // texto coral sobre claro (AA)
-        noite: "#3B2420",
-        sol: "#FFC94D",
-        menta: "#C9734F",
+        champagne: PALETTE.champagne,
+        coral: PALETTE.champagne,
+        "coral-escuro": PALETTE.coralEscuro, // texto de acento sobre claro (AA)
+        noite: PALETTE.ink,
+        sol: PALETTE.sol,
+        menta: PALETTE.terracota,
         lilas: "#8B7CF6",
         "champagne-claro": "rgb(var(--tr-champagne-claro) / <alpha-value>)",
         primaria: "rgb(var(--tr-primaria) / <alpha-value>)",
         "primaria-escura": "rgb(var(--tr-primaria-escura) / <alpha-value>)",
-        "verde-claro": "#F3E6DD", // nome legado; agora areia-rosé
-        terracota: "#C9734F",
-        dourado: "#BF986B",
+        "verde-claro": PALETTE.areiaSecundaria, // nome legado; agora areia
+        terracota: PALETTE.terracota,
+        dourado: PALETTE.dourado,
+        teal: PALETTE.teal,
+        "teal-soft": PALETTE.tealSoft,
+        /* Texto sobre primaria/champagne: charcoal fixo (não inverte no tema escuro). */
+        "on-primary": PALETTE.onPrimary,
 
         /* ---- Tokens semânticos (preferidos nos componentes) ---- */
         brand: {
-          primary: "#A3485A",
-          accent: "#E8A587",
-          accentSoft: "#F6E1D8",
+          primary: PALETTE.primaria,
+          accent: PALETTE.champagne,
+          accentSoft: PALETTE.champagneClaro,
         },
         surface: {
-          canvas: "#FFFFFF",   // cards, campos
-          warm: "#FBF6F2",     // fundo padrão de página
-          muted: "#F3E6DD",    // faixas alternadas, linhas de tabela
-          dark: "#3B2420",     // seções editoriais escuras
+          canvas: PALETTE.offWhite,          // cards, campos
+          warm: PALETTE.areiaQuente,         // fundo padrão de página
+          muted: PALETTE.areiaSecundaria,    // faixas alternadas, linhas de tabela
+          dark: PALETTE.surfaceDark,         // seções editoriais escuras
         },
         ink: {
-          primary: "#3B2420",
-          inverse: "#FFFFFF",
-          accent: "#E8A587",   // apenas sobre azul-noite (contraste AA)
-          soft: "#F6E1D8",
+          primary: PALETTE.ink,
+          inverse: PALETTE.offWhite,
+          accent: PALETTE.champagne,         // apenas sobre superfícies escuras (contraste AA)
+          soft: PALETTE.champagneClaro,
+          onPrimary: PALETTE.onPrimary,
         },
         line: {
           subtle: "rgb(var(--tr-line-rgb) / 0.12)",
@@ -128,14 +138,14 @@ const config: Config = {
       },
 
       boxShadow: {
-        soft: "0 1px 2px rgba(59, 36, 32, 0.06), 0 8px 24px rgba(59, 36, 32, 0.06)",
-        raised: "0 2px 4px rgba(59, 36, 32, 0.08), 0 16px 40px rgba(59, 36, 32, 0.10)",
-        gold: "0 0 0 1px rgba(163, 72, 90, 0.55), 0 8px 24px rgba(163, 72, 90, 0.25)",
+        soft: "0 1px 2px rgba(43, 39, 36, 0.06), 0 8px 24px rgba(43, 39, 36, 0.06)",
+        raised: "0 2px 4px rgba(43, 39, 36, 0.08), 0 16px 40px rgba(43, 39, 36, 0.10)",
+        gold: "0 0 0 1px rgba(240, 160, 112, 0.55), 0 8px 24px rgba(240, 160, 112, 0.25)",
       },
 
       backgroundImage: {
         "gold-sheen":
-          "linear-gradient(135deg, #F6E1D8 0%, #E8A587 55%, #FFC94D 100%)",
+          "linear-gradient(135deg, #FBE3D3 0%, #F0A070 55%, #D7E7E3 100%)",
       },
 
       transitionTimingFunction: {

@@ -40,7 +40,7 @@ export default async function MarketingPage() {
               className={
                 state.enabled
                   ? "rounded-full border border-vinho/20 px-5 py-2.5 text-sm font-semibold text-vinho"
-                  : "rounded-full bg-primaria px-5 py-2.5 text-sm font-semibold text-white"
+                  : "rounded-full bg-primaria px-5 py-2.5 text-sm font-semibold text-on-primary"
               }
             >
               {state.enabled ? "Desligar publicações automáticas" : "Ligar publicações automáticas"}

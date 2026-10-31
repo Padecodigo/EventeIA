@@ -59,7 +59,7 @@ export default async function AdminTicketPage({ params }: { params: Promise<{ id
       <CloseControls ticketId={ticket.id} closed={ticket.status === "fechado"} subject={ticket.subject} />
       <TicketControls ticketId={ticket.id} status={ticket.status} priority={ticket.priority} />
       {attachmentUrl !== null && (
-        <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-primaria-escura underline">
+        <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-coral-escuro underline">
           Ver captura de tela (link temporário)
         </a>
       )}

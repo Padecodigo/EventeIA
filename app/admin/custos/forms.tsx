@@ -4,7 +4,7 @@ import { useActionState, useRef, type ReactNode } from "react";
 
 import { addFixedCostBrlAction, checkBalancesNowAction, softDeleteAction, updateBalanceAction, updateFixedCostAction, type CostsActionState } from "./actions";
 
-const button = "rounded-full bg-primaria px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-primaria-escura disabled:opacity-50";
+const button = "rounded-full bg-primaria px-3 py-1.5 text-sm font-semibold text-on-primary transition hover:bg-primaria-escura disabled:opacity-50";
 
 function Status({ state }: { state: CostsActionState }) {
   if (state.error) return <span role="alert" className="text-caption text-semantic-error">{state.error}</span>;
@@ -157,7 +157,7 @@ export function AddFixedCost({ month }: { month: string }) {
   const ref = useRef<HTMLDetailsElement>(null);
   return (
     <details ref={ref} className="mt-3 rounded-card border border-line-subtle bg-white p-3" data-testid="add-fixed">
-      <summary className="cursor-pointer text-sm font-semibold text-primaria-escura">+ Adicionar custo fixo</summary>
+      <summary className="cursor-pointer text-sm font-semibold text-coral-escuro">+ Adicionar custo fixo</summary>
       <form action={action} className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <Field id="addfix-provider" label="Ferramenta / nome" help="Escolha VPS, Supabase, Domínio ou “Outro” e digite o nome ao lado.">
           {(a) => (

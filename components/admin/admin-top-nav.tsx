@@ -20,7 +20,7 @@ export function AdminTopNav() {
             href={item.href}
             aria-current={active ? "page" : undefined}
             className={active
-              ? "shrink-0 rounded-full bg-champagne px-3 py-1.5 font-semibold text-vinho"
+              ? "shrink-0 rounded-full bg-champagne px-3 py-1.5 font-semibold text-on-primary"
               : "shrink-0 rounded-full px-3 py-1.5 text-ink-inverse/80 transition hover:bg-white/10 hover:text-ink-inverse"}
           >
             {item.label}

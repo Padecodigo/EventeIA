@@ -270,7 +270,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
         </div>
         <Link
           href={`/eventos/${event.id}/entrevista`}
-          className="rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-white hover:bg-primaria-escura"
+          className="rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-on-primary hover:bg-primaria-escura"
         >
           {interviewDone ? "Revisar respostas" : "Começar entrevista"}
         </Link>

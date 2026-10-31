@@ -27,7 +27,7 @@ export function SingleEventOffer({ priceCents }: SingleEventOfferProps) {
       </p>
       <Link
         href="/eventos#novo-evento"
-        className="mt-5 inline-block rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-white transition hover:bg-primaria-escura"
+        className="mt-5 inline-block rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-on-primary transition hover:bg-primaria-escura"
       >
         Criar evento avulso
       </Link>

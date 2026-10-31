@@ -4,26 +4,26 @@
 
 /* Tokens tematizáveis (canais RGB) — espelho de lib/theme/palette.ts */
 :root {
-  --tr-vinho: 59 36 32;
-  --tr-areia-quente: 251 246 242;
-  --tr-areia-secundaria: 243 230 221;
+  --tr-vinho: 43 39 36;
+  --tr-areia-quente: 247 242 234;
+  --tr-areia-secundaria: 238 229 214;
   --tr-off-white: 255 255 255;
-  --tr-champagne-claro: 246 225 216;
-  --tr-primaria: 163 72 90;
-  --tr-primaria-escura: 134 55 74;
+  --tr-champagne-claro: 251 227 211;
+  --tr-primaria: 240 160 112;
+  --tr-primaria-escura: 232 139 85;
   --tr-semantic-error: 179 38 30;
-  --tr-line-rgb: 59 36 32;
+  --tr-line-rgb: 43 39 36;
 }
 
-/* Modo escuro Terra Rosé: forçado (.dark) ou seguindo o sistema (.theme-system). */
+/* Modo escuro Areia & Coral: forçado (.dark) ou seguindo o sistema (.theme-system). */
 .dark {
   --tr-vinho: 246 233 227;
   --tr-areia-quente: 28 19 17;
   --tr-areia-secundaria: 44 31 27;
   --tr-off-white: 38 26 23;
   --tr-champagne-claro: 61 41 36;
-  --tr-primaria: 229 140 157;
-  --tr-primaria-escura: 242 176 188;
+  --tr-primaria: 242 168 120;
+  --tr-primaria-escura: 246 190 150;
   --tr-semantic-error: 255 138 128;
   --tr-line-rgb: 246 233 227;
   color-scheme: dark;
@@ -36,23 +36,27 @@
     --tr-areia-secundaria: 44 31 27;
     --tr-off-white: 38 26 23;
     --tr-champagne-claro: 61 41 36;
-    --tr-primaria: 229 140 157;
-    --tr-primaria-escura: 242 176 188;
+    --tr-primaria: 242 168 120;
+    --tr-primaria-escura: 246 190 150;
     --tr-semantic-error: 255 138 128;
     --tr-line-rgb: 246 233 227;
     color-scheme: dark;
   }
 }
 
-/* Design System "Terra Rosé" (v4) — nomes históricos, valores novos. Ver tailwind.config.ts */
+/* Design System "Areia & Coral" (v5) — nomes históricos, valores novos. Ver tailwind.config.ts */
 :root {
-  --color-vinho: #3B2420;
-  --color-areia-quente: #FBF6F2;
-  --color-areia-secundaria: #F3E6DD;
+  --color-vinho: #2B2724;
+  --color-areia-quente: #F7F2EA;
+  --color-areia-secundaria: #EEE5D6;
   --color-off-white: #ffffff;
-  --color-champagne: #E8A587;
-  --color-champagne-claro: #F6E1D8;
-  --color-primaria: #A3485A;
+  --color-champagne: #F0A070;
+  --color-champagne-claro: #FBE3D3;
+  --color-primaria: #F0A070;
+  --color-primaria-escura: #E88B55;
+  --color-coral-escuro: #A4481F;
+  --color-teal: #38706A;
+  --color-teal-soft: #D7E7E3;
 
   --color-primary: var(--color-primaria);
   --color-accent: var(--color-champagne);
@@ -62,26 +66,27 @@
   --color-text: var(--color-vinho);
   --color-text-inverse: var(--color-off-white);
   --color-text-accent: var(--color-champagne);
-  --color-border-subtle: rgba(59, 36, 32, 0.12);
-  --color-border-strong: rgba(59, 36, 32, 0.28);
-  --color-ring: #A3485A; /* esmeralda: 3:1+ sobre fundos claros */
+  --color-text-on-primary: #2B2724;
+  --color-border-subtle: rgba(43, 39, 36, 0.12);
+  --color-border-strong: rgba(43, 39, 36, 0.28);
+  --color-ring: #38706A; /* teal: 5,3:1+ sobre fundos claros */
 
   --font-serif: var(--font-display), "Fraunces", Georgia, serif;
   --font-sans: var(--font-body), "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
 
   --radius-card: 1rem;
-  --shadow-soft: 0 1px 2px rgba(59, 36, 32, 0.06), 0 8px 24px rgba(59, 36, 32, 0.06);
-  --shadow-raised: 0 2px 4px rgba(59, 36, 32, 0.08), 0 16px 40px rgba(59, 36, 32, 0.1);
+  --shadow-soft: 0 1px 2px rgba(43, 39, 36, 0.06), 0 8px 24px rgba(43, 39, 36, 0.06);
+  --shadow-raised: 0 2px 4px rgba(43, 39, 36, 0.08), 0 16px 40px rgba(43, 39, 36, 0.1);
   --ease-editorial: cubic-bezier(0.2, 0, 0, 1);
 }
 
 @layer components {
   /* Botões e cartões unificados (landing, auth, painel) */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_-12px_rgba(163,72,90,0.7)] transition hover:-translate-y-0.5 hover:bg-primaria-escura disabled:translate-y-0;
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-on-primary shadow-[0_12px_28px_-12px_rgba(240,160,112,0.7)] transition hover:-translate-y-0.5 hover:bg-primaria-escura disabled:translate-y-0;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full border border-vinho/15 bg-white px-6 py-3 text-sm font-semibold text-vinho transition hover:border-primaria/40 hover:bg-verde-claro/50;
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-teal/30 bg-white px-6 py-3 text-sm font-semibold text-vinho transition hover:border-teal/50 hover:bg-teal-soft/60;
   }
   .card {
     @apply rounded-card border border-line-subtle bg-white shadow-soft;

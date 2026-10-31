@@ -33,9 +33,9 @@ const EVENT_TYPES = [
 ] as const;
 
 const OPTIONS = [
-  { title: "Preço", text: "A combinação mais barata entre as propostas que chegaram, já com taxas incluídas.", dot: "from-[#D98A9A] to-primaria" },
-  { title: "Custo-benefício", text: "O melhor equilíbrio entre valor e qualidade — o que mais vale a pena.", dot: "from-[#E8A587] to-[#E8A587]" },
-  { title: "Comodidade", text: "Menos fornecedores, menos dor de cabeça: pacotes que resolvem mais coisas juntos.", dot: "from-[#C9734F] to-primaria" },
+  { title: "Preço", text: "A combinação mais barata entre as propostas que chegaram, já com taxas incluídas.", dot: "from-terracota to-primaria" },
+  { title: "Custo-benefício", text: "O melhor equilíbrio entre valor e qualidade — o que mais vale a pena.", dot: "from-champagne to-champagne" },
+  { title: "Comodidade", text: "Menos fornecedores, menos dor de cabeça: pacotes que resolvem mais coisas juntos.", dot: "from-terracota to-primaria" },
 ] as const;
 
 const STEPS = [
@@ -85,25 +85,25 @@ export default async function LandingPage() {
   return (
     <>
       {/* ================= HERO (acima da dobra) ================= */}
-      <section className="relative isolate overflow-hidden bg-[#2A1119]">
+      <section className="relative isolate overflow-hidden bg-areia-quente">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute -top-40 right-[-10%] h-[620px] w-[620px] rounded-full bg-[radial-gradient(closest-side,rgba(212,175,55,0.18),transparent)]" />
-          <div className="absolute -left-40 bottom-[-25%] h-[540px] w-[540px] rounded-full bg-[radial-gradient(closest-side,rgba(163,72,90,0.4),transparent)]" />
+          <div className="absolute -top-40 right-[-10%] h-[620px] w-[620px] rounded-full bg-[radial-gradient(closest-side,rgba(215,231,227,0.7),transparent)]" />
+          <div className="absolute -left-40 bottom-[-25%] h-[540px] w-[540px] rounded-full bg-[radial-gradient(closest-side,rgba(240,160,112,0.3),transparent)]" />
         </div>
 
         <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-10 px-5 pb-14 pt-14 sm:px-8 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-14 lg:pb-20 lg:pt-20">
-          <div className="ev-rise text-off-white">
-            <p className="inline-flex items-center gap-2 rounded-full border border-champagne/30 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-champagne">
+          <div className="ev-rise text-vinho">
+            <p className="inline-flex items-center gap-2 rounded-full border border-coral/30 bg-white/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-coral-escuro">
               Inteligência de custos para eventos
             </p>
             <h1 className="mt-6 font-display text-[clamp(2.4rem,5vw,4.2rem)] font-semibold leading-[1.0] tracking-[-0.03em]">
               Menos ligações,
               <br />
-              <span className="text-champagne">mais memórias.</span>
+              <span className="text-coral-escuro">mais memórias.</span>
             </h1>
-            <p className="mt-5 max-w-lg text-[17px] leading-relaxed text-off-white/85">
+            <p className="mt-5 max-w-lg text-[17px] leading-relaxed text-vinho/85">
               A EventeIA cota com os fornecedores da sua região pelas redes sociais — Instagram e Messenger — com foco no Vale do Paraíba e em São Paulo, e compara cada proposta por você. Você escolhe entre{" "}
-              <strong className="font-semibold text-off-white">3 opções prontas</strong> — melhor preço, custo-benefício e
+              <strong className="font-semibold text-vinho">3 opções prontas</strong> — melhor preço, custo-benefício e
               comodidade — e aproveita o que importa.
             </p>
 
@@ -111,40 +111,40 @@ export default async function LandingPage() {
               <Link
                 prefetch={false}
                 href="/registrar"
-                className="group inline-flex items-center justify-center gap-2 rounded-full bg-champagne px-6 py-3.5 text-[15px] font-semibold text-[#2A1119] shadow-[0_10px_30px_-12px_rgba(212,175,55,0.65)] transition hover:bg-champagne-claro active:scale-[0.98]"
+                className="group inline-flex items-center justify-center gap-2 rounded-full bg-primaria px-6 py-3.5 text-[15px] font-semibold text-on-primary shadow-[0_10px_30px_-12px_rgba(240,160,112,0.65)] transition hover:bg-primaria-escura active:scale-[0.98]"
               >
                 Começar agora
                 <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">→</span>
               </Link>
               <Link prefetch={false}
                 href="#planos"
-                className="inline-flex items-center justify-center rounded-full border border-white/25 px-6 py-3.5 text-[15px] font-semibold text-off-white transition hover:border-champagne hover:text-champagne"
+                className="inline-flex items-center justify-center rounded-full border border-vinho/30 px-6 py-3.5 text-[15px] font-semibold text-vinho transition hover:border-vinho hover:bg-white/70"
               >
                 Ver planos e preços
               </Link>
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-off-white/85">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 font-medium text-off-white">
-                Ticket avulso · <strong className="font-bold text-champagne">{formatBRL(ticketPriceCents)}</strong> por evento
+            <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-vinho/85">
+              <span className="inline-flex items-center gap-2 rounded-full border border-vinho/15 bg-white/70 px-3 py-1 font-medium text-vinho">
+                Ticket avulso · <strong className="font-bold text-coral-escuro">{formatBRL(ticketPriceCents)}</strong> por evento
               </span>
               <span>Sem mensalidade · Pix seguro ou cartão</span>
             </div>
 
             {mainTestimonial ? (
-              <figure className="mt-8 max-w-lg rounded-3xl border border-white/12 bg-white/[0.06] p-5 backdrop-blur-xl">
+              <figure className="mt-8 max-w-lg rounded-3xl border border-line-subtle bg-white p-5 shadow-soft">
                 <div className="flex items-start gap-4">
                   <span
                     aria-hidden="true"
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-champagne text-sm font-bold text-[#2A1119] ring-4 ring-white/10"
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-champagne text-sm font-bold text-on-primary ring-4 ring-champagne-claro"
                   >
                     {initials(mainTestimonial.name)}
                   </span>
                   <div className="min-w-0">
                     <Stars />
-                    <blockquote className="mt-2 text-[15px] leading-relaxed text-off-white/85">“{mainTestimonial.quote}”</blockquote>
-                    <figcaption className="mt-3 text-sm text-off-white/80">
-                      <strong className="font-semibold text-off-white">{mainTestimonial.name}</strong> · {mainTestimonial.context}
+                    <blockquote className="mt-2 text-[15px] leading-relaxed text-vinho/85">“{mainTestimonial.quote}”</blockquote>
+                    <figcaption className="mt-3 text-sm text-vinho/70">
+                      <strong className="font-semibold text-vinho">{mainTestimonial.name}</strong> · {mainTestimonial.context}
                       {mainTestimonial.city.length > 0 ? ` · ${mainTestimonial.city}` : ""}
                     </figcaption>
                   </div>
@@ -154,7 +154,7 @@ export default async function LandingPage() {
           </div>
 
           <div className="order-first grid grid-cols-2 gap-3 lg:order-none">
-            <div className="col-span-2 overflow-hidden rounded-3xl ring-1 ring-white/10">
+            <div className="col-span-2 overflow-hidden rounded-3xl ring-1 ring-vinho/10">
               <Image src="/img/eventos/festa-infantil-velas.jpg" alt="Festa infantil" width={720} height={480} className="h-48 w-full object-cover sm:h-56" priority />
             </div>
             {[
@@ -163,15 +163,15 @@ export default async function LandingPage() {
               { src: "/img/eventos/festa-formatura-baile.jpg", label: "Formatura" },
               { src: "/img/eventos/corporativo.webp", label: "Corporativo" },
             ].map((photo) => (
-              <div key={photo.src} className="overflow-hidden rounded-2xl ring-1 ring-white/10">
+              <div key={photo.src} className="overflow-hidden rounded-2xl ring-1 ring-vinho/10">
                 <Image src={photo.src} alt={photo.label} width={360} height={240} className="h-24 w-full object-cover sm:h-28" />
               </div>
             ))}
-            <div className="col-span-2 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-              <span className="text-sm font-semibold text-off-white">Você recebe 3 opções prontas</span>
+            <div className="col-span-2 flex items-center justify-between gap-3 rounded-2xl border border-line-subtle bg-white/70 px-4 py-3">
+              <span className="text-sm font-semibold text-vinho">Você recebe 3 opções prontas</span>
               <span className="flex gap-2">
                 {OPTIONS.map((o) => (
-                  <span key={o.title} className="rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-semibold text-champagne ring-1 ring-champagne/30">
+                  <span key={o.title} className="rounded-full bg-champagne-claro px-2.5 py-0.5 text-[11px] font-semibold text-vinho ring-1 ring-coral/30">
                     {o.title}
                   </span>
                 ))}
@@ -180,12 +180,12 @@ export default async function LandingPage() {
           </div>
         </div>
 
-        <div className="relative border-y border-white/10 bg-white/[0.03] py-4 [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
-          <ul className="ev-marquee flex w-max gap-10 whitespace-nowrap font-display text-xl italic font-medium text-off-white/80">
+        <div className="relative border-y border-line-subtle bg-gradient-to-r from-areia-quente via-champagne-claro to-teal-soft py-4 [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
+          <ul className="ev-marquee flex w-max gap-10 whitespace-nowrap font-display text-xl italic font-medium text-vinho/80">
             {[...EVENT_TYPES, ...EVENT_TYPES].map((e, i) => (
               <li key={`${e.label}-${i}`} aria-hidden={i >= EVENT_TYPES.length} className="flex items-center gap-10">
                 {e.label}
-                <span aria-hidden="true" className="text-champagne/70">♥</span>
+                <span aria-hidden="true" className="text-vinho/30">♥</span>
               </li>
             ))}
           </ul>
@@ -197,7 +197,7 @@ export default async function LandingPage() {
       <section aria-label="Por que confiar" className="bg-white">
         <ul className="mx-auto grid grid-cols-1 w-full max-w-7xl gap-4 px-5 py-14 sm:grid-cols-2 sm:px-8 lg:grid-cols-4">
           {TRUST.map((item) => (
-            <li key={item.title} className="rounded-2xl border border-champagne-claro bg-areia-quente p-5 transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_30px_-16px_rgba(59,36,32,0.3)]">
+            <li key={item.title} className="rounded-2xl border border-champagne-claro bg-areia-quente p-5 transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_30px_-16px_rgba(43,39,36,0.3)]">
               <span aria-hidden="true" className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white text-sm font-bold text-primaria shadow-sm ring-1 ring-champagne-claro">
                 ✓
               </span>
@@ -209,10 +209,10 @@ export default async function LandingPage() {
       </section>
 
       {/* ================= As 3 opções ================= */}
-      <section className="bg-[#2A1119]">
+      <section className="bg-surface-dark">
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-28">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-champagne">O que você recebe</p>
-          <h2 className="mt-4 max-w-2xl font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.02em] text-off-white">Três caminhos claros. Você só escolhe.</h2>
+          <h2 className="mt-4 max-w-2xl font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.02em] text-ink-inverse">Três caminhos claros. Você só escolhe.</h2>
           <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
             {OPTIONS.map((o, i) => (
               <article
@@ -220,11 +220,11 @@ export default async function LandingPage() {
                 className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] p-7 backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-champagne/30"
               >
                 <div aria-hidden="true" className={`absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br ${o.dot} opacity-10 blur-2xl transition duration-500 group-hover:opacity-25`} />
-                <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${o.dot} text-sm font-bold text-white`}>
+                <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${o.dot} text-sm font-bold text-on-primary`}>
                   {i + 1}
                 </span>
-                <h3 className="mt-6 font-display text-2xl font-bold tracking-tight text-off-white">{o.title}</h3>
-                <p className="mt-2 text-[15px] leading-relaxed text-off-white/85">{o.text}</p>
+                <h3 className="mt-6 font-display text-2xl font-bold tracking-tight text-ink-inverse">{o.title}</h3>
+                <p className="mt-2 text-[15px] leading-relaxed text-ink-inverse/85">{o.text}</p>
               </article>
             ))}
           </div>
@@ -260,7 +260,7 @@ export default async function LandingPage() {
             {EVENT_TYPES.map((e) => (
               <li
                 key={e.label}
-                className="group rounded-2xl border border-champagne-claro bg-white p-5 transition duration-300 hover:-translate-y-0.5 hover:border-coral/40 hover:shadow-[0_16px_40px_-20px_rgba(163,72,90,0.35)]"
+                className="group rounded-2xl border border-champagne-claro bg-white p-5 transition duration-300 hover:-translate-y-0.5 hover:border-coral/40 hover:shadow-[0_16px_40px_-20px_rgba(240,160,112,0.35)]"
               >
                 <p className="font-display text-base font-bold text-vinho">{e.label}</p>
                 <p className="mt-1 text-sm text-vinho/75">{e.hint}</p>
@@ -271,15 +271,15 @@ export default async function LandingPage() {
       </section>
 
       {/* ================= Planos ================= */}
-      <section id="planos" className="relative isolate scroll-mt-24 overflow-hidden bg-[#2A1119] py-20 text-off-white lg:py-28">
-        <div aria-hidden="true" className="absolute left-1/2 top-0 -z-10 h-[480px] w-[900px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(163,72,90,0.14),transparent)]" />
+      <section id="planos" className="relative isolate scroll-mt-24 overflow-hidden bg-surface-dark py-20 text-ink-inverse lg:py-28">
+        <div aria-hidden="true" className="absolute left-1/2 top-0 -z-10 h-[480px] w-[900px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(240,160,112,0.14),transparent)]" />
         <div className="mx-auto w-full max-w-7xl px-5 sm:px-8">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-champagne">Planos</p>
-          <h2 className="mt-4 max-w-2xl font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.02em] text-off-white">
+          <h2 className="mt-4 max-w-2xl font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.02em] text-ink-inverse">
             Pague só pelo seu evento. Ou assine, se você organiza vários.
           </h2>
           <div className="mt-12 grid grid-cols-1 gap-5 lg:grid-cols-4">
-            <article className="flex flex-col rounded-3xl bg-white p-7 text-vinho shadow-[0_30px_60px_-20px_rgba(163,72,90,0.35)] ring-2 ring-primaria">
+            <article className="flex flex-col rounded-3xl bg-white p-7 text-vinho shadow-[0_30px_60px_-20px_rgba(240,160,112,0.35)] ring-2 ring-primaria">
               <p className="text-xs font-bold uppercase tracking-wider text-coral-escuro">Ticket avulso</p>
               <h3 className="mt-2 font-display text-xl font-bold">Para o seu evento</h3>
               <p className="mt-5 font-display text-5xl font-semibold tracking-tight">{formatBRL(ticketPriceCents)}</p>
@@ -290,7 +290,7 @@ export default async function LandingPage() {
                 <li>✓ 3 opções comparadas</li>
                 <li>✓ Pix ou cartão</li>
               </ul>
-              <Link prefetch={false} href="/registrar" className="mt-7 inline-flex justify-center rounded-full bg-primaria px-5 py-3 text-sm font-bold text-white transition hover:bg-primaria-escura">
+              <Link prefetch={false} href="/registrar" className="mt-7 inline-flex justify-center rounded-full bg-primaria px-5 py-3 text-sm font-bold text-on-primary transition hover:bg-primaria-escura">
                 Começar agora
               </Link>
             </article>
@@ -299,7 +299,7 @@ export default async function LandingPage() {
               <article
                 key={plan.code}
                 className={`flex flex-col rounded-3xl p-7 backdrop-blur transition duration-300 hover:-translate-y-1 ${
-                  plan.featured ? "bg-white ring-1 ring-champagne shadow-[0_24px_50px_-30px_rgba(59,36,32,0.45)]" : "bg-off-white ring-1 ring-champagne-claro"
+                  plan.featured ? "bg-white ring-1 ring-champagne shadow-[0_24px_50px_-30px_rgba(43,39,36,0.45)]" : "bg-off-white ring-1 ring-champagne-claro"
                 }`}
               >
                 <p className="text-xs font-bold uppercase tracking-wider text-vinho/70">
@@ -328,7 +328,7 @@ export default async function LandingPage() {
         <h2 id="faq-titulo" className={`mt-4 ${sectionTitle}`}>Perguntas que a gente sempre ouve</h2>
         <div className="mt-10 space-y-3">
           {FAQ.map((item) => (
-            <details key={item.q} className="group rounded-2xl border border-champagne-claro bg-white p-5 transition open:shadow-[0_12px_30px_-18px_rgba(59,36,32,0.3)]">
+            <details key={item.q} className="group rounded-2xl border border-champagne-claro bg-white p-5 transition open:shadow-[0_12px_30px_-18px_rgba(43,39,36,0.3)]">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-vinho">
                 {item.q}
                 <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-areia-secundaria text-lg text-vinho transition group-open:rotate-45">+</span>
@@ -341,15 +341,15 @@ export default async function LandingPage() {
 
       {/* ================= CTA final ================= */}
       <section className="px-5 pb-24 sm:px-8">
-        <div className="relative isolate mx-auto w-full max-w-5xl overflow-hidden rounded-[2.5rem] bg-vinho px-6 py-16 text-center text-white sm:py-20">
-          <div aria-hidden="true" className="absolute -top-24 left-1/2 -z-10 h-80 w-[700px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(163,72,90,0.35),transparent)]" />
+        <div className="relative isolate mx-auto w-full max-w-5xl overflow-hidden rounded-[2.5rem] bg-surface-dark px-6 py-16 text-center text-ink-inverse sm:py-20">
+          <div aria-hidden="true" className="absolute -top-24 left-1/2 -z-10 h-80 w-[700px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(240,160,112,0.35),transparent)]" />
           <h2 className="font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.02em]">
             Seu evento merece ser curtido, não administrado.
           </h2>
-          <p className="mx-auto mt-4 max-w-prose text-white/85">
+          <p className="mx-auto mt-4 max-w-prose text-ink-inverse/85">
             Conte o que você imagina. A EventeIA corre atrás dos orçamentos e te mostra as melhores opções.
           </p>
-          <Link prefetch={false} href="/registrar" className="group mt-9 inline-flex items-center gap-2 rounded-full bg-champagne px-7 py-3.5 font-semibold text-[#2A1119] transition hover:-translate-y-0.5 hover:bg-champagne-claro">
+          <Link prefetch={false} href="/registrar" className="group mt-9 inline-flex items-center gap-2 rounded-full bg-champagne px-7 py-3.5 font-semibold text-on-primary transition hover:-translate-y-0.5 hover:bg-champagne-claro">
             Testar agora <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">→</span>
           </Link>
         </div>

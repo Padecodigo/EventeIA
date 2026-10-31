@@ -4,7 +4,7 @@ export const FOLLOW_INSTAGRAM_TEXT =
   "Fazemos tudo pelo Instagram. Siga nossa página e mande uma mensagem no direct: é por lá que avisamos sobre as opções de produtos e entramos em contato com você.";
 
 const primaryClasses =
-  "inline-flex items-center justify-center gap-2 rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-12px_rgba(163,72,90,0.7)] transition duration-editorial ease-editorial hover:bg-primaria-escura";
+  "inline-flex items-center justify-center gap-2 rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-on-primary shadow-[0_10px_24px_-12px_rgba(240,160,112,0.7)] transition duration-editorial ease-editorial hover:bg-primaria-escura";
 
 const secondaryClasses =
   "inline-flex items-center justify-center gap-2 rounded-full border border-vinho/15 bg-white px-6 py-3 text-sm font-semibold text-vinho transition duration-editorial ease-editorial hover:border-primaria/40 hover:bg-verde-claro/50";

@@ -59,13 +59,13 @@ export const TESTIMONIALS: readonly Testimonial[] = [
 
 const toneClasses: Record<Testimonial["tone"], string> = {
   vinho: "bg-vinho text-off-white",
-  champagne: "bg-champagne text-vinho",
+  champagne: "bg-champagne text-on-primary",
   areia: "bg-areia-secundaria text-vinho",
 };
 
 export function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
   return (
-    <article className="flex h-full flex-col rounded-3xl border border-champagne-claro bg-white p-7 shadow-[0_20px_50px_-30px_rgba(163,72,90,0.35)]">
+    <article className="flex h-full flex-col rounded-3xl border border-champagne-claro bg-white p-7 shadow-[0_20px_50px_-30px_rgba(240,160,112,0.35)]">
       <p role="img" aria-label="5 de 5 estrelas" className="mb-3 tracking-[0.2em] text-amber-400">★★★★★</p>
       <p className="text-body-lg leading-relaxed text-vinho">
         “{testimonial.quote}”
@@ -101,7 +101,7 @@ export function Testimonials({ items }: { items?: readonly TestimonialCardData[]
   const list = hasRealTestimonials ? items : TESTIMONIALS;
 
   return (
-    <section className="bg-gradient-to-b from-[#FBF6F2] to-[#FFF6F1] py-20 lg:py-28">
+    <section className="bg-gradient-to-b from-areia-quente to-areia-secundaria py-20 lg:py-28">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-8">
         <p className="eyebrow">Histórias que emocionam</p>
         <div className="mt-3 flex flex-wrap items-end justify-between gap-4">

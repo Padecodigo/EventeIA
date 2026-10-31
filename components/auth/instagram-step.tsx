@@ -28,7 +28,7 @@ export function InstagramStep({ checked, onChange, className }: InstagramStepPro
 
       <ol className="mt-3 flex flex-col gap-2 text-sm text-vinho">
         <li className="flex items-center gap-3">
-          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-champagne text-xs font-semibold text-primaria-escura">
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-champagne text-xs font-semibold text-on-primary">
             1
           </span>
           <a
@@ -41,7 +41,7 @@ export function InstagramStep({ checked, onChange, className }: InstagramStepPro
           </a>
         </li>
         <li className="flex items-center gap-3">
-          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-champagne text-xs font-semibold text-primaria-escura">
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-champagne text-xs font-semibold text-on-primary">
             2
           </span>
           <a

@@ -41,7 +41,7 @@ export function SocialLoginForm({ platform }: { platform: Platform }) {
       <button
         type="submit"
         disabled={pending}
-        className="self-start rounded-full bg-primaria px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primaria-escura disabled:opacity-50"
+        className="self-start rounded-full bg-primaria px-5 py-2.5 text-sm font-semibold text-on-primary transition hover:bg-primaria-escura disabled:opacity-50"
       >
         {pending ? `Entrando no ${label}…` : "Logar"}
       </button>

@@ -18,13 +18,13 @@ export const metadata = pageMetadata({
 
 export default function PlansPage() {
   return (
-    <div className="bg-[#2A1119]">
+    <div className="bg-areia-quente text-vinho">
       <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-8">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-champagne">Planos</p>
-      <h1 className="mt-3 max-w-prose font-serif text-display-2 font-display text-off-white">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-coral-escuro">Planos</p>
+      <h1 className="mt-3 max-w-prose font-serif text-display-2 font-display text-vinho">
         Planos para festas de todos os tamanhos.
       </h1>
-      <p className="mt-4 max-w-prose text-off-white/85">
+      <p className="mt-4 max-w-prose text-vinho/85">
         Anfitriões pagam por evento, sem mensalidade. Cada crédito equivale a um evento ativado.
       </p>
 
@@ -46,7 +46,7 @@ export default function PlansPage() {
           <Link
             prefetch={false}
             href="/registrar"
-            className="mt-8 rounded-full bg-primaria px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-primaria-escura"
+            className="mt-8 rounded-full bg-primaria px-5 py-3 text-center text-sm font-semibold text-on-primary transition hover:bg-primaria-escura"
           >
             Começar
           </Link>
@@ -72,7 +72,7 @@ export default function PlansPage() {
               <p
                 className={
                   plan.featured
-                    ? "w-fit rounded-full bg-champagne-claro px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-primaria-escura"
+                    ? "w-fit rounded-full bg-champagne-claro px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-coral-escuro"
                     : "text-[10px] font-semibold uppercase tracking-[0.16em] opacity-70"
                 }
               >
@@ -89,7 +89,7 @@ export default function PlansPage() {
                 href="/registrar"
                 className={
                   plan.featured
-                    ? "mt-8 rounded-full bg-primaria px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-primaria-escura"
+                    ? "mt-8 rounded-full bg-primaria px-5 py-3 text-center text-sm font-semibold text-on-primary transition hover:bg-primaria-escura"
                     : "mt-8 rounded-full border border-champagne px-5 py-3 text-center text-sm font-medium text-vinho transition hover:bg-champagne-claro/40"
                 }
               >
@@ -101,13 +101,13 @@ export default function PlansPage() {
       </div>
 
       <div className="mt-10 flex flex-wrap items-center justify-between gap-4">
-        <p className="text-caption text-off-white/80">
+        <p className="text-caption text-vinho/70">
           Seus créditos não expiram: use quando quiser.
         </p>
         <Link
           prefetch={false}
           href="/para-planners"
-          className="text-sm font-medium text-champagne underline decoration-champagne/50 underline-offset-8"
+          className="text-sm font-medium text-coral-escuro underline decoration-coral-escuro/50 underline-offset-8"
         >
           Entender o plano de planners
         </Link>

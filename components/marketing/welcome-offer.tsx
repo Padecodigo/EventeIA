@@ -28,13 +28,13 @@ export function WelcomeOffer() {
         id="ev-welcome-banner"
         hidden
         aria-label="Oferta de boas-vindas"
-        className="relative bg-vinho text-off-white"
+        className="relative bg-areia-secundaria text-vinho"
       >
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 py-2 text-sm">
           <span>{WELCOME_COPY}</span>
           <a
             href="/registrar"
-            className="font-semibold underline decoration-champagne underline-offset-4"
+            className="font-semibold text-coral-escuro underline decoration-coral-escuro underline-offset-4"
           >
             Criar conta
           </a>
@@ -42,7 +42,7 @@ export function WelcomeOffer() {
             type="button"
             data-welcome-dismiss
             aria-label="Minimizar faixa da oferta"
-            className="ml-1 rounded-full px-2 leading-none hover:bg-off-white/10"
+            className="ml-1 rounded-full px-2 leading-none hover:bg-vinho/10"
           >
             ×
           </button>
@@ -55,7 +55,7 @@ export function WelcomeOffer() {
         id="ev-offer-badge"
         hidden
         aria-label="Mostrar oferta de boas-vindas"
-        className="fixed bottom-4 left-4 z-30 rounded-full bg-vinho px-3 py-1.5 text-xs font-semibold text-off-white shadow-soft"
+        className="fixed bottom-4 left-4 z-30 rounded-full border border-line-subtle bg-areia-secundaria px-3 py-1.5 text-xs font-semibold text-vinho shadow-soft"
       >
         🎁 Oferta
       </button>
@@ -66,21 +66,21 @@ export function WelcomeOffer() {
         id="ev-lucky-banner"
         hidden
         aria-label="Cupom sorteado"
-        className="relative bg-vinho text-off-white"
+        className="relative bg-areia-secundaria text-vinho"
       >
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 py-2 text-sm">
           <span data-lucky-teaser>Ainda dá tempo de economizar no seu tíquete.</span>
           <button
             type="button"
             data-lucky-draw
-            className="rounded-full bg-champagne px-4 py-1 font-semibold text-vinho shadow-soft transition hover:scale-105"
+            className="rounded-full bg-champagne px-4 py-1 font-semibold text-on-primary shadow-soft transition hover:scale-105"
           >
             Quer cupom? 🎁
           </button>
           <span data-lucky-summary hidden>
-            Seu cupom: <strong data-lucky-percent className="text-champagne" />% off ·{" "}
-            <strong data-lucky-final className="text-champagne" /> · expira em{" "}
-            <time data-lucky-countdown className="font-semibold tabular-nums text-champagne">
+            Seu cupom: <strong data-lucky-percent className="text-coral-escuro" />% off ·{" "}
+            <strong data-lucky-final className="text-coral-escuro" /> · expira em{" "}
+            <time data-lucky-countdown className="font-semibold tabular-nums text-coral-escuro">
               --:--:--
             </time>
           </span>
@@ -88,7 +88,7 @@ export function WelcomeOffer() {
             type="button"
             data-lucky-dismiss
             aria-label="Fechar faixa do cupom"
-            className="ml-1 rounded-full px-2 leading-none hover:bg-off-white/10"
+            className="ml-1 rounded-full px-2 leading-none hover:bg-vinho/10"
           >
             ×
           </button>
@@ -127,7 +127,7 @@ export function WelcomeOffer() {
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <a
                 href="/registrar"
-                className="rounded-full bg-primaria px-5 py-3 text-sm font-semibold text-white hover:bg-primaria-escura"
+                className="rounded-full bg-primaria px-5 py-3 text-sm font-semibold text-on-primary hover:bg-primaria-escura"
               >
                 Usar meu cupom
               </a>
