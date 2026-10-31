@@ -282,8 +282,8 @@ PORT=3100 pnpm start      # app em http://localhost:3100
 
 | Perfil            | E-mail               | Senha           |
 | ----------------- | -------------------- | --------------- |
-| Anfitriã (B2C)    | `ana@eventeia.com`   | `EventeIA@2026` |
-| Admin (moderação) | `admin@eventeia.com` | `Admin@2026`    |
+| Anfitriã (B2C)    | `ana@eventeia.com`   | definida em `DEMO_SEED_PASSWORD` |
+| Admin (moderação) | `admin@eventeia.com` | definida em `DEMO_SEED_ADMIN_PASSWORD` |
 
 **Login automático local**
 

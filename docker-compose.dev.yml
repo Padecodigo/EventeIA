@@ -21,7 +21,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: evolution
-      POSTGRES_PASSWORD: evolution-local
+      POSTGRES_PASSWORD: ${EVOLUTION_DB_PASSWORD:?defina EVOLUTION_DB_PASSWORD no .env.local}
       POSTGRES_DB: evolution
     volumes:
       - evolution-db-data:/var/lib/postgresql/data
@@ -47,7 +47,7 @@ services:
       AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY:?defina EVOLUTION_API_KEY no .env.local}
       DATABASE_ENABLED: "true"
       DATABASE_PROVIDER: postgresql
-      DATABASE_CONNECTION_URI: postgresql://evolution:evolution-local@evolution-db:5432/evolution
+      DATABASE_CONNECTION_URI: postgresql://evolution:${EVOLUTION_DB_PASSWORD:?defina EVOLUTION_DB_PASSWORD no .env.local}@evolution-db:5432/evolution
       CACHE_REDIS_ENABLED: "true"
       CACHE_REDIS_URI: redis://redis:6379/6
       CACHE_LOCAL_ENABLED: "false"

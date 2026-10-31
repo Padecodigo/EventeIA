@@ -2,8 +2,10 @@
  * Seed de demonstração do MVP (ambiente local).
  *
  * Cria:
- * - ana@eventeia.com / EventeIA@2026  (anfitriã B2C, com evento ativo + cotações + histórico)
- * - admin@eventeia.com / Admin@2026   (moderador, vê /admin/depoimentos)
+ * - ana@eventeia.com   (anfitriã B2C, com evento ativo + cotações + histórico)
+ * - admin@eventeia.com (moderador, vê /admin/depoimentos)
+ *
+ * Senhas vêm de DEMO_SEED_PASSWORD e DEMO_SEED_ADMIN_PASSWORD no .env.local.
  *
  * Uso: pnpm demo:seed (com .env.local apontando para o Supabase local)
  */
@@ -12,6 +14,8 @@ import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 
 import type { Database } from "../lib/supabase/types";
+
+import { readSeedPasswords } from "./seed-demo-env";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -25,8 +29,14 @@ const admin = createClient<Database>(url, serviceRoleKey, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-const DEMO_PASSWORD = "EventeIA@2026";
-const ADMIN_PASSWORD = "Admin@2026";
+const { demoPassword: DEMO_PASSWORD, adminPassword: ADMIN_PASSWORD } = (() => {
+  try {
+    return readSeedPasswords(process.env);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  }
+})();
 
 interface DemoUser {
   id: string;
