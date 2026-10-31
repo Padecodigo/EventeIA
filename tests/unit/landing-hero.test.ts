@@ -72,12 +72,11 @@ describe("landing — v2 visual", () => {
     expect(source).not.toMatch(/\bEmpresa\b/);
     expect(source).toContain("evento corporativo");
   });
-  it("fotos têm hover dinâmico e respeitam prefers-reduced-motion", () => {
-    expect(source).toContain("group-hover:scale-110");
-    expect(source).toContain("hover:rotate-0");
-    expect(source).toContain("hover:z-50");
-    const css = readFileSync(join(process.cwd(), "app/globals.css"), "utf8");
-    expect(css).toMatch(/prefers-reduced-motion: reduce[\s\S]*ev-photo/);
+  it("fotos do hero ficam totalmente visíveis (sem object-cover nem scale-110)", () => {
+    expect(source).not.toContain("object-cover");
+    expect(source).not.toContain("scale-110");
+    expect(source).toContain("object-contain");
+    expect(source).toContain("h-auto w-full");
   });
 });
 

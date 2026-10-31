@@ -1,13 +1,13 @@
 import type { Config } from "tailwindcss";
 
 /**
- * EventeIA — Design System "Terra Rosé" (v4, out/2026) — derivado do monograma dourado/terra do logo.
+ * EventeIA — Design System "Maison Vinho & Ouro" (v5, out/2026).
  * Nomes históricos dos tokens mantidos; valores:
- *   vinho/noite/ink → cacau #3B2420 (texto; 13:1 no fundo)
- *   primaria        → vinho-rosé #A3485A (CTA; texto branco 5,8:1) · primaria-escura #86374A
- *   champagne/coral → blush-terracota #E8A587 (acento; só com texto cacau, 7:1)
- *   champagne-claro → blush #F6E1D8 · terracota #C9734F (decorativo) · dourado do logo #BF986B
- *   areia-quente    → #FBF6F2 (fundo) · areia-secundaria/verde-claro → #F3E6DD (faixas)
+ *   primaria/vinho → vinho #6B1E2E (CTA com texto branco; hover/dark #4A1420)
+ *   champagne/coral → ouro #B8925A (acento; pills com texto escuro) · dourado do logo #B8925A
+ *   champagne-claro → ouro-claro #E9D9B8
+ *   areia-quente    → marfim #FAF6EF (fundo) · areia-secundaria/verde-claro → linho #F1E9DC (faixas)
+ *   noite/ink       → ink #2A1A1D (texto) · muted #6E5F5C (texto secundário)
  * Tipografia: Fraunces (títulos) · Figtree (corpo/UI).
  */
 const config: Config = {
@@ -27,41 +27,39 @@ const config: Config = {
        * ====================================================== */
       colors: {
         /* ---- Paleta canônica (hex oficial) ---- */
-        vinho: "rgb(var(--tr-vinho) / <alpha-value>)", // azul-noite (nome histórico mantido)
-        "areia-quente": "rgb(var(--tr-areia-quente) / <alpha-value>)",
-        "areia-secundaria": "rgb(var(--tr-areia-secundaria) / <alpha-value>)",
+        vinho: "rgb(var(--tr-vinho) / <alpha-value>)", // vinho #6B1E2E
+        "areia-quente": "rgb(var(--tr-areia-quente) / <alpha-value>)", // marfim
+        "areia-secundaria": "rgb(var(--tr-areia-secundaria) / <alpha-value>)", // linho
         "off-white": "rgb(var(--tr-off-white) / <alpha-value>)",
-        champagne: "#E8A587", // coral
-        coral: "#E8A587",
-        "coral-escuro": "#A3485A", // texto coral sobre claro (AA)
-        noite: "#3B2420",
-        sol: "#FFC94D",
-        menta: "#C9734F",
-        lilas: "#8B7CF6",
-        "champagne-claro": "rgb(var(--tr-champagne-claro) / <alpha-value>)",
-        primaria: "rgb(var(--tr-primaria) / <alpha-value>)",
-        "primaria-escura": "rgb(var(--tr-primaria-escura) / <alpha-value>)",
-        "verde-claro": "#F3E6DD", // nome legado; agora areia-rosé
-        terracota: "#C9734F",
-        dourado: "#BF986B",
+        champagne: "#B8925A", // ouro
+        coral: "#B8925A", // ouro (alias legado)
+        "coral-escuro": "#4A1420", // vinho-escuro (texto sobre ouro/claro, AA)
+        noite: "#2A1A1D", // ink
+        "champagne-claro": "rgb(var(--tr-champagne-claro) / <alpha-value>)", // ouro-claro
+        primaria: "rgb(var(--tr-primaria) / <alpha-value>)", // vinho #6B1E2E
+        "primaria-escura": "rgb(var(--tr-primaria-escura) / <alpha-value>)", // #4A1420
+        "verde-claro": "#F1E9DC", // nome legado; agora linho
+        dourado: "#B8925A",
+        muted: "#6E5F5C", // texto secundário
 
         /* ---- Tokens semânticos (preferidos nos componentes) ---- */
         brand: {
-          primary: "#A3485A",
-          accent: "#E8A587",
-          accentSoft: "#F6E1D8",
+          primary: "#6B1E2E",
+          accent: "#B8925A",
+          accentSoft: "#E9D9B8",
         },
         surface: {
           canvas: "#FFFFFF",   // cards, campos
-          warm: "#FBF6F2",     // fundo padrão de página
-          muted: "#F3E6DD",    // faixas alternadas, linhas de tabela
-          dark: "#3B2420",     // seções editoriais escuras
+          warm: "#FAF6EF",     // fundo padrão de página
+          muted: "#F1E9DC",    // faixas alternadas, linhas de tabela
+          dark: "#2A1A1D",     // seções editoriais escuras
         },
         ink: {
-          primary: "#3B2420",
+          primary: "#2A1A1D",
           inverse: "#FFFFFF",
-          accent: "#E8A587",   // apenas sobre azul-noite (contraste AA)
-          soft: "#F6E1D8",
+          accent: "#B8925A",   // apenas sobre vinho/ink (contraste AA)
+          soft: "#E9D9B8",
+          muted: "#6E5F5C",
         },
         line: {
           subtle: "rgb(var(--tr-line-rgb) / 0.12)",
@@ -70,7 +68,7 @@ const config: Config = {
         /** Estados semânticos — uso restrito a validação (ícones/labels) */
         semantic: {
           error: "rgb(var(--tr-semantic-error) / <alpha-value>)",
-          success: "#1E6B3A",
+          success: "#2F6B4F",
         },
       },
 
@@ -128,14 +126,14 @@ const config: Config = {
       },
 
       boxShadow: {
-        soft: "0 1px 2px rgba(59, 36, 32, 0.06), 0 8px 24px rgba(59, 36, 32, 0.06)",
-        raised: "0 2px 4px rgba(59, 36, 32, 0.08), 0 16px 40px rgba(59, 36, 32, 0.10)",
-        gold: "0 0 0 1px rgba(163, 72, 90, 0.55), 0 8px 24px rgba(163, 72, 90, 0.25)",
+        soft: "0 1px 2px rgba(42, 26, 29, 0.06), 0 8px 24px rgba(42, 26, 29, 0.06)",
+        raised: "0 2px 4px rgba(42, 26, 29, 0.08), 0 16px 40px rgba(42, 26, 29, 0.10)",
+        gold: "0 0 0 1px rgba(107, 30, 46, 0.55), 0 8px 24px rgba(107, 30, 46, 0.25)",
       },
 
       backgroundImage: {
         "gold-sheen":
-          "linear-gradient(135deg, #F6E1D8 0%, #E8A587 55%, #FFC94D 100%)",
+          "linear-gradient(135deg, #E9D9B8 0%, #B8925A 55%, #4A1420 100%)",
       },
 
       transitionTimingFunction: {

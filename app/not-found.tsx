@@ -3,6 +3,8 @@ import Link from "next/link";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 
+export const metadata = { title: "Página não encontrada" };
+
 export default function NotFound() {
   return (
     <div className="flex min-h-screen flex-col bg-areia-quente text-vinho">

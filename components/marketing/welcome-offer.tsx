@@ -1,9 +1,10 @@
 import Script from "next/script";
 
 import { formatBRL } from "@/lib/money";
-import { welcomeVisitorCopy } from "@/lib/offers/pure";
+import { welcomeVisitorCopy, welcomeVisitorShortCopy } from "@/lib/offers/pure";
 
 const WELCOME_COPY = welcomeVisitorCopy();
+const WELCOME_SHORT_COPY = welcomeVisitorShortCopy();
 
 /**
  * Oferta de boas-vindas nas páginas públicas — Server Component (guarda de TBT: sem React
@@ -30,11 +31,12 @@ export function WelcomeOffer() {
         aria-label="Oferta de boas-vindas"
         className="relative bg-vinho text-off-white"
       >
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 py-2 text-sm">
-          <span>{WELCOME_COPY}</span>
+        <div className="mx-auto flex max-w-7xl flex-nowrap items-center justify-center gap-x-2 px-3 py-2 text-sm sm:flex-wrap sm:gap-x-3 sm:px-4">
+          <span className="whitespace-nowrap sm:hidden">{WELCOME_SHORT_COPY}</span>
+          <span className="hidden sm:inline">{WELCOME_COPY}</span>
           <a
             href="/registrar"
-            className="font-semibold underline decoration-champagne underline-offset-4"
+            className="whitespace-nowrap font-semibold underline decoration-champagne underline-offset-4"
           >
             Criar conta
           </a>
@@ -42,7 +44,7 @@ export function WelcomeOffer() {
             type="button"
             data-welcome-dismiss
             aria-label="Minimizar faixa da oferta"
-            className="ml-1 rounded-full px-2 leading-none hover:bg-off-white/10"
+            className="ml-1 inline-flex size-11 shrink-0 items-center justify-center rounded-full leading-none hover:bg-off-white/10"
           >
             ×
           </button>

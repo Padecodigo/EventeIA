@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { InstagramReminderBanner } from "@/components/domain/instagram-reminder";
 import { PanelEventDelete } from "@/components/domain/panel-event-delete";
 import { PanelEventsClear } from "@/components/domain/panel-events-clear";
 import { getUserActivity } from "@/lib/activity";
@@ -60,6 +61,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-10">
+      <InstagramReminderBanner />
       <section>
         <p className="text-overline uppercase tracking-[0.14em] text-vinho/75">O seu ateliê</p>
         <h1 className="mt-2 font-serif text-display-2 font-display">A clareza começa aqui.</h1>

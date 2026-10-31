@@ -4,7 +4,6 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { DashboardNav } from "@/components/dashboard-nav";
-import { InstagramReminderBanner } from "@/components/domain/instagram-reminder";
 import { OfferBanner } from "@/components/domain/offer-banner";
 import { NotificationsPoller } from "@/components/notifications/notifications-poller";
 import { SupportButton } from "@/components/support/support-button";
@@ -77,9 +76,6 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           />
         </div>
       ) : null}
-      <div className="mx-auto w-full max-w-6xl px-6 pt-4">
-        <InstagramReminderBanner />
-      </div>
       <main className="mx-auto w-full max-w-6xl px-6 py-10">{children}</main>
       <footer className="border-t border-line-subtle py-6 text-center text-[11px] text-vinho/60">
         © {new Date().getFullYear()} EventeIA · Pagamentos via Pix e cartão · Dados protegidos

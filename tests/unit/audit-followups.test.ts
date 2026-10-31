@@ -3,13 +3,16 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { passwordSavedMessage, resolveHasPassword } from "@/lib/auth/password";
-import { welcomeVisitorCopy } from "@/lib/offers/pure";
+import { welcomeVisitorCopy, welcomeVisitorShortCopy } from "@/lib/offers/pure";
 
 describe("welcomeVisitorCopy", () => {
   it("matches the real offer (R$ 40 avulso / 30% pacotes / 48h)", () => {
     expect(welcomeVisitorCopy()).toBe(
       "Crie sua conta e ganhe R$ 40 no evento avulso ou 30% nos pacotes por 48h.",
     );
+  });
+  it("short mobile copy fits one line (R$ 40 / 48h)", () => {
+    expect(welcomeVisitorShortCopy()).toBe("Ganhe R$ 40 no 1º evento · 48h");
   });
   it("public offer UI has no R$ 47 offer nor a visitor countdown", () => {
     const tsx = readFileSync("components/marketing/welcome-offer.tsx", "utf8");
