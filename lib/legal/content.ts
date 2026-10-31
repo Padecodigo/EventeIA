@@ -16,6 +16,7 @@ export const PRIVACY_SECTIONS: readonly LegalSection[] = [
     title: "Quais dados coletamos",
     items: [
       "Usuários e interessados (leads): nome, e-mail, telefone e os dados do evento que você informa.",
+      "Contatos opcionais: o número de WhatsApp e o @ de Instagram que você informar no cadastro ou no perfil, usados para falar com você sobre os seus eventos.",
       "Pagamentos: CPF e dados da cobrança, processados pelo Asaas. O EventeIA não guarda o número do seu cartão.",
       "Dados técnicos e cookies: informações de acesso, do navegador e do aparelho, e cookies necessários para login, segurança e funcionamento do site.",
       "Fornecedores: informações comerciais públicas, como nome do negócio, categoria, cidade, telefone e e-mail comerciais.",

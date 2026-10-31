@@ -32,6 +32,8 @@ export interface Database {
         display_name: string;
         email: string | null;
         phone_e164: string | null;
+        contact_whatsapp_e164: string | null;
+        instagram_handle: string | null;
         document_type: "cpf" | "cnpj";
         document_number: string | null;
         asaas_customer_id: string | null;

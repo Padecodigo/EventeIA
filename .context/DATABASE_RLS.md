@@ -33,6 +33,8 @@ create table public.profiles (
   role text not null default 'b2c' check (role in ('b2c','b2b','admin')),
   display_name text not null,
   phone_e164 text,                      -- E.164: +5511999999999
+  contact_whatsapp_e164 text,           -- E.164 do WhatsApp do próprio usuário (contato; 0064)
+  instagram_handle text,                -- @ do próprio usuário, normalizado (0064)
   document_type text not null default 'cpf' check (document_type in ('cpf','cnpj')),
   document_number text,                 -- CPF/CNPJ: criptografar/mascarar — ver §7
   asaas_customer_id text unique,
@@ -373,7 +375,7 @@ create policy "snapshots: leitura via evento"
 
 ```sql
 revoke update on public.profiles from authenticated;
-grant update (display_name, phone_e164) on public.profiles to authenticated;
+grant update (display_name, phone_e164, contact_whatsapp_e164, instagram_handle) on public.profiles to authenticated;
 ```
 
 - `role`, `document_type`, `document_number`, `asaas_customer_id`: somente `service_role`.

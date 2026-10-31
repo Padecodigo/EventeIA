@@ -12,12 +12,16 @@ export interface ProfileFormProps {
   defaultName: string;
   defaultPhone: string;
   defaultCpf: string;
+  defaultWhatsapp: string;
+  defaultInstagram: string;
 }
 
 export function ProfileForm({
   defaultName,
   defaultPhone,
   defaultCpf,
+  defaultWhatsapp,
+  defaultInstagram,
 }: ProfileFormProps) {
   const [state, formAction, pending] = useActionState(updateProfileAction, initialState);
 
@@ -42,6 +46,22 @@ export function ProfileForm({
         defaultValue={defaultCpf}
         placeholder="00000000000"
         hint="Necessário para emitir a cobrança. Fica restrito ao servidor."
+      />
+      <Field
+        label="WhatsApp"
+        name="whatsapp"
+        type="tel"
+        defaultValue={defaultWhatsapp}
+        placeholder="11 99999-9999"
+        hint="Seu número, para contato."
+      />
+      <Field
+        label="Instagram"
+        name="instagram"
+        type="text"
+        defaultValue={defaultInstagram}
+        placeholder="@seu.perfil"
+        hint="Seu @ de Instagram, para contato."
       />
 
       {state.error !== undefined ? (

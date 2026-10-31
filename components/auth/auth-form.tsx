@@ -107,6 +107,7 @@ export function AuthForm({ mode, oauthError }: { mode: AuthMode; oauthError?: st
       <form action={formAction} className="flex flex-col gap-4">
         {termsHidden}
         {isSignUp ? (
+          <>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="full-name" className="text-sm font-medium text-vinho">
               Nome completo
@@ -119,6 +120,36 @@ export function AuthForm({ mode, oauthError }: { mode: AuthMode; oauthError?: st
               className="h-12 rounded-xl border border-line-subtle bg-off-white px-4 text-sm text-vinho"
             />
           </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="whatsapp" className="text-sm font-medium text-vinho">
+              WhatsApp <span className="font-normal text-vinho/60">(opcional)</span>
+            </label>
+            <input
+              id="whatsapp"
+              name="whatsapp"
+              type="tel"
+              autoComplete="tel"
+              placeholder="11 99999-9999"
+              className="h-12 rounded-xl border border-line-subtle bg-off-white px-4 text-sm text-vinho"
+            />
+            <p className="text-caption text-vinho/70">Seu número, para contato. Fica restrito à sua conta.</p>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="instagram" className="text-sm font-medium text-vinho">
+              Instagram <span className="font-normal text-vinho/60">(opcional)</span>
+            </label>
+            <input
+              id="instagram"
+              name="instagram"
+              type="text"
+              placeholder="@seu.perfil"
+              className="h-12 rounded-xl border border-line-subtle bg-off-white px-4 text-sm text-vinho"
+            />
+            <p className="text-caption text-vinho/70">Seu @ de Instagram, para contato.</p>
+          </div>
+          </>
         ) : null}
 
         <div className="flex flex-col gap-1.5">

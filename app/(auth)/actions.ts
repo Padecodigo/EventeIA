@@ -6,10 +6,14 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { recordAnalytics } from "@/lib/analytics/server";
-import { SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/auth/session-ttl";
 import { RESET_NEXT_COOKIE, buildCallbackUrl, publicOrigin } from "@/lib/auth/oauth";
+import { SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/auth/session-ttl";
+import { normalizeInstagramHandle } from "@/lib/instagram-handle";
 import { recordTermsAcceptance } from "@/lib/legal/acceptance-server";
 import { TERMS_COOKIE, TERMS_ERROR, TERMS_VERSION, hasAcceptedTerms } from "@/lib/legal/terms";
+import { logger } from "@/lib/logger";
+import { normalizePhoneE164 } from "@/lib/phone";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { bindWelcomeOfferToUser } from "@/lib/welcome/server";
 
@@ -82,6 +86,8 @@ const signUpSchema = z.object({
   fullName: z.string().trim().min(2).max(80),
   email: z.string().trim().email(),
   password: z.string().min(8),
+  whatsapp: z.string().trim().optional(),
+  instagram: z.string().trim().optional(),
 });
 
 export async function signUpAction(
@@ -92,6 +98,8 @@ export async function signUpAction(
     fullName: formData.get("fullName"),
     email: formData.get("email"),
     password: formData.get("password"),
+    whatsapp: formData.get("whatsapp") ?? "",
+    instagram: formData.get("instagram") ?? "",
   });
 
   if (!parsed.success) {
@@ -100,6 +108,21 @@ export async function signUpAction(
 
   if (!hasAcceptedTerms(formData)) {
     return { error: TERMS_ERROR };
+  }
+
+  const whatsappRaw = parsed.data.whatsapp ?? "";
+  const whatsappE164 = whatsappRaw.length === 0 ? null : normalizePhoneE164(whatsappRaw);
+  if (whatsappRaw.length > 0 && whatsappE164 === null) {
+    return { error: "WhatsApp inválido. Use DDD + número (ex.: 11 99999-9999)." };
+  }
+
+  const instagramRaw = parsed.data.instagram ?? "";
+  const instagramHandle =
+    instagramRaw.length === 0 ? null : normalizeInstagramHandle(instagramRaw);
+  if (instagramRaw.length > 0 && instagramHandle === null) {
+    return {
+      error: "Instagram inválido. Use apenas letras, números, ponto e underscore (ex.: @seu.perfil).",
+    };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -119,6 +142,24 @@ export async function signUpAction(
     await bindWelcomeOfferToUser(data.user.id);
     // Prova do aceite: data/hora + versão dos termos (0041).
     await recordTermsAcceptance(data.user.id, "signup");
+
+    if (whatsappE164 !== null || instagramHandle !== null) {
+      try {
+        const admin = getSupabaseAdmin();
+        await admin
+          .from("profiles")
+          .update({
+            contact_whatsapp_e164: whatsappE164,
+            instagram_handle: instagramHandle,
+          })
+          .eq("id", data.user.id);
+      } catch (caught) {
+        logger.warn(
+          { reason: caught instanceof Error ? caught.message : "desconhecido" },
+          "falha ao gravar contatos opcionais no cadastro",
+        );
+      }
+    }
   }
 
   if (data.session === null) {

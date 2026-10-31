@@ -6,6 +6,7 @@ const SQL_FILES = [
   "supabase/tests/rls_coverage_test.sql",
   "supabase/tests/prospect_rls_test.sql",
   "supabase/tests/supplier_conversations_rls_test.sql",
+  "supabase/tests/profile_contact_fields_rls_test.sql",
 ] as const;
 
 describe("pgTAP de cobertura RLS", () => {

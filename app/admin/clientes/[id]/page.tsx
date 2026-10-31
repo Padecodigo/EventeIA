@@ -15,7 +15,7 @@ export default async function AdminClientePage({ params }: { params: Promise<{ i
   const { id } = await params;
   if (!isUuid(id)) notFound();
   const admin = getSupabaseAdmin();
-  const { data: p } = await admin.from("profiles").select("id,display_name,email,phone_e164,role,document_type,created_at").eq("id", id).maybeSingle();
+  const { data: p } = await admin.from("profiles").select("id,display_name,email,phone_e164,contact_whatsapp_e164,instagram_handle,role,document_type,created_at").eq("id", id).maybeSingle();
   if (!p) notFound();
   const [events, pays, tickets] = await Promise.all([
     admin.from("events").select("id,title,event_date,status,city").eq("owner_profile_id", id).order("created_at", { ascending: false }).limit(100),
@@ -35,6 +35,8 @@ export default async function AdminClientePage({ params }: { params: Promise<{ i
         <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
           <div><dt className="text-caption text-vinho/60">E-mail</dt><dd>{p.email ?? "—"}</dd></div>
           <div><dt className="text-caption text-vinho/60">Telefone</dt><dd>{p.phone_e164 ?? "—"}</dd></div>
+          <div><dt className="text-caption text-vinho/60">WhatsApp</dt><dd>{p.contact_whatsapp_e164 ?? "—"}</dd></div>
+          <div><dt className="text-caption text-vinho/60">Instagram</dt><dd>{p.instagram_handle ? `@${p.instagram_handle}` : "—"}</dd></div>
           <div><dt className="text-caption text-vinho/60">Tipo</dt><dd>{p.role} · {p.document_type.toUpperCase()}</dd></div>
           <div><dt className="text-caption text-vinho/60">Cliente desde</dt><dd>{fmtDate(p.created_at)}</dd></div>
           <div><dt className="text-caption text-vinho/60">Total pago</dt><dd className="tabular-nums">{formatBRL(paidTotal)}</dd></div>

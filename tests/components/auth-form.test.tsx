@@ -73,6 +73,23 @@ describe("AuthForm — formulário server-side", () => {
     expect(screen.getByLabelText("E-mail")).toBeInTheDocument();
     expect(screen.getByLabelText("Senha")).toBeInTheDocument();
   });
+
+  it("cadastro oferece WhatsApp e Instagram opcionais", () => {
+    render(<AuthForm mode="registrar" />);
+
+    const whatsapp = screen.getByLabelText("WhatsApp (opcional)");
+    const instagram = screen.getByLabelText("Instagram (opcional)");
+    expect(whatsapp).toHaveAttribute("type", "tel");
+    expect(whatsapp).toHaveAttribute("name", "whatsapp");
+    expect(instagram).toHaveAttribute("name", "instagram");
+  });
+
+  it("login não pede WhatsApp nem Instagram", () => {
+    render(<AuthForm mode="entrar" />);
+
+    expect(screen.queryByLabelText("WhatsApp (opcional)")).toBeNull();
+    expect(screen.queryByLabelText("Instagram (opcional)")).toBeNull();
+  });
 });
 
 describe("AuthForm — Entrar com Google", () => {

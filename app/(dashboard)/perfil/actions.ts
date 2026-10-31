@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { requireUser } from "@/lib/auth";
 import { emitFeed } from "@/lib/feeds";
+import { normalizeInstagramHandle } from "@/lib/instagram-handle";
 import { logger } from "@/lib/logger";
 import { normalizePhoneE164 } from "@/lib/phone";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -20,6 +21,8 @@ const profileSchema = z.object({
   displayName: z.string().trim().min(2).max(80),
   phone: z.string().trim().optional(),
   cpf: z.string().trim().optional(),
+  whatsapp: z.string().trim().optional(),
+  instagram: z.string().trim().optional(),
 });
 
 export async function updateProfileAction(
@@ -32,6 +35,8 @@ export async function updateProfileAction(
     displayName: formData.get("displayName"),
     phone: formData.get("phone") ?? "",
     cpf: formData.get("cpf") ?? "",
+    whatsapp: formData.get("whatsapp") ?? "",
+    instagram: formData.get("instagram") ?? "",
   });
 
   if (!parsed.success) {
@@ -45,6 +50,21 @@ export async function updateProfileAction(
     return { error: "Telefone inválido. Use DDD + número (ex.: 11 99999-9999)." };
   }
 
+  const whatsappRaw = parsed.data.whatsapp ?? "";
+  const whatsapp = whatsappRaw.length === 0 ? null : normalizePhoneE164(whatsappRaw);
+  if (whatsappRaw.length > 0 && whatsapp === null) {
+    return { error: "WhatsApp inválido. Use DDD + número (ex.: 11 99999-9999)." };
+  }
+
+  const instagramRaw = parsed.data.instagram ?? "";
+  const instagram =
+    instagramRaw.length === 0 ? null : normalizeInstagramHandle(instagramRaw);
+  if (instagramRaw.length > 0 && instagram === null) {
+    return {
+      error: "Instagram inválido. Use apenas letras, números, ponto e underscore (ex.: @seu.perfil).",
+    };
+  }
+
   const cpfRaw = (parsed.data.cpf ?? "").replace(/\D/g, "");
   if (cpfRaw.length > 0 && cpfRaw.length !== 11) {
     return { error: "CPF deve ter 11 dígitos." };
@@ -53,7 +73,12 @@ export async function updateProfileAction(
   const supabase = await createSupabaseServerClient();
   const { error: profileError } = await supabase
     .from("profiles")
-    .update({ display_name: parsed.data.displayName, phone_e164: phone })
+    .update({
+      display_name: parsed.data.displayName,
+      phone_e164: phone,
+      contact_whatsapp_e164: whatsapp,
+      instagram_handle: instagram,
+    })
     .eq("id", user.id);
 
   if (profileError !== null) {
