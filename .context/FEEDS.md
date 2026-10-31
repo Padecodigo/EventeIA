@@ -30,6 +30,7 @@ Formato: `<domínio>.<ação_no_passado>` — domínios fechados; ações no pas
 | `engine` | `engine.calculated`, `engine.version_bumped` |
 | `budget` | `budget.snapshot_created` |
 | `quotation` | `quotation.created`, `quotation.dispatched`, `quotation.confirmed`, `quotation.expired`, `quotation.chosen` |
+| `selection` | `selection.chosen`, `selection.relayed` |
 | `payment` | `payment.created`, `payment.confirmed`, `payment.refunded`, `payment.overdue`, `payment.divergence`, `payment.reconciled`, `payment.transition_rejected`, `payment.canceled` |
 | `webhook` | `webhook.received`, `webhook.duplicated`, `webhook.unmapped_status`, `webhook.rejected` |
 | `subscription` | `subscription.created`, `subscription.renewed`, `subscription.overdue`, `subscription.canceled` |
@@ -88,6 +89,7 @@ Exemplo:
 | `coupon.redeemed` | `coupon`, `discount_cents` | e-mail, telefone |
 | `credits.*` | `workspace_id`, `amount`, `entry_type` | telefone, nome |
 | `quotation.*` | `quotation_id`, `event_id`, `category` | valores de terceiros além de `amount_cents` |
+| `selection.*` | `event_id`, `option_id`, `status`, `price_cents` | nome do fornecedor, telefone |
 | `event.*` | `event_id`, `event_type`, `status` | convidados, endereço |
 | `auth.signed_up` | `user_id_hash` (sha256 com pepper) | e-mail, telefone |
 

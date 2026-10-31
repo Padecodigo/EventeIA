@@ -398,6 +398,38 @@ export interface Database {
         external_id: string | null;
         created_at: string;
       }>;
+      supplier_options: Table<{
+        id: string;
+        supplier_id: string;
+        name: string;
+        description: string | null;
+        price_cents: number | null;
+        unit: "por_pessoa" | "por_hora" | "unidade" | "pacote";
+        source_message_id: string | null;
+        active: boolean;
+        created_at: string;
+        updated_at: string;
+      }>;
+      supplier_selections: Table<{
+        id: string;
+        event_id: string;
+        supplier_id: string;
+        option_id: string | null;
+        option_snapshot: Json;
+        status:
+          | "pendente"
+          | "enviado_ao_fornecedor"
+          | "aguardando_resposta"
+          | "respondido"
+          | "canal_fechado"
+          | "indisponivel";
+        chosen_by_profile_id: string | null;
+        conversation_id: string | null;
+        relayed_at: string | null;
+        supplier_responded_at: string | null;
+        created_at: string;
+        updated_at: string;
+      }>;
       llm_usage_events: Table<{
         id: string;
         provider: "nim" | "grok" | "deepseek";

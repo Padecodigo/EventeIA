@@ -12,8 +12,9 @@ import { QuotationsPanel } from "@/components/domain/quotations-panel";
 import { QuotePreparingNotice } from "@/components/domain/quote-preparing-notice";
 import { ScenariosPanel } from "@/components/domain/scenarios-panel";
 import { SearchStartEditor } from "@/components/domain/search-start-editor";
+import { SupplierOptionsPanel } from "@/components/domain/supplier-options-panel";
 import { TestimonialInvite } from "@/components/domain/testimonial-invite";
-import { CATEGORY_LABELS, type CategoryCode } from "@/lib/catalog/v1";
+import { CATEGORY_LABELS, UNIT_LABELS, type CategoryCode } from "@/lib/catalog/v1";
 import { calculate } from "@/lib/engine";
 import type { EngineItemSelection, EventType, RegionCode } from "@/lib/engine/types";
 import { serverEnv } from "@/lib/env";
@@ -27,6 +28,7 @@ import { parseQuotationOptions } from "@/lib/quotes/choices";
 import { categoryLabel } from "@/lib/quotes/labels";
 import { latestScenarios } from "@/lib/quotes/scenarios";
 import { canEditSearchStart, spDateKey } from "@/lib/search-start";
+import { listSupplierSelections } from "@/lib/selection/read";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const eventTypeSchema = z.enum([
@@ -192,6 +194,27 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     })
     .filter((row) => row.options.length > 0);
 
+  // Seleção de produtos (nível de categoria): opções por fornecedor ligado ao evento.
+  const selectionViews = unlocked
+    ? (await listSupplierSelections(undefined, event.id))
+        .filter((row) => row.options.length > 0)
+        .map((row) => ({
+          supplierId: row.supplierId,
+          supplierName: row.supplierName,
+          categoryLabel: categoryLabel(row.category),
+          options: row.options.map((option) => ({
+            optionId: option.optionId,
+            name: option.name,
+            description: option.description,
+            priceFormatted:
+              option.priceCents === null ? "A combinar" : formatBRL(option.priceCents),
+            unitLabel: UNIT_LABELS[option.unit] ?? option.unit,
+          })),
+          selectedOptionId: row.selectedOptionId,
+          status: row.status,
+        }))
+    : [];
+
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
@@ -278,6 +301,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           <ScenariosPanel eventId={event.id} scenarios={scenarios} />
           <QuotationsPanel eventId={event.id} quotations={quotationsResult.data ?? []} />
           <ChoicesPanel eventId={event.id} rows={choiceViews} />
+          <SupplierOptionsPanel eventId={event.id} rows={selectionViews} />
         </>
       ) : null}
     </div>
