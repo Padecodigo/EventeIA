@@ -16,12 +16,19 @@ import { z } from "zod";
 
 export type MetaInboundSource = "instagram" | "messenger";
 
+/** Referral de origem (link ig.me/m.me ou anúncio Click-to-Direct). */
+export interface MetaReferral {
+  ref: string | null;
+  source: string | null;
+}
+
 export interface MetaInboundMessage {
   source: MetaInboundSource;
   eventId: string;
   senderId: string;
   recipientId: string;
   text: string;
+  referral?: MetaReferral | null;
 }
 
 const TEXT_MAX_CHARS = 4000;
@@ -35,16 +42,33 @@ const textMessage = z.object({
   text: z.string(),
 });
 
+const referralSchema = z.object({
+  ref: z.string().optional(),
+  source: z.string().optional(),
+});
+
+function extractReferral(candidates: unknown[]): MetaReferral | null {
+  for (const candidate of candidates) {
+    const parsed = referralSchema.safeParse(candidate);
+    if (parsed.success && (parsed.data.ref !== undefined || parsed.data.source !== undefined)) {
+      return { ref: parsed.data.ref ?? null, source: parsed.data.source ?? null };
+    }
+  }
+  return null;
+}
+
 const igValue = z.object({
   sender: z.object({ id: z.string().min(1) }),
   recipient: z.object({ id: z.string().min(1) }),
   message: textMessage,
+  referral: z.unknown().optional(),
 });
 
 const messengerValue = z.object({
   sender: z.object({ id: z.string().min(1) }),
   recipient: z.object({ id: z.string().min(1) }),
   message: textMessage,
+  referral: z.unknown().optional(),
 });
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -67,12 +91,18 @@ function parseInstagramMessages(root: Record<string, unknown>): MetaInboundMessa
       const { sender, recipient, message } = parsed.data;
       const text = truncate(message.text);
       if (text.length === 0) continue;
+      const rawMessage = isRecord(change.value) && isRecord(change.value.message) ? change.value.message : undefined;
+      const referral = extractReferral([
+        isRecord(change.value) ? change.value.referral : undefined,
+        rawMessage !== undefined ? rawMessage.referral : undefined,
+      ]);
       out.push({
         source: "instagram",
         eventId: message.mid,
         senderId: sender.id,
         recipientId: recipient.id,
         text,
+        ...(referral !== null ? { referral } : {}),
       });
     }
   }
@@ -90,12 +120,19 @@ function parseMessengerMessages(root: Record<string, unknown>): MetaInboundMessa
       const { sender, recipient, message } = parsed.data;
       const text = truncate(message.text);
       if (text.length === 0) continue;
+      const rawItem = isRecord(item) ? item : undefined;
+      const rawMessage = rawItem !== undefined && isRecord(rawItem.message) ? rawItem.message : undefined;
+      const referral = extractReferral([
+        rawItem !== undefined ? rawItem.referral : undefined,
+        rawMessage !== undefined ? rawMessage.referral : undefined,
+      ]);
       out.push({
         source: "messenger",
         eventId: message.mid,
         senderId: sender.id,
         recipientId: recipient.id,
         text,
+        ...(referral !== null ? { referral } : {}),
       });
     }
   }
@@ -124,6 +161,7 @@ export interface MetaCommentEvent {
   senderId: string;
   senderUsername: string;
   mediaId: string | null;
+  createdTime?: string | null;
 }
 
 const commentValue = z.object({
@@ -131,6 +169,7 @@ const commentValue = z.object({
   text: z.string(),
   from: z.object({ id: z.string().min(1), username: z.string().optional() }),
   media: z.object({ id: z.string() }).optional(),
+  created_time: z.string().optional(),
 });
 
 function parseInstagramComments(root: Record<string, unknown>): MetaCommentEvent[] {
@@ -150,6 +189,7 @@ function parseInstagramComments(root: Record<string, unknown>): MetaCommentEvent
         senderId: parsed.data.from.id,
         senderUsername: parsed.data.from.username ?? "",
         mediaId: parsed.data.media?.id ?? null,
+        ...(parsed.data.created_time !== undefined ? { createdTime: parsed.data.created_time } : {}),
       });
     }
   }

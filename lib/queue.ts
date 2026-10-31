@@ -24,6 +24,7 @@ export const QUEUE_NAMES = {
   instagramPublish: "instagram-publish",
   metaWebhooks: "meta-webhooks",
   prospectReply: "prospect-reply",
+  metaWindowSweep: "meta-window-sweep",
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];

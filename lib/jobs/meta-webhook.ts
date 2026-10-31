@@ -10,6 +10,12 @@ import {
   type MetaSupplierLookup,
 } from "@/lib/meta/resolve";
 import type { MetaCommentEvent, MetaInboundMessage } from "@/lib/meta/webhook";
+import {
+  createSupabaseSupplierConversationStore,
+  ingestSupplierMessage,
+  type SupplierConversationStore,
+} from "@/lib/outreach/supplier-conversations";
+import { windowKindFromReferral } from "@/lib/outreach/window";
 import { PRIVATE_REPLY_OPENER } from "@/lib/prospecting/content";
 import { handleInbound, type ProspectStore } from "@/lib/prospecting/inbound";
 import { shouldAgentRespond } from "@/lib/prospecting/respond";
@@ -19,6 +25,7 @@ import {
   type RespondDb,
 } from "@/lib/prospecting/supabase-respond";
 import { createSupabaseProspectStore } from "@/lib/prospecting/supabase-store";
+import { isWithinPrivateReplyWindow } from "@/lib/prospecting/window";
 import { enqueue, QUEUE_NAMES } from "@/lib/queue";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
@@ -71,6 +78,7 @@ export interface MetaWebhookJobDeps {
   respondDb: RespondDb;
   lookup: MetaSupplierLookup;
   webhookEvents: WebhookEventsDb;
+  supplierConversations: SupplierConversationStore;
   resolveSupplier: (
     lookup: MetaSupplierLookup,
     igSid: string,
@@ -106,6 +114,7 @@ export function defaultMetaWebhookJobDeps(): MetaWebhookJobDeps {
     respondDb: defaultRespondDb(),
     lookup: admin as unknown as MetaSupplierLookup,
     webhookEvents: admin as unknown as WebhookEventsDb,
+    supplierConversations: createSupabaseSupplierConversationStore(),
     resolveSupplier: resolveInstagramSupplier,
     resolveSupplierByHandle: resolveInstagramSupplierByHandle,
     inbound: handleInbound,
@@ -236,6 +245,20 @@ async function processMessage(message: MetaInboundMessage, deps: MetaWebhookJobD
       });
     }
   }
+
+  // Conversa de fornecedor (modelo canônico): registra a mensagem e abre/estende a
+  // janela de resposta. O `ref` do link (ig.me/m.me) ou do anúncio vincula a
+  // conversa ao evento quando codificado como `event:<id>`.
+  await ingestSupplierMessage(deps.supplierConversations, {
+    channel: message.source,
+    externalUserId: message.senderId,
+    ref: message.referral?.ref ?? null,
+    windowKind: windowKindFromReferral(message.referral?.source),
+    body: message.text,
+    externalId: message.eventId,
+    supplierId: supplier?.id ?? null,
+    now: deps.now(),
+  });
 }
 
 async function processComment(comment: MetaCommentEvent, deps: MetaWebhookJobDeps): Promise<void> {
@@ -254,10 +277,18 @@ async function processComment(comment: MetaCommentEvent, deps: MetaWebhookJobDep
       },
       { keyword: env.keyword, now: deps.now() },
     );
-    // Comentário com a palavra-chave: envia a DM de abertura (1x, 7 dias).
+    // Comentário com a palavra-chave: envia a DM de abertura (1x por comentário,
+    // até 7 dias após o comentário). "1x" vem da dedup em webhook_events; o prazo
+    // de 7 dias é verificado aqui (o webhook de comentários do Instagram só entrega
+    // comentários nas próprias mídias da conta — nunca em posts de terceiros).
+    const createdAt =
+      comment.createdTime !== undefined && comment.createdTime !== null
+        ? new Date(comment.createdTime)
+        : deps.now();
     if (
       outcome.recorded &&
       outcome.action.action === "private_reply" &&
+      isWithinPrivateReplyWindow(createdAt, deps.now()) &&
       configured(env.accessToken) &&
       configured(env.igBusinessId)
     ) {

@@ -373,6 +373,29 @@ export interface Database {
         error: string | null;
         created_at: string;
       }>;
+      supplier_conversations: Table<{
+        id: string;
+        event_id: string | null;
+        supplier_id: string | null;
+        channel: "instagram" | "messenger";
+        external_user_id: string;
+        ref: string | null;
+        last_inbound_at: string | null;
+        window_expires_at: string | null;
+        window_kind: "standard_24h" | "ad_7d";
+        status: "open" | "canal_fechado" | "opted_out";
+        created_at: string;
+        updated_at: string;
+      }>;
+      supplier_conversation_messages: Table<{
+        id: string;
+        conversation_id: string;
+        direction: "in" | "out";
+        body: string;
+        moderated: boolean;
+        external_id: string | null;
+        created_at: string;
+      }>;
       llm_usage_events: Table<{
         id: string;
         provider: "nim" | "grok" | "deepseek";
