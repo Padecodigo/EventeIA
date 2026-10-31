@@ -6,7 +6,7 @@ import type { EventType } from "@/lib/engine/types";
 import { serverEnv } from "@/lib/env";
 import { findMunicipioByCode } from "@/lib/geo/municipios";
 import { enqueue, getQueue, getRedisConnection, QUEUE_NAMES } from "@/lib/queue";
-import { msUntilSearchStart } from "@/lib/search-start";
+import { isBusinessHoursBypassed, msUntilSearchStart } from "@/lib/search-start";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 import type { DiscoveryDeps } from "./engine";
@@ -24,7 +24,7 @@ export async function startDiscovery(eventId: string, now: Date = new Date()): P
   // Respeita a data agendada pelo cliente + dia útil 9h–18h: o job nasce atrasado até lá
   // (o worker re-checa na execução) e o prazo da coleta conta a partir do início real.
   const { data } = await getSupabaseAdmin().from("events").select("search_start_date").eq("id", eventId).maybeSingle();
-  const startDelay = msUntilSearchStart(now, data?.search_start_date ?? null);
+  const startDelay = isBusinessHoursBypassed(eventId) ? 0 : msUntilSearchStart(now, data?.search_start_date ?? null);
   return enqueue(QUEUE_NAMES.supplierDiscovery, "discover", { eventId, round: 0 }, { jobId: discoveryJobId(eventId, 0), delayMs: startDelay });
 }
 
@@ -33,7 +33,7 @@ export async function startDiscovery(eventId: string, now: Date = new Date()): P
  * Sem job pendente não faz nada — a próxima ativação/entrevista enfileira já com a data nova.
  */
 export async function rescheduleDiscovery(eventId: string, searchStartDate: string | null, now: Date = new Date()): Promise<boolean> {
-  const startDelay = msUntilSearchStart(now, searchStartDate);
+  const startDelay = isBusinessHoursBypassed(eventId) ? 0 : msUntilSearchStart(now, searchStartDate);
   const queue = getQueue(QUEUE_NAMES.supplierDiscovery);
   const job = await queue.getJob(discoveryJobId(eventId, 0));
   if (job === undefined || !(await job.isDelayed())) return false;

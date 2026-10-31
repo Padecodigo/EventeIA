@@ -40,6 +40,19 @@ export function msUntilSearchStart(now: Date, startKey: string | null | undefine
   return Math.max(0, searchStartInstant(now, startKey, window).getTime() - now.getTime());
 }
 
+/** Eventos liberados para buscar fora da janela comercial (lista separada por vírgulas em env). */
+export function isBusinessHoursBypassed(
+  eventId: string,
+  raw: string | undefined = process.env.BUSINESS_HOURS_BYPASS_EVENT_IDS,
+): boolean {
+  if (raw === undefined) return false;
+  return raw
+    .split(",")
+    .map((id) => id.trim())
+    .filter((id) => id.length > 0)
+    .includes(eventId);
+}
+
 /** O cliente ainda pode alterar a data enquanto a busca não começou. */
 export function canEditSearchStart(
   event: { discovery_started_at: string | null; quotes_delivered_at: string | null },

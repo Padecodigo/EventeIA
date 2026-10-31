@@ -13,7 +13,7 @@ import { serverEnv } from "@/lib/env";
 import { meterUsage } from "@/lib/finance/metering";
 import { logger } from "@/lib/logger";
 import { QUEUE_NAMES } from "@/lib/queue";
-import { msUntilSearchStart } from "@/lib/search-start";
+import { isBusinessHoursBypassed, msUntilSearchStart } from "@/lib/search-start";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 const discoveryJobSchema = z.object({ eventId: z.string().uuid(), round: z.number().int().min(0).max(1000) });
@@ -53,7 +53,7 @@ export function createDiscoveryWorker(connection: Redis): Worker {
     async (job, token) => {
       const data = discoveryJobSchema.parse(job.data);
       const searchStartDate = await loadSearchStartDate(data.eventId);
-      if (await deferOutsideBusinessWindow(job, token, new Date(), searchStartDate)) {
+      if (!isBusinessHoursBypassed(data.eventId) && (await deferOutsideBusinessWindow(job, token, new Date(), searchStartDate))) {
         logger.info({ eventId: data.eventId, round: data.round }, "descoberta adiada para o próximo dia útil");
         throw new DelayedError();
       }
