@@ -13,7 +13,7 @@ type PurgeClient = {
  * 30 dias (0075). Idempotente: eventos já expurgados são ignorados pela função.
  */
 export async function runEventHistoryPurge(
-  client: PurgeClient = getSupabaseAdmin() as unknown as PurgeClient,
+  client: PurgeClient = getSupabaseAdmin(),
   now: Date = new Date(),
 ): Promise<number> {
   const { data, error } = await client.rpc("purge_user_deleted_events", { p_now: now.toISOString() });
