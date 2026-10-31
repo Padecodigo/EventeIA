@@ -63,6 +63,14 @@ export function NewEventForm({ today }: { today: string }) {
           defaultValue={120}
         />
 
+        <Field
+          label="Orçamento limite (opcional)"
+          name="budgetLimit"
+          inputMode="decimal"
+          placeholder="Ex.: 25.000,00"
+          hint="Total que você pretende gastar no evento, em reais. Opções acima dele aparecem sinalizadas, nunca escondidas. Dá para editar depois."
+        />
+
         <div className="md:col-span-2">
           <SearchStartField minDate={today} />
         </div>

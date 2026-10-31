@@ -29,6 +29,11 @@ export interface DiscoveryEvent {
   eventType: EventType;
   eventDateIso: string;
   guestCount: number;
+  /**
+   * Orçamento limite do evento (0072, centavos, total). Contexto interno da
+   * prospecção: NÃO é revelado ao fornecedor no primeiro contato (negociação/LGPD).
+   */
+  budgetLimitCents?: number | null;
   city: string;
   /** UF do município do evento (IBGE); null em eventos legados. */
   cityUf?: string | null;
@@ -60,6 +65,8 @@ export interface ProspectJobInput {
   eventDateIso: string;
   city: string;
   guestCount: number;
+  /** Orçamento limite do evento (contexto interno para a extração/curadoria). */
+  budgetLimitCents?: number | null;
   category: string;
   messageText: string;
   dryRun: boolean;
@@ -213,6 +220,7 @@ export async function ingestCandidate(
     eventDateIso: ctx.event.eventDateIso,
     city: ctx.event.city.slice(0, 60),
     guestCount: ctx.event.guestCount,
+    budgetLimitCents: ctx.event.budgetLimitCents ?? null,
     category,
     messageText,
     dryRun,

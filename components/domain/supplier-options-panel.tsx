@@ -7,6 +7,7 @@ import {
   type SupplierSelectionState,
 } from "@/app/(dashboard)/eventos/[id]/selection-actions";
 import { Button } from "@/components/ui/button";
+import { ABOVE_LIMIT_LABEL } from "@/lib/events/budget-limit";
 
 export interface SupplierOptionCardView {
   optionId: string;
@@ -14,6 +15,8 @@ export interface SupplierOptionCardView {
   description: string | null;
   priceFormatted: string;
   unitLabel: string;
+  /** Total da opção no evento passa do orçamento limite (só sinaliza; nunca esconde). */
+  aboveLimit?: boolean;
 }
 
 export interface SupplierOptionsRowView {
@@ -68,6 +71,14 @@ function SupplierOptionsRow({ eventId, row }: { eventId: string; row: SupplierOp
                 ) : null}
                 <p className="mt-2 text-base tabular-nums text-vinho">{option.priceFormatted}</p>
                 <p className="text-caption text-vinho/60">{option.unitLabel}</p>
+                {option.aboveLimit === true ? (
+                  <span
+                    data-testid="above-limit-badge"
+                    className="mt-2 inline-block rounded-pill bg-champagne/30 px-3 py-1 text-caption text-vinho"
+                  >
+                    {ABOVE_LIMIT_LABEL}
+                  </span>
+                ) : null}
               </div>
               {chosen ? (
                 <span className="self-start rounded-pill bg-areia-secundaria px-3 py-1 text-caption text-vinho/70">

@@ -86,4 +86,27 @@ describe("/api/municipios", () => {
     const body = (await res.json()) as { results: { name: string; uf: string }[] };
     expect(body.results[0]).toMatchObject({ name: "Florianópolis", uf: "SC" });
   });
+
+});
+
+describe("criar evento com orçamento limite (0072)", () => {
+  beforeEach(() => {
+    inserts.length = 0;
+  });
+
+  it("grava o orçamento limite opcional em centavos (0072)", async () => {
+    await submit({ ...base, cityCode: "3304557", budgetLimit: "25.000,00" });
+    expect(inserts[0]).toMatchObject({ budget_limit_cents: 2_500_000 });
+  });
+
+  it("regressão: sem orçamento limite o evento nasce sem limite", async () => {
+    await submit({ ...base, cityCode: "3304557" });
+    expect(inserts[0]).toMatchObject({ budget_limit_cents: null });
+  });
+
+  it("orçamento limite inválido não cria o evento", async () => {
+    const r = await submit({ ...base, cityCode: "3304557", budgetLimit: "abc" });
+    expect(r).toEqual({ error: "Informe o orçamento limite em reais, ex.: 25.000 ou 25.000,00." });
+    expect(inserts).toHaveLength(0);
+  });
 });

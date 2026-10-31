@@ -7,6 +7,7 @@ import {
   type QuotationChoiceState,
 } from "@/app/(dashboard)/eventos/[id]/choices-actions";
 import { Button } from "@/components/ui/button";
+import { ABOVE_LIMIT_LABEL } from "@/lib/events/budget-limit";
 import { contactHandoffConsentText } from "@/lib/quotes/handoff";
 
 export interface ChoiceOptionView {
@@ -15,6 +16,8 @@ export interface ChoiceOptionView {
   description: string | null;
   includes: string[];
   amountFormatted: string;
+  /** Total da opção passa do orçamento limite (só sinaliza; nunca esconde). */
+  aboveLimit?: boolean;
 }
 
 export interface ChoiceRowView {
@@ -62,6 +65,14 @@ function ChoiceRow({ eventId, row }: { eventId: string; row: ChoiceRowView }) {
                     <p className="text-caption text-vinho/60">Inclui: {option.includes.join(", ")}</p>
                   ) : null}
                   <p className="text-sm tabular-nums text-vinho/80">{option.amountFormatted}</p>
+                  {option.aboveLimit === true ? (
+                    <span
+                      data-testid="above-limit-badge"
+                      className="inline-block rounded-pill bg-champagne/30 px-3 py-1 text-caption text-vinho"
+                    >
+                      {ABOVE_LIMIT_LABEL}
+                    </span>
+                  ) : null}
                 </div>
                 {chosen ? (
                   <span className="rounded-pill bg-areia-secundaria px-3 py-1 text-caption text-vinho/70">

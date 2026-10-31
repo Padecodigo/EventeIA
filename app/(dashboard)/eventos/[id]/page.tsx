@@ -8,6 +8,7 @@ import { BudgetTable } from "@/components/domain/budget-table";
 import { BuyTicketForm } from "@/components/domain/buy-ticket-form";
 import { ChoicesPanel } from "@/components/domain/choices-panel";
 import { EventChat } from "@/components/domain/event-chat";
+import { EventBudgetLimitEditor } from "@/components/domain/event-budget-limit-editor";
 import { EventDetailsEditor } from "@/components/domain/event-details-editor";
 import { EventLifecycleActions } from "@/components/domain/event-lifecycle-actions";
 import { EventSupportChat } from "@/components/domain/event-support-chat";
@@ -22,6 +23,7 @@ import { CATEGORY_LABELS, UNIT_LABELS, type CategoryCode } from "@/lib/catalog/v
 import { calculate } from "@/lib/engine";
 import type { EngineItemSelection, EventType, RegionCode } from "@/lib/engine/types";
 import { serverEnv } from "@/lib/env";
+import { isAboveBudgetLimit } from "@/lib/events/budget-limit";
 import { canCancelEvent, canCompleteEvent } from "@/lib/events/lifecycle";
 import { luckyDiscountCents } from "@/lib/lucky/pure";
 import { lookupLuckyCoupon } from "@/lib/lucky/server";
@@ -152,6 +154,35 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
   const unlocked = ticketResult.data?.status === "active";
 
+  // Orçamento limite (0072): dono ou admin editam; histórico visível a ambos via RLS.
+  const budgetLimitCents = event.budget_limit_cents ?? null;
+  const {
+    data: { user: viewer },
+  } = await supabase.auth.getUser();
+  const { data: viewerProfile } =
+    viewer === null
+      ? { data: null }
+      : await supabase.from("profiles").select("role").eq("id", viewer.id).maybeSingle();
+  const canEditBudgetLimit =
+    viewer !== null &&
+    (viewer.id === event.owner_profile_id || viewerProfile?.role === "admin") &&
+    event.status !== "completed" &&
+    event.status !== "canceled";
+  const { data: budgetHistoryRows } = await supabase
+    .from("event_budget_limit_history")
+    .select("id,old_cents,new_cents,source,changed_at")
+    .eq("event_id", event.id)
+    .order("changed_at", { ascending: false })
+    .limit(20);
+  const budgetSourceLabels: Record<string, string> = { owner: "você", admin: "equipe EventeIA", system: "sistema" };
+  const budgetHistory = (budgetHistoryRows ?? []).map((h) => ({
+    id: h.id,
+    changedAtLabel: new Date(h.changed_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" }),
+    oldLabel: h.old_cents === null ? "sem limite" : formatBRL(h.old_cents),
+    newLabel: h.new_cents === null ? "sem limite" : formatBRL(h.new_cents),
+    sourceLabel: budgetSourceLabels[h.source] ?? h.source,
+  }));
+
   const { data: requirementRows } = await supabase
     .from("event_requirements")
     .select("item_code,category,label")
@@ -193,6 +224,12 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           includes: option.includes ?? [],
           amountFormatted:
             option.amount_cents === null ? "A combinar" : formatBRL(option.amount_cents),
+          aboveLimit: isAboveBudgetLimit(
+            option.amount_cents ?? null,
+            "pacote",
+            event.guest_count,
+            budgetLimitCents,
+          ),
         })),
         chosenIndex: chosenByQuotation.get(q.id) ?? null,
       };
@@ -214,11 +251,20 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
             priceFormatted:
               option.priceCents === null ? "A combinar" : formatBRL(option.priceCents),
             unitLabel: UNIT_LABELS[option.unit] ?? option.unit,
+            aboveLimit: isAboveBudgetLimit(
+              option.priceCents,
+              option.unit,
+              event.guest_count,
+              budgetLimitCents,
+            ),
           })),
           selectedOptionId: row.selectedOptionId,
           status: row.status,
         }))
     : [];
+  const aboveLimitCount =
+    selectionViews.reduce((n, row) => n + row.options.filter((o) => o.aboveLimit).length, 0) +
+    choiceViews.reduce((n, row) => n + row.options.filter((o) => o.aboveLimit).length, 0);
   const chatConversations = unlocked
     ? await listEventChatConversations(event.id)
     : [];
@@ -248,6 +294,15 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
       </header>
 
       <FollowInstagramCard />
+
+      <EventBudgetLimitEditor
+        eventId={event.id}
+        budgetLimitCents={budgetLimitCents}
+        limitLabel={budgetLimitCents === null ? "Sem limite definido" : formatBRL(budgetLimitCents)}
+        canEdit={canEditBudgetLimit}
+        aboveLimitCount={aboveLimitCount}
+        history={budgetHistory}
+      />
 
       <EventDetailsEditor
         eventId={event.id}

@@ -16,6 +16,7 @@ import { finalPriceCents, normalizeCouponCode } from "@/lib/coupons/pure";
 import { kickoffDiscovery } from "@/lib/discovery/kickoff-runtime";
 import { ENGINE_VERSION } from "@/lib/engine";
 import { serverEnv } from "@/lib/env";
+import { parseBudgetLimitInput } from "@/lib/events/budget-limit";
 import { emitFeed } from "@/lib/feeds";
 import { findMunicipioByCode, regionForUf } from "@/lib/geo/municipios";
 import { recordTermsAcceptance } from "@/lib/legal/acceptance-server";
@@ -79,6 +80,9 @@ export async function createEventAction(
     return { error: "Confira os dados do evento e tente novamente." };
   }
 
+  const budgetLimit = parseBudgetLimitInput(formData.get("budgetLimit"));
+  if (!budgetLimit.ok) return { error: budgetLimit.error };
+
   const searchStart = parseSearchStartInput(
     formData.get("searchStartMode"),
     formData.get("searchStartDate"),
@@ -118,6 +122,7 @@ export async function createEventAction(
         ? { city: municipio.name, city_uf: municipio.uf, city_ibge_code: municipio.code }
         : {}),
       guest_count: parsed.data.guestCount,
+      budget_limit_cents: budgetLimit.cents,
       search_start_date: searchStart.value,
       status: "draft",
     })
