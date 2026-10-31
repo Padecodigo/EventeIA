@@ -48,7 +48,7 @@ export function ForgotPasswordForm() {
         <button
           type="submit"
           disabled={pending}
-          className="h-12 rounded-full bg-primaria text-sm font-semibold text-white disabled:opacity-50"
+          className="h-12 rounded-full bg-primaria text-sm font-semibold text-on-primary disabled:opacity-50"
         >
           {pending ? "Enviando…" : "Enviar link"}
         </button>

@@ -3,13 +3,25 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { PALETTE } from "@/lib/design/palette";
+import config from "@/tailwind.config";
+
 const read = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
 
-describe("tema Terra Rosé (layout Jardim)", () => {
-  it("usa a paleta Jardim nos tokens", () => {
-    const tw = read("tailwind.config.ts");
-    for (const hex of ["#3B2420", "#A3485A", "#E8A587", "#F6E1D8", "#FBF6F2", "#F3E6DD", "#C9734F"]) expect(tw).toContain(hex);
-    for (const old of ["#2B1E1A", "#13302B", "#0F766E"]) expect(tw).not.toContain(old);
+describe("tema Areia & Coral (layout Jardim)", () => {
+  it("usa a paleta Areia & Coral nos tokens", () => {
+    const tw = JSON.stringify(config).toUpperCase();
+    for (const hex of [
+      PALETTE.ink,
+      PALETTE.areiaQuente,
+      PALETTE.areiaSecundaria,
+      PALETTE.champagne,
+      PALETTE.champagneClaro,
+      PALETTE.coralEscuro,
+      PALETTE.terracota,
+      PALETTE.teal,
+    ]) expect(tw).toContain(hex.toUpperCase());
+    for (const old of ["#2B1E1A", "#13302B", "#0F766E", "#A3485A", "#E8A587", "#F3E6DD"]) expect(tw).not.toContain(old);
   });
   it("carrega Fraunces + Figtree e removeu as fontes antigas", () => {
     const layout = read("app/layout.tsx");

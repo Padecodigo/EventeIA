@@ -14,7 +14,7 @@ export function Card({ children, testId }: { children: React.ReactNode; testId?:
 export function Pill({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
   return (
     <Link href={href} aria-current={active ? "true" : undefined}
-      className={`rounded-full border px-3 py-1 text-sm ${active ? "border-primaria bg-primaria text-white" : "border-line-subtle"}`}>
+      className={`rounded-full border px-3 py-1 text-sm ${active ? "border-primaria bg-primaria text-on-primary" : "border-line-subtle"}`}>
       {children}
     </Link>
   );
@@ -26,7 +26,7 @@ export function SearchBox({ action, q, placeholder, hidden }: { action: string; 
       {Object.entries(hidden ?? {}).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
       <input name="q" defaultValue={q} placeholder={placeholder} aria-label={placeholder}
         className="min-w-[16rem] flex-1 rounded-input border border-line-subtle bg-white px-3 py-2 text-sm" />
-      <button type="submit" className="rounded-full bg-primaria px-4 py-2 text-sm font-semibold text-white">Buscar</button>
+      <button type="submit" className="rounded-full bg-primaria px-4 py-2 text-sm font-semibold text-on-primary">Buscar</button>
     </form>
   );
 }

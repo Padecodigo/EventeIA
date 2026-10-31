@@ -65,7 +65,7 @@ function QuestionField({
               onClick={() => onChange(opt)}
               className={`rounded-pill px-5 py-2 text-sm transition ${
                 value === opt
-                  ? "bg-primaria text-white"
+                  ? "bg-primaria text-on-primary"
                   : "border border-vinho/15 bg-off-white text-vinho hover:border-primaria/40"
               }`}
             >
@@ -84,7 +84,7 @@ function QuestionField({
               onClick={() => onChange(o.value)}
               className={`rounded-pill px-4 py-2 text-sm transition ${
                 value === o.value
-                  ? "bg-primaria text-white"
+                  ? "bg-primaria text-on-primary"
                   : "border border-vinho/15 bg-off-white text-vinho hover:border-primaria/40"
               }`}
             >

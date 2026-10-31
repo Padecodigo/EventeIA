@@ -43,7 +43,7 @@ export default async function AdminFornecedoresPage({ searchParams }: { searchPa
           <input name="q" defaultValue={q} placeholder="Nome do fornecedor" aria-label="Nome do fornecedor" className="min-w-[12rem] flex-1 rounded-input border border-line-subtle bg-white px-3 py-2 text-sm" />
           <input name="categoria" defaultValue={cat} placeholder="Categoria (ex.: buffet)" aria-label="Categoria" className="w-48 rounded-input border border-line-subtle bg-white px-3 py-2 text-sm" />
           <input name="cidade" defaultValue={city} placeholder="Cidade" aria-label="Cidade" className="w-40 rounded-input border border-line-subtle bg-white px-3 py-2 text-sm" />
-          <button type="submit" className="rounded-full bg-primaria px-4 py-2 text-sm font-semibold text-white">Filtrar</button>
+          <button type="submit" className="rounded-full bg-primaria px-4 py-2 text-sm font-semibold text-on-primary">Filtrar</button>
         </form>
       </Card>
       <Card testId="suppliers-clear">

@@ -97,13 +97,13 @@ export default async function MetricasPage() {
         <Card>
           <p className="text-caption font-semibold uppercase tracking-wide text-vinho/60">Visitas por dia (14d)</p>
           <div className="mt-4 text-vinho">
-            <Bars points={views14} color="var(--cor-primaria, #7a2e2e)" />
+            <Bars points={views14} color="var(--color-primaria, #F0A070)" />
           </div>
         </Card>
         <Card>
           <p className="text-caption font-semibold uppercase tracking-wide text-vinho/60">Logins + cadastros por dia (14d)</p>
           <div className="mt-4 text-vinho">
-            <Bars points={auth14} color="var(--cor-champagne, #c9a86a)" />
+            <Bars points={auth14} color="var(--color-champagne, #F0A070)" />
           </div>
         </Card>
       </section>

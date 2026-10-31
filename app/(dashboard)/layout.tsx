@@ -36,7 +36,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const offer = await activeUserOffer(user.id);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(60%_40%_at_100%_0%,#F3E6DD,transparent)] bg-areia-quente text-vinho">
+    <div className="min-h-screen bg-[radial-gradient(60%_40%_at_100%_0%,var(--color-areia-secundaria),transparent)] bg-areia-quente text-vinho">
       <header className="sticky top-0 z-40 border-b border-line-subtle bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3 sm:px-6 sm:py-4">
           <Link href="/painel" className="flex items-center gap-3">

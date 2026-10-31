@@ -101,7 +101,7 @@ export function PasswordForm({
       <button
         type="submit"
         disabled={pending}
-        className="h-12 self-start rounded-full bg-primaria px-6 text-sm font-semibold text-white transition hover:bg-primaria-escura disabled:cursor-not-allowed disabled:opacity-50"
+        className="h-12 self-start rounded-full bg-primaria px-6 text-sm font-semibold text-on-primary transition hover:bg-primaria-escura disabled:cursor-not-allowed disabled:opacity-50"
       >
         {pending ? "Salvando…" : label}
       </button>

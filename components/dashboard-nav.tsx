@@ -34,7 +34,7 @@ export function DashboardNav({ isAdmin = false }: { isAdmin?: boolean }) {
             aria-current={active ? "page" : undefined}
             className={
               active
-                ? "rounded-full bg-champagne-claro px-4 py-2 font-semibold text-primaria-escura"
+                ? "rounded-full bg-champagne-claro px-4 py-2 font-semibold text-coral-escuro"
                 : "rounded-full px-4 py-2 transition hover:bg-verde-claro hover:text-vinho"
             }
           >
@@ -58,7 +58,7 @@ function AdminSection({ pathname }: { pathname: string }) {
       <Link
         href="/admin"
         aria-current={pathname === "/admin" ? "page" : undefined}
-        className="rounded-full bg-champagne/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-primaria-escura"
+        className="rounded-full bg-champagne/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-coral-escuro"
       >
         Admin
       </Link>

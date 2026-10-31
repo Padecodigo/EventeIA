@@ -11,7 +11,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       <main className="relative isolate flex flex-1 items-center justify-center px-5 py-14 sm:px-8">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(50%_60%_at_85%_0%,#F3E6DD,transparent),radial-gradient(40%_50%_at_0%_100%,#F6E1D8,transparent)]"
+          className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(50%_60%_at_85%_0%,var(--color-areia-secundaria),transparent),radial-gradient(40%_50%_at_0%_100%,var(--color-champagne-claro),transparent)]"
         />
         <div className="card w-full max-w-md p-8 sm:p-10">{children}</div>
       </main>

@@ -7,7 +7,7 @@ import { PRICE_KEYS } from "@/lib/finance/pricing";
 import { addFixedCostAction, setFxAction, setPriceAction, type FinanceActionState } from "./actions";
 
 const input = "rounded-full border border-line-subtle bg-off-white px-3 py-2 text-sm";
-const button = "rounded-full bg-primaria px-4 py-2 text-sm font-semibold text-white transition hover:bg-primaria-escura disabled:opacity-50";
+const button = "rounded-full bg-primaria px-4 py-2 text-sm font-semibold text-on-primary transition hover:bg-primaria-escura disabled:opacity-50";
 
 function Status({ state }: { state: FinanceActionState }) {
   if (state.error) return <p role="alert" className="text-caption text-semantic-error">{state.error}</p>;

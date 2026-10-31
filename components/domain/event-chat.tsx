@@ -83,16 +83,16 @@ function Bubble({
       <div
         className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm sm:max-w-[75%] ${
           fromViewer
-            ? "rounded-br-sm bg-primaria text-white"
+            ? "rounded-br-sm bg-primaria text-on-primary"
             : "rounded-bl-sm border border-line-subtle bg-white text-vinho"
         }`}
       >
-        <p className={`text-caption ${fromViewer ? "text-white/75" : "text-vinho/60"}`}>
+        <p className={`text-caption ${fromViewer ? "text-on-primary/75" : "text-vinho/60"}`}>
           {authorLabel} · {formatDate(message.createdAt)}
         </p>
         <p className="mt-1 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{message.body}</p>
         {message.moderated ? (
-          <p className={`mt-1 text-caption ${fromViewer ? "text-white/70" : "text-vinho/50"}`}>
+          <p className={`mt-1 text-caption ${fromViewer ? "text-on-primary/70" : "text-vinho/50"}`}>
             Contato removido pela moderação.
           </p>
         ) : null}

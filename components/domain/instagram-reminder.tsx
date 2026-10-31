@@ -51,7 +51,7 @@ export function InstagramReminderBanner() {
               href={instagramProfileUrl()}
               target="_blank"
               rel="noreferrer"
-              className="rounded-full bg-primaria px-4 py-2 text-sm font-semibold text-white transition hover:bg-primaria-escura"
+              className="rounded-full bg-primaria px-4 py-2 text-sm font-semibold text-on-primary transition hover:bg-primaria-escura"
             >
               Siga @{INSTAGRAM_HANDLE}
             </a>

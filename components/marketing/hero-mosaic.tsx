@@ -72,7 +72,7 @@ export function HeroMosaic() {
         {MOSAIC.map((photo, index) => (
           <figure
             key={photo.src}
-            className={`ev-photo group absolute ${photo.pos} rounded-[18px] bg-white p-1.5 pb-6 shadow-[0_18px_40px_-14px_rgba(59,36,32,0.45)] ring-1 ring-black/5 transition-[transform,box-shadow] duration-500 ease-out hover:z-50 hover:-translate-y-2 hover:rotate-0 hover:scale-[1.06] hover:shadow-[0_34px_70px_-20px_rgba(59,36,32,0.6)] sm:p-2.5 sm:pb-9`}
+            className={`ev-photo group absolute ${photo.pos} rounded-[18px] bg-white p-1.5 pb-6 shadow-[0_18px_40px_-14px_rgba(43,39,36,0.45)] ring-1 ring-black/5 transition-[transform,box-shadow] duration-500 ease-out hover:z-50 hover:-translate-y-2 hover:rotate-0 hover:scale-[1.06] hover:shadow-[0_34px_70px_-20px_rgba(43,39,36,0.6)] sm:p-2.5 sm:pb-9`}
           >
             <div className={`relative overflow-hidden rounded-[12px] ${photo.ratio}`}>
               <Image

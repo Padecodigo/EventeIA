@@ -21,13 +21,13 @@ function Label({ letter, title, tone }: { letter: string; title: string; tone: "
       <span
         className={
           tone === "light"
-            ? "flex h-8 w-8 items-center justify-center rounded-full bg-primaria text-sm font-bold text-white"
-            : "flex h-8 w-8 items-center justify-center rounded-full bg-champagne text-sm font-bold text-vinho"
+            ? "flex h-8 w-8 items-center justify-center rounded-full bg-primaria text-sm font-bold text-on-primary"
+            : "flex h-8 w-8 items-center justify-center rounded-full bg-champagne text-sm font-bold text-on-primary"
         }
       >
         {letter}
       </span>
-      <p className={tone === "light" ? "text-sm font-semibold text-vinho/70" : "text-sm font-semibold text-off-white/70"}>
+      <p className={tone === "light" ? "text-sm font-semibold text-vinho/70" : "text-sm font-semibold text-ink-inverse/70"}>
         {title}
       </p>
     </div>
@@ -40,8 +40,8 @@ function Cta({ primary = true }: { primary?: boolean }) {
       <span
         className={
           primary
-            ? "inline-flex items-center justify-center gap-2 rounded-full bg-primaria px-6 py-3.5 text-[15px] font-semibold text-white shadow-soft"
-            : "inline-flex items-center justify-center gap-2 rounded-full bg-champagne px-6 py-3.5 text-[15px] font-semibold text-vinho"
+            ? "inline-flex items-center justify-center gap-2 rounded-full bg-primaria px-6 py-3.5 text-[15px] font-semibold text-on-primary shadow-soft"
+            : "inline-flex items-center justify-center gap-2 rounded-full bg-champagne px-6 py-3.5 text-[15px] font-semibold text-on-primary"
         }
       >
         Começar agora →
@@ -105,11 +105,11 @@ function VariantA() {
 /** VARIANTE B — Moderno premium: hero escuro, acento dourado e glass. */
 function VariantB() {
   return (
-    <section className="bg-[#2A1119] px-5 py-16 sm:px-8">
+    <section className="bg-surface-dark px-5 py-16 sm:px-8">
       <div className="mx-auto max-w-6xl">
         <Label letter="B" title="Moderno premium — hero escuro" tone="dark" />
         <div className="mt-10 grid grid-cols-1 items-center gap-10 lg:grid-cols-[1.05fr_1fr]">
-          <div className="text-off-white">
+          <div className="text-ink-inverse">
             <p className="inline-flex items-center gap-2 rounded-full border border-champagne/30 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-champagne">
               Inteligência de custos para eventos
             </p>
@@ -118,11 +118,11 @@ function VariantB() {
               <br />
               <span className="text-champagne">mais memórias.</span>
             </h1>
-            <p className="mt-5 max-w-md text-[17px] leading-relaxed text-off-white/70">
+            <p className="mt-5 max-w-md text-[17px] leading-relaxed text-ink-inverse/70">
               Cotações comparadas em três opções prontas, com clareza de custo do primeiro ao último
               fornecedor. Sem planilhas, sem corretagem.
             </p>
-            <div className="mt-8 text-off-white">
+            <div className="mt-8 text-ink-inverse">
               <Cta primary={false} />
             </div>
             <div className="mt-8 flex gap-3">
@@ -131,7 +131,7 @@ function VariantB() {
                   <Image src={photo.src} alt="" width={120} height={120} className="h-full w-full object-cover" />
                 </div>
               ))}
-              <div className="flex h-16 items-center rounded-2xl bg-white/5 px-4 text-sm text-off-white/70 ring-1 ring-white/10">
+              <div className="flex h-16 items-center rounded-2xl bg-white/5 px-4 text-sm text-ink-inverse/70 ring-1 ring-white/10">
                 + 3 tipos de evento
               </div>
             </div>
@@ -152,7 +152,7 @@ function VariantB() {
                 <Image src={photo.src} alt={photo.label} width={360} height={240} className="h-24 w-full object-cover sm:h-28" />
               </div>
             ))}
-            <div className="col-span-2 rounded-2xl bg-white/5 p-4 text-sm text-off-white/75 ring-1 ring-white/10">
+            <div className="col-span-2 rounded-2xl bg-white/5 p-4 text-sm text-ink-inverse/75 ring-1 ring-white/10">
               <p className="font-semibold text-champagne">3 opções prontas</p>
               <p className="mt-1">Melhor preço · Custo-benefício · Comodidade</p>
             </div>
@@ -195,13 +195,13 @@ function VariantC() {
           ))}
         </div>
       </div>
-      <div className="bg-[#2A1119] px-5 py-10 sm:px-8">
-        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 text-off-white sm:flex-row sm:items-center">
+      <div className="bg-surface-dark px-5 py-10 sm:px-8">
+        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 text-ink-inverse sm:flex-row sm:items-center">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-champagne">Sempre 3 opções prontas</p>
             <p className="mt-1 font-display text-2xl font-semibold">Melhor preço · Custo-benefício · Comodidade</p>
           </div>
-          <span className="rounded-full bg-champagne px-6 py-3 text-sm font-semibold text-vinho">Começar agora →</span>
+          <span className="rounded-full bg-champagne px-6 py-3 text-sm font-semibold text-on-primary">Começar agora →</span>
         </div>
       </div>
     </section>

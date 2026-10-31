@@ -59,7 +59,7 @@ export default async function ParaPlannersPage() {
             <Link
               prefetch={false}
               href="/registrar"
-              className="rounded-full bg-primaria px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-primaria-escura"
+              className="rounded-full bg-primaria px-6 py-3.5 text-sm font-semibold text-on-primary transition hover:bg-primaria-escura"
             >
               Quero conhecer <span aria-hidden="true">↗</span>
             </Link>
@@ -84,9 +84,9 @@ export default async function ParaPlannersPage() {
               sizes="(max-width: 1024px) 100vw, 480px"
             />
           </div>
-          <div className="absolute bottom-5 left-5 right-5 rounded-2xl border border-champagne/40 bg-vinho/95 p-4 text-off-white backdrop-blur">
+          <div className="absolute bottom-5 left-5 right-5 rounded-2xl border border-line-subtle bg-white/95 p-4 text-vinho backdrop-blur">
             <p className="font-serif text-lg">A festa é sua. A organização é nossa.</p>
-            <p className="mt-1 text-xs text-off-white/70">
+            <p className="mt-1 text-xs text-vinho/70">
               Você cuida do sonho. A EventeIA cuida de encontrar o caminho.
             </p>
           </div>
@@ -151,7 +151,7 @@ export default async function ParaPlannersPage() {
                 <p
                   className={
                     plan.featured
-                      ? "w-fit rounded-full bg-champagne-claro px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-primaria-escura"
+                      ? "w-fit rounded-full bg-champagne-claro px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-coral-escuro"
                       : "text-[10px] font-semibold uppercase tracking-[0.16em] opacity-70"
                   }
                 >
@@ -168,7 +168,7 @@ export default async function ParaPlannersPage() {
                   href="/registrar"
                   className={
                     plan.featured
-                      ? "mt-8 inline-flex rounded-full bg-primaria px-5 py-3 text-sm font-semibold text-white transition hover:bg-primaria-escura"
+                      ? "mt-8 inline-flex rounded-full bg-primaria px-5 py-3 text-sm font-semibold text-on-primary transition hover:bg-primaria-escura"
                       : "mt-8 inline-flex rounded-full border border-champagne px-5 py-3 text-sm font-medium text-vinho transition hover:bg-champagne-claro/40"
                   }
                 >
@@ -199,7 +199,7 @@ export default async function ParaPlannersPage() {
               <Link
                 prefetch={false}
                 href="/registrar"
-                className="mt-8 inline-flex rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-white transition hover:bg-primaria-escura"
+                className="mt-8 inline-flex rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-on-primary transition hover:bg-primaria-escura"
               >
                 Quero experimentar
               </Link>

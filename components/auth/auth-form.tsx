@@ -74,7 +74,7 @@ export function AuthForm({ mode, oauthError }: { mode: AuthMode; oauthError?: st
         <button
           type="submit"
           disabled={googlePending || termsBlocked || instagramBlocked}
-          className="flex h-14 w-full items-center justify-center gap-3 rounded-full bg-primaria text-base font-semibold text-white shadow-[0_10px_24px_-12px_rgba(163,72,90,0.7)] transition hover:bg-primaria-escura disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-14 w-full items-center justify-center gap-3 rounded-full bg-primaria text-base font-semibold text-on-primary shadow-[0_10px_24px_-12px_rgba(240,160,112,0.7)] transition hover:bg-primaria-escura disabled:cursor-not-allowed disabled:opacity-50"
         >
           <span className="flex size-8 items-center justify-center rounded-full bg-white">
             <GoogleIcon />

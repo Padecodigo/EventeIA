@@ -33,15 +33,15 @@ export default async function SejaFornecedorPage({
   const links = supplierDmUrls(supplierRef(evento));
 
   return (
-    <section className="bg-[#2A1119]">
+    <section className="bg-surface-dark">
       <div className="mx-auto w-full max-w-4xl px-4 py-16 sm:px-8 sm:py-24">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-champagne">
           Para fornecedores
         </p>
-        <h1 className="mt-5 font-serif text-[clamp(2.4rem,5vw,4rem)] font-display leading-[1.02] tracking-[-0.03em] text-off-white">
+        <h1 className="mt-5 font-serif text-[clamp(2.4rem,5vw,4rem)] font-display leading-[1.02] tracking-[-0.03em] text-ink-inverse">
           Receba pedidos de cotação <em className="italic text-champagne">sem caça.</em>
         </h1>
-        <p className="mt-8 max-w-2xl text-lg leading-8 text-off-white/85">
+        <p className="mt-8 max-w-2xl text-lg leading-8 text-ink-inverse/85">
           A EventeIA aproxima anfitriões e fornecedores de festas e eventos. Cadastre-se por um
           dos canais abaixo e comece a receber pedidos com contexto — é você quem inicia a conversa.
         </p>
@@ -73,8 +73,8 @@ export default async function SejaFornecedorPage({
         <div className="mt-16 grid grid-cols-1 gap-8 border-t border-white/10 pt-10 md:grid-cols-3">
           {BENEFITS.map((benefit) => (
             <article key={benefit.title}>
-              <h3 className="font-serif text-2xl leading-tight text-off-white">{benefit.title}</h3>
-              <p className="mt-3 text-sm leading-6 text-off-white/80">{benefit.text}</p>
+              <h3 className="font-serif text-2xl leading-tight text-ink-inverse">{benefit.title}</h3>
+              <p className="mt-3 text-sm leading-6 text-ink-inverse/80">{benefit.text}</p>
             </article>
           ))}
         </div>

@@ -149,7 +149,7 @@ export default async function CustosPage({ searchParams }: { searchParams?: Prom
         <nav className="mt-3 flex flex-wrap gap-2 text-sm" aria-label="Ordenar eventos">
           {(Object.keys(SORT_LABELS) as EventCostSort[]).map((k) => (
             <Link key={k} href={`/admin/custos?ordem=${k}#custo-por-evento`} aria-current={k === sort ? "true" : undefined}
-              className={`rounded-full border px-3 py-1 ${k === sort ? "border-primaria bg-primaria text-white" : "border-line-subtle"}`}>
+              className={`rounded-full border px-3 py-1 ${k === sort ? "border-primaria bg-primaria text-on-primary" : "border-line-subtle"}`}>
               {SORT_LABELS[k]}
             </Link>
           ))}
