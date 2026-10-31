@@ -13,7 +13,7 @@ import { getPublishedTestimonials } from "@/lib/testimonials";
 export const revalidate = 60;
 
 export const metadata = pageMetadata({
-  title: "Orçamento de festa pelas redes sociais",
+  title: "Fornecedores e orçamento do seu evento, prontos",
   description: SITE_DESCRIPTION,
   path: "/",
   keywords: ["orçamento de festa infantil", "orçamento de casamento", "festa de 15 anos", "formatura"],
@@ -39,10 +39,9 @@ const OPTIONS = [
 ] as const;
 
 const STEPS = [
-  { n: "1", title: "Conte sobre o evento", text: "Tipo de festa, data, cidade, convidados e o que não pode faltar. Leva poucos minutos." },
-  { n: "2", title: "A gente pede os orçamentos", text: "Falamos com fornecedores da sua região pelas redes sociais (Instagram e Messenger), com calma e sem spam." },
-  { n: "3", title: "Comparamos tudo", text: "Lemos cada resposta, achamos taxas escondidas e colocamos tudo na mesma régua." },
-  { n: "4", title: "Você escolhe", text: "Receba 3 opções — preço, custo-benefício e comodidade — e decida com tranquilidade." },
+  { n: "1", title: "Conte seu evento", text: "Tipo de festa, data, cidade, número de convidados e o que não pode faltar. Leva poucos minutos." },
+  { n: "2", title: "A EventeIA busca e compara", text: "Encontramos fornecedores da sua região, pedimos orçamento a cada um pelas redes sociais e comparamos os preços — taxas escondidas incluídas." },
+  { n: "3", title: "Você recebe e escolhe", text: "O orçamento chega pronto, em 3 opções: melhor preço, custo-benefício e comodidade. Você escolhe e só fecha com o seu “sim”." },
 ] as const;
 
 const TRUST = [
@@ -91,20 +90,19 @@ export default async function LandingPage() {
           <div className="absolute -left-40 bottom-[-25%] h-[540px] w-[540px] rounded-full bg-[radial-gradient(closest-side,rgba(240,160,112,0.3),transparent)]" />
         </div>
 
-        <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-10 px-5 pb-14 pt-14 sm:px-8 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-14 lg:pb-20 lg:pt-20">
+        <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-10 px-5 pb-14 pt-8 sm:px-8 sm:pt-14 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-14 lg:pb-20 lg:pt-20">
           <div className="ev-rise text-vinho">
             <p className="inline-flex items-center gap-2 rounded-full border border-coral/30 bg-white/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-coral-escuro">
-              Inteligência de custos para eventos
+              Para quem está organizando um evento
             </p>
-            <h1 className="mt-6 font-display text-[clamp(2.4rem,5vw,4.2rem)] font-semibold leading-[1.0] tracking-[-0.03em]">
-              Menos ligações,
-              <br />
-              <span className="text-coral-escuro">mais memórias.</span>
+            <h1 className="mt-5 font-display text-[clamp(2.2rem,4.4vw,3.8rem)] font-semibold leading-[1.02] tracking-[-0.03em]">
+              Você conta como é seu evento.
+              <span className="mt-3 block text-[clamp(1.35rem,2.3vw,2rem)] leading-[1.18] tracking-[-0.015em] text-coral-escuro">A gente encontra os fornecedores, compara os preços e entrega o orçamento pronto.</span>
             </h1>
             <p className="mt-5 max-w-lg text-[17px] leading-relaxed text-vinho/85">
-              A EventeIA cota com os fornecedores da sua região pelas redes sociais — Instagram e Messenger — com foco no Vale do Paraíba e em São Paulo, e compara cada proposta por você. Você escolhe entre{" "}
+              Casamento, aniversário, 15 anos, formatura ou corporativo: em vez de você ligar para um por um, a EventeIA pede orçamento aos fornecedores da sua região pelas redes sociais, com foco no Vale do Paraíba e em São Paulo, e compara tudo. Você recebe{" "}
               <strong className="font-semibold text-vinho">3 opções prontas</strong> — melhor preço, custo-benefício e
-              comodidade — e aproveita o que importa.
+              comodidade — e só escolhe.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -130,6 +128,12 @@ export default async function LandingPage() {
               </span>
               <span>Sem mensalidade · Pix seguro ou cartão</span>
             </div>
+            <p className="mt-4 text-xs text-vinho/60">
+              É fornecedor de eventos?{" "}
+              <Link prefetch={false} href="/seja-fornecedor" data-testid="link-fornecedor" className="underline underline-offset-2 hover:text-coral-escuro">
+                Veja como receber pedidos de orçamento
+              </Link>
+            </p>
 
             {mainTestimonial ? (
               <figure className="mt-8 max-w-lg rounded-3xl border border-line-subtle bg-white p-5 shadow-soft">
@@ -153,7 +157,7 @@ export default async function LandingPage() {
             ) : null}
           </div>
 
-          <div className="order-first grid grid-cols-2 gap-3 lg:order-none">
+          <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 overflow-hidden rounded-3xl ring-1 ring-vinho/10">
               <Image src="/img/eventos/festa-infantil-velas.jpg" alt="Festa infantil" width={720} height={480} className="h-48 w-full object-cover sm:h-56" priority />
             </div>
@@ -163,7 +167,7 @@ export default async function LandingPage() {
               { src: "/img/eventos/festa-formatura-baile.jpg", label: "Formatura" },
               { src: "/img/eventos/corporativo.webp", label: "Corporativo" },
             ].map((photo) => (
-              <div key={photo.src} className="overflow-hidden rounded-2xl ring-1 ring-vinho/10">
+              <div key={photo.src} className="hidden overflow-hidden rounded-2xl ring-1 ring-vinho/10 sm:block">
                 <Image src={photo.src} alt={photo.label} width={360} height={240} className="h-24 w-full object-cover sm:h-28" />
               </div>
             ))}
@@ -192,6 +196,27 @@ export default async function LandingPage() {
         </div>
       </section>
 
+
+      {/* ================= Como funciona ================= */}
+      <section id="como-funciona" aria-labelledby="como-funciona-titulo" className="scroll-mt-24 bg-white">
+        <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-28">
+          <p className="eyebrow">Como funciona · 3 passos</p>
+          <h2 id="como-funciona-titulo" className={`mt-4 max-w-2xl ${sectionTitle}`}>Como funciona para você, que está organizando o evento</h2>
+          <ol className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
+            {STEPS.map((s) => (
+              <li key={s.n} className="rounded-3xl p-7 ring-1 ring-champagne-claro bg-areia-quente">
+                <span className="font-display text-sm font-bold text-coral-escuro">Passo {s.n}</span>
+                <h3 className="mt-3 font-display text-xl font-bold tracking-tight text-vinho">{s.title}</h3>
+                <p className="mt-2 text-[15px] leading-relaxed text-vinho/70">{s.text}</p>
+              </li>
+            ))}
+          </ol>
+          <p className="mt-6 max-w-2xl text-[15px] text-vinho/70">A EventeIA trabalha para quem contrata: não é uma rede entre fornecedores nem um classificado. Você não precisa procurar ninguém.</p>
+          <Link prefetch={false} href="/como-funciona" className="mt-10 inline-flex items-center gap-1 text-sm font-semibold text-vinho hover:text-coral-escuro">
+            Ver o passo a passo completo <span aria-hidden="true">→</span>
+          </Link>
+        </div>
+      </section>
 
       {/* ================= Selos de confiança ================= */}
       <section aria-label="Por que confiar" className="bg-white">
@@ -228,26 +253,6 @@ export default async function LandingPage() {
               </article>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* ================= Como funciona ================= */}
-      <section className="bg-areia-quente">
-        <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-28">
-          <p className="eyebrow">Como funciona</p>
-          <h2 className={`mt-4 max-w-2xl ${sectionTitle}`}>Do “preciso organizar” ao “já escolhi” em 4 passos.</h2>
-          <ol className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {STEPS.map((s) => (
-              <li key={s.n} className="rounded-3xl bg-white p-7 ring-1 ring-champagne-claro">
-                <span className="font-display text-sm font-bold text-coral-escuro">Passo {s.n}</span>
-                <h3 className="mt-3 font-display text-xl font-bold tracking-tight text-vinho">{s.title}</h3>
-                <p className="mt-2 text-[15px] leading-relaxed text-vinho/70">{s.text}</p>
-              </li>
-            ))}
-          </ol>
-          <Link prefetch={false} href="/como-funciona" className="mt-10 inline-flex items-center gap-1 text-sm font-semibold text-vinho hover:text-coral-escuro">
-            Ver o passo a passo completo <span aria-hidden="true">→</span>
-          </Link>
         </div>
       </section>
 

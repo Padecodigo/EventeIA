@@ -15,6 +15,38 @@ function mosaicSources(): string[] {
   return [...block.matchAll(/src: "([^"]+)"/g)].map((m) => m[1] ?? "");
 }
 
+describe("landing — proposta inequívoca (beta 31/10: confundiram com B2B entre fornecedores)", () => {
+  const page = readFileSync(join(process.cwd(), "app/(marketing)/page.tsx"), "utf8");
+  const hero = page.slice(page.indexOf("HERO (acima da dobra)"), page.indexOf("Selos de confiança"));
+  it("headline fala com quem organiza: encontra fornecedores, compara preços, orçamento pronto", () => {
+    const h1 = page.slice(page.indexOf("<h1"), page.indexOf("</h1>"));
+    for (const t of ["Você conta como é seu evento.", "encontra os fornecedores", "compara os preços", "orçamento pronto"]) expect(h1).toContain(t);
+    expect(hero).toContain("Para quem está organizando um evento");
+    for (const t of ["Casamento", "aniversário", "corporativo"]) expect(hero).toContain(t);
+  });
+  it("primeira seção após o hero é o 'como funciona' do cliente em 3 passos", () => {
+    const afterHero = page.slice(page.indexOf("</section>", page.indexOf("HERO (acima da dobra)")));
+    expect(afterHero.indexOf('id="como-funciona"')).toBeLessThan(afterHero.indexOf("Selos de confiança"));
+    const steps = page.slice(page.indexOf("const STEPS"), page.indexOf("] as const;", page.indexOf("const STEPS")));
+    expect([...steps.matchAll(/title: "([^"]+)"/g)].map((m) => m[1])).toEqual(["Conte seu evento", "A EventeIA busca e compara", "Você recebe e escolhe"]);
+    expect(page).toContain("não é uma rede entre fornecedores");
+  });
+  it("link para fornecedores existe, separado e discreto (não é CTA)", () => {
+    const line = hero.slice(hero.indexOf("É fornecedor de eventos?") - 80, hero.indexOf('data-testid="link-fornecedor"') + 200);
+    expect(line).toContain('href="/seja-fornecedor"');
+    expect(line).toContain("text-xs");
+    expect(line).not.toMatch(/bg-primaria|rounded-full/);
+  });
+  it("meta description, título e OG explicam o serviço para quem organiza", () => {
+    const site = readFileSync(join(process.cwd(), "lib/seo/site.ts"), "utf8");
+    const og = readFileSync(join(process.cwd(), "app/og/route.tsx"), "utf8");
+    const layout = readFileSync(join(process.cwd(), "app/layout.tsx"), "utf8");
+    expect(site).toMatch(/Vai organizar um casamento.*encontra os fornecedores, compara os preços e entrega o orçamento pronto/);
+    expect(og).toContain("A gente encontra os fornecedores, compara os preços e entrega o orçamento pronto.");
+    expect(layout).toContain("Fornecedores encontrados, preços comparados, orçamento pronto");
+  });
+});
+
 describe("landing — hero", () => {
   it("festa infantil abre o mosaico, mas há vários tipos de evento", () => {
     const srcs = mosaicSources();
