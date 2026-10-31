@@ -23,7 +23,7 @@ Dois públicos, um produto:
 
 | Público                              | Modelo                                    | O que recebe                                                                       |
 | ------------------------------------ | ----------------------------------------- | ---------------------------------------------------------------------------------- |
-| **B2C — Anfitriões**                 | **Tíquete por Evento Único** (Pix/cartão) | Orçamento completo, cotações ilimitadas do evento e disparos via WhatsApp          |
+| **B2C — Anfitriões**                 | **Tíquete por Evento Único** (Pix/cartão) | Orçamento completo e cotações ilimitadas do evento                            |
 | **B2B — Planners & Cerimonialistas** | **Franquia de Créditos por Assinatura**   | Créditos mensais por workspace, múltiplos eventos de clientes, gestão profissional |
 
 Pagamentos via **Asaas** (Pix dinâmico e cartão). Começamos com CPF e evoluímos para **CNPJ ME/SLU** — ver [`.context/PAYMENTS.md`](.context/PAYMENTS.md).
@@ -52,7 +52,7 @@ Pagamentos via **Asaas** (Pix dinâmico e cartão). Começamos com CPF e evoluí
 | Backend/Dados | **Supabase** — Auth, PostgreSQL, **RLS**                        |
 | Pagamentos    | **Asaas** (webhooks idempotentes)                               |
 | Filas/Jobs    | **BullMQ** + Redis (workers em processo separado)               |
-| Mensageria    | **Evolution API** (WhatsApp, self-hosted)                       |
+| Mensageria    | **Meta Graph API** (Instagram Direct + Messenger)               |
 | Qualidade     | ESLint estrito · knip · Vitest · Lighthouse CI · GitHub Actions |
 
 ---
@@ -68,7 +68,6 @@ A pasta [`.context/`](.context/) é a **fonte da verdade**. Leia antes de codar.
 | [`DESIGN_SYSTEM.md`](.context/DESIGN_SYSTEM.md)           | Paleta, tipografia, variáveis CSS, regras de componentes                    |
 | [`PAYMENTS.md`](.context/PAYMENTS.md)                     | Asaas, webhooks idempotentes, fluxos B2C × B2B                              |
 | [`DATABASE_RLS.md`](.context/DATABASE_RLS.md)             | Schemas de tabelas e políticas Supabase RLS                                 |
-| [`WHATSAPP_EVOLUTION.md`](.context/WHATSAPP_EVOLUTION.md) | Disparos via Evolution API + BullMQ                                         |
 | [`COMMERCIAL_MODEL.md`](.context/COMMERCIAL_MODEL.md)     | Tíquetes B2C, franquia de créditos B2B, reembolsos                          |
 | [`FEEDS.md`](.context/FEEDS.md)                           | Registro de eventos do sistema, logs e auditoria                            |
 | [`SECURITY.md`](.context/SECURITY.md)                     | Proteção de dados (LGPD), SAN e mitigação de vulnerabilidades               |
@@ -90,13 +89,13 @@ EventeIA/
 │   ├── (marketing)/             # Landing, planos
 │   ├── (auth)/                  # Entrar, registrar
 │   ├── (dashboard)/             # Área logada
-│   └── api/webhooks/            # Asaas · Evolution
+│   └── api/webhooks/            # Asaas · Meta
 │
 ├── components/                  # ui/ · sections/ · domain/
 ├── lib/
 │   ├── engine/                  # ★ Motor financeiro determinístico (puro)
 │   ├── asaas/                   # Cliente + webhooks + conciliação
-│   ├── whatsapp/                # Templates e disparo
+│   ├── meta/                    # Graph API (Instagram/Messenger)
 │   ├── credits/                 # Ledger B2B
 │   ├── feeds/                   # Eventos de sistema
 │   └── supabase/                # Clients tipados
@@ -117,7 +116,7 @@ EventeIA/
 - **Docker** (Supabase local e Redis)
 - **Supabase CLI** (`brew install supabase/tap/supabase` ou binário)
 - Conta **Asaas Sandbox** (para Pix/cartão de teste)
-- Instância **Evolution API** (Docker) para testar WhatsApp
+- Conta **Meta** (Instagram/Messenger) para o fluxo de contato com fornecedores
 
 ### 1. Clonar e instalar
 
@@ -141,10 +140,6 @@ Copie `.env.example` para `.env.local` e preencha:
 | `ASAAS_API_URL`                 | ✅          | `https://api-sandbox.asaas.com/v3`    |
 | `ASAAS_API_KEY`                 | ✅          | Chave da conta sandbox                |
 | `ASAAS_WEBHOOK_TOKEN`           | ✅          | Token do webhook configurado no Asaas |
-| `EVOLUTION_API_URL`             | ✅          | `http://localhost:8080`               |
-| `EVOLUTION_API_KEY`             | ✅          | Chave da instância                    |
-| `EVOLUTION_INSTANCE`            | ✅          | Nome da instância (ex.: `EventeIA`)   |
-| `EVOLUTION_WEBHOOK_TOKEN`       | ✅          | Token do webhook Evolution            |
 | `B2C_TICKET_PRICE_CENTS`        | ✅          | Preço do tíquete (ex.: `9700`)        |
 | `ENGINE_TIMEZONE`               | ⬜          | Default `America/Sao_Paulo`           |
 
@@ -172,17 +167,17 @@ pnpm dev          # Next.js em http://localhost:3000
 Em outro terminal, os workers das filas:
 
 ```bash
-pnpm workers      # BullMQ: asaas-webhooks · whatsapp-outbound · feeds
+pnpm workers      # BullMQ: asaas-webhooks · meta-webhooks · feeds
 ```
 
 ### 6. Webhooks em desenvolvimento
 
-Exponha o localhost e configure as URLs no Asaas Sandbox e na Evolution API:
+Exponha o localhost e configure as URLs no Asaas Sandbox e no Meta:
 
-| Gateway       | URL                               |
-| ------------- | --------------------------------- |
-| Asaas         | `{tunnel}/api/webhooks/asaas`     |
-| Evolution API | `{tunnel}/api/webhooks/evolution` |
+| Gateway   | URL                            |
+| --------- | ------------------------------ |
+| Asaas     | `{tunnel}/api/webhooks/asaas`  |
+| Meta      | `{tunnel}/api/meta/webhook`    |
 
 Ferramentas: `cloudflared tunnel --url http://localhost:3000` (ou `ngrok http 3000`).
 
@@ -226,14 +221,14 @@ Com o tunnel e o Asaas Sandbox configurados:
 Já implementado: autenticação (Supabase Auth + middleware), criação de eventos, motor
 determinístico (v1.1.0 com golden tests), checkout Pix (Asaas), **assinatura recorrente com
 concessão automática de franquia (0009)**, **conciliação diária (job); créditos não expiram (0037)**,
-webhooks idempotentes Asaas/Evolution, ativação de tíquete em transação SQL, ledger de créditos
+webhooks idempotentes Asaas/Meta, ativação de tíquete em transação SQL, ledger de créditos
 com guarda de saldo, **testes de componentes React (Vitest + Testing Library)**,
-landing + `/como-funciona` + `/para-planners` + `/planos` + auth/painel, perfil com CPF/WhatsApp e
-consentimento, **cotações com envio por WhatsApp**, **workspace B2B com pacotes de créditos** e
-ativação de evento por crédito, **fluxo completo de depoimentos reais** (convite automático →
-consentimento → moderação → vitrine), **Agente Orçamentista** (prospecção de fornecedores pelo
-WhatsApp do cliente: pacing 45–90s, texto puro, opt-out, pausa por sessão, credenciais
-AES-256-GCM), **admin de cupons** (`/admin/cupons`), workers BullMQ e validação SQL via Docker.
+landing + `/como-funciona` + `/para-planners` + `/planos` + auth/painel, perfil com CPF e
+consentimento, **cotações com contato por Instagram/Messenger**, **workspace B2B com pacotes de
+créditos** e ativação de evento por crédito, **fluxo completo de depoimentos reais** (convite
+automático → consentimento → moderação → vitrine), **Agente Orçamentista** (prospecção de
+fornecedores via Instagram/Messenger), **admin de cupons** (`/admin/cupons`), workers BullMQ e
+validação SQL via Docker.
 
 Próximos incrementos: timeline de feeds na UI, upload de fotos reais por evento, reembolsos via
 API Asaas e migração da conta PF → CNPJ ME/SLU (ver PAYMENTS.md §9).
@@ -242,7 +237,7 @@ API Asaas e migração da conta PF → CNPJ ME/SLU (ver PAYMENTS.md §9).
 
 1. **Convite automático**: a fila `testimonial-invites` roda diariamente às 10:00
    (America/Sao_Paulo); eventos ocorridos entre 1 e 30 dias atrás geram convite (30 dias, uso único)
-   e um WhatsApp via Evolution API — **somente** para quem tem `consents.status = 'opted_in'`.
+   — **somente** para quem tem `consents.status = 'opted_in'`.
    O botão “Depois da festa, a história fica.” no evento continua disponível para gerar o link
    manualmente.
 2. **Formulário** (`/depoimento?token=…`): nome, cidade, relato (80–800 caracteres), resultado
@@ -314,7 +309,7 @@ Metodologia: **Trunk-Based Development** — `main` sempre implantável, PRs peq
 - RLS **default-deny** em todas as tabelas ([`DATABASE_RLS.md`](.context/DATABASE_RLS.md)).
 - Dinheiro em **centavos inteiros**; preço sempre calculado no servidor.
 - Webhooks com **token em tempo constante** + idempotência por `event.id`.
-- LGPD: consentimento para WhatsApp, minimização, erasure auditável ([`SECURITY.md`](.context/SECURITY.md)).
+- LGPD: consentimento de contato, minimização, erasure auditável ([`SECURITY.md`](.context/SECURITY.md)).
 - Reporte vulnerabilidades: `security@eventeia.com`.
 
 ---

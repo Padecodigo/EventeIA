@@ -26,6 +26,28 @@ import { buildSupplierReplyMessages } from "./triage";
 /** Agrupa mensagens picadas do fornecedor: 1 extração por fornecedor por janela de 45s. */
 export const QUOTE_DEBOUNCE_MS = 45_000;
 
+/**
+ * O canal de saída legado (WhatsApp) foi removido. Não gravamos nada em
+ * `whatsapp_messages`: apenas registramos a decisão de pular o follow-up com
+ * um log estruturado, para que a automação nunca tente um envio frio.
+ */
+export function skipSupplierFollowUp(
+  input: { eventId: string; prospectId: string; n: number },
+  log: (payload: Record<string, unknown>, message: string) => void = (payload, message) =>
+    logger.info(payload, message),
+): "skipped" {
+  log(
+    {
+      eventId: input.eventId,
+      prospectId: input.prospectId,
+      followup: input.n,
+      reason: "whatsapp_removed",
+    },
+    "follow-up de cotação ignorado: canal de saída legado removido",
+  );
+  return "skipped";
+}
+
 export async function enqueueQuoteExtraction(
   eventId: string,
   prospectId: string,
@@ -174,25 +196,9 @@ export function createCollectorDeps(): CollectorDeps {
       if (error !== null) throw new Error(`falha ao salvar rascunho de cotação (${error.code})`);
     },
 
-    async sendFollowUp({ eventId, prospectId, text, n }) {
-      // WhatsApp removido: não há canal de saída. Registra a intenção cancelada (auditoria).
-      const idempotencyKey = `followup:${prospectId}:${String(n)}`;
-      await admin.from("whatsapp_messages").upsert(
-        {
-          event_id: eventId,
-          prospect_id: prospectId,
-          direction: "outbound" as const,
-          template: "quote_followup",
-          channel: "cloud",
-          to_number_e164: "",
-          body: text,
-          idempotency_key: idempotencyKey,
-          status: "canceled",
-          error: "whatsapp_removed",
-        },
-        { onConflict: "idempotency_key", ignoreDuplicates: true },
-      );
-      return "skipped";
+    sendFollowUp({ eventId, prospectId, n }) {
+      // Sem canal de saída: registra só a decisão estruturada de pular.
+      return Promise.resolve(skipSupplierFollowUp({ eventId, prospectId, n }));
     },
 
     async checkCollectionEnd(eventId) {

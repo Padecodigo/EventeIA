@@ -1,6 +1,6 @@
 {"elements":[
  {"type":"node","id":101,"tags":{"name":"Buffet Encanto LTDA","craft":"caterer","phone":"+55 12 3621-0000;+55 12 99111-2233"}},
- {"type":"node","id":102,"tags":{"name":"Salgados da Tia","shop":"deli","contact:whatsapp":"(12) 98822-3344"}},
+ {"type":"node","id":102,"tags":{"name":"Salgados da Tia","shop":"deli","contact:mobile":"(12) 98822-3344"}},
  {"type":"way","id":103,"tags":{"name":"Escola Estadual Buffet","amenity":"school","phone":"12 99733-4455"}},
  {"type":"node","id":104,"tags":{"name":"Padaria Fixo","shop":"bakery","phone":"+55 12 3622-1234"}},
  {"type":"node","id":105,"tags":{"name":"Sem telefone","craft":"caterer"}},

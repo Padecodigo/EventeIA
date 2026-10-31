@@ -107,3 +107,20 @@ describe("integração: extrator com escopo", () => {
     expect(r.quotation.confidence_score).toBe(0);
   });
 });
+
+describe("nuances de música, bar e cerimônia no escopo", () => {
+  it("normaliza banda, cantor e barman para itens próprios", () => {
+    expect(normalizeScopeItem("banda")).toBe("banda");
+    expect(normalizeScopeItem("cantor de cerimônia")).toBe("cantor_cerimonia");
+    expect(normalizeScopeItem("bartender")).toBe("barman");
+    expect(SCOPE_COVERS.banda).toBe("banda");
+    expect(SCOPE_COVERS.cantor_cerimonia).toBe("cantor_cerimonia");
+    expect(SCOPE_COVERS.barman).toBe("barman");
+    expect(SCOPE_COVERS.som).toBe("som_dj");
+  });
+  it("DJ e banda continuam distintos no escopo", () => {
+    expect(normalizeScopeItem("DJ")).toBe("som");
+    expect(normalizeScopeItem("música ao vivo")).toBe("banda");
+    expect(SCOPE_COVERS.som).not.toBe(SCOPE_COVERS.banda);
+  });
+});

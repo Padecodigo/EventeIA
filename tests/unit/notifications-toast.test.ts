@@ -17,9 +17,9 @@ const item = {
 };
 
 describe("toast de notificações", () => {
-  it("mensagem de quotations_ready menciona encerramento do WhatsApp", () => {
+  it("mensagem de quotations_ready sem menção a WhatsApp", () => {
     expect(toastMessageFor(item)).toBe(QUOTATIONS_READY_TOAST);
-    expect(QUOTATIONS_READY_TOAST).toMatch(/conexão do WhatsApp encerrada por segurança/);
+    expect(QUOTATIONS_READY_TOAST).not.toMatch(/WhatsApp/i);
   });
   it("não repete toast já exibido", () => {
     expect(selectUnseen([item], new Set())).toHaveLength(1);

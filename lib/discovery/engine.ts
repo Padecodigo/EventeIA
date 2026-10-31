@@ -6,7 +6,7 @@
 import type { Unit } from "@/lib/catalog/v1";
 import { CATEGORY_LABELS, EVENT_TYPE_LABELS } from "@/lib/catalog/v1";
 import type { EventType } from "@/lib/engine/types";
-import { extractBrazilPhones, parseBrazilPhone } from "@/lib/phone";
+import { parseBrazilPhone } from "@/lib/phone";
 
 import type { DiscoveryProvider } from "./providers/types";
 import {
@@ -82,7 +82,6 @@ export interface DiscoveryDeps {
     provider: string;
     city: string;
     regionCode: string;
-    viaWhatsappLink: boolean;
   }): Promise<SupplierRecord>;
   cachedSuppliers(q: { city: string; category: string; excludePhones: string[]; limit: number }): Promise<
     (SupplierCandidate & { provider: string })[]
@@ -152,11 +151,9 @@ export async function ingestCandidate(
   const name = sanitizeVendorName(c.name);
   if (name.length < 2) return "invalid";
 
-  const fromLink = c.whatsappLink !== undefined ? extractBrazilPhones(c.whatsappLink) : [];
   const direct = c.phone !== undefined ? parseBrazilPhone(c.phone) : null;
-  const pick = fromLink[0] ?? (direct !== null ? { phone: direct, viaWhatsappLink: false } : undefined);
-  if (pick === undefined) return "no_phone";
-  const phone = pick.phone.e164;
+  if (direct === null) return "no_phone";
+  const phone = direct.e164;
 
   if (ctx.knownPhones.has(phone)) return "duplicate";
   if (await deps.isPhoneOptedOut(phone)) return "opted_out";
@@ -172,7 +169,6 @@ export async function ingestCandidate(
     provider: ctx.provider,
     city: c.city ?? ctx.event.city,
     regionCode: ctx.event.regionCode,
-    viaWhatsappLink: pick.viaWhatsappLink,
   });
   if (supplier.optOutAt !== null) return "opted_out";
   if (!canRecontact(supplier.lastContactedAt, deps.now())) return "recent_contact";

@@ -15,7 +15,9 @@ export type ConversationStatus =
   | "closed"
   | "opted_out";
 
-export type Channel = "instagram" | "messenger";
+/** Canais de contato do fornecedor suportados pela EventeIA (Meta). */
+export const OUTREACH_CHANNELS = ["instagram", "messenger"] as const;
+export type Channel = (typeof OUTREACH_CHANNELS)[number];
 
 export interface ProspectConversation {
   id: string;

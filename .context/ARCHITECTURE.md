@@ -1,7 +1,7 @@
 # ARCHITECTURE.md — Arquitetura da EventeIA
 
-> **Fonte da verdade arquitetural.** Última revisão: 2026-10-22.
-> Documentos irmãos: [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) · [PAYMENTS.md](PAYMENTS.md) · [DATABASE_RLS.md](DATABASE_RLS.md) · [WHATSAPP_EVOLUTION.md](WHATSAPP_EVOLUTION.md) · [COMMERCIAL_MODEL.md](COMMERCIAL_MODEL.md) · [FEEDS.md](FEEDS.md) · [SECURITY.md](SECURITY.md)
+> **Fonte da verdade arquitetural.** Última revisão: 2026-10-31.
+> Documentos irmãos: [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) · [PAYMENTS.md](PAYMENTS.md) · [DATABASE_RLS.md](DATABASE_RLS.md) · [COMMERCIAL_MODEL.md](COMMERCIAL_MODEL.md) · [FEEDS.md](FEEDS.md) · [SECURITY.md](SECURITY.md)
 
 ---
 
@@ -9,7 +9,7 @@
 
 A EventeIA é um SaaS de **inteligência de custos e cotações para eventos** com dois públicos:
 
-- **B2C (Anfitriões)** — compram um **tíquete único por evento** e recebem clareza financeira (orçamento determinístico, cotações, disparos via WhatsApp).
+- **B2C (Anfitriões)** — compram um **tíquete único por evento** e recebem clareza financeira (orçamento determinístico e cotações).
 - **B2B (Planners/Cerimonialistas)** — assinam uma **franquia de créditos mensal** e gerenciam múltiplos eventos de seus clientes dentro de _workspaces_.
 
 ### 1.1 Diagrama de contexto
@@ -17,21 +17,21 @@ A EventeIA é um SaaS de **inteligência de custos e cotações para eventos** c
 ```
                 ┌─────────────────────────────────────────────┐
                 │        Navegador (Next.js RSC)               │
-                │        WhatsApp do cliente final             │
+                │        Instagram / Messenger (Meta)          │
                 └────────────┬────────────────────┬───────────┘
                              │ HTTPS               │ mensagens
                              ▼                     ▼
    ┌─────────────────────────────────┐   ┌──────────────────────┐
-   │  Next.js (App Router)           │   │  Evolution API       │
-   │  app/ · RSC · Server Actions    │◄──┤  (WhatsApp, self-    │
-   │  app/api/webhooks/{asaas,       │   │   hosted)            │
-   │              evolution}          │   └──────────────────────┘
+   │  Next.js (App Router)           │   │  Meta Graph API      │
+   │  app/ · RSC · Server Actions    │◄──┤  (Instagram Direct + │
+   │  app/api/webhooks/{asaas,       │   │   Messenger)         │
+   │              meta}              │   └──────────────────────┘
    └───────┬──────────────┬──────────┘
            │              │ eventos de sistema + jobs
            ▼              ▼
    ┌─────────────────────────────────┐   ┌──────────────────────┐
    │  BullMQ (Redis)                 │──►│  Workers (processo    │
-   │  asaas-webhooks · whatsapp-*    │   │  separado: workers/)  │
+   │  asaas-webhooks · meta-*        │   │  separado: workers/)  │
    │  feeds-*                       │   └──────────┬───────────┘
    └───────┬─────────────────────────┘              │
            │                                         │
@@ -74,7 +74,7 @@ EventeIA/
 │   └── api/
 │       └── webhooks/
 │           ├── asaas/route.ts       #   Entrada única de webhooks Asaas
-│           └── evolution/route.ts   #   Entrada única de webhooks Evolution
+│           └── meta/route.ts        #   Entrada única de webhooks Meta (Instagram/Messenger)
 │
 ├── components/                      # Componentes React
 │   ├── ui/                          #   Primitivos (Button, Input, Card…)
@@ -87,7 +87,7 @@ EventeIA/
 │   │   ├── params/                  #   Tabelas de custo por ENGINE_VERSION
 │   │   └── types.ts                 #   EngineInput / EngineResult
 │   ├── asaas/                       # Cliente REST + conciliação + status
-│   ├── whatsapp/                    # Templates + montagem de mensagens
+│   ├── meta/                        # Graph API (Instagram Direct + Messenger)
 │   ├── credits/                     # Ledger de créditos (B2B)
 │   ├── feeds/                       # emit(): registro de eventos de sistema
 │   └── supabase/                    # server.ts · admin.ts · public.ts
@@ -206,16 +206,12 @@ EngineInput
 | ----------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------ |
 | `asaas-webhooks`              | Route Handler `webhooks/asaas`              | Worker de pagamentos                                                         | `external_event_id`                         | 5× backoff exponencial + jitter      |
 | `asaas-reconcile`             | Repeatable job diário                       | Conciliação Asaas↔local                                                      | data `YYYY-MM-DD`                           | 3×                                   |
-| `whatsapp-outbound`           | Server Actions/Services                     | Disparador Evolution                                                         | `idempotency_key` da mensagem               | 5× backoff + rate limit              |
-| `whatsapp-inbound`            | Route Handler `webhooks/evolution`          | Processador de respostas/SAIR                                                | `external_message_id`                       | 3×                                   |
 | `feeds-dispatch`              | Outbox pós-transação                        | Publicador de eventos                                                        | feed `id`                                   | 5×                                   |
 | `testimonial-invites`         | Repeatable diário (10:00 America/Sao_Paulo) | Convida eventos de ontem para depoimento                                     | `testimonial_invite:event:<id>` na mensagem | 3×                                   |
-| `quotation-prospecting-queue` | Server Action de prospecção                 | Agente Orçamentista: primeiro contato ao fornecedor pelo WhatsApp do cliente | `prospect:<prospectId>`                     | 5× backoff + pacing 45–90s/instância |
-| `whatsapp-instance-health`    | Repeatable (*/5 min)                        | Saúde das instâncias; retoma a fila de prospecção                            | sweep por ciclo                             | 3×                                   |
+| `quotation-prospecting-queue` | Server Action de prospecção                 | Agente Orçamentista: primeiro contato ao fornecedor                          | `prospect:<prospectId>`                     | 5× backoff                           |
 
 - Redis: `REDIS_URL`. Workers rodam em **processo próprio** (`pnpm workers`), nunca no runtime do Next.
 - DLQ: após esgotar tentativas, job vai para `*-failed` com feed `worker.job_failed` + alerta.
-- Ver detalhes de rate limiting em [WHATSAPP_EVOLUTION.md](WHATSAPP_EVOLUTION.md).
 
 ---
 
@@ -235,7 +231,7 @@ EngineInput
 6. Worker: transação atômica {payments→paid · event_tickets→active
    · feed payment.confirmed · feed event.activated}
 7. Motor roda o orçamento completo → budget_snapshots
-8. Cotações geradas → disparo opcional via WhatsApp (fila)
+8. Cotações coletadas → organizadas no painel do evento
 ```
 
 ### 7.2 B2B — Franquia de créditos por assinatura
@@ -250,12 +246,11 @@ EngineInput
 5. Repetição mensal via ciclo da assinatura (Repeatable job + webhook)
 ```
 
-### 7.3 Cotação → WhatsApp
+### 7.3 Coleta de cotações
 
 ```
-quotations criadas (motor) → whatsapp_messages (pending, idempotency_key)
-  → enfileira whatsapp-outbound → rate limiter → Evolution sendText
-  → webhook de status (sent/delivered/read/failed) → updates + feeds
+Fornecedor responde (Instagram/Messenger) → inbound (Meta webhook → fila)
+  → interpretação da cotação (LLM) → rascunho em quotations → painel/cenários
 ```
 
 ---
@@ -272,14 +267,8 @@ quotations criadas (motor) → whatsapp_messages (pending, idempotency_key)
 | `ASAAS_API_URL`                 | server          | `https://api-sandbox.asaas.com/v3` | Base da API                                    |
 | `ASAAS_API_KEY`                 | server          | `$aab_…`                           | Autenticação Asaas                             |
 | `ASAAS_WEBHOOK_TOKEN`           | server          | segredo                            | Validar header do webhook                      |
-| `EVOLUTION_API_URL`             | server/workers  | `http://localhost:8080`            | Base Evolution API                             |
-| `EVOLUTION_API_KEY`             | server/workers  | segredo                            | Header `apikey`                                |
-| `EVOLUTION_INSTANCE`            | server/workers  | `EventeIA`                         | Nome da instância                              |
-| `EVOLUTION_WEBHOOK_TOKEN`       | server          | segredo                            | Validar webhook Evolution                      |
 | `B2C_TICKET_PRICE_CENTS`        | server          | `4700`                             | Preço do tíquete único                         |
 | `ENGINE_TIMEZONE`               | server          | `America/Sao_Paulo`                | Fuso do motor                                  |
-| `WHATSAPP_MIN_INTERVAL_SECONDS` | workers         | `60`                               | Piso do intervalo entre disparos (clamp 45–90) |
-| `WHATSAPP_CREDENTIALS_KEY`      | server          | hex 64 chars                       | Chave AES-256-GCM das credenciais de instância |
 
 > Segredos **nunca** levam prefixo `NEXT_PUBLIC_`. Ver [SECURITY.md](SECURITY.md).
 
@@ -292,7 +281,7 @@ quotations criadas (motor) → whatsapp_messages (pending, idempotency_key)
 | ADR-001 | Asaas como gateway único (Pix dinâmico + cartão) | Custo/benefício, webhook idempotente por `event.id`, conta PF hoje com trilha para PJ |
 | ADR-002 | Dinheiro em centavos inteiros                    | Elimina classe inteira de bugs de arredondamento                                      |
 | ADR-003 | Motor financeiro puro e versionado               | Auditoria, testabilidade, replicabilidade de orçamento                                |
-| ADR-004 | BullMQ + workers em processo separado            | Isolar latência de rede (Asaas/Evolution) do runtime Next                             |
+| ADR-004 | BullMQ + workers em processo separado            | Isolar latência de rede (Asaas) do runtime Next                              |
 | ADR-005 | RLS default-deny em todas as tabelas             | Defesa em profundidade; ver [DATABASE_RLS.md](DATABASE_RLS.md)                        |
 | ADR-006 | Feeds append-only como registro canônico         | Auditoria e timeline derivada; ver [FEEDS.md](FEEDS.md)                               |
 | ADR-007 | Trunk-Based Development                          | Deploy contínuo, PRs pequenos, feature flags                                          |
@@ -305,4 +294,4 @@ quotations criadas (motor) → whatsapp_messages (pending, idempotency_key)
 - **Acessibilidade**: WCAG 2.2 AA; contraste validado contra a paleta oficial ([DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)).
 - **Disponibilidade**: stateless no Next (deploy horizontal); workers idempotentes permitem reinício a qualquer momento.
 - **Observabilidade**: pino (JSON) + feeds de negócio; todo log carrega `correlation_id` do request/job.
-- **LGPD**: minimização, consentimento granular para WhatsApp, trilha de erasure — ver [SECURITY.md](SECURITY.md).
+- **LGPD**: minimização, consentimento de contato, trilha de erasure — ver [SECURITY.md](SECURITY.md).

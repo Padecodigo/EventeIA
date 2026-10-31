@@ -9,8 +9,8 @@ import { ProviderQuotaError, type DiscoveryProvider, type DiscoveryQuery, type F
 /**
  * Pós-processamento DeepSeek sobre fontes reais (OpenStreetMap). O modelo NÃO busca nem
  * inventa contatos: só escolhe índices relevantes, classifica e limpa o nome comercial.
- * Telefone/source_url vêm sempre do candidato original e são revalidados aqui (celular BR,
- * apto a WhatsApp). Mantém o `name` da fonte (ex.: "overpass") para rótulo e limites.
+ * Telefone/source_url vêm sempre do candidato original e são revalidados aqui (celular BR).
+ * Mantém o `name` da fonte (ex.: "overpass") para rótulo e limites.
  */
 export const DEEPSEEK_BASE_URL = "https://api.deepseek.com";
 export const DEEPSEEK_DISCOVERY_MODEL = "deepseek-flash";
@@ -57,7 +57,7 @@ export function applyDeepseekSelection(content: string, raw: readonly SupplierCa
     if (base === undefined || seen.has(k.i)) continue;
     seen.add(k.i);
     const phone = base.phone !== undefined ? parseBrazilPhone(base.phone) : null;
-    if (phone === null || !phone.mobile) continue; // só celular (WhatsApp)
+    if (phone === null || !phone.mobile) continue; // só celular
     const { hint: _hint, ...rest } = base;
     out.push({ ...rest, phone: phone.e164, name: k.name ?? base.name });
     if (out.length >= limit) break;

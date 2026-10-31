@@ -6,8 +6,14 @@ import type { OpResult } from "@/lib/admin/suppliers";
 import { requireAdmin } from "@/lib/auth";
 import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { buildEventPostContent } from "@/lib/prospecting/event-post";
+import {
+  createSupabaseProspectingPostStore,
+  type ProspectingPostRecord,
+} from "@/lib/prospecting/event-post-store";
 import { artForEventType } from "@/lib/prospecting/photos";
 import { createSupabasePostStore, findImageFor } from "@/lib/prospecting/posts-store";
+import { publishEventPost } from "@/lib/prospecting/publish-event-post";
 import { publishPlannedPost } from "@/lib/prospecting/publish-runtime";
 import { QUEUE_NAMES, enqueue } from "@/lib/queue";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -107,6 +113,96 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
 
   if (!outcome.ok) {
     logger.warn({ reason: outcome.reason, error: outcome.error }, "falha ao publicar post de isca");
+    return { ok: false, error: `Falha ao publicar (${outcome.reason}).` };
+  }
+
+  revalidatePath("/admin/prospeccao");
+  return { ok: true };
+}
+
+/**
+ * Aprova e publica o post de prospecção do evento.
+ *
+ * A aprovação é o clique do admin. O conteúdo (legenda e parâmetros de imagem)
+ * é reconstruído no servidor apenas com dados públicos do evento — nunca com
+ * PII do cliente. A publicação usa o client existente do Instagram.
+ */
+export async function approveEventPostAction(
+  _prev: OpResult | null,
+  form: FormData,
+): Promise<OpResult> {
+  await requireAdmin();
+
+  const eventIdRaw = form.get("eventId");
+  if (typeof eventIdRaw !== "string" || eventIdRaw.trim().length === 0) {
+    return { ok: false, error: "Evento inválido." };
+  }
+  const eventId = eventIdRaw.trim();
+
+  const admin = getSupabaseAdmin();
+  const { data: event } = await admin
+    .from("events")
+    .select("id,event_type,event_date,city,city_uf,region_code")
+    .eq("id", eventId)
+    .maybeSingle();
+  if (event === null) {
+    return { ok: false, error: "Evento não encontrado." };
+  }
+
+  const env = serverEnv();
+  const source = {
+    eventId: event.id,
+    eventType: event.event_type,
+    eventDate: event.event_date,
+    city: event.city,
+    region: event.city_uf ?? event.region_code,
+  };
+  const content = buildEventPostContent(source);
+  const imageUrl = `${env.NEXT_PUBLIC_APP_URL}${artForEventType(event.event_type)}`;
+  const store = createSupabaseProspectingPostStore();
+
+  let post: ProspectingPostRecord;
+  try {
+    post = await store.upsert({ ...source, imageUrl, status: "pending_approval" });
+  } catch {
+    return { ok: false, error: "Não foi possível gerar o post de prospecção." };
+  }
+
+  // Provedor browser: o worker publica; aqui apenas enfileiramos o post aprovado.
+  if (env.INSTAGRAM_PROVIDER === "browser") {
+    const queued = await enqueue(QUEUE_NAMES.instagramPublish, "publish", {
+      imageUrl,
+      caption: content.caption,
+      eventId: event.id,
+    });
+    if (!queued) {
+      return { ok: false, error: "Fila indisponível — tente novamente." };
+    }
+    await store.updateStatus(post.id, { status: "approved" });
+    revalidatePath("/admin/prospeccao");
+    return { ok: true };
+  }
+
+  const accessToken = env.META_ACCESS_TOKEN;
+  const igUserId = env.META_INSTAGRAM_BUSINESS_ID;
+  if (accessToken === undefined || igUserId === undefined) {
+    return { ok: false, error: "Configure META_ACCESS_TOKEN e META_INSTAGRAM_BUSINESS_ID." };
+  }
+
+  const outcome = await publishEventPost({
+    post: { id: post.id, caption: content.caption, imageUrl },
+    approved: true,
+    meta: {
+      igUserId,
+      accessToken,
+      apiVersion: env.META_API_VERSION,
+      apiHost: env.META_API_HOST,
+    },
+    store,
+  });
+
+  if (!outcome.ok) {
+    logger.warn({ reason: outcome.reason, error: outcome.error }, "falha ao publicar post de prospecção");
     return { ok: false, error: `Falha ao publicar (${outcome.reason}).` };
   }
 

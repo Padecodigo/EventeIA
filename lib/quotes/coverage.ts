@@ -13,6 +13,14 @@
 
 import { z } from "zod";
 
+import {
+  CATEGORY_LABELS,
+  SUPPLIER_INCLUI_COVERS,
+  normalizeCategoryCode,
+  normalizeSupplierIncluiTag,
+  type CategoryCode,
+  type SupplierIncluiTag,
+} from "@/lib/catalog/v1";
 import { buildAllScenarios, MAX_REQUIRED_CATEGORIES } from "@/lib/engine/scenarios";
 import type { QuoteFee, ScenarioKind, ScenarioOutcome, SupplierQuote } from "@/lib/engine/types";
 import { formatBRL } from "@/lib/money";
@@ -41,6 +49,12 @@ export interface OfferRow {
   fees_cents: number;
   confidence: number | null;
   extraction: unknown;
+  /** Tags do que o fornecedor inclui por padrão (coluna suppliers.inclui). */
+  supplier_inclui?: readonly string[] | null;
+  /** Capacidade máxima de convidados (coluna suppliers.capacidade, só espaço). */
+  supplier_capacidade?: number | null;
+  /** Tipo de espaço (coluna suppliers.tipo_espaco). */
+  supplier_tipo_espaco?: string | null;
 }
 
 interface AddOn {
@@ -91,6 +105,136 @@ function parseExtraction(raw: unknown): {
   };
 }
 
+function supplierTags(row: OfferRow): SupplierIncluiTag[] {
+  return (row.supplier_inclui ?? [])
+    .map((tag) => normalizeSupplierIncluiTag(tag))
+    .filter((tag): tag is SupplierIncluiTag => tag !== null);
+}
+
+/** Tag de "inclui" que representa cada categoria (para achar o que falta num buffet). */
+const CATEGORY_INCLUI_TAG: Partial<Record<string, SupplierIncluiTag>> = {};
+for (const [tag, category] of Object.entries(SUPPLIER_INCLUI_COVERS)) {
+  if (category !== undefined) CATEGORY_INCLUI_TAG[category] = tag as SupplierIncluiTag;
+}
+
+const GAP_SUBJECTS: Record<string, string> = {
+  buffet: "Este buffet",
+  espaco: "Este espaço",
+  som_dj: "Este DJ",
+  banda: "Esta banda",
+  barman: "Este bar",
+  cantor_cerimonia: "Este cantor",
+};
+
+function gapSubject(category: string): string {
+  return GAP_SUBJECTS[category] ?? "Este fornecedor";
+}
+
+/** Rótulos curtos para as mensagens de lacuna (o rótulo do catálogo é longo demais). */
+const GAP_LABELS: Partial<Record<CategoryCode, string>> = {
+  espaco: "espaço",
+  buffet: "buffet",
+  bebidas: "bebidas",
+  garcons: "garçons",
+  louca: "louça",
+  som_dj: "DJ",
+  banda: "banda",
+  cantor_cerimonia: "cantor de cerimônia",
+  barman: "barman",
+  mobiliario: "móveis",
+  limpeza: "limpeza",
+  seguranca: "segurança",
+  transporte: "transporte",
+  gerador: "gerador",
+  decoracao: "decoração",
+  bolo_doces: "bolo e doces",
+  iluminacao: "iluminação",
+};
+
+function gapLabel(categoryName: (c: string) => string, category: string): string {
+  const short = GAP_LABELS[category as CategoryCode];
+  if (short !== undefined) return short;
+  const fromCatalog = CATEGORY_LABELS[category as CategoryCode];
+  return (fromCatalog ?? categoryName(category)).toLowerCase();
+}
+
+function scopeExcludes(extraction: unknown, category: string): boolean {
+  const { scope } = parseExtraction(extraction);
+  return scope.some((s) => s.status === "nao_inclui" && SCOPE_COVERS[s.item] === category);
+}
+
+export interface CoverageGap {
+  category: string;
+  message: string;
+}
+
+/**
+ * Explica lacunas de cobertura em pt-BR e compara a capacidade do espaço com os
+ * convidados. Determinístico: mesma entrada ⇒ mesmas mensagens.
+ */
+export function buildCoverageGaps(
+  wanted: readonly string[],
+  offers: readonly OfferRow[],
+  required: readonly string[],
+  guestCount = 0,
+  categoryName: (c: string) => string = (c) => c,
+): CoverageGap[] {
+  const gaps: CoverageGap[] = [];
+  const seen = new Set<string>();
+  const push = (category: string, message: string) => {
+    const key = `${category}:${message}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    gaps.push({ category, message });
+  };
+  const requiredSet = new Set(required);
+
+  for (const category of wanted) {
+    if (requiredSet.has(category)) continue;
+    const label = gapLabel(categoryName, category);
+    const culprit = offers.find((o) => scopeExcludes(o.extraction, category));
+    if (culprit !== undefined) {
+      push(
+        category,
+        `${gapSubject(normalizeCategoryCode(culprit.category) ?? culprit.category)} não inclui ${label}; vamos buscar à parte.`,
+      );
+      continue;
+    }
+    const missingTag = CATEGORY_INCLUI_TAG[category];
+    const partialBuffet =
+      missingTag !== undefined &&
+      offers.find(
+        (o) =>
+          o.category === "buffet" &&
+          (o.supplier_inclui ?? []).length > 0 &&
+          !supplierTags(o).includes(missingTag),
+      ) !== undefined;
+    if (partialBuffet) {
+      push(category, `Este buffet não inclui ${label}; vamos buscar à parte.`);
+      continue;
+    }
+    push(category, `Não encontramos fornecedor para ${label}; vamos buscar à parte.`);
+  }
+
+  for (const offer of offers) {
+    if (offer.category !== "espaco") continue;
+    const capacity = offer.supplier_capacidade;
+    if (
+      guestCount > 0 &&
+      typeof capacity === "number" &&
+      Number.isInteger(capacity) &&
+      capacity > 0 &&
+      guestCount > capacity
+    ) {
+      push(
+        "espaco",
+        `Este espaço comporta até ${capacity} convidados; o evento tem ${guestCount}. Vamos buscar um espaço maior.`,
+      );
+    }
+  }
+  return gaps;
+}
+
 function subsets<T>(items: readonly T[]): T[][] {
   const out: T[][] = [];
   for (let m = 0; m < 1 << items.length; m += 1)
@@ -105,9 +249,13 @@ export function expandOffer(
 ): { variants: Variant[]; detail: OfferDetail } {
   const { fees, scope, perGuestCents } = parseExtraction(row.extraction);
   const included = scope.filter((s) => s.status === "inclui").map((s) => s.item);
-  const covers = new Set<string>([row.category]);
+  const covers = new Set<string>([normalizeCategoryCode(row.category) ?? row.category]);
   for (const item of included) {
     const c = SCOPE_COVERS[item];
+    if (c !== undefined && required.has(c)) covers.add(c);
+  }
+  for (const tag of supplierTags(row)) {
+    const c = SUPPLIER_INCLUI_COVERS[tag];
     if (c !== undefined && required.has(c)) covers.add(c);
   }
 
@@ -206,6 +354,8 @@ export interface SelectionNote {
 export interface CoverageResult {
   required: string[];
   uncovered: string[];
+  /** Lacunas explicadas em pt-BR (ex.: buffet só com comida) e alertas de capacidade. */
+  gaps: CoverageGap[];
   outcomes: Record<ScenarioKind, ScenarioOutcome>;
   /** Detalhes por seleção (chave = supplierId da seleção/variante). */
   details: Record<ScenarioKind, Record<string, SelectionNote>>;
@@ -221,11 +371,17 @@ export function composeWithCoverage(
   categoryName: (c: string) => string = CATEGORY_NAME,
   guestCount = 0,
 ): CoverageResult {
-  const wantedSet = new Set(wanted);
+  const normalizedWanted = [
+    ...new Set(wanted.map((c) => normalizeCategoryCode(c) ?? c)),
+  ];
+  const wantedSet = new Set(normalizedWanted);
   const expanded = offers.map((o) => expandOffer(o, wantedSet));
   const coverable = new Set(expanded.flatMap((e) => e.variants.flatMap((v) => v.quote.covers)));
-  const required = wanted.filter((c) => coverable.has(c)).slice(0, MAX_REQUIRED_CATEGORIES);
-  const uncovered = wanted.filter((c) => !required.includes(c));
+  const required = normalizedWanted
+    .filter((c) => coverable.has(c))
+    .slice(0, MAX_REQUIRED_CATEGORIES);
+  const uncovered = normalizedWanted.filter((c) => !required.includes(c));
+  const gaps = buildCoverageGaps(normalizedWanted, offers, required, guestCount, categoryName);
   const variants = expanded.flatMap((e) => e.variants);
   const byVariant = new Map(variants.map((v) => [v.quote.supplierId, v]));
   const detailByOffer = new Map(expanded.map((e) => [e.detail.offerId, e.detail]));
@@ -284,5 +440,5 @@ export function composeWithCoverage(
     }
     details[kind] = kindDetails;
   }
-  return { required, uncovered, outcomes, details, overlapFallback };
+  return { required, uncovered, gaps, outcomes, details, overlapFallback };
 }

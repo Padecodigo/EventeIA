@@ -6,6 +6,7 @@ import {
 } from "@/lib/jobs/meta-webhook";
 import type { MetaCommentEvent, MetaInboundMessage } from "@/lib/meta/webhook";
 import type { MetaSupplierLookup } from "@/lib/meta/resolve";
+import type { SupplierConversationStore } from "@/lib/outreach/supplier-conversations";
 import type { ProspectStore } from "@/lib/prospecting/inbound";
 import { shouldAgentRespond } from "@/lib/prospecting/respond";
 import type { RespondDb } from "@/lib/prospecting/supabase-respond";
@@ -16,6 +17,25 @@ function noopStore(): ProspectStore {
     createConversation: async () => ({ id: "c1", status: "open" }),
     insertMessage: async () => true,
     updateConversation: async () => undefined,
+  };
+}
+
+function noopSupplierConversations(): SupplierConversationStore {
+  return {
+    find: async () => null,
+    upsert: async () => ({
+      id: "sc1",
+      channel: "instagram",
+      externalUserId: "111",
+      eventId: null,
+      supplierId: null,
+      ref: null,
+      lastInboundAt: null,
+      windowExpiresAt: null,
+      windowKind: "standard_24h",
+      status: "open",
+    }),
+    insertMessage: async () => true,
   };
 }
 
@@ -63,11 +83,11 @@ function msg(
   text: string,
   senderId = "111",
 ): MetaInboundMessage {
-  return { source, eventId, senderId, recipientId: "1784", text };
+  return { source, eventId, senderId, recipientId: "1784", text, referral: null };
 }
 
 function comment(commentId: string, text: string, senderUsername = "buffet_da_ana"): MetaCommentEvent {
-  return { commentId, text, senderId: "u1", senderUsername, mediaId: null };
+  return { commentId, text, senderId: "u1", senderUsername, mediaId: null, createdTime: null };
 }
 
 function makeDeps(overrides: Partial<MetaWebhookJobDeps> = {}) {
@@ -89,6 +109,7 @@ function makeDeps(overrides: Partial<MetaWebhookJobDeps> = {}) {
     respondDb: {} as RespondDb,
     lookup: {} as MetaSupplierLookup,
     webhookEvents: webhookEvents.db,
+    supplierConversations: noopSupplierConversations(),
     resolveSupplier,
     resolveSupplierByHandle,
     inbound,
@@ -167,6 +188,122 @@ describe("handleMetaWebhookJob", () => {
     );
     expect(sendReply).toHaveBeenCalledTimes(1);
     expect(sendReply.mock.calls[0]?.[0]).toMatchObject({ commentId: "c1", igUserId: "ig-1" });
+  });
+
+  it("comentário fora da janela de 7 dias não envia private reply", async () => {
+    const { deps, sendReply } = makeDeps({
+      resolveSupplierByHandle: vi.fn(async () => ({ id: "s1", name: "Buffet da Ana", category: "buffet" })),
+      inbound: vi.fn(async () => ({
+        action: { action: "private_reply" as const, commentId: "c1" },
+        conversation: { id: "c1", status: "awaiting_human" as const },
+        recorded: true,
+      })),
+    });
+    await handleMetaWebhookJob(
+      {
+        kind: "comment",
+        webhookEventId: "wh1",
+        event: { ...comment("c1", "quero cotação"), createdTime: "2026-10-01T12:00:00.000Z" },
+      },
+      deps,
+    );
+    expect(sendReply).not.toHaveBeenCalled();
+  });
+
+  it("DM com referral de anúncio: ingere a conversa com janela ad_7d", async () => {
+    const recording: SupplierConversationStore = {
+      find: async () => null,
+      upsert: async (input) => ({
+        id: "sc1",
+        channel: input.channel,
+        externalUserId: input.externalUserId,
+        eventId: input.eventId ?? null,
+        supplierId: input.supplierId ?? null,
+        ref: input.ref ?? null,
+        lastInboundAt: input.lastInboundAt.toISOString(),
+        windowExpiresAt: input.windowExpiresAt.toISOString(),
+        windowKind: input.windowKind,
+        status: input.status ?? "open",
+      }),
+      insertMessage: async () => true,
+    };
+    // Captura o input via interceptação do método upsert do store passado.
+    const spy = vi.fn(recording.upsert);
+    const store: SupplierConversationStore = { ...recording, upsert: spy };
+    const { deps } = makeDeps({ supplierConversations: store });
+    await handleMetaWebhookJob(
+      {
+        kind: "message",
+        webhookEventId: "wh1",
+        event: {
+          ...msg("m1", "instagram", "olá"),
+          referral: { ref: "event:aaaaaaaa-0000-4000-8000-000000000001", source: "ADS" },
+        },
+      },
+      deps,
+    );
+    expect(spy).toHaveBeenCalled();
+    expect(spy.mock.calls[0]?.[0]).toMatchObject({
+      windowKind: "ad_7d",
+      ref: "event:aaaaaaaa-0000-4000-8000-000000000001",
+      eventId: "aaaaaaaa-0000-4000-8000-000000000001",
+    });
+  });
+
+  it("DM com o código do post de prospecção vincula a conversa ao evento", async () => {
+    const recording: SupplierConversationStore = {
+      find: async () => null,
+      upsert: async (input) => ({
+        id: "sc1",
+        channel: input.channel,
+        externalUserId: input.externalUserId,
+        eventId: input.eventId ?? null,
+        supplierId: input.supplierId ?? null,
+        ref: input.ref ?? null,
+        lastInboundAt: input.lastInboundAt.toISOString(),
+        windowExpiresAt: input.windowExpiresAt.toISOString(),
+        windowKind: input.windowKind,
+        status: input.status ?? "open",
+      }),
+      insertMessage: async () => true,
+    };
+    const spy = vi.fn(recording.upsert);
+    const store: SupplierConversationStore = { ...recording, upsert: spy };
+    const eventUuid = "aaaaaaaa-0000-4000-8000-000000000001";
+    const findEventIdByCode = vi.fn(async () => eventUuid);
+    const { deps } = makeDeps({ supplierConversations: store, findEventIdByCode });
+
+    await handleMetaWebhookJob(
+      {
+        kind: "message",
+        webhookEventId: "wh1",
+        event: msg("m1", "instagram", "tenho interesse, meu código é EVT-AAAAAAAA"),
+      },
+      deps,
+    );
+
+    expect(findEventIdByCode).toHaveBeenCalledWith("EVT-AAAAAAAA");
+    expect(spy.mock.calls[0]?.[0]).toMatchObject({ eventId: eventUuid });
+  });
+
+  it("referral tem prioridade sobre o código na mensagem", async () => {
+    const eventUuid = "aaaaaaaa-0000-4000-8000-000000000001";
+    const findEventIdByCode = vi.fn(async () => "outro-evento");
+    const { deps } = makeDeps({ findEventIdByCode });
+
+    await handleMetaWebhookJob(
+      {
+        kind: "message",
+        webhookEventId: "wh1",
+        event: {
+          ...msg("m1", "instagram", "código EVT-AAAAAAAA"),
+          referral: { ref: `event:${eventUuid}`, source: "SHORTLINK" },
+        },
+      },
+      deps,
+    );
+
+    expect(findEventIdByCode).not.toHaveBeenCalled();
   });
 
   it("erros durante o processamento propagam para o BullMQ repetir", async () => {

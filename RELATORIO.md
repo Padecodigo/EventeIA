@@ -6,7 +6,7 @@
 
 ## 1. O que é
 
-A **EventeIA** é uma plataforma moderna de **inteligência de custos e cotações** para **Festas Infantis, Aniversários, Casamentos e Eventos Corporativos**. O usuário descreve a festa que imagina; a plataforma calcula um **orçamento determinístico e explicado**, organiza cotações de fornecedores, dispara resumos por WhatsApp e mantém histórico auditável.
+A **EventeIA** é uma plataforma moderna de **inteligência de custos e cotações** para **Festas Infantis, Aniversários, Casamentos e Eventos Corporativos**. O usuário descreve a festa que imagina; a plataforma calcula um **orçamento determinístico e explicado**, organiza cotações de fornecedores e mantém histórico auditável.
 
 > **Slogan:** "Você imagina. A EventeIA faz acontecer."
 > **Frase humanizada:** "A clareza financeira e a inteligência que o seu evento merece."
@@ -29,11 +29,11 @@ A **EventeIA** é uma plataforma moderna de **inteligência de custos e cotaçõ
 
 ### Fluxo B2C — tíquete por evento
 ```
-Cadastro → Perfil (CPF + WhatsApp + consentimento LGPD)
+Cadastro → Perfil (CPF + consentimento LGPD)
 → Criar evento (festa infantil etc.) → prévia mascarada do orçamento
 → Checkout Pix (Asaas) com CUPOM OPCIONAL (desconto sempre no servidor)
 → Webhook PAYMENT_RECEIVED (idempotente) → tíquete ativo em transação SQL
-→ Orçamento completo liberado → cotações → resumo por WhatsApp
+→ Orçamento completo liberado → cotações organizadas no painel
 → 1–30 dias após o evento: convite automático de depoimento
 → Moderação (/admin) → vitrine
 ```
@@ -65,7 +65,7 @@ Workspace do ateliê → Assinar plano (Asaas subscription, Pix mensal)
 | Banco/Auth | Supabase (PostgreSQL + Auth + RLS) — 10 migrações, pgTAP |
 | Pagamentos | Asaas API v3 (Pix, cartão, assinatura, conciliação) |
 | Filas | BullMQ + Redis — 5 workers, jobs diários (America/Sao_Paulo) |
-| WhatsApp | Evolution API (self-hosted) + templates com opt-out |
+| Mensageria | Meta Graph API (Instagram Direct + Messenger) |
 | Testes | Vitest (unit) + Testing Library/jsdom (componentes) + pgTAP + E2E local |
 | Qualidade/CI | ESLint estrito · knip · pnpm audit · Lighthouse CI (perf ≥90, a11y ≥95) · GitHub Actions |
 | Governança | AGENTS.md + 8 docs em `.context/` (fonte da verdade) |
@@ -84,7 +84,7 @@ Cupom demo: **BEMVINDA10** (10% no tíquete) — redenção contada só na confi
 ## 6. O que já está pronto
 
 - **Marketing**: home com **fotos em primeiro lugar** (festa infantil, celebração, casamento + ilustração), `/como-funciona`, `/para-planners`, `/planos`; depoimentos com personas (São José dos Campos, Taubaté, São Paulo, Jacareí) que cedem lugar a casos reais; login com olho mostrar/ocultar senha — 100% server-side.
-- **Produto**: painel com **histórico**, eventos (7 tipos), orçamento prévia→liberado, checkout Pix **com cupom**, ativação por crédito (B2B), cotações + resumo WhatsApp, créditos (assinatura mensal + pacotes + extrato), perfil com consentimento LGPD, `/admin/depoimentos` (moderação).
+- **Produto**: painel com **histórico**, eventos (7 tipos), orçamento prévia→liberado, checkout Pix **com cupom**, ativação por crédito (B2B), cotações organizadas, créditos (assinatura mensal + pacotes + extrato), perfil com consentimento LGPD, `/admin/depoimentos` (moderação).
 - **Pagamentos**: webhook idempotente, assinatura recorrente com concessão automática (0009), conciliação diária (09:30), expiração FIFO (11:00), cupons com redenção por trigger (0010).
 - **Qualidade**: 82+ testes (unit + componentes) · E2E local 20 asserções · migrações validadas em Postgres limpo · Lighthouse alinhado (contraste AA recalculado para a paleta nova).
 
@@ -92,7 +92,7 @@ Cupom demo: **BEMVINDA10** (10% no tíquete) — redenção contada só na confi
 
 | Prioridade | Item |
 |---|---|
-| 🔴 Alta | Contas reais Asaas + Evolution (API keys) e número de WhatsApp |
+| 🔴 Alta | Contas reais Asaas + Meta (API keys) e Instagram/Messenger |
 | 🔴 Alta | Fotos reais dos eventos (com autorização) substituindo as de conceito |
 | 🔴 Alta | Deploy (Vercel + Supabase cloud + Redis gerenciado; remover rotas demo; domínio EventeIA.com) |
 | 🟡 Média | Timeline de feeds com filtros · reembolsos via API Asaas · gestão de cupons em tela admin (hoje via SQL/seed) |

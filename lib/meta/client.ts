@@ -3,8 +3,7 @@
  *
  * ⚠️ Regra da plataforma: NÃO há abordagem fria. Estes clientes só respondem a
  * quem já falou com a conta (janela de 24h). Enviar a primeira mensagem a um
- * fornecedor que não nos procurou é violação e derruba a conta. O papel de
- * prospecção NÃO é atendido por aqui (ver .context/WHATSAPP_EVOLUTION.md).
+ * fornecedor que não nos procurou é violação e derruba a conta.
  */
 
 export type MetaSendResult =

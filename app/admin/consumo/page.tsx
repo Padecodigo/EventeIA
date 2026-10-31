@@ -4,7 +4,7 @@ import { PROVIDER_LABELS } from "@/lib/finance/load";
 import { formatBRL } from "@/lib/money";
 import { loadUsage } from "@/lib/usage/load";
 import { buildUsageReport, closedOutsideSummary, filtersToQuery, parseUsageFilters, type UsageDay } from "@/lib/usage/report";
-import { CHANNEL_LABELS, PROCESS_STAGES, STAGE_LABELS, WHATSAPP_CHANNELS, type ProcessStage, type WhatsAppChannel } from "@/lib/usage/stages";
+import { CHANNEL_LABELS, LEGACY_CHANNELS, PROCESS_STAGES, STAGE_LABELS, type LegacyChannel, type ProcessStage } from "@/lib/usage/stages";
 
 import { markClosedOutsideAction } from "./actions";
 
@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 const fmtInt = (n: number) => n.toLocaleString("pt-BR");
 const usd = (micro: number) => `US$ ${(micro / 1_000_000).toFixed(4)}`;
 const stageLabel = (s: ProcessStage | null) => (s === null ? "—" : STAGE_LABELS[s]);
-const channelLabel = (c: WhatsAppChannel | null) => (c === null ? "—" : CHANNEL_LABELS[c]);
+const channelLabel = (c: LegacyChannel | null) => (c === null ? "—" : CHANNEL_LABELS[c]);
 const input = "rounded-full border border-line-subtle bg-off-white px-3 py-2 text-sm";
 const card = "rounded-card border border-line-subtle bg-off-white p-5 shadow-soft";
 
@@ -87,9 +87,9 @@ export default async function UsagePage({ searchParams }: { searchParams: Promis
             {PROCESS_STAGES.map((s) => <option key={s} value={s}>{STAGE_LABELS[s]}</option>)}
             <option value="none">Sem estágio</option>
           </select></label>
-          <label className="flex flex-col gap-1 text-caption font-semibold text-vinho/80">Canal WhatsApp<select name="channel" defaultValue={filters.channel ?? ""} className={input} aria-label="Canal WhatsApp">
+          <label className="flex flex-col gap-1 text-caption font-semibold text-vinho/80">Canal (legado)<select name="channel" defaultValue={filters.channel ?? ""} className={input} aria-label="Canal (legado)">
             <option value="">Todos os canais</option>
-            {WHATSAPP_CHANNELS.map((c) => <option key={c} value={c}>{CHANNEL_LABELS[c]}</option>)}
+            {LEGACY_CHANNELS.map((c) => <option key={c} value={c}>{CHANNEL_LABELS[c]}</option>)}
             <option value="none">Sem canal</option>
           </select></label>
           <label className="flex flex-col gap-1 text-caption font-semibold text-vinho/80">Provedor<select name="provider" defaultValue={filters.provider ?? ""} className={input} aria-label="Provedor">
@@ -149,7 +149,7 @@ export default async function UsagePage({ searchParams }: { searchParams: Promis
       <section className="flex flex-col gap-3">
         <h2 className="font-serif text-title-1">Fechamentos por fora</h2>
         <p className="text-sm text-vinho/70">
-          Clientes que fecharam direto com o fornecedor (ex.: pelo próprio WhatsApp via Evolution) antes de consolidarmos a proposta.
+          Clientes que fecharam direto com o fornecedor (ex.: pelo contato direto nas redes) antes de consolidarmos a proposta.
         </p>
         <ul className="flex flex-wrap gap-2 text-sm">
           {closed.length === 0 ? <li className="text-caption text-vinho/70">Nenhum no período.</li> : closed.map((c) => (
@@ -173,7 +173,7 @@ export default async function UsagePage({ searchParams }: { searchParams: Promis
           </select></label>
           <label className="flex flex-col gap-1 text-caption font-semibold text-vinho/80">Canal do fechamento<select name="channel" defaultValue="" className={input} aria-label="Canal do fechamento">
             <option value="">Canal do evento</option>
-            {WHATSAPP_CHANNELS.map((c) => <option key={c} value={c}>{CHANNEL_LABELS[c]}</option>)}
+            {LEGACY_CHANNELS.map((c) => <option key={c} value={c}>{CHANNEL_LABELS[c]}</option>)}
           </select></label>
           <button className="rounded-full border border-line-strong px-4 py-2 text-sm font-semibold">Marcar fechamento por fora</button>
           <p className="w-full text-caption text-vinho/60">Lançamento manual: informe o evento; estágio e canal em branco usam os atuais do evento.</p>

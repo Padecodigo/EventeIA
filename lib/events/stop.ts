@@ -62,7 +62,7 @@ export async function stopEventBackgroundWork(eventId: string): Promise<void> {
 
 /** Remove os jobs de fim da coleta (24h/meta) de um evento excluído. */
 export function removeScheduledEventJobs(eventId: string, ownerProfileId: string): void {
-  // WhatsApp/Evolution removidos: não há mais jobs de sessão a remover.
+  // Não há mais jobs de sessão a remover.
   void eventId;
   void ownerProfileId;
 }

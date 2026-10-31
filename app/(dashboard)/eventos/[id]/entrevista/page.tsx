@@ -31,7 +31,7 @@ export default async function EventInterviewPage({ params }: { params: Promise<{
   const initialAnswers = saved !== null && saved.success ? saved.data : defaultAnswers(eventType);
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex scroll-mt-24 flex-col gap-8">
       <header>
         <p className="text-overline uppercase tracking-[0.14em] text-vinho/75">Entrevista do evento</p>
         <h1 className="mt-2 font-serif text-display-2 font-display">{event.title}</h1>

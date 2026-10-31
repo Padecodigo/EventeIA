@@ -58,8 +58,7 @@ async function burnByProvider(): Promise<Map<string, number>> {
   ]);
   const sums = new Map<string, number[]>();
   for (const r of [...(entries.data ?? []), ...(llm.data ?? [])]) {
-    const p = r.provider === "whatsapp" ? "whatsapp" : r.provider;
-    sums.set(p, [...(sums.get(p) ?? []), r.cost_brl_cents ?? 0]);
+    sums.set(r.provider, [...(sums.get(r.provider) ?? []), r.cost_brl_cents ?? 0]);
   }
   return new Map([...sums].map(([p, v]) => [p, dailyBurn(v, BURN_WINDOW_DAYS)]));
 }

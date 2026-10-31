@@ -1,6 +1,6 @@
 # Teste local ponta a ponta — EventeIA (guia verificado)
 
-Roteiro **executado de verdade** em 24/10/2026 (Fedora, 7,7 GB RAM) contra Supabase local + Redis/Evolution via Docker.
+Roteiro **executado de verdade** em 24/10/2026 (Fedora, 7,7 GB RAM) contra Supabase local + Redis via Docker.
 Cada passo tem o comando, a **saída esperada (✅ checkpoint)** e o que fazer se falhar.
 
 > Regras: nunca commite nem imprima o `.env.local`; Asaas só **sandbox**; migrations só no banco **local**; sem deploy.
@@ -38,27 +38,22 @@ SUPABASE_SERVICE_ROLE_KEY=<166 chars>
 REDIS_URL="redis://localhost:6379"
 ASAAS_API_URL="https://api-sandbox.asaas.com/v3"     ← sandbox, nunca produção
 ASAAS_WEBHOOK_TOKEN=<29 chars>                       ← obrigatório p/ simulate-payment
-EVOLUTION_API_URL="http://localhost:8080"
-EVOLUTION_API_KEY=<50 chars>  EVOLUTION_INSTANCE=<..>  EVOLUTION_WEBHOOK_TOKEN=<..>
 ```
 
 - Chaves do Supabase local: `supabase status -o env` (copie ANON/SERVICE_ROLE para o `.env.local`, sem colar em chat/log).
 - `ASAAS_API_KEY` vazio/curto ⇒ checkout real não funciona, mas **o fluxo local usa o pagamento simulado** (passo 3) e não precisa dela.
 - `DEEPSEEK_API_KEY` vazio ⇒ extrator **mock**; `RESEND_API_KEY` vazio ⇒ e-mail **mock** (logado com e-mail mascarado).
 
-### 1.2 Redis (BullMQ + ritmo 45–90 s) e Evolution via Docker
+### 1.2 Redis via Docker
 
 ```bash
 docker compose -f docker-compose.dev.yml --env-file .env.local up -d
 docker compose -f docker-compose.dev.yml ps
 docker exec eventeia-dev-redis-1 redis-cli ping                          # ✅ PONG
 docker exec eventeia-dev-redis-1 redis-cli config get maxmemory-policy   # ✅ noeviction (BullMQ exige)
-curl -s -o /dev/null -w '%{http_code}\n' localhost:8080                 # ✅ 200 (Evolution no ar)
 ```
 
 - `noeviction` é obrigatório: com outra política o Redis pode apagar jobs/locks do BullMQ sob pressão de memória.
-- O **ritmo humanizado de 45–90 s** é reservado atomicamente no Redis **por instância** na chave
-  `eventeia:prospect-pace:<instância>` (`lib/queue/prospecting-pacing.ts`). A chave só aparece depois do 1º envio real.
 
 ## 2. App, workers e testes
 
@@ -72,7 +67,7 @@ pnpm workers > /tmp/eventeia-workers.log 2>&1 &   # BullMQ (tsx + .env.local)
 ✅ Log dos workers:
 
 ```
-"queues":["asaas-webhooks","whatsapp-outbound",...,"quotation-prospecting-queue","whatsapp-session-lifecycle"],"msg":"workers da EventeIA online"
+"queues":["asaas-webhooks",...,"quotation-prospecting-queue"],"msg":"workers da EventeIA online"
 ```
 
 ✅ Filas registradas no Redis:
@@ -145,7 +140,7 @@ O agente é acionado ao **cadastrar um fornecedor** no evento (server action `ad
 
 1. Login demo (só local): `http://localhost:3000/demo/entrar?secret=<DEMO_LOGIN_SECRET>&user=ana`
    (use `localhost`, não `127.0.0.1` — o cookie da sessão é por host).
-2. Abra `/eventos/<EV>` → **Prospectar fornecedor** → nome, categoria e WhatsApp (ex.: `12 99999-0001`).
+2. Abra `/eventos/<EV>` → **Prospectar fornecedor** → nome, categoria e telefone (ex.: `12 99999-0001`).
 
 ✅ Mensagem: *"Fornecedor na fila de prospecção. O disparo respeita o intervalo humanizado."*
 
@@ -154,22 +149,14 @@ Conferir job no BullMQ e no banco:
 ```bash
 R="docker exec eventeia-dev-redis-1 redis-cli"
 $R --scan --pattern 'bull:quotation-prospecting-queue:prospect-*'          # ✅ 1 job prospect-<id>
-$R zcard bull:quotation-prospecting-queue:delayed                           # ✅ 1 (aguardando sessão)
+$R zcard bull:quotation-prospecting-queue:delayed                           # ✅ 1 (aguardando)
 $P -c "select vendor_name,status from vendor_prospects where event_id='$EV'"    # ✅ Buffet ...|pending
-$P -c "select instance_name,status from whatsapp_instances order by created_at desc limit 1"  # ✅ eventeia-xxxx|connecting
 ```
 
-### 3.4 Comportamento do worker sem celular pareado (verificado)
+### 3.4 Contato com fornecedores via Meta (Instagram/Messenger)
 
-| Situação | O que o worker faz | Checkpoint |
-| --- | --- | --- |
-| Instância `connecting` (QR ainda não lido) | adia o job 60 s **sem gastar tentativa** | job em `delayed`, `attemptsMade` vazio |
-| Instância marcada ativa, mas inexistente na Evolution (HTTP 404 *"instance does not exist"*) | trata como **sessão perdida**: desconecta a instância, pausa o evento, cria notificação `quotations_ready` (motivo `session_lost`) e envia e-mail (mock) | log `notificação quotations_ready ... "reason":"session_lost"`; `whatsapp_instances.status = disconnected`; job volta a `delayed` sem queimar tentativas |
-| Celular pareado (estado `open`) | reserva o slot 45–90 s, envia texto puro, marca `vendor_prospects.status = sent` | log `prospecção enviada ao fornecedor` + chave `eventeia:prospect-pace:*` |
-
-Para simular a sessão ativa sem celular (apenas local): `$P -c "update whatsapp_instances set status='active' where instance_name='eventeia-xxxx'"` e observe o log dos workers.
-
-**Envio real** (precisa de você): conecte o WhatsApp de teste pelo QR Code no painel do evento (ou Evolution Manager em `http://localhost:8080/manager`). Ao ficar `open` a prospecção começa; ao fim da coleta (5 cotações por categoria ou 24h, o que vier primeiro) as cotações são entregues e só então a instância é desconectada por segurança e aparece o toast *"Busca finalizada..."*.
+O contato de saída acontece pela Meta Graph API (Instagram Direct/Messenger), somente como resposta
+a quem já interagiu com a conta (janela de 24h). Não há abordagem fria.
 
 ## 4. Encerrar
 
@@ -178,7 +165,7 @@ pkill -f "workers/index.ts"                         # para os workers
 docker compose -f docker-compose.dev.yml stop       # pausa a infra (mantém volumes)
 ```
 
-Não use `down -v` se quiser manter as instâncias do WhatsApp e os dados do Redis.
+Não use `down -v` se quiser manter os dados do Redis.
 
 ## 5. Troubleshooting
 
@@ -190,9 +177,8 @@ Não use `down -v` se quiser manter as instâncias do WhatsApp e os dados do Red
 | Evento continua "Aguardando pagamento" após pagar | migration `0014` não aplicada | `supabase migration up` |
 | Demo login volta para `/entrar` | acesso por `127.0.0.1` | use `http://localhost:3000` |
 | "A fila de disparos está indisponível" | Redis fora do ar / `REDIS_URL` errado | `docker compose ... up -d redis` e `redis-cli ping` |
-| Job de prospecção falha 5× com `Evolution HTTP 404` | versão anterior ao fix desta PR | atualize; agora vira pausa graciosa (sessão perdida) |
-| Porta 6379 ocupada | Redis já rodando no host | suba só `evolution-db evolution-api` ou mapeie `127.0.0.1:6380:6379` + `REDIS_URL=redis://localhost:6380` |
+| Porta 6379 ocupada | Redis já rodando no host | mapeie `127.0.0.1:6380:6379` + `REDIS_URL=redis://localhost:6380` |
 | CSS/tema antigo após mudar Tailwind | cache do dev server | pare o `next dev`, `rm -rf .next/cache .next/static/css` e suba de novo |
 | `Watchpack Error ... ENOTDIR /tmp/.mount_*` no log | AppImage montado em /tmp | inofensivo, ignore |
 
-Consumo aproximado: Redis ~10 MB, Evolution ~250–400 MB, Postgres da Evolution ~50 MB, workers ~200 MB, `next dev` ~1–1,5 GB.
+Consumo aproximado: Redis ~10 MB, workers ~200 MB, `next dev` ~1–1,5 GB.

@@ -32,6 +32,8 @@ export interface Database {
         display_name: string;
         email: string | null;
         phone_e164: string | null;
+        contact_whatsapp_e164: string | null;
+        instagram_handle: string | null;
         document_type: "cpf" | "cnpj";
         document_number: string | null;
         asaas_customer_id: string | null;
@@ -69,6 +71,9 @@ export interface Database {
         event_date: string;
         region_code: string;
         guest_count: number;
+        venue_capacity: number | null;
+        venue_type: string | null;
+        event_style: string | null;
         status: "draft" | "awaiting_payment" | "active" | "completed" | "canceled";
         city: string | null;
         city_uf: string | null;
@@ -115,7 +120,7 @@ export interface Database {
         vendor_name: string;
         vendor_contact: string | null;
         amount_cents: number;
-        status: "draft" | "sent" | "confirmed" | "declined" | "expired";
+        status: "draft" | "sent" | "confirmed" | "declined" | "expired" | "repassado";
         engine_version: string;
         prospect_id: string | null;
         supplier_id: string | null;
@@ -126,8 +131,25 @@ export interface Database {
         fees_cents: number;
         needs_followup: boolean;
         followup_count: number;
+        repassado_at: string | null;
         updated_at: string;
         created_at: string;
+      }>;
+      contact_handoff_consents: Table<{
+        id: string;
+        event_id: string;
+        quotation_id: string;
+        supplier_id: string | null;
+        profile_id: string;
+        consent_text: string;
+        consent_version: string;
+        accepted_at: string;
+        delivery_status: "consentido" | "repassado" | "link" | "canal_fechado" | "indisponivel";
+        delivery_channel: "instagram" | "messenger" | "email" | "link" | null;
+        delivered_at: string | null;
+        fallback_url: string | null;
+        created_at: string;
+        updated_at: string;
       }>;
       quotation_choices: Table<{
         id: string;
@@ -351,8 +373,12 @@ export interface Database {
         source_url: string;
         source_provider: string;
         external_id: string | null;
+        contact_email: string | null;
         city: string | null;
         region_code: string | null;
+        inclui: string[];
+        capacidade: number | null;
+        tipo_espaco: string | null;
         opt_out_at: string | null;
         last_contacted_at: string | null;
         first_seen_at: string;
@@ -372,6 +398,80 @@ export interface Database {
         status: "ok" | "error" | "skipped";
         error: string | null;
         created_at: string;
+      }>;
+      prospecting_posts: Table<{
+        id: string;
+        event_id: string;
+        event_code: string;
+        event_type: string;
+        event_date: string;
+        city: string | null;
+        region: string | null;
+        caption: string;
+        image_url: string | null;
+        image_params: Json;
+        status: "draft" | "pending_approval" | "approved" | "published" | "failed";
+        ig_media_id: string | null;
+        error: string | null;
+        published_at: string | null;
+        created_at: string;
+        updated_at: string;
+      }>;
+      supplier_conversations: Table<{
+        id: string;
+        event_id: string | null;
+        supplier_id: string | null;
+        channel: "instagram" | "messenger";
+        external_user_id: string;
+        ref: string | null;
+        last_inbound_at: string | null;
+        window_expires_at: string | null;
+        window_kind: "standard_24h" | "ad_7d";
+        status: "open" | "canal_fechado" | "opted_out";
+        created_at: string;
+        updated_at: string;
+      }>;
+      supplier_conversation_messages: Table<{
+        id: string;
+        conversation_id: string;
+        direction: "in" | "out";
+        body: string;
+        moderated: boolean;
+        external_id: string | null;
+        author: "user" | "agent" | "system" | null;
+        created_at: string;
+      }>;
+      supplier_options: Table<{
+        id: string;
+        supplier_id: string;
+        name: string;
+        description: string | null;
+        price_cents: number | null;
+        unit: "por_pessoa" | "por_hora" | "unidade" | "pacote";
+        source_message_id: string | null;
+        active: boolean;
+        created_at: string;
+        updated_at: string;
+      }>;
+      supplier_selections: Table<{
+        id: string;
+        event_id: string;
+        supplier_id: string;
+        option_id: string | null;
+        option_snapshot: Json;
+        status:
+          | "pendente"
+          | "enviado_ao_fornecedor"
+          | "aguardando_resposta"
+          | "respondido"
+          | "canal_fechado"
+          | "indisponivel";
+        chosen_by_profile_id: string | null;
+        conversation_id: string | null;
+        relayed_at: string | null;
+        supplier_responded_at: string | null;
+        created_at: string;
+        updated_at: string;
       }>;
       llm_usage_events: Table<{
         id: string;

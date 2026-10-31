@@ -69,7 +69,7 @@ export function serviceLd(ticketPriceCents: number, base: string = siteUrl()): J
   return {
     "@type": ["Service", "SoftwareApplication"],
     "@id": `${base}/#service`,
-    name: `${SITE_NAME} — orçamento de festa pelo WhatsApp`,
+    name: `${SITE_NAME} — orçamento de festa`,
     serviceType: "Cotação e comparação de fornecedores para eventos",
     applicationCategory: "BusinessApplication",
     operatingSystem: "Web",

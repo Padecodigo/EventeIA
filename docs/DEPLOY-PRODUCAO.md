@@ -7,8 +7,6 @@ Cloudflare (DNS proxied, WAF, SSL Full strict)
 Hetzner CX33 (4 vCPU / 8 GB, Ubuntu 24.04) — Docker + Coolify (Traefik)
   ├─ app            Next.js 15 standalone  (público: APP_DOMAIN)
   ├─ worker         mesma imagem, `node workers.cjs` (BullMQ, sem porta)
-  ├─ evolution-api  evoapicloud/evolution-api:v2.3.7 (público: EVOLUTION_DOMAIN)
-  ├─ evolution-db   postgres:16-alpine (interno)
   └─ redis          redis:7-alpine, AOF + senha (interno)
         │
         ▼
@@ -21,10 +19,8 @@ O `docker-compose.dev.yml` continua sendo só para desenvolvimento local.
 ## Decisões
 
 - **Worker separado do app (mesma imagem).** Falha/OOM/backlog de fila não derruba o site, e é possível reiniciar/escalar os workers sozinhos. `workers/index.ts` é empacotado com esbuild (`pnpm build:workers` → `dist/workers.cjs`), então o runtime não precisa de `tsx` nem de `node_modules` completos.
-- **Postgres próprio para a Evolution (não Supabase).** A Evolution v2 roda migrations Prisma próprias e grava muito (mensagens, contatos, chats, sessões Baileys). No Supabase isso (a) mistura um schema de terceiros com os dados do app e com as políticas RLS, (b) consome conexões e cota de disco/IO do plano e (c) adiciona latência de rede a cada evento do WhatsApp. Um `postgres:16-alpine` local com 512 MB é suficiente, fica na rede interna e tem backup independente. Os dados de negócio continuam 100% no Supabase.
-- **Redis sem porta pública**, com `requirepass`, AOF `everysec` e `maxmemory-policy noeviction` (obrigatório para BullMQ: nunca descartar jobs). BullMQ usa DB 0, Evolution usa DB 6.
-- **Webhook da Evolution → app pela rede Docker** (`http://app:3000/api/webhooks/evolution?token=…`): não passa pela Cloudflare nem sai do servidor.
-- **Limites de memória** (somam ~5,3 GB; ~2,7 GB ficam para SO, Docker, Coolify e Traefik): app 1,5 GB · worker 1 GB · evolution 1,5 GB · evolution-db 512 MB · redis 640 MB (maxmemory 512 MB).
+- **Redis sem porta pública**, com `requirepass`, AOF `everysec` e `maxmemory-policy noeviction` (obrigatório para BullMQ: nunca descartar jobs).
+- **Limites de memória** (somam ~2,1 GB; ~5,9 GB ficam para SO, Docker, Coolify e Traefik): app 1,5 GB · worker 1 GB · redis 640 MB (maxmemory 512 MB).
 - **`NEXT_PUBLIC_*` são build args**: mudar URL/anon key do Supabase exige rebuild.
 
 ## 1. Servidor (Hetzner)
@@ -49,10 +45,7 @@ O `docker-compose.dev.yml` continua sendo só para desenvolvimento local.
 | Tipo | Nome | Conteúdo | Proxy |
 |---|---|---|---|
 | A | `app` (ou `@`) | IPv4 da Hetzner | Proxied (nuvem laranja) |
-| A | `api.whatsapp` | IPv4 da Hetzner | Proxied |
 | AAAA (opcional) | idem | IPv6 da Hetzner | Proxied |
-
-> `api.whatseventeia.com.br` é subdomínio de 2º nível: o certificado Universal gratuito da Cloudflare cobre só `*.eventeia.com.br`. Use **Advanced Certificate Manager** ou troque para um nome de 1 nível, ex. `whatsapp-api.eventeia.com.br` (recomendado, sem custo). Ajuste `EVOLUTION_DOMAIN`.
 
 ## 3. Cloudflare — SSL/TLS
 
@@ -62,7 +55,6 @@ O `docker-compose.dev.yml` continua sendo só para desenvolvimento local.
    - **B) Let's Encrypt via DNS-01:** criar API Token Cloudflare (Zone:DNS:Edit só desta zona); no Coolify configurar o Traefik com `--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare` e env `CF_DNS_API_TOKEN`. HTTP-01 funciona atrás do proxy na maioria dos casos, mas DNS-01 é o mais robusto.
 3. **Não cachear API/webhooks** — Caching → Cache Rules:
    - Regra "Bypass API": `(http.host eq "eventeia.com.br" and starts_with(http.request.uri.path, "/api/"))` → *Bypass cache*.
-   - Regra "Bypass Evolution": `http.host eq "<EVOLUTION_DOMAIN>"` → *Bypass cache*.
    - Security → WAF: não aplicar challenge/Bot Fight em `/api/webhooks/*` (Asaas é server-to-server; um challenge quebra o webhook). Crie uma *Skip rule* para esse path.
    - Desative *Rocket Loader* (quebra o CSP/hidratação do Next).
 
@@ -83,9 +75,9 @@ supabase test db --linked   # opcional: testes RLS contra o remoto (cuidado: nun
 1. Sources → GitHub App → conectar `Padecodigo/EventeIA` (privado).
 2. Project → New Resource → **Docker Compose** → branch `main` → arquivo `docker-compose.prod.yml`.
 3. Environment Variables: colar todas de `.env.production.example` com valores reais (marcar segredos como *Secret*; `NEXT_PUBLIC_*` também como *Build Variable*).
-4. Domínios: o compose já traz labels Traefik (`APP_DOMAIN`, `EVOLUTION_DOMAIN`). Se preferir a UI do Coolify para domínios, remova as labels para não duplicar routers.
-5. Gerar segredos: `openssl rand -hex 32` para `REDIS_PASSWORD`, `EVOLUTION_DB_PASSWORD`, `EVOLUTION_API_KEY`, `*_WEBHOOK_TOKEN`, `WHATSAPP_CREDENTIALS_KEY`.
-6. Deploy. Verificar: todos os containers `healthy`; `curl -I https://eventeia.com.br/api/health` → 200; `https://<EVOLUTION_DOMAIN>/` responde com a versão.
+4. Domínios: o compose já traz labels Traefik (`APP_DOMAIN`). Se preferir a UI do Coolify para domínios, remova as labels para não duplicar routers.
+5. Gerar segredos: `openssl rand -hex 32` para `REDIS_PASSWORD`, `*_WEBHOOK_TOKEN`.
+6. Deploy. Verificar: todos os containers `healthy`; `curl -I https://eventeia.com.br/api/health` → 200.
 7. Ativar *Auto Deploy* por webhook do GitHub no push em `main` (após CI verde).
 
 ## 6. Webhooks
@@ -93,7 +85,7 @@ supabase test db --linked   # opcional: testes RLS contra o remoto (cuidado: nun
 | Origem | URL | Autenticação |
 |---|---|---|
 | Asaas (Integrações → Webhooks) | `https://eventeia.com.br/api/webhooks/asaas` | campo *Token de autenticação* = `ASAAS_WEBHOOK_TOKEN` (header `asaas-access-token`) |
-| Evolution (global, interno) | `http://app:3000/api/webhooks/evolution?token=<EVOLUTION_WEBHOOK_TOKEN>` | já setado no compose |
+| Meta (Webhooks) | `https://eventeia.com.br/api/meta/webhook` | `X-Hub-Signature-256` (App Secret) |
 
 Asaas: cadastrar o webhook **separadamente** no sandbox e na produção; eventos de cobrança (`PAYMENT_*`). Fila de sincronização: se ficar interrompida (>15 falhas), reativar no painel.
 
@@ -101,8 +93,6 @@ Asaas: cadastrar o webhook **separadamente** no sandbox e na produção; eventos
 
 ```bash
 # /etc/cron.d/eventeia-backup  (diário 03:00), depois enviar para Hetzner Storage Box / S3 (restic/rclone)
-docker exec eventeia-evolution-db-1 pg_dump -U evolution -Fc evolution > /backup/evolution-$(date +%F).dump
-docker run --rm -v eventeia_evolution-instances:/v -v /backup:/b alpine tar czf /b/evolution-instances-$(date +%F).tgz -C /v .
 docker exec eventeia-redis-1 sh -c 'redis-cli BGSAVE'; sleep 5
 docker run --rm -v eventeia_redis-data:/v -v /backup:/b alpine tar czf /b/redis-$(date +%F).tgz -C /v .
 find /backup -mtime +14 -delete
@@ -114,7 +104,7 @@ find /backup -mtime +14 -delete
 ## 8. Monitoramento e logs
 
 - Logs: `docker logs -f <container>` ou aba Logs do Coolify (rotação json-file 20 MB × 5 já configurada).
-- Uptime externo (UptimeRobot / Better Stack) em `/api/health` e no domínio da Evolution; alerta por e-mail/WhatsApp.
+- Uptime externo (UptimeRobot / Better Stack) em `/api/health`; alerta por e-mail.
 - Coolify → Notifications (e-mail/Discord/Telegram) para falha de deploy e container unhealthy.
 - Métricas do host: Coolify *Sentinel* ou Netdata; alerta de disco > 80% e RAM.
 - Filas: acompanhar jobs `failed` no Redis (ex.: Bull Board protegido, ou `redis-cli` via `docker exec`). Nunca expor o Redis.
@@ -127,10 +117,10 @@ find /backup -mtime +14 -delete
 - [ ] `DEMO_LOGIN_ENABLED=false` e nenhuma variável `DEMO_*` definida; rota `/api/dev/*` inacessível em produção.
 - [ ] Revisão de segurança: RLS em todas as tabelas, service role só no servidor, CSP, rate limit nos webhooks, tokens rotacionados, `.env*` fora do git.
 - [ ] Substituir depoimentos de exemplo por depoimentos reais (com consentimento).
-- [ ] LGPD: Política de Privacidade e Termos de Uso publicados, base legal para contato via WhatsApp, canal do encarregado (DPO), retenção/exclusão de dados.
+- [ ] LGPD: Política de Privacidade e Termos de Uso publicados, base legal para contato, canal do encarregado (DPO), retenção/exclusão de dados.
 - [ ] Supabase: migrations aplicadas (`supabase db push`), URLs de Auth corretas, plano com backup.
-- [ ] Cloudflare: Full (strict), regras de bypass de cache em `/api/*` e Evolution, WAF sem challenge em webhooks.
+- [ ] Cloudflare: Full (strict), regras de bypass de cache em `/api/*`, WAF sem challenge em webhooks.
 - [ ] ufw ativo (22/80/443), SSH só por chave, fail2ban, unattended-upgrades.
 - [ ] Backups agendados e restauração testada.
 - [ ] Uptime monitor e notificações do Coolify ativos.
-- [ ] Teste ponta a ponta: cadastro → pagamento (Asaas) → webhook → crédito; conexão WhatsApp (QR) → mensagem → webhook → worker.
+- [ ] Teste ponta a ponta: cadastro → pagamento (Asaas) → webhook → crédito; contato via Meta → mensagem → webhook → worker.

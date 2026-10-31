@@ -8,11 +8,7 @@ const KEYS = [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   "ASAAS_API_KEY",
-  "EVOLUTION_API_KEY",
   "B2C_TICKET_PRICE_CENTS",
-  "WHATSAPP_MIN_INTERVAL_SECONDS",
-  "WHATSAPP_COLLECTION_WINDOW_MINUTES",
-  "WHATSAPP_PROSPECTING_CONCURRENCY",
 ] as const;
 
 /**
@@ -39,7 +35,6 @@ describe("serverEnv", () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = "http://127.0.0.1:54321";
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "a".repeat(24);
     process.env.ASAAS_API_KEY = "";
-    process.env.EVOLUTION_API_KEY = "";
 
     const env = (await import("@/lib/env")) as typeof import("@/lib/env");
 

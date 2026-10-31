@@ -7,13 +7,17 @@ import { ActivateWithCredit } from "@/components/domain/activate-with-credit";
 import { BudgetTable } from "@/components/domain/budget-table";
 import { BuyTicketForm } from "@/components/domain/buy-ticket-form";
 import { ChoicesPanel } from "@/components/domain/choices-panel";
+import { EventChat } from "@/components/domain/event-chat";
+import { EventDetailsEditor } from "@/components/domain/event-details-editor";
 import { EventLifecycleActions } from "@/components/domain/event-lifecycle-actions";
+import { EventSupportChat } from "@/components/domain/event-support-chat";
 import { QuotationsPanel } from "@/components/domain/quotations-panel";
 import { QuotePreparingNotice } from "@/components/domain/quote-preparing-notice";
 import { ScenariosPanel } from "@/components/domain/scenarios-panel";
 import { SearchStartEditor } from "@/components/domain/search-start-editor";
+import { SupplierOptionsPanel } from "@/components/domain/supplier-options-panel";
 import { TestimonialInvite } from "@/components/domain/testimonial-invite";
-import { CATEGORY_LABELS, type CategoryCode } from "@/lib/catalog/v1";
+import { CATEGORY_LABELS, UNIT_LABELS, type CategoryCode } from "@/lib/catalog/v1";
 import { calculate } from "@/lib/engine";
 import type { EngineItemSelection, EventType, RegionCode } from "@/lib/engine/types";
 import { serverEnv } from "@/lib/env";
@@ -23,10 +27,12 @@ import { lookupLuckyCoupon } from "@/lib/lucky/server";
 import { formatBRL } from "@/lib/money";
 import { offerDiscountCents } from "@/lib/offers/pure";
 import { activeUserOffer } from "@/lib/offers/server";
+import { listEventChatConversations } from "@/lib/outreach/chat-read";
 import { parseQuotationOptions } from "@/lib/quotes/choices";
 import { categoryLabel } from "@/lib/quotes/labels";
 import { latestScenarios } from "@/lib/quotes/scenarios";
 import { canEditSearchStart, spDateKey } from "@/lib/search-start";
+import { listSupplierSelections } from "@/lib/selection/read";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const eventTypeSchema = z.enum([
@@ -192,9 +198,33 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     })
     .filter((row) => row.options.length > 0);
 
+  // Seleção de produtos (nível de categoria): opções por fornecedor ligado ao evento.
+  const selectionViews = unlocked
+    ? (await listSupplierSelections(undefined, event.id))
+        .filter((row) => row.options.length > 0)
+        .map((row) => ({
+          supplierId: row.supplierId,
+          supplierName: row.supplierName,
+          categoryLabel: categoryLabel(row.category),
+          options: row.options.map((option) => ({
+            optionId: option.optionId,
+            name: option.name,
+            description: option.description,
+            priceFormatted:
+              option.priceCents === null ? "A combinar" : formatBRL(option.priceCents),
+            unitLabel: UNIT_LABELS[option.unit] ?? option.unit,
+          })),
+          selectedOptionId: row.selectedOptionId,
+          status: row.status,
+        }))
+    : [];
+  const chatConversations = unlocked
+    ? await listEventChatConversations(event.id)
+    : [];
+
   return (
-    <div className="flex flex-col gap-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+    <div className="flex scroll-mt-24 flex-col gap-8">
+      <header id="evento-topo" className="scroll-mt-24 flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
           <p className="text-overline uppercase tracking-[0.14em] text-vinho/75">Evento</p>
           <h1 className="mt-2 break-words font-serif text-title-1 font-display [overflow-wrap:anywhere] sm:text-display-2">{event.title}</h1>
@@ -216,7 +246,15 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
         </div>
       </header>
 
-      <section className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
+      <EventDetailsEditor
+        eventId={event.id}
+        guestCount={event.guest_count}
+        venueCapacity={event.venue_capacity}
+        venueType={event.venue_type}
+        eventStyle={event.event_style}
+      />
+
+      <section className="scroll-mt-24 flex flex-wrap items-center justify-between gap-4 rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
         <div>
           <h2 className="font-serif text-title-2">Entrevista do evento</h2>
           <p className="mt-1 text-sm text-vinho/75">
@@ -242,8 +280,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           <section className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
             <h2 className="font-serif text-title-1">Evento ativo.</h2>
             <p className="mt-2 text-sm text-vinho/70">
-              O orçamento completo está liberado. As cotações e os disparos pelo WhatsApp serão
-              organizados aqui — acompanhe as notificações.
+              O orçamento completo está liberado. As cotações serão organizadas aqui — acompanhe as
+              notificações.
             </p>
             <p className="mt-4 text-caption text-vinho/70">
               Próximo passo: pedir cotações aos fornecedores da sua região.
@@ -278,8 +316,12 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           <ScenariosPanel eventId={event.id} scenarios={scenarios} />
           <QuotationsPanel eventId={event.id} quotations={quotationsResult.data ?? []} />
           <ChoicesPanel eventId={event.id} rows={choiceViews} />
+          <SupplierOptionsPanel eventId={event.id} rows={selectionViews} />
+          <EventChat eventId={event.id} conversations={chatConversations} />
         </>
       ) : null}
+
+      <EventSupportChat />
     </div>
   );
 }

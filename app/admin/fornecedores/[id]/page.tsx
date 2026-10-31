@@ -37,7 +37,7 @@ export default async function AdminFornecedorPage({ params }: { params: Promise<
         <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
           <div><dt className="text-caption text-vinho/60">Categoria</dt><dd>{s.category}</dd></div>
           <div><dt className="text-caption text-vinho/60">Cidade</dt><dd>{s.city ?? "—"}</dd></div>
-          <div><dt className="text-caption text-vinho/60">Telefone</dt><dd>{s.phone_e164 ?? "—"} {s.whatsapp_verified ? "(WhatsApp verificado)" : ""}</dd></div>
+          <div><dt className="text-caption text-vinho/60">Telefone</dt><dd>{s.phone_e164 ?? "—"}</dd></div>
           <div><dt className="text-caption text-vinho/60">Site</dt><dd>{s.website_url && /^https?:\/\//i.test(s.website_url) ? <a className="underline" href={s.website_url} rel="noopener noreferrer nofollow" target="_blank">{s.website_url}</a> : "—"}</dd></div>
           <div><dt className="text-caption text-vinho/60">Origem</dt><dd>{s.source_provider}</dd></div>
           <div><dt className="text-caption text-vinho/60">Visto pela 1ª vez</dt><dd>{fmtDate(s.first_seen_at)}</dd></div>

@@ -1,13 +1,18 @@
 /**
  * Estágios do processo EventeIA (espelham o CHECK da migração 0026):
- * briefing (entrevista) → discovery (busca de fornecedores) → prospecting (1º contato WhatsApp)
+ * briefing (entrevista) → discovery (busca de fornecedores) → prospecting (1º contato com o fornecedor)
  * → quote_collection (respostas/cotações) → proposal (cenários entregues) → confirmation.
  */
 export const PROCESS_STAGES = ["briefing", "discovery", "prospecting", "quote_collection", "proposal", "confirmation"] as const;
 export type ProcessStage = (typeof PROCESS_STAGES)[number];
 
-export const WHATSAPP_CHANNELS = ["cloud", "evolution"] as const;
-export type WhatsAppChannel = (typeof WHATSAPP_CHANNELS)[number];
+/**
+ * Canais legados (Cloud API/Evolution) mantidos apenas para leitura histórica
+ * do consumo. O produto não envia mais por WhatsApp; novas chamadas não usam
+ * estes valores.
+ */
+export const LEGACY_CHANNELS = ["cloud", "evolution"] as const;
+export type LegacyChannel = (typeof LEGACY_CHANNELS)[number];
 
 export const STAGE_LABELS: Record<ProcessStage, string> = {
   briefing: "Briefing",
@@ -18,17 +23,17 @@ export const STAGE_LABELS: Record<ProcessStage, string> = {
   confirmation: "Confirmação",
 };
 
-export const CHANNEL_LABELS: Record<WhatsAppChannel, string> = {
-  cloud: "Cloud (EventeIA)",
-  evolution: "Evolution (WhatsApp do cliente)",
+export const CHANNEL_LABELS: Record<LegacyChannel, string> = {
+  cloud: "Cloud (legado)",
+  evolution: "Evolution (legado)",
 };
 
 export function isProcessStage(v: unknown): v is ProcessStage {
   return typeof v === "string" && (PROCESS_STAGES as readonly string[]).includes(v);
 }
 
-export function isWhatsAppChannel(v: unknown): v is WhatsAppChannel {
-  return typeof v === "string" && (WHATSAPP_CHANNELS as readonly string[]).includes(v);
+export function isLegacyChannel(v: unknown): v is LegacyChannel {
+  return typeof v === "string" && (LEGACY_CHANNELS as readonly string[]).includes(v);
 }
 
 const TASK_STAGE: Record<string, ProcessStage> = {

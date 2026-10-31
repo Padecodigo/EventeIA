@@ -17,6 +17,7 @@ import {
 } from "@/lib/jobs/prospect-reply";
 import { logger } from "@/lib/logger";
 import { runMetaTokenHealthCheck } from "@/lib/meta/token-health-monitor";
+import { runSupplierWindowSweep } from "@/lib/outreach/supplier-conversations";
 import { QUEUE_NAMES, getQueue, getRedisConnection } from "@/lib/queue";
 import { createDiscoveryWorker } from "@/lib/queue/discovery-worker";
 import { createQuoteExtractionWorker } from "@/lib/queue/quote-extraction-worker";
@@ -28,9 +29,6 @@ import { isAutopilotEnabled } from "@/lib/marketing/settings";
 /**
  * Processo de workers (BullMQ) — separado do runtime do Next.
  * Execução: `pnpm workers` (ver README).
- *
- * WhatsApp/Evolution foram removidos: os workers de sessão, prospecção e saúde
- * da instância não são mais registrados.
  */
 const connection = getRedisConnection();
 
@@ -92,6 +90,16 @@ const metaTokenHealthWorker = new Worker(
   QUEUE_NAMES.metaTokenHealth,
   async () => {
     await runMetaTokenHealthCheck();
+  },
+  { connection, concurrency: 1 },
+);
+
+// Janelas de resposta da Meta expiradas → conversa vira canal_fechado.
+const metaWindowSweepWorker = new Worker(
+  QUEUE_NAMES.metaWindowSweep,
+  async () => {
+    const closed = await runSupplierWindowSweep();
+    if (closed > 0) logger.info({ closed }, "janelas de mensagem do Meta expiradas — canal_fechado");
   },
   { connection, concurrency: 1 },
 );
@@ -187,6 +195,11 @@ void getQueue(QUEUE_NAMES.metaTokenHealth).add(
   {},
   { repeat: { pattern: "10 8 * * *", tz: "America/Sao_Paulo" }, attempts: 3 },
 );
+void getQueue(QUEUE_NAMES.metaWindowSweep).add(
+  "sweep",
+  {},
+  { repeat: { pattern: "*/15 * * * *", tz: "America/Sao_Paulo" }, attempts: 3 },
+);
 // Créditos nunca expiram (0037): remove o agendamento legado de expiração, se existir.
 void getQueue(QUEUE_NAMES.creditsExpireLegacy)
   .getRepeatableJobs()
@@ -196,7 +209,7 @@ void getQueue(QUEUE_NAMES.creditsExpireLegacy)
   })
   .catch(() => undefined);
 
-const workers = [asaasWorker, metaWebhooksWorker, prospectReplyWorker, reconcileWorker, balanceWorker, metaTokenHealthWorker, artCleanupWorker, prospectPostDeleteWorker, instagramPublishWorker, marketingAutopilotWorker, discoveryWorker, quoteExtractionWorker];
+const workers = [asaasWorker, metaWebhooksWorker, prospectReplyWorker, reconcileWorker, balanceWorker, metaTokenHealthWorker, metaWindowSweepWorker, artCleanupWorker, prospectPostDeleteWorker, instagramPublishWorker, marketingAutopilotWorker, discoveryWorker, quoteExtractionWorker];
 
 for (const worker of workers) {
   worker.on("error", (error) => {

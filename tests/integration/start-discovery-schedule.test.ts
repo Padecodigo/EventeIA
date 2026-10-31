@@ -6,7 +6,7 @@ const jobs = new Map<string, { isDelayed: () => Promise<boolean>; changeDelay: R
 let startDate: string | null = null;
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/lib/env", () => ({ serverEnv: () => ({ WHATSAPP_COLLECTION_WINDOW_MINUTES: 2880 }) }));
+vi.mock("@/lib/env", () => ({ serverEnv: () => ({ DISCOVERY_DRY_RUN: false }) }));
 vi.mock("@/lib/supabase/admin", () => ({
   getSupabaseAdmin: () => ({
     from: () => {
@@ -16,7 +16,7 @@ vi.mock("@/lib/supabase/admin", () => ({
   }),
 }));
 vi.mock("@/lib/queue", () => ({
-  QUEUE_NAMES: { supplierDiscovery: "supplier-discovery-queue", whatsappSessionLifecycle: "lifecycle" },
+  QUEUE_NAMES: { supplierDiscovery: "supplier-discovery-queue" },
   getRedisConnection: vi.fn(),
   enqueue: vi.fn(async (queue: string, name: string, _d: unknown, opts: unknown) => {
     added.push({ queue, name, opts });
@@ -24,13 +24,6 @@ vi.mock("@/lib/queue", () => ({
   }),
   getQueue: () => ({ getJob: async (id: string) => jobs.get(id) }),
 }));
-vi.mock("@/lib/whatsapp/session-runtime", async () => {
-  const { enqueue } = await import("@/lib/queue");
-  return {
-    scheduleCollectionDeadline: (eventId: string, delayMs: number) =>
-      enqueue("lifecycle" as never, "collection-deadline", { eventId }, { jobId: `collection-deadline-${eventId}`, delayMs }),
-  };
-});
 
 const { startDiscovery, rescheduleDiscovery } = await import("@/lib/discovery/runtime");
 const SUN = new Date("2026-10-25T10:00:00Z");

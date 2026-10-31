@@ -15,12 +15,10 @@ export const PROVIDER_OF: Record<RequestPriceKind, CostProvider> = {
   serper: "serper",
   google_places: "google_places",
   resend: "resend",
-  whatsapp_cloud: "whatsapp",
-  evolution: "evolution",
 };
 
 /**
- * Mede uso por requisição (Serper, Google Places, Resend, WhatsApp) em cost_entries.
+ * Mede uso por requisição (Serper, Google Places, Resend) em cost_entries.
  * Fire-and-forget: nunca lança nem atrasa o fluxo principal.
  */
 export function meterUsage(kind: RequestPriceKind, reason: string, opts: { quantity?: number; eventId?: string | null } = {}): void {

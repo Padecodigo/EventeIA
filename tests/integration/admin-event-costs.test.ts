@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * Integração: custo por evento (loadFinance → buildEventCosts), atribuição de event_id na medição
- * do WhatsApp/e-mail e exclusão recuperável (soft delete) de custos fixos/alertas.
+ * de e-mail e exclusão recuperável (soft delete) de custos fixos/alertas.
  */
 type Row = Record<string, unknown>;
 const tables: Record<string, Row[]> = {};
@@ -52,10 +52,6 @@ vi.mock("@/lib/supabase/admin", () => ({ getSupabaseAdmin: () => ({ from }) }));
 vi.mock("@/lib/finance/runtime", () => ({
   currentPrices: async () => (await import("@/lib/finance/pricing")).DEFAULT_FINANCE_PRICES,
   recordCostEntry: (e: Row) => { recorded.push(e); return Promise.resolve(); },
-}));
-vi.mock("@/lib/evolution-api/client", () => ({
-  sendFirstContact: () => Promise.resolve({ externalMessageId: "x" }),
-  sendText: () => Promise.resolve({ externalMessageId: "y" }),
 }));
 vi.mock("@/lib/env", () => ({ serverEnv: () => ({}), isConfigured: () => false }));
 

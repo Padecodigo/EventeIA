@@ -8,9 +8,9 @@ import { ProviderQuotaError, type DiscoveryProvider, type DiscoveryQuery, type F
  * Provedor "social": perfis comerciais PÚBLICOS em Instagram, Facebook e TikTok,
  * encontrados via busca na web do Grok (xAI) — ex.: `site:instagram.com buffet Taubaté`.
  * Conformidade: nada de scraping, login ou automação nas redes; só o que aparece em
- * resultados públicos de busca (nome, @, link do perfil, telefone/WhatsApp da bio).
+ * resultados públicos de busca (nome, @, link do perfil, telefone da bio).
  * O link do perfil é validado aqui (domínio + formato); telefones seguem a validação
- * normal da descoberta (DDD/WhatsApp), nunca inventados pelo modelo.
+ * normal da descoberta, nunca inventados pelo modelo.
  */
 export const SOCIAL_PLATFORMS = ["instagram", "facebook", "tiktok"] as const;
 export type SocialPlatform = (typeof SOCIAL_PLATFORMS)[number];
@@ -47,7 +47,6 @@ const socialSupplierSchema = z.object({
   name: z.string().trim().min(2).max(120),
   profile_url: z.string().trim().max(500),
   phone: z.string().trim().max(40).nullable().optional(),
-  whatsapp_link: z.string().trim().max(300).nullable().optional(),
   website_url: z.string().trim().url().max(500).nullable().optional(),
 });
 const payloadSchema = z.object({ suppliers: z.array(socialSupplierSchema).max(30) });
@@ -64,9 +63,9 @@ export function buildSocialPrompt(q: DiscoveryQuery): string {
     `Encontre até ${String(q.limit)} perfis COMERCIAIS públicos de "${what}" que atendem ${cityLabel(q)},`,
     `para um evento do tipo ${q.eventTypeLabel}, no Instagram, Facebook (páginas) e TikTok.`,
     `Use apenas busca na web (ex.: site:instagram.com "${what}" "${q.city}", site:facebook.com, site:tiktok.com); não faça login nem acesse conteúdo restrito.`,
-    `Regras: só perfis de empresas/profissionais; profile_url = link do perfil (não de post); telefone/WhatsApp SOMENTE se aparecer literalmente na bio/página pública; nunca invente.`,
+    `Regras: só perfis de empresas/profissionais; profile_url = link do perfil (não de post); telefone SOMENTE se aparecer literalmente na bio/página pública; nunca invente.`,
     q.exclude.length > 0 ? `Ignore estes contatos já conhecidos: ${q.exclude.slice(0, 40).join(", ")}.` : "",
-    `Responda SOMENTE com JSON: {"suppliers":[{"name":"","profile_url":"","phone":"","whatsapp_link":"","website_url":""}]}.`,
+    `Responda SOMENTE com JSON: {"suppliers":[{"name":"","profile_url":"","phone":"","website_url":""}]}.`,
   ]
     .filter((l) => l.length > 0)
     .join(" ");
@@ -96,7 +95,6 @@ export function parseSocialResponse(body: unknown, query: DiscoveryQuery): Suppl
       name: s.name,
       category: query.category,
       phone: s.phone ?? undefined,
-      whatsappLink: s.whatsapp_link ?? undefined,
       sourceUrl: profile.url,
       websiteUrl: s.website_url ?? undefined,
       externalId,

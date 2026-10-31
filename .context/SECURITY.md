@@ -35,8 +35,8 @@
 ## 3. Proteção de dados (LGPD — Lei nº 13.709/2018)
 
 - **Classificação**: público (marketing) · interno · pessoal (nome, e-mail, telefone, CPF) · sensível (nenhum previsto hoje — documento fiscal não é "sensível" pela lei, mas é tratado como restrito).
-- **Minimização**: coletar só o necessário (nome, e-mail, telefone p/ WhatsApp, CPF/CNPJ para cobrança).
-- **Bases legais**: execução de contrato (operação), consentimento (WhatsApp/opt-in), obrigação legal (fiscal).
+- **Minimização**: coletar só o necessário (nome, e-mail, telefone, CPF/CNPJ para cobrança).
+- **Bases legais**: execução de contrato (operação), consentimento (contato/opt-in), obrigação legal (fiscal).
 - **Direitos do titular**: acesso/correção (self-service), exclusão (fluxo `admin.erasure_executed`), portabilidade (export CSV/JSON).
 - **Retenção**: operacionais 180 dias; financeiros 5 anos anonimizados; consentimentos enquanto vigentes (ver [FEEDS.md](FEEDS.md) §5).
 - **Encarregado (DPO)**: contato publicado em `/privacidade`; canal `privacidade@eventeia.com`.
@@ -48,13 +48,12 @@
 
 > **SAN** cobre a sanitização/validação de todas as entradas (formulários, query strings, webhooks, jobs, variáveis de template) — e, no nível de transporte, a exigência de **SAN (Subject Alternative Names)** nos certificados TLS (§6.3).
 
-1. **Toda fronteira valida com zod**, sem exceção: Server Actions, Route Handlers, webhooks, payload de job, variáveis de template WhatsApp.
+1. **Toda fronteira valida com zod**, sem exceção: Server Actions, Route Handlers, webhooks e payload de job.
 2. **Nunca confie no client**: valores monetários, `event_id`, `user_id`, `role`, `status` — sempre derivados/reconferidos no servidor.
 3. **React escapa por padrão**; `dangerouslySetInnerHTML` é proibido pelo lint (`react/no-danger`). Se inevitável (ex.: conteúdo editorial rico), sanitizar com DOMPurify **no servidor** e justificar no PR.
 4. **SQL**: sempre via PostgREST/SDK tipado; queries cruas apenas em funções `security definer` revisadas.
 5. **Uploads**: apenas imagens (PNG/JPEG/WebP), limite 5 MB, nome sanitizado, servidos com `Content-Disposition` e sem execução.
 6. **Headers de redirect**: nunca redirecionar para URL fornecida sem allowlist de domínio.
-7. **Templates WhatsApp**: interpolação server-side com escape; variáveis ausentes → falha de render (nunca corpo parcial).
 
 ---
 
@@ -89,7 +88,7 @@ Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' h
 ### 6.2 CORS
 
 - API própria: mesmo origin (`NEXT_PUBLIC_APP_URL`); sem `Access-Control-Allow-Origin: *` em rotas autenticadas.
-- Webhooks recebem apenas POST do Asaas/Evolution; validação de token **antes** de parse pesado.
+- Webhooks recebem apenas POST do Asaas/Meta; validação de token **antes** de parse pesado.
 
 ### 6.3 TLS / SAN (certificados)
 
@@ -106,9 +105,8 @@ Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' h
 | Login/signup | 10/min por IP |
 | Checkout | 5/hora por usuário; 1 pendente por evento |
 | Webhooks Asaas | 600/min por token (janela deslizante) |
-| Webhooks Evolution | 300/min por token |
+| Webhooks Meta | 300/min por token |
 | API de feeds | 60/min por usuário |
-| Envio WhatsApp | 15/min por instância + 1/60s por número (§[WHATSAPP_EVOLUTION.md](WHATSAPP_EVOLUTION.md)) |
 
 Implementação: Redis (Upstash/BullMQ) com chave `rl:{scope}:{id}:{janela}`; excedeu → `429` + `Retry-After`, feed de abuso para repetição.
 
@@ -118,7 +116,7 @@ Implementação: Redis (Upstash/BullMQ) com chave `rl:{scope}:{id}:{janela}`; ex
 
 - `.env.local` (nunca commitado; `.gitignore` bloqueia `.env*` exceto `.env.example`).
 - `.env.example` lista nomes e **valores vazios/placeholder**, nunca reais.
-- Rotação: Asaas/Evolution/Supabase keys a cada 90 dias ou sob suspeita; vazamento → rotação imediata + auditoria de uso (feeds + logs).
+- Rotação: Asaas/Meta/Supabase keys a cada 90 dias ou sob suspeita; vazamento → rotação imediata + auditoria de uso (feeds + logs).
 - CI usa secrets do GitHub Actions; nenhum valor em workflow (use `${{ secrets.X }}`).
 - **Scanner**: `gitleaks`/`trufflehog` no CI e hook `pre-commit`; achado = build vermelho.
 

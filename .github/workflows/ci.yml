@@ -69,10 +69,6 @@ jobs:
           ASAAS_API_URL: https://api-sandbox.asaas.com/v3
           ASAAS_API_KEY: ci-placeholder-asaas-key
           ASAAS_WEBHOOK_TOKEN: ci-placeholder-webhook-token
-          EVOLUTION_API_URL: http://localhost:8080
-          EVOLUTION_API_KEY: ci-placeholder-evolution-key
-          EVOLUTION_INSTANCE: EventeIA-ci
-          EVOLUTION_WEBHOOK_TOKEN: ci-placeholder-evolution-token
           B2C_TICKET_PRICE_CENTS: "9700"
           ENGINE_TIMEZONE: America/Sao_Paulo
 
@@ -164,10 +160,6 @@ jobs:
           ASAAS_API_URL: https://api-sandbox.asaas.com/v3
           ASAAS_API_KEY: ci-placeholder-asaas-key
           ASAAS_WEBHOOK_TOKEN: ci-placeholder-webhook-token
-          EVOLUTION_API_URL: http://localhost:8080
-          EVOLUTION_API_KEY: ci-placeholder-evolution-key
-          EVOLUTION_INSTANCE: EventeIA-ci
-          EVOLUTION_WEBHOOK_TOKEN: ci-placeholder-evolution-token
           B2C_TICKET_PRICE_CENTS: "9700"
           ENGINE_TIMEZONE: America/Sao_Paulo
 

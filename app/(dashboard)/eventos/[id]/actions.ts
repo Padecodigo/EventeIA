@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { requireUser } from "@/lib/auth";
+import { EVENT_STYLES, SPACE_TYPES } from "@/lib/catalog/v1";
 import { cancelEventFollowUp } from "@/lib/events/cancel";
 import { canCancelEvent, canCompleteEvent } from "@/lib/events/lifecycle";
 import { stopEventBackgroundWork } from "@/lib/events/stop";
@@ -144,4 +145,99 @@ export async function cancelEventAction(
   revalidatePath("/eventos");
   revalidatePath("/painel");
   redirect("/eventos");
+}
+
+export interface EventDetailsState {
+  error?: string;
+  saved?: boolean;
+}
+
+const eventDetailsSchema = z.object({
+  eventId: z.string().uuid(),
+  guestCount: z.coerce.number().int().min(1).max(5000),
+  venueCapacity: z.string().trim().max(10).optional(),
+  venueType: z.string().trim().max(40).optional(),
+  eventStyle: z.string().trim().max(40).optional(),
+});
+
+function optionalEnum<T extends string>(
+  raw: string | undefined,
+  allowed: readonly T[],
+): T | null | "invalid" {
+  const value = raw === undefined || raw === "" ? null : raw;
+  if (value === null) return null;
+  return (allowed as readonly string[]).includes(value) ? (value as T) : "invalid";
+}
+
+/**
+ * Edita dados básicos do evento (convidados, local e estilo) depois da criação.
+ * A capacidade não bloqueia o salvamento: a página avisa quando o local é pequeno.
+ */
+export async function updateEventDetailsAction(
+  _previous: EventDetailsState,
+  formData: FormData,
+): Promise<EventDetailsState> {
+  await requireUser();
+  const parsed = eventDetailsSchema.safeParse({
+    eventId: formData.get("eventId"),
+    guestCount: formData.get("guestCount"),
+    venueCapacity: formData.get("venueCapacity") ?? undefined,
+    venueType: formData.get("venueType") ?? undefined,
+    eventStyle: formData.get("eventStyle") ?? undefined,
+  });
+  if (!parsed.success) {
+    return { error: "Informe um número de convidados entre 1 e 5.000." };
+  }
+
+  const capacityRaw = parsed.data.venueCapacity ?? "";
+  const venueCapacity = capacityRaw === "" ? null : Number(capacityRaw);
+  if (
+    venueCapacity !== null &&
+    (!Number.isInteger(venueCapacity) || venueCapacity < 1 || venueCapacity > 100_000)
+  ) {
+    return { error: "Informe a capacidade do local em convidados (maior que zero)." };
+  }
+
+  const venueType = optionalEnum(parsed.data.venueType, SPACE_TYPES);
+  if (venueType === "invalid") {
+    return { error: "Escolha um tipo de local válido." };
+  }
+  const eventStyle = optionalEnum(parsed.data.eventStyle, EVENT_STYLES);
+  if (eventStyle === "invalid") {
+    return { error: "Escolha um estilo válido." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data: event } = await supabase
+    .from("events")
+    .select("id,status")
+    .eq("id", parsed.data.eventId)
+    .maybeSingle();
+  if (event === null) {
+    return { error: "Evento não encontrado." };
+  }
+  if (event.status === "canceled") {
+    return { error: "Um evento excluído não pode ser editado." };
+  }
+
+  const { data: updated, error } = await supabase
+    .from("events")
+    .update({
+      guest_count: parsed.data.guestCount,
+      venue_capacity: venueCapacity,
+      venue_type: venueType,
+      event_style: eventStyle,
+    })
+    .eq("id", event.id)
+    .select("id");
+
+  if (error !== null || updated === null || updated.length === 0) {
+    logger.error({ code: error?.code }, "falha ao editar dados do evento");
+    return { error: "Não foi possível salvar os dados do evento. Tente novamente." };
+  }
+
+  revalidatePath(`/eventos/${event.id}`);
+  revalidatePath("/eventos");
+  revalidatePath("/painel");
+  return { saved: true };
 }

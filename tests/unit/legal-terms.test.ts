@@ -52,7 +52,7 @@ describe("páginas legais", () => {
       "Google Places",
       "DeepSeek",
       "Resend",
-      "WhatsApp",
+      "Instagram",
       "Supabase",
       "art. 18",
       "Execução de contrato",

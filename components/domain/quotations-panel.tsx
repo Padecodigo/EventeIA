@@ -16,6 +16,7 @@ const statusLabels: Record<string, string> = {
   confirmed: "Confirmada",
   declined: "Recusada",
   expired: "Expirada",
+  repassado: "Repassado",
 };
 
 export interface QuotationRow {

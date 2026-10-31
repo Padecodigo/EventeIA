@@ -19,7 +19,7 @@ export default async function AdminFornecedoresPage({ searchParams }: { searchPa
   const q = one(sp.q);
   const cat = one(sp.categoria).slice(0, 60);
   const city = one(sp.cidade);
-  let query = getSupabaseAdmin().from("suppliers").select("id,name,category,city,phone_e164,whatsapp_verified,opt_out_at,last_contacted_at,first_seen_at,source_url").is("deleted_at", null).order("last_seen_at", { ascending: false }).limit(200);
+  let query = getSupabaseAdmin().from("suppliers").select("id,name,category,city,phone_e164,opt_out_at,last_contacted_at,first_seen_at,source_url").is("deleted_at", null).order("last_seen_at", { ascending: false }).limit(200);
   const t = likeTerm(q);
   if (t) query = query.ilike("name", t);
   if (cat) query = query.eq("category", cat);
@@ -56,13 +56,13 @@ export default async function AdminFornecedoresPage({ searchParams }: { searchPa
         {rows.length === 0 ? <p className="text-caption text-vinho/70">Nenhum fornecedor encontrado.</p> : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[36rem] text-sm [&_td]:px-2 [&_td]:py-2 [&_th]:px-2 [&_th]:py-2 [&_th]:font-medium">
-              <thead className="text-left text-caption text-vinho/60"><tr><th>Nome</th><th>Categoria</th><th>Cidade</th><th>WhatsApp</th><th>Último contato</th><th>Redes</th><th>Ações</th></tr></thead>
+              <thead className="text-left text-caption text-vinho/60"><tr><th>Nome</th><th>Categoria</th><th>Cidade</th><th>Telefone</th><th>Último contato</th><th>Redes</th><th>Ações</th></tr></thead>
               <tbody>{rows.map((r) => (
                 <tr key={r.id} className="border-t border-line-subtle">
                   <td className="py-2"><Link className="font-semibold underline" href={`/admin/fornecedores/${r.id}`}>{r.name}</Link>{r.opt_out_at ? <span className="ml-1 text-caption text-semantic-error">pediu para sair</span> : null}</td>
                   <td><Link className="underline" href={`/admin/fornecedores?categoria=${encodeURIComponent(r.category)}`}>{r.category}</Link></td>
                   <td>{r.city ?? "—"}</td>
-                  <td>{r.whatsapp_verified ? "verificado" : r.phone_e164 ? "não verificado" : "sem número"}</td>
+                  <td>{r.phone_e164 ?? "—"}</td>
                   <td>{fmtDate(r.last_contacted_at)}</td>
                   <td>
                     {(() => {

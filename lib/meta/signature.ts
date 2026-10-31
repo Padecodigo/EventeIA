@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 /**
  * Webhooks do Meta (Instagram + Messenger) — funções puras de verificação.
  *
- * A assinatura é idêntica à do WhatsApp Cloud: `X-Hub-Signature-256:
+ * A assinatura segue o padrão do Meta: `X-Hub-Signature-256:
  * sha256=<hex>` = HMAC-SHA256(app secret, corpo bruto). O desafio GET de
  * verificação também usa `hub.mode`/`hub.verify_token`/`hub.challenge`.
  */

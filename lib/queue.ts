@@ -9,10 +9,7 @@ import { logger } from "./logger";
 export const QUEUE_NAMES = {
   asaasWebhooks: "asaas-webhooks",
   quotationProspecting: "quotation-prospecting-queue",
-  whatsappSessionLifecycle: "whatsapp-session-lifecycle",
-  whatsappInstanceHealth: "whatsapp-instance-health",
   asaasReconcile: "asaas-reconcile",
-  whatsappOutbound: "whatsapp-outbound",
   feedsDispatch: "feeds-dispatch",
   /** Legado: só para remover o agendamento antigo (créditos não expiram). */
   creditsExpireLegacy: "credits-expire",
@@ -27,6 +24,7 @@ export const QUEUE_NAMES = {
   instagramPublish: "instagram-publish",
   metaWebhooks: "meta-webhooks",
   prospectReply: "prospect-reply",
+  metaWindowSweep: "meta-window-sweep",
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];

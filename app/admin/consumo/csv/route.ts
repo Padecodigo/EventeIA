@@ -17,7 +17,7 @@ export async function GET(req: Request) {
       r.inputTokens, r.outputTokens, r.costMicroUsd, centsToCsv(r.costBrlCents),
     ]);
   const csv = toCsv(
-    ["data_utc", "provedor", "operacao", "resultado", "estagio", "canal_whatsapp", "usuario_id", "evento_id", "tokens_in", "tokens_out", "custo_micro_usd", "custo_brl"],
+    ["data_utc", "provedor", "operacao", "resultado", "estagio", "canal_legado", "usuario_id", "evento_id", "tokens_in", "tokens_out", "custo_micro_usd", "custo_brl"],
     rows,
   );
   return new NextResponse(csv, {

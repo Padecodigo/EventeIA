@@ -49,6 +49,9 @@ export type CategoryCode =
   | "foto_video"
   | "som_dj"
   | "musica_ao_vivo"
+  | "banda"
+  | "cantor_cerimonia"
+  | "barman"
   | "iluminacao"
   | "mobiliario"
   | "garcons"
@@ -73,6 +76,9 @@ export const CATEGORY_LABELS: Record<CategoryCode, string> = {
   foto_video: "Foto e vídeo",
   som_dj: "Som e DJ",
   musica_ao_vivo: "Música ao vivo",
+  banda: "Banda",
+  cantor_cerimonia: "Cantor de cerimônia",
+  barman: "Barman / bar",
   iluminacao: "Iluminação",
   mobiliario: "Mobiliário",
   garcons: "Garçons e copeiras",
@@ -88,6 +94,239 @@ export const CATEGORY_LABELS: Record<CategoryCode, string> = {
   audiovisual: "Telão, projetor e microfones",
   outros: "Demanda específica",
 };
+
+/**
+ * Categorias legadas/variações de texto → categoria canônica atual.
+ * Mantém cotações e fornecedores antigos (ex.: "musica_ao_vivo") cobrindo a
+ * necessidade nova ("banda") sem migração destrutiva de dados.
+ */
+export const CATEGORY_ALIASES: Partial<Record<string, CategoryCode>> = {
+  musica_ao_vivo: "banda",
+  musica: "banda",
+  cantor: "cantor_cerimonia",
+  cantores: "cantor_cerimonia",
+  bartender: "barman",
+  bar: "barman",
+  dj: "som_dj",
+};
+
+export function normalizeCategoryCode(raw: string): CategoryCode | null {
+  const t = raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[\s-]+/g, "_");
+  const alias = CATEGORY_ALIASES[t];
+  if (alias !== undefined) return alias;
+  if (t in CATEGORY_LABELS) return t as CategoryCode;
+  return null;
+}
+
+/**
+ * Tags de "inclui" no nível do FORNECEDOR (não da cotação): o que o serviço
+ * entrega por padrão. São complementares ao escopo extraído de cada resposta e
+ * ajudam a detectar, por exemplo, um buffet que só inclui comida.
+ */
+export const SUPPLIER_INCLUI_TAGS = [
+  "comida",
+  "servico",
+  "louca",
+  "bebidas",
+  "som",
+  "iluminacao",
+  "decoracao",
+  "bolo_doces",
+  "mesas_cadeiras",
+  "limpeza",
+  "seguranca",
+  "gerador",
+  "estacionamento",
+  "barman",
+  "banda",
+  "cantor_cerimonia",
+] as const;
+
+export type SupplierIncluiTag = (typeof SUPPLIER_INCLUI_TAGS)[number];
+
+export const SUPPLIER_INCLUI_LABELS: Record<SupplierIncluiTag, string> = {
+  comida: "comida",
+  servico: "serviço (garçons e copeiras)",
+  louca: "louça, talheres e taças",
+  bebidas: "bebidas",
+  som: "som",
+  iluminacao: "iluminação",
+  decoracao: "decoração",
+  bolo_doces: "bolo e doces",
+  mesas_cadeiras: "mesas e cadeiras",
+  limpeza: "limpeza",
+  seguranca: "segurança",
+  gerador: "gerador",
+  estacionamento: "estacionamento",
+  barman: "barman",
+  banda: "banda",
+  cantor_cerimonia: "cantor de cerimônia",
+};
+
+/** Tag de "inclui" → categoria que ela dispensa contratar à parte. */
+export const SUPPLIER_INCLUI_COVERS: Partial<Record<SupplierIncluiTag, CategoryCode>> = {
+  comida: "buffet",
+  servico: "garcons",
+  louca: "louca",
+  bebidas: "bebidas",
+  som: "som_dj",
+  iluminacao: "iluminacao",
+  decoracao: "decoracao",
+  bolo_doces: "bolo_doces",
+  mesas_cadeiras: "mobiliario",
+  limpeza: "limpeza",
+  seguranca: "seguranca",
+  gerador: "gerador",
+  barman: "barman",
+  banda: "banda",
+  cantor_cerimonia: "cantor_cerimonia",
+};
+
+const SUPPLIER_INCLUI_ALIASES: Record<string, SupplierIncluiTag> = {
+  comida: "comida",
+  cardapio: "comida",
+  alimentacao: "comida",
+  servico: "servico",
+  servicos: "servico",
+  mao_de_obra: "servico",
+  equipe: "servico",
+  garcons: "servico",
+  copeiras: "servico",
+  louca: "louca",
+  loucas: "louca",
+  talheres: "louca",
+  bebida: "bebidas",
+  bebidas: "bebidas",
+  bar: "barman",
+  barman: "barman",
+  bartender: "barman",
+  drinks: "barman",
+  som: "som",
+  dj: "som",
+  musica: "som",
+  banda: "banda",
+  cantor: "cantor_cerimonia",
+  cantor_cerimonia: "cantor_cerimonia",
+  cerimonia: "cantor_cerimonia",
+  iluminacao: "iluminacao",
+  decoracao: "decoracao",
+  bolo: "bolo_doces",
+  doces: "bolo_doces",
+  mesas: "mesas_cadeiras",
+  cadeiras: "mesas_cadeiras",
+  mobiliario: "mesas_cadeiras",
+  limpeza: "limpeza",
+  seguranca: "seguranca",
+  gerador: "gerador",
+  estacionamento: "estacionamento",
+};
+
+/** Normaliza a tag (texto livre do fornecedor/admin) para o vocabulário canônico. */
+export function normalizeSupplierIncluiTag(raw: string): SupplierIncluiTag | null {
+  const t = raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[\s-]+/g, "_");
+  if ((SUPPLIER_INCLUI_TAGS as readonly string[]).includes(t)) return t as SupplierIncluiTag;
+  const alias = SUPPLIER_INCLUI_ALIASES[t];
+  if (alias !== undefined) return alias;
+  const rules: [RegExp, SupplierIncluiTag][] = [
+    [/barman|bartend/, "barman"],
+    [/cantor/, "cantor_cerimonia"],
+    [/banda|musica_ao_vivo/, "banda"],
+    [/louca|talher/, "louca"],
+    [/garc|copeir|servico|staff/, "servico"],
+    [/som|dj/, "som"],
+    [/bebida|refri|cerveja/, "bebidas"],
+    [/bolo|doce/, "bolo_doces"],
+    [/mesa|cadeira/, "mesas_cadeiras"],
+    [/luz|ilumin/, "iluminacao"],
+    [/decor|flor/, "decoracao"],
+    [/limp/, "limpeza"],
+    [/segur/, "seguranca"],
+    [/gerador/, "gerador"],
+    [/estaciona/, "estacionamento"],
+    [/comida|cardapio|aliment/, "comida"],
+  ];
+  return rules.find(([re]) => re.test(t))?.[1] ?? null;
+}
+
+/** Tipos de espaço canônicos (coluna suppliers.tipo_espaco). */
+export const SPACE_TYPES = [
+  "salao",
+  "chacara",
+  "sitio",
+  "jardim",
+  "praia",
+  "hotel",
+  "clube",
+  "outro",
+] as const;
+
+export type SpaceType = (typeof SPACE_TYPES)[number];
+
+export const SPACE_TYPE_LABELS: Record<SpaceType, string> = {
+  salao: "Salão",
+  chacara: "Chácara",
+  sitio: "Sítio",
+  jardim: "Jardim",
+  praia: "Praia",
+  hotel: "Hotel",
+  clube: "Clube",
+  outro: "Outro",
+};
+
+export const VENUE_CAPACITY_FIELD = "capacidade";
+export const VENUE_TYPE_FIELD = "tipo_espaco";
+
+/** Estilos de festa aceitos no evento (gravados em events.event_style). */
+export const EVENT_STYLES = [
+  "rustico_chique",
+  "classico",
+  "moderno",
+  "boho",
+  "praia",
+  "industrial",
+  "outro",
+] as const;
+
+export type EventStyle = (typeof EVENT_STYLES)[number];
+
+export const EVENT_STYLE_LABELS: Record<EventStyle, string> = {
+  rustico_chique: "Rústico-chique",
+  classico: "Clássico",
+  moderno: "Moderno",
+  boho: "Boho",
+  praia: "Praia",
+  industrial: "Industrial",
+  outro: "Outro",
+};
+
+/**
+ * Alerta determinístico de capacidade: o local informado pelo cliente comporta
+ * menos convidados do que o evento espera.
+ */
+export function venueCapacityWarning(
+  capacity: number | null | undefined,
+  guestCount: number,
+): string | null {
+  if (
+    typeof capacity !== "number" ||
+    !Number.isInteger(capacity) ||
+    capacity <= 0 ||
+    guestCount <= capacity
+  ) {
+    return null;
+  }
+  return `O local comporta até ${capacity} convidados; o evento tem ${guestCount}. Considere um espaço maior.`;
+}
 
 export type Unit = "por_pessoa" | "por_hora" | "unidade" | "pacote";
 
@@ -227,6 +466,19 @@ export const QUESTIONS: Question[] = [
     defaultValue: "coquetel",
   },
   {
+    id: "buffet_inclui",
+    step: "comida",
+    kind: "single",
+    label: "O buffet inclui serviço e louça?",
+    hint: "Buffet completo já traz garçons, copeiras, louça e talheres. Se for só comida, cotamos a equipe e a louça à parte.",
+    appliesTo: "all",
+    options: [
+      { value: "completo", label: "Completo (comida + serviço + louça)" },
+      { value: "so_comida", label: "Só comida" },
+    ],
+    defaultValue: "completo",
+  },
+  {
     id: "bebida_alcoolica",
     step: "comida",
     kind: "boolean",
@@ -335,6 +587,14 @@ export const QUESTIONS: Question[] = [
     defaultValue: "dj",
   },
   {
+    id: "cantor_cerimonia",
+    step: "extras",
+    kind: "boolean",
+    label: "Quer cantor para a cerimônia (igreja)?",
+    appliesTo: ["casamento", "batizado"],
+    defaultValue: false,
+  },
+  {
     id: "iluminacao",
     step: "extras",
     kind: "boolean",
@@ -356,10 +616,23 @@ export const QUESTIONS: Question[] = [
     defaultValue: "foto",
   },
   {
+    id: "aniversario_publico",
+    step: "extras",
+    kind: "single",
+    label: "Aniversário de criança ou adulto?",
+    appliesTo: ["aniversario"],
+    options: [
+      { value: "crianca", label: "Criança" },
+      { value: "adulto", label: "Adulto" },
+    ],
+    defaultValue: "adulto",
+  },
+  {
     id: "recreacao",
     step: "extras",
     kind: "boolean",
     label: "Quer recreação para as crianças (monitores, brinquedos)?",
+    hint: "Para aniversário de adulto, deixamos desligado por padrão.",
     appliesTo: [...KIDS, "casamento", "quinze_anos"],
     defaultValue: true,
   },
@@ -418,7 +691,7 @@ export const ITEMS: CatalogItem[] = [
   { code: "buffet_finger_food", category: "buffet", label: "Finger food / food truck", unit: "por_pessoa", quantity: { kind: "guests" }, appliesTo: "all", mandatory: true, when: [{ question: "estilo_comida", equals: "finger_food" }] },
   { code: "bebidas_nao_alcoolicas", category: "bebidas", label: "Refrigerantes, sucos e água", unit: "por_pessoa", quantity: { kind: "guests" }, appliesTo: "all", mandatory: true },
   { code: "bebidas_alcoolicas", category: "bebidas", label: "Cerveja e bebidas alcoólicas", unit: "por_pessoa", quantity: { kind: "guests" }, appliesTo: "all", mandatory: false, when: [{ question: "bebida_alcoolica", equals: true }] },
-  { code: "bar_drinks", category: "bebidas", label: "Bar com bartender", unit: "por_pessoa", quantity: { kind: "guests" }, appliesTo: "all", mandatory: false, when: [{ question: "bebida_alcoolica", equals: true }, { question: "bar_terceirizado", equals: true }] },
+  { code: "bar_drinks", category: "barman", label: "Bar com bartender", unit: "por_pessoa", quantity: { kind: "guests" }, appliesTo: "all", mandatory: false, when: [{ question: "bebida_alcoolica", equals: true }, { question: "bar_terceirizado", equals: true }] },
   { code: "bolo_principal", category: "bolo_doces", label: "Bolo", unit: "unidade", quantity: { kind: "fixed", value: 1 }, appliesTo: "all", mandatory: false, when: [{ question: "bolo", equals: true }] },
   { code: "doces_finos", category: "bolo_doces", label: "Mesa de doces", unit: "por_pessoa", quantity: { kind: "guests" }, appliesTo: "all", mandatory: false, when: [{ question: "bolo", equals: true }] },
   { code: "decoracao_tematica", category: "decoracao", label: "Decoração", unit: "pacote", quantity: { kind: "fixed", value: 1 }, appliesTo: "all", mandatory: true },
@@ -426,8 +699,9 @@ export const ITEMS: CatalogItem[] = [
   { code: "foto_e_video", category: "foto_video", label: "Fotografia e filmagem", unit: "por_hora", quantity: { kind: "hours" }, appliesTo: "all", mandatory: false, when: [{ question: "foto", equals: "foto_video" }] },
   { code: "dj_som", category: "som_dj", label: "DJ com sonorização", unit: "por_hora", quantity: { kind: "hours" }, appliesTo: "all", mandatory: false, when: [{ question: "musica", equals: "dj" }] },
   { code: "dj_som_combo", category: "som_dj", label: "DJ com sonorização", unit: "por_hora", quantity: { kind: "hours" }, appliesTo: "all", mandatory: false, when: [{ question: "musica", equals: "ambos" }] },
-  { code: "banda", category: "musica_ao_vivo", label: "Banda / música ao vivo", unit: "por_hora", quantity: { kind: "hours" }, appliesTo: "all", mandatory: false, when: [{ question: "musica", equals: "ao_vivo" }] },
-  { code: "banda_combo", category: "musica_ao_vivo", label: "Banda / música ao vivo", unit: "por_hora", quantity: { kind: "hours" }, appliesTo: "all", mandatory: false, when: [{ question: "musica", equals: "ambos" }] },
+  { code: "banda", category: "banda", label: "Banda / música ao vivo", unit: "por_hora", quantity: { kind: "hours" }, appliesTo: "all", mandatory: false, when: [{ question: "musica", equals: "ao_vivo" }] },
+  { code: "banda_combo", category: "banda", label: "Banda / música ao vivo", unit: "por_hora", quantity: { kind: "hours" }, appliesTo: "all", mandatory: false, when: [{ question: "musica", equals: "ambos" }] },
+  { code: "cantor_cerimonia", category: "cantor_cerimonia", label: "Cantor de cerimônia / igreja", unit: "pacote", quantity: { kind: "fixed", value: 1 }, appliesTo: ["casamento", "batizado"], mandatory: false, when: [{ question: "cantor_cerimonia", equals: true }] },
   { code: "iluminacao_cenica", category: "iluminacao", label: "Iluminação cênica / pista", unit: "pacote", quantity: { kind: "fixed", value: 1 }, appliesTo: "all", mandatory: false, when: [{ question: "iluminacao", equals: true }] },
   { code: "mesas_cadeiras", category: "mobiliario", label: "Mesas e cadeiras", unit: "por_pessoa", quantity: { kind: "guests" }, appliesTo: "all", mandatory: false, when: [{ question: "mobiliario", equals: true }] },
   { code: "garcons_copeiras", category: "garcons", label: "Garçons e copeiras", unit: "unidade", quantity: { kind: "per_guests", every: 20 }, appliesTo: "all", mandatory: false, when: [{ question: "garcons", equals: true }] },
@@ -450,6 +724,8 @@ export const DEFAULT_OVERRIDES: Partial<Record<EventType, Record<string, AnswerV
   formatura: { cerimonial: true, estilo_comida: "jantar", bebida_alcoolica: true, iluminacao: true },
   corporativo: { audiovisual: true, estilo_comida: "finger_food", musica: "nenhuma" },
   festa_infantil: { recreacao: true, musica: "nenhuma" },
+  // Aniversário é adulto por padrão (40º, 50º…): recreação infantil desligada.
+  aniversario: { aniversario_publico: "adulto", recreacao: false },
 };
 
 export const FORMAL_EVENT_TYPES = FORMAL;

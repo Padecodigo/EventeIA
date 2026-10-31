@@ -25,7 +25,6 @@ vi.mock("@/lib/feeds", () => ({ emitFeed: async () => undefined }));
 vi.mock("@/lib/queue", () => ({
   QUEUE_NAMES: {
     supplierDiscovery: "supplier-discovery-queue",
-    whatsappSessionLifecycle: "whatsapp-session-lifecycle",
   },
   enqueue: async (queue: string, job: string, data: Record<string, unknown>) => {
     enqueued.push({ queue, job, data });

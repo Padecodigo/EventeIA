@@ -24,7 +24,6 @@ export const supplierCandidateSchema = z.object({
   name: z.string().trim().min(2).max(120),
   category: z.string().trim().min(2).max(40),
   phone: z.string().trim().max(40).optional(),
-  whatsappLink: z.string().trim().max(300).optional(),
   sourceUrl: z.string().trim().url().max(500),
   websiteUrl: z.string().trim().url().max(500).optional(),
   externalId: z.string().trim().max(120).optional(),
@@ -134,9 +133,8 @@ export interface FirstContactInput {
 
 /**
  * Primeiro contato com detalhes do evento e origem do contato.
- * Passa pelo schema do primeiro contato (texto puro, sem URLs/emojis, ≤ 900).
- * Sem rodapé de opt-out: a conversa precisa soar humana (o opt-out continua
- * sendo detectado nas respostas — ver detectOptOut em lib/schemas/whatsapp.ts).
+ * Texto puro, sem URLs/emojis, ≤ 900. Sem rodapé de opt-out: a conversa
+ * precisa soar humana (o opt-out continua sendo detectado nas respostas).
  */
 export function renderDiscoveryFirstContact(input: FirstContactInput): string {
   const details = input.specialRequest?.replace(/(https?:\/\/|www\.)\S*/gi, "").trim();

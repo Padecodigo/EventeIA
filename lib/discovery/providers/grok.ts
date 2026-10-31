@@ -6,7 +6,7 @@ import { ProviderQuotaError, type DiscoveryProvider, type DiscoveryQuery, type F
 /**
  * Provedor Grok (xAI Responses API) com busca ao vivo na web e no X.
  * Nunca inventa números: o prompt exige source_url real; a validação de telefone
- * (DDD, formato) e a checagem de WhatsApp acontecem depois, fora do modelo.
+ * (DDD, formato) acontece depois, fora do modelo.
  */
 export const XAI_BASE_URL = "https://api.x.ai/v1";
 export const XAI_DEFAULT_MODEL = "grok-4.7";
@@ -14,7 +14,6 @@ export const XAI_DEFAULT_MODEL = "grok-4.7";
 const grokSupplierSchema = z.object({
   name: z.string().trim().min(2).max(120),
   phone: z.string().trim().max(40).nullable().optional(),
-  whatsapp_link: z.string().trim().max(300).nullable().optional(),
   source_url: z.string().trim().url().max(500),
   website_url: z.string().trim().url().max(500).nullable().optional(),
 });
@@ -45,7 +44,7 @@ export function buildGrokPrompt(q: DiscoveryQuery): string {
     `Regras: somente empresas/profissionais com contato comercial PÚBLICO; nunca invente telefones;`,
     `inclua apenas telefones que aparecem literalmente na fonte; source_url deve ser a página onde o contato aparece.`,
     q.exclude.length > 0 ? `Ignore estes contatos já conhecidos: ${q.exclude.slice(0, 40).join(", ")}.` : "",
-    `Responda SOMENTE com JSON: {"suppliers":[{"name":"","phone":"","whatsapp_link":"","source_url":"","website_url":""}]}.`,
+    `Responda SOMENTE com JSON: {"suppliers":[{"name":"","phone":"","source_url":"","website_url":""}]}.`,
   ]
     .filter((l) => l.length > 0)
     .join(" ");
@@ -77,7 +76,6 @@ export function parseGrokResponse(body: unknown, query: DiscoveryQuery): Supplie
     name: s.name,
     category: query.category,
     phone: s.phone ?? undefined,
-    whatsappLink: s.whatsapp_link ?? undefined,
     sourceUrl: s.source_url,
     websiteUrl: s.website_url ?? undefined,
     city: query.city,

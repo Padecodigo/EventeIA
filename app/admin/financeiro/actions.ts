@@ -10,7 +10,7 @@ import { microUsdToBrlCents, parseFxToMicro, PRICE_KEYS } from "@/lib/finance/pr
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-const FIXED_COST_PROVIDERS = ["vps", "supabase", "domain", "whatsapp", "evolution", "resend", "serper", "google_places", "deepseek", "other"] as const;
+const FIXED_COST_PROVIDERS = ["vps", "supabase", "domain", "resend", "serper", "google_places", "deepseek", "other"] as const;
 
 export interface FinanceActionState {
   error?: string;

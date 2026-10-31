@@ -28,7 +28,7 @@ export const REFUND_SECTIONS: readonly LegalSection[] = [
     id: "busca-iniciada",
     title: "Depois que a busca de fornecedores começa",
     paragraphs: [
-      "Quando a busca de fornecedores de um evento começa, o serviço passa a ser prestado e gera custos imediatos: pesquisa de fornecedores, uso de inteligência artificial e envio de mensagens por WhatsApp e e-mail. Por isso, a partir desse momento, o ticket usado nesse evento não é reembolsável.",
+      "Quando a busca de fornecedores de um evento começa, o serviço passa a ser prestado e gera custos imediatos: pesquisa de fornecedores, uso de inteligência artificial e envio de mensagens por Instagram, Messenger e e-mail. Por isso, a partir desse momento, o ticket usado nesse evento não é reembolsável.",
       "Isso não limita os direitos que a lei garante a você. Se o serviço não for prestado ou tiver falha atribuível ao EventeIA, fale com a gente e analisaremos o caso conforme o Código de Defesa do Consumidor.",
     ],
   },

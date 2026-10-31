@@ -25,13 +25,12 @@
 | Preço                          | `B2C_TICKET_PRICE_CENTS` (padrão `9700` = R$ 97,00 — configurável por ambiente) |
 | Meios                          | Pix dinâmico ou cartão (Asaas)                                                  |
 | Validade do acesso             | Permanente ao orçamento/cotações do evento                                      |
-| Validade dos disparos WhatsApp | Até 7 dias após a data do evento (cortesia de follow-up)                        |
 
 ### 2.2 O que desbloqueia o tíquete
 
 1. Orçamento completo (motor determinístico, sem máscara de dados).
 2. Cotações ilimitadas **daquele evento** (inclusive reexecuções do motor com a mesma versão).
-3. Envio das cotações via WhatsApp (respeitando consentimento do destinatário).
+3. Contato com fornecedores por Instagram/Messenger e e-mail (respeitando consentimento).
 4. Exportação (PDF/planilha) do orçamento.
 
 Antes da compra, o anfitrião vê um **preview deliberadamente limitado**: 3 itens do breakdown e total mascarado — suficiente para percepção de valor, sem entregar o ativo.
@@ -89,7 +88,7 @@ Premissas conservadoras (Out/2026):
 
 | Item                                                              | Valor                |
 | ----------------------------------------------------------------- | -------------------- |
-| Custo direto por evento ativado (infra + IA + WhatsApp + suporte) | **R$ 9,00**          |
+| Custo direto por evento ativado (infra + IA + suporte)            | **R$ 9,00**          |
 | Simples Nacional (Anexo III/ME)                                   | 6% do faturamento    |
 | Asaas Pix                                                         | R$ 1,99 por cobrança |
 | Asaas cartão                                                      | 2,99% + R$ 0,49      |
@@ -169,7 +168,7 @@ create table public.credit_ledger (
 
 1. Máx. **1 checkout pendente** por evento/profile; máx. 5 checkouts abandonados/hora por profile (rate limit).
 2. Rascunhos gratuitos: máx. 20 ativos por profile B2C (limpeza assistida acima disso).
-3. Disparos WhatsApp contam com rate limiting próprio ([WHATSAPP_EVOLUTION.md](WHATSAPP_EVOLUTION.md)) e exigem consentimento do destinatário.
+3. Contato com fornecedores respeita a janela de 24h da Meta (Instagram/Messenger) e exige consentimento do destinatário.
 4. Suspeita de fraude: acionar antifraude Asaas (`risk_review`), **sem conceder efeitos** até resolução.
 5. Uso comercial de conta B2C por planner: um CNPJ por workspace no futuro (hoje CPF, ver [PAYMENTS.md](PAYMENTS.md) §9).
 

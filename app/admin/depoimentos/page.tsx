@@ -61,7 +61,7 @@ export default async function AdminTestimonialsPage() {
           —
           despublicar remove na hora.
         </p>
-        <p className="mt-2 text-caption text-vinho/60">Depoimentos chegam dos clientes pelo convite automático no WhatsApp. Selos: Pendente = aguardando sua revisão; Aprovado/Publicado = visível no site; Rejeitado = não será publicado.</p>
+        <p className="mt-2 text-caption text-vinho/60">Depoimentos chegam dos clientes pelo convite automático. Selos: Pendente = aguardando sua revisão; Aprovado/Publicado = visível no site; Rejeitado = não será publicado.</p>
         <div className="mt-5 flex flex-wrap gap-3 text-caption">
           <span className="rounded-full bg-areia-secundaria px-3 py-1 text-vinho/75">
             {pendingCount} pendente(s)
@@ -83,7 +83,7 @@ export default async function AdminTestimonialsPage() {
 
       {items.length === 0 ? (
         <p className="rounded-card border border-dashed border-line-strong bg-off-white p-10 text-center text-sm text-vinho/70">
-          Nenhum depoimento recebido ainda. Os convites são enviados automaticamente pelo WhatsApp um
+          Nenhum depoimento recebido ainda. Os convites são enviados automaticamente um
           dia após o evento (quando há consentimento).
         </p>
       ) : (

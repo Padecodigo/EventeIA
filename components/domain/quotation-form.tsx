@@ -43,7 +43,7 @@ export function QuotationForm({ eventId }: { eventId: string }) {
         label="Contato (opcional)"
         name="vendorContact"
         maxLength={80}
-        placeholder="WhatsApp ou e-mail"
+        placeholder="Telefone ou e-mail"
       />
       <Field
         label="Valor da proposta"
