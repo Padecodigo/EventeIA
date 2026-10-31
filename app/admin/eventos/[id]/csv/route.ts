@@ -4,6 +4,7 @@ import { eventCostCsv } from "@/lib/admin/event-csv";
 import { loadEventCost } from "@/lib/admin/event-finance";
 import { isUuid } from "@/lib/admin/search";
 import { requireAdmin } from "@/lib/auth";
+import { isUserDeleted } from "@/lib/events/history-deletion";
 import { PROVIDER_LABELS } from "@/lib/finance/load";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
@@ -14,8 +15,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   await requireAdmin();
   const { id } = await params;
   if (!isUuid(id)) return new NextResponse("evento inválido", { status: 400 });
-  const { data: ev } = await getSupabaseAdmin().from("events").select("id,title").eq("id", id).maybeSingle();
-  if (!ev) return new NextResponse("evento não encontrado", { status: 404 });
+  const { data: ev } = await getSupabaseAdmin().from("events").select("id,title,user_deleted_at").eq("id", id).maybeSingle();
+  if (!ev || isUserDeleted(ev)) return new NextResponse("evento não encontrado", { status: 404 });
   const cost = await loadEventCost(id, ev.title);
   return new NextResponse(eventCostCsv(cost, PROVIDER_LABELS), {
     headers: {

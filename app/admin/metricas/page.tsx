@@ -1,6 +1,6 @@
-import { requireAdmin } from "@/lib/auth";
 import { countByDay, lastNDays, maxCount, shortDay, type DailyPoint } from "@/lib/analytics/pure";
 import { loadAnalyticsSince } from "@/lib/analytics/query";
+import { requireAdmin } from "@/lib/auth";
 
 import { Card } from "../ui";
 

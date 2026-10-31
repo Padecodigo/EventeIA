@@ -1,3 +1,4 @@
+import { EventHistoryDeletion } from "@/components/domain/event-history-deletion";
 import { PasswordForm } from "@/components/domain/password-form";
 import { ProfileForm } from "@/components/domain/profile-form";
 import { EmailText } from "@/components/ui/email-text";
@@ -20,6 +21,29 @@ export default async function ProfilePage() {
   const { data: authData } = await supabase.auth.getUser();
   const hasPassword = await accountHasPassword(authData.user);
   const hasGoogle = (authData.user?.identities ?? []).some((i) => i.provider === "google");
+
+  // Histórico (0075): só eventos encerrados do próprio usuário; apagados somem pela RLS.
+  const { data: closedRows } = await supabase
+    .from("events")
+    .select("id,title,event_date,status")
+    .eq("owner_profile_id", user.id)
+    .in("status", ["completed", "canceled"])
+    .order("event_date", { ascending: false })
+    .limit(100);
+  const { data: deletedRows } = await supabase.rpc("list_my_deleted_events");
+  const dateLabel = (iso: string) =>
+    new Date(`${iso.slice(0, 10)}T12:00:00Z`).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+  const closedEvents = (closedRows ?? []).map((e) => ({
+    id: e.id,
+    title: e.title,
+    dateLabel: dateLabel(e.event_date),
+    statusLabel: e.status === "completed" ? "Encerrado" : "Excluído",
+  }));
+  const deletedEvents = (deletedRows ?? []).map((e) => ({
+    id: e.id,
+    title: e.title,
+    purgeAfterLabel: new Date(e.purge_after).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }),
+  }));
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
@@ -61,6 +85,7 @@ export default async function ProfilePage() {
         </p>
         <PasswordForm hasPassword={hasPassword} />
       </section>
+      <EventHistoryDeletion closedEvents={closedEvents} deletedEvents={deletedEvents} />
     </div>
   );
 }

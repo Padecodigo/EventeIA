@@ -75,6 +75,9 @@ export interface Database {
         venue_type: string | null;
         event_style: string | null;
         budget_limit_cents: number | null;
+        user_deleted_at: string | null;
+        user_deleted_by: string | null;
+        user_purged_at: string | null;
         status: "draft" | "awaiting_payment" | "active" | "completed" | "canceled";
         city: string | null;
         city_uf: string | null;
@@ -134,6 +137,13 @@ export interface Database {
         followup_count: number;
         repassado_at: string | null;
         updated_at: string;
+        created_at: string;
+      }>;
+      event_deletion_audit: Table<{
+        id: string;
+        event_id: string;
+        profile_id: string | null;
+        action: "requested" | "undone" | "purged";
         created_at: string;
       }>;
       event_budget_limit_history: Table<{
@@ -695,6 +705,19 @@ export interface Database {
     };
     Views: { [_ in never]: never };
     Functions: {
+      request_event_history_deletion: { Args: { p_event_ids: string[] | null }; Returns: number };
+      undo_event_history_deletion: { Args: { p_event_id: string }; Returns: boolean };
+      list_my_deleted_events: {
+        Args: Record<string, never>;
+        Returns: {
+          id: string;
+          title: string;
+          event_date: string;
+          user_deleted_at: string;
+          purge_after: string;
+        }[];
+      };
+      purge_user_deleted_events: { Args: { p_now?: string }; Returns: number };
       set_event_budget_limit: {
         Args: { p_event_id: string; p_cents: number | null };
         Returns: number | null;

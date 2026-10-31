@@ -5,6 +5,7 @@ import { EventChat } from "@/components/domain/event-chat";
 import { loadEventCost } from "@/lib/admin/event-finance";
 import { isUuid } from "@/lib/admin/search";
 import { requireAdmin } from "@/lib/auth";
+import { ADMIN_USER_DELETED_LABEL, isUserDeleted } from "@/lib/events/history-deletion";
 import { PROVIDER_LABELS } from "@/lib/finance/load";
 import { formatBRL } from "@/lib/money";
 import { listEventChatConversations } from "@/lib/outreach/chat-read";
@@ -24,6 +25,15 @@ export default async function AdminEventoPage({ params }: { params: Promise<{ id
   const admin = getSupabaseAdmin();
   const { data: ev } = await admin.from("events").select("*").eq("id", id).maybeSingle();
   if (!ev) notFound();
+  // 0075: evento apagado pelo usuário — admin vê só o rótulo, sem conteúdo.
+  if (isUserDeleted(ev)) {
+    return (
+      <div className="flex flex-col gap-3" data-testid="admin-event-user-deleted">
+        <p className="text-caption"><Link className="underline" href="/admin/eventos">← Eventos</Link></p>
+        <h2 className="font-serif text-title-2">{ADMIN_USER_DELETED_LABEL}</h2>
+      </div>
+    );
+  }
   const [owner, prospects, pays, tickets, cost, conversations] = await Promise.all([
     admin.from("profiles").select("id,display_name,email").eq("id", ev.owner_profile_id).maybeSingle(),
     admin.from("vendor_prospects").select("id,vendor_name,vendor_category,status,supplier_id,last_message_at").eq("event_id", id).order("created_at", { ascending: false }).limit(300),

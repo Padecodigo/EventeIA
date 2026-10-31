@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AdminEventClear } from "@/components/admin/admin-event-clear";
 import { AdminEventDelete } from "@/components/admin/admin-event-delete";
 import { requireAdmin } from "@/lib/auth";
+import { ADMIN_USER_DELETED_LABEL, isUserDeleted } from "@/lib/events/history-deletion";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 import { Card, EVENT_STATUS_LABELS, Pill, SearchBox, fmtDate, likeTerm } from "../ui";
@@ -19,7 +20,7 @@ export default async function AdminEventosPage({ searchParams }: { searchParams:
   const q = one(sp.q);
   const status = Object.hasOwn(EVENT_STATUS_LABELS, one(sp.status)) ? one(sp.status) : "";
   const admin = getSupabaseAdmin();
-  let query = admin.from("events").select("id,title,event_type,event_date,status,city,city_uf,guest_count,owner_profile_id,created_at").order("created_at", { ascending: false }).limit(200);
+  let query = admin.from("events").select("id,title,event_type,event_date,status,city,city_uf,guest_count,owner_profile_id,created_at,user_deleted_at").order("created_at", { ascending: false }).limit(200);
   const t = likeTerm(q);
   if (t) query = query.ilike("title", t);
   if (status) query = query.eq("status", status as never);
@@ -59,7 +60,11 @@ export default async function AdminEventosPage({ searchParams }: { searchParams:
             <table className="w-full min-w-[36rem] text-sm [&_td]:px-2 [&_td]:py-2 [&_th]:px-2 [&_th]:py-2 [&_th]:font-medium">
               <thead className="text-left text-caption text-vinho/60"><tr><th>Evento</th><th>Data</th><th>Cidade</th><th>Situação</th><th>Cliente</th><th>Ações</th></tr></thead>
               <tbody>
-                {events.map((e) => (
+                {events.map((e) => isUserDeleted(e) ? (
+                  <tr key={e.id} className="border-t border-line-subtle" data-testid="user-deleted-row">
+                    <td className="py-2 text-vinho/60" colSpan={6}>{ADMIN_USER_DELETED_LABEL}</td>
+                  </tr>
+                ) : (
                   <tr key={e.id} className="border-t border-line-subtle">
                     <td className="py-2"><Link className="font-semibold underline" href={`/admin/eventos/${e.id}`}>{e.title}</Link> <span className="text-caption text-vinho/50">{e.event_type}</span></td>
                     <td>{fmtDate(e.event_date)}</td>
