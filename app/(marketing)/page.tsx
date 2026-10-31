@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { HowItWorksAnimation } from "@/components/marketing/how-it-works-animation";
 import { TESTIMONIALS, Testimonials } from "@/components/marketing/testimonials";
 import { JsonLd } from "@/components/seo/json-ld";
 import { formatBRL } from "@/lib/money";
@@ -201,7 +202,10 @@ export default async function LandingPage() {
       <section id="como-funciona" aria-labelledby="como-funciona-titulo" className="scroll-mt-24 bg-white">
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-28">
           <p className="eyebrow">Como funciona · 3 passos</p>
-          <h2 id="como-funciona-titulo" className={`mt-4 max-w-2xl ${sectionTitle}`}>Como funciona para você, que está organizando o evento</h2>
+          <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-[1.1fr_1fr]">
+            <h2 id="como-funciona-titulo" className={`mt-4 max-w-2xl ${sectionTitle}`}>Como funciona para você, que está organizando o evento</h2>
+            <HowItWorksAnimation />
+          </div>
           <ol className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
             {STEPS.map((s) => (
               <li key={s.n} className="rounded-3xl p-7 ring-1 ring-champagne-claro bg-areia-quente">

@@ -124,3 +124,22 @@ describe("landing — depoimentos de exemplo", () => {
     for (const city of ["São José dos Campos", "Taubaté", "Jacareí"]) expect(testimonials).toContain(city);
   });
 });
+
+describe("landing — animação 'como funciona' (leve, sem JS)", () => {
+  const comp = readFileSync(join(process.cwd(), "components/marketing/how-it-works-animation.tsx"), "utf8");
+  const css = readFileSync(join(process.cwd(), "app/globals.css"), "utf8");
+  const page = readFileSync(join(process.cwd(), "app/(marketing)/page.tsx"), "utf8");
+  it("é um server component SVG, sem libs nem assets externos", () => {
+    expect(comp).not.toMatch(/"use client"|useEffect|framer|lottie|<img|src=|https?:\/\//);
+    expect(comp).toContain("<svg");
+    expect(comp).toContain("<title");
+    expect(page).toContain("<HowItWorksAnimation />");
+  });
+  it("3 cenas em loop de 9 s e fallback estático com prefers-reduced-motion", () => {
+    for (const c of ["ev-how-s1", "ev-how-s2", "ev-how-s3"]) expect(comp).toContain(c);
+    expect(css).toMatch(/\.ev-how-scene \{[^}]*9s/);
+    const reduced = css.slice(css.lastIndexOf("@media (prefers-reduced-motion: reduce)"));
+    expect(reduced).toContain("animation: none");
+    expect(reduced).toMatch(/\.ev-how-s3 \{ opacity: 1; \}/);
+  });
+});
