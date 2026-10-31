@@ -12,14 +12,43 @@ export const TRASH_KINDS = {
 } as const;
 export type TrashKind = keyof typeof TRASH_KINDS;
 
-/** Tipos que NÃO podem ser apagados definitivamente, com o motivo mostrado ao admin. */
-export const PURGE_BLOCKED: Partial<Record<TrashKind, string>> = {
-  custos:
-    "Custos são registros financeiros/fiscais e precisam ser guardados por 5 anos (obrigação fiscal). Eles ficam na lixeira e podem ser restaurados, mas não são apagados definitivamente.",
+/** Tipos que NÃO podem ser apagados definitivamente (nenhum desde 0076: custos vão para o arquivo morto). */
+export const PURGE_BLOCKED: Partial<Record<TrashKind, string>> = {};
+
+/** Coluna que tira o item da lixeira sem apagar a linha (0076). */
+const TRASH_HIDDEN_COLUMN: Partial<Record<TrashKind, "archived_at" | "anonymized_at">> = {
+  custos: "archived_at",
+  fornecedores: "anonymized_at",
 };
 
+export const COST_ARCHIVE_REASON =
+  "Custos são registros fiscais: saem da lixeira e vão para o Arquivo morto (somente leitura), onde ficam 5 anos e depois são apagados automaticamente.";
+
 export const SUPPLIER_IN_USE_REASON =
-  "Fornecedores já contatados em algum evento ficam guardados (histórico de contatos e orçamentos do cliente). Eles continuam fora da busca e dos contatos.";
+  "Fornecedores ligados a eventos de clientes têm nome e contatos apagados de forma irreversível (viram “Fornecedor removido”); o histórico do cliente continua intacto.";
+
+/** Retenção fiscal do arquivo morto. */
+export const ARCHIVE_RETENTION_YEARS = 5;
+export function archiveRetentionEnd(occurredAt: string, archivedAt: string): Date {
+  const base = new Date(Math.max(Date.parse(occurredAt), Date.parse(archivedAt)));
+  base.setUTCFullYear(base.getUTCFullYear() + ARCHIVE_RETENTION_YEARS);
+  return base;
+}
+
+/** Patch irreversível de anonimização de fornecedor (PII fora; linha/FKs mantidas). */
+const SUPPLIER_ANONYMIZED_NAME = "Fornecedor removido";
+export function supplierAnonymizePatch(now: Date): Record<string, string | null> {
+  return {
+    name: SUPPLIER_ANONYMIZED_NAME,
+    phone_e164: null,
+    contact_email: null,
+    website_url: null,
+    source_url: "removido",
+    external_id: null,
+    whatsapp_verified: null,
+    anonymized_at: now.toISOString(),
+  };
+}
 
 /**
  * Tabelas com FK para suppliers. Fornecedor referenciado em QUALQUER uma delas é mantido:
@@ -46,7 +75,11 @@ export function cleanIds(ids: readonly unknown[]): string[] {
   return [...new Set(ids.filter((v): v is string => typeof v === "string" && UUID.test(v)))].slice(0, 500);
 }
 
-type UpdateQ = { in: (c: string, v: string[]) => UpdateQ; not: (c: string, op: string, v: null) => PromiseLike<{ error: { message: string } | null }> };
+type UpdateQ = PromiseLike<{ error: { message: string } | null }> & {
+  in: (c: string, v: string[]) => UpdateQ;
+  not: (c: string, op: string, v: null) => UpdateQ;
+  is: (c: string, v: null) => UpdateQ;
+};
 export interface TrashDb {
   from: (t: string) => { update: (p: Record<string, null>) => UpdateQ };
 }
@@ -55,11 +88,14 @@ export interface TrashDb {
 export async function restoreItems(db: TrashDb, kind: TrashKind, ids: readonly unknown[]): Promise<number> {
   const clean = cleanIds(ids);
   if (clean.length === 0) return 0;
-  const { error } = await db
+  let q = db
     .from(TRASH_KINDS[kind].table)
     .update({ deleted_at: null, deleted_by: null })
     .in("id", clean)
     .not("deleted_at", "is", null);
+  const hidden = TRASH_HIDDEN_COLUMN[kind];
+  if (hidden) q = q.is(hidden, null); // arquivados/anonimizados não voltam
+  const { error } = await q;
   if (error) throw new Error(error.message);
   return clean.length;
 }
@@ -69,6 +105,7 @@ type Res<T> = { data: T | null; error: { message: string } | null };
 export interface PurgeQ<T = Row[]> extends PromiseLike<Res<T>> {
   in(c: string, v: string[]): PurgeQ<T>;
   not(c: string, op: string, v: null): PurgeQ<T>;
+  is(c: string, v: null): PurgeQ<T>;
   limit(n: number): PurgeQ<T>;
 }
 type Row = Record<string, unknown>;
@@ -76,6 +113,7 @@ export interface PurgeDb {
   from(t: string): {
     select(cols: string): PurgeQ;
     delete(): PurgeQ;
+    update(v: Row): PurgeQ;
     insert(v: Row): PromiseLike<{ error: { message: string } | null }>;
   };
 }
@@ -84,6 +122,10 @@ export interface PurgeResult {
   kind: TrashKind;
   deleted: number;
   skipped: number;
+  /** Custos movidos para o arquivo morto. */
+  archived?: number;
+  /** Fornecedores anonimizados (referenciados por histórico de cliente). */
+  anonymized?: number;
   reason?: string;
   /** Anexos (storage) dos chamados apagados, para o chamador remover. */
   attachments: string[];
@@ -94,56 +136,74 @@ export interface PurgeResult {
  * Só toca linhas com deleted_at não nulo; respeita FKs (fornecedor ligado a evento é pulado);
  * nunca apaga tipos em PURGE_BLOCKED. Registra no admin_audit_log.
  */
-export async function purgeItems(db: PurgeDb, kind: TrashKind, ids: readonly unknown[] | "all", adminId: string): Promise<PurgeResult> {
+export async function purgeItems(db: PurgeDb, kind: TrashKind, ids: readonly unknown[] | "all", adminId: string, now: Date = new Date()): Promise<PurgeResult> {
   const table = TRASH_KINDS[kind].table;
-  const blocked = PURGE_BLOCKED[kind];
+  const hidden = TRASH_HIDDEN_COLUMN[kind];
   const wanted = ids === "all" ? null : cleanIds(ids);
   const base: PurgeResult = { kind, deleted: 0, skipped: 0, attachments: [] };
   if (wanted !== null && wanted.length === 0) return base;
 
   let sel = db.from(table).select(kind === "chamados" ? "id,attachment_path" : "id").not("deleted_at", "is", null);
+  if (hidden) sel = sel.is(hidden, null);
   if (wanted !== null) sel = sel.in("id", wanted);
   const found = await sel.limit(500);
   if (found.error) throw new Error(found.error.message);
   const rows = found.data ?? [];
-  if (blocked) return { ...base, skipped: rows.length, reason: rows.length ? blocked : undefined };
+  if (rows.length === 0) return base;
+  const action = ids === "all" ? "trash.empty" : "trash.purge";
+  const audit = async (verb: string, target: string[], details: Row) => {
+    const r = await db.from("admin_audit_log").insert({ admin_id: adminId, action: `${action}${verb}`, target_table: table, target_ids: target, details: { kind, ...details } });
+    if (r.error) throw new Error(r.error.message);
+  };
 
   let targets = rows.map((r) => String(r.id));
-  let skipped = 0;
-  let reason: string | undefined;
-  if (kind === "fornecedores" && targets.length) {
+
+  if (kind === "custos") {
+    const upd = await db.from(table).update({ archived_at: now.toISOString(), archived_by: adminId })
+      .in("id", targets).not("deleted_at", "is", null).is("archived_at", null);
+    if (upd.error) throw new Error(upd.error.message);
+    await audit(".archive", targets, { archived: targets.length });
+    return { ...base, archived: targets.length, reason: COST_ARCHIVE_REASON };
+  }
+
+  let anonymized = 0;
+  if (kind === "fornecedores") {
     const inUse = new Set<string>();
     for (const ref of SUPPLIER_REFERENCING_TABLES) {
       const used = await db.from(ref).select("supplier_id").in("supplier_id", targets).limit(5000);
       if (used.error) throw new Error(used.error.message);
       for (const r of used.data ?? []) inUse.add(String(r.supplier_id));
     }
-    skipped = targets.filter((id) => inUse.has(id)).length;
+    const keep = targets.filter((id) => inUse.has(id));
     targets = targets.filter((id) => !inUse.has(id));
-    if (skipped) reason = SUPPLIER_IN_USE_REASON;
+    if (keep.length) {
+      const upd = await db.from(table).update(supplierAnonymizePatch(now))
+        .in("id", keep).not("deleted_at", "is", null).is("anonymized_at", null);
+      if (upd.error) throw new Error(upd.error.message);
+      anonymized = keep.length;
+      await audit(".anonymize", keep, { anonymized });
+    }
   }
-  if (targets.length === 0) return { ...base, skipped, reason };
+  if (targets.length === 0) return { ...base, anonymized, reason: anonymized ? SUPPLIER_IN_USE_REASON : undefined };
 
   const del = await db.from(table).delete().in("id", targets).not("deleted_at", "is", null);
   if (del.error) throw new Error(del.error.message);
   const attachments = kind === "chamados"
     ? rows.filter((r) => targets.includes(String(r.id)) && typeof r.attachment_path === "string").map((r) => r.attachment_path as string)
     : [];
-  const audit = await db.from("admin_audit_log").insert({
-    admin_id: adminId,
-    action: ids === "all" ? "trash.empty" : "trash.purge",
-    target_table: table,
-    target_ids: targets,
-    details: { kind, deleted: targets.length, skipped },
-  });
-  if (audit.error) throw new Error(audit.error.message);
-  return { kind, deleted: targets.length, skipped, reason, attachments };
+  await audit("", targets, { deleted: targets.length });
+  return { kind, deleted: targets.length, skipped: 0, anonymized, reason: anonymized ? SUPPLIER_IN_USE_REASON : undefined, attachments };
 }
 
 /** Texto do resultado para o admin (inclui o motivo dos itens pulados). */
 export function purgeSummary(results: readonly PurgeResult[]): string {
-  const deleted = results.reduce((n, r) => n + r.deleted, 0);
+  const sum = (f: (r: PurgeResult) => number) => results.reduce((n, r) => n + f(r), 0);
+  const deleted = sum((r) => r.deleted);
+  const archived = sum((r) => r.archived ?? 0);
+  const anonymized = sum((r) => r.anonymized ?? 0);
   const parts = [`${deleted} ${deleted === 1 ? "item apagado" : "itens apagados"} definitivamente.`];
+  if (archived) parts.push(`${archived} ${archived === 1 ? "custo movido" : "custos movidos"} para o Arquivo morto (guardados 5 anos).`);
+  if (anonymized) parts.push(`${anonymized} ${anonymized === 1 ? "fornecedor anonimizado" : "fornecedores anonimizados"} (histórico dos clientes mantido).`);
   for (const r of results) {
     if (r.skipped && r.reason) parts.push(`${TRASH_KINDS[r.kind].label}: ${r.skipped} ${r.skipped === 1 ? "item mantido" : "itens mantidos"}. ${r.reason}`);
   }

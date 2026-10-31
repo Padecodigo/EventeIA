@@ -5,6 +5,7 @@ import { runBalanceCheck } from "@/lib/finance/balance-monitor";
 import { publishWithBrowser } from "@/lib/instagram-browser/publish";
 import { runAsaasReconcileSweep } from "@/lib/jobs/asaas-reconcile";
 import { handleAsaasWebhookJob, type AsaasWebhookJob } from "@/lib/jobs/asaas-webhook";
+import { runCostArchivePurge } from "@/lib/jobs/cost-archive-purge";
 import { runEventHistoryPurge } from "@/lib/jobs/event-history-purge";
 import {
   externalEventIdOf,
@@ -167,6 +168,15 @@ const eventHistoryPurgeWorker = new Worker(
   { connection, concurrency: 1 },
 );
 
+// Arquivo morto fiscal: custos arquivados há mais de 5 anos (0076).
+const costArchivePurgeWorker = new Worker(
+  QUEUE_NAMES.costArchivePurge,
+  async () => {
+    await runCostArchivePurge();
+  },
+  { connection, concurrency: 1 },
+);
+
 // Descoberta automática de fornecedores e extração de cotações.
 const discoveryWorker = createDiscoveryWorker(connection);
 const quoteExtractionWorker = createQuoteExtractionWorker(connection);
@@ -215,6 +225,11 @@ void getQueue(QUEUE_NAMES.eventHistoryPurge).add(
   {},
   { repeat: { pattern: "40 3 * * *", tz: "America/Sao_Paulo" }, attempts: 3 },
 );
+void getQueue(QUEUE_NAMES.costArchivePurge).add(
+  "purge",
+  {},
+  { repeat: { pattern: "50 3 * * *", tz: "America/Sao_Paulo" }, attempts: 3 },
+);
 // Créditos nunca expiram (0037): remove o agendamento legado de expiração, se existir.
 void getQueue(QUEUE_NAMES.creditsExpireLegacy)
   .getRepeatableJobs()
@@ -224,7 +239,7 @@ void getQueue(QUEUE_NAMES.creditsExpireLegacy)
   })
   .catch(() => undefined);
 
-const workers = [asaasWorker, metaWebhooksWorker, prospectReplyWorker, reconcileWorker, balanceWorker, metaTokenHealthWorker, metaWindowSweepWorker, artCleanupWorker, prospectPostDeleteWorker, instagramPublishWorker, marketingAutopilotWorker, eventHistoryPurgeWorker, discoveryWorker, quoteExtractionWorker];
+const workers = [asaasWorker, metaWebhooksWorker, prospectReplyWorker, reconcileWorker, balanceWorker, metaTokenHealthWorker, metaWindowSweepWorker, artCleanupWorker, prospectPostDeleteWorker, instagramPublishWorker, marketingAutopilotWorker, eventHistoryPurgeWorker, costArchivePurgeWorker, discoveryWorker, quoteExtractionWorker];
 
 for (const worker of workers) {
   worker.on("error", (error) => {

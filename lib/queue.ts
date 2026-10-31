@@ -26,6 +26,7 @@ export const QUEUE_NAMES = {
   prospectReply: "prospect-reply",
   metaWindowSweep: "meta-window-sweep",
   eventHistoryPurge: "event-history-purge",
+  costArchivePurge: "cost-archive-purge",
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
