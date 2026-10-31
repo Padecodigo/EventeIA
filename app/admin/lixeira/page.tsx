@@ -1,4 +1,6 @@
-import { PURGE_BLOCKED, SUPPLIER_IN_USE_REASON, TRASH_KINDS, type TrashKind } from "@/lib/admin/trash";
+import Link from "next/link";
+
+import { COST_ARCHIVE_REASON, PURGE_BLOCKED, SUPPLIER_IN_USE_REASON, TRASH_KINDS, type TrashKind } from "@/lib/admin/trash";
 import { requireAdmin } from "@/lib/auth";
 import { PROVIDER_LABELS } from "@/lib/finance/load";
 import { formatBRL } from "@/lib/money";
@@ -27,11 +29,11 @@ export default async function AdminLixeiraPage() {
   const admin = getSupabaseAdmin();
   const L = 200;
   const [costs, llm, alerts, tickets, suppliers] = await Promise.all([
-    admin.from("cost_entries").select("id,provider,kind,note,cost_brl_cents,occurred_at,deleted_at").not("deleted_at", "is", null).order("deleted_at", { ascending: false }).limit(L),
+    admin.from("cost_entries").select("id,provider,kind,note,cost_brl_cents,occurred_at,deleted_at").not("deleted_at", "is", null).is("archived_at", null).order("deleted_at", { ascending: false }).limit(L),
     admin.from("llm_usage_events").select("id,provider,task,cost_brl_cents,created_at,deleted_at").not("deleted_at", "is", null).order("deleted_at", { ascending: false }).limit(L),
     admin.from("finance_alerts").select("id,provider,kind,balance_brl_cents,created_at,deleted_at").not("deleted_at", "is", null).order("deleted_at", { ascending: false }).limit(L),
     admin.from("support_tickets").select("id,subject,status,created_at,deleted_at").not("deleted_at", "is", null).order("deleted_at", { ascending: false }).limit(L),
-    admin.from("suppliers").select("id,name,category,city,deleted_at").not("deleted_at", "is", null).order("deleted_at", { ascending: false }).limit(L),
+    admin.from("suppliers").select("id,name,category,city,deleted_at").not("deleted_at", "is", null).is("anonymized_at", null).order("deleted_at", { ascending: false }).limit(L),
   ]);
   const p = (x: string) => PROVIDER_LABELS[x] ?? x;
   const sections: Record<TrashKind, Item[]> = {
@@ -47,13 +49,15 @@ export default async function AdminLixeiraPage() {
     <div className="flex flex-col gap-6">
       <header>
         <h2 className="font-serif text-title-2">Lixeira</h2>
-        <p className="text-caption text-vinho/60">Tudo o que foi excluído no admin fica guardado aqui. Toque em “Restaurar” para devolver o item à tela de origem. “Excluir definitivamente” e “Esvaziar lixeira” apagam de verdade e não têm volta. Custos (registros fiscais, guardados por 5 anos) e fornecedores já contatados em eventos nunca são apagados definitivamente. Mostra até {L} itens por seção.</p>
+        <p className="text-caption text-vinho/60">Tudo o que foi excluído no admin fica guardado aqui. Toque em “Restaurar” para devolver o item à tela de origem. “Excluir definitivamente” e “Esvaziar lixeira” não têm volta e deixam a lixeira vazia: custos vão para o Arquivo morto (registros fiscais, guardados 5 anos) e fornecedores ligados a eventos de clientes são anonimizados. Mostra até {L} itens por seção.</p>
+        <div className="mt-3 flex flex-wrap items-start justify-end gap-2">
+          <Link href="/admin/lixeira/arquivo-morto" data-testid="lixeira-arquivo-morto"
+            className="rounded-full border border-line-strong px-3 py-1 text-caption font-semibold text-vinho">Arquivo morto</Link>
         {total > 0 ? (
-          <div className="mt-3 flex justify-end">
             <PurgeButton kind="all" scope="all" testId="lixeira-esvaziar" label="Esvaziar lixeira" title={`Esvaziar a lixeira (${total} itens)?`}
-              items={[]} warning={`Serão apagados definitivamente todos os itens das seções. ${PURGE_BLOCKED.custos ?? ""} ${SUPPLIER_IN_USE_REASON}`} />
-          </div>
+              items={[]} warning={`Todos os itens saem da lixeira sem volta. ${COST_ARCHIVE_REASON} ${SUPPLIER_IN_USE_REASON} O resto é apagado definitivamente.`} />
         ) : null}
+        </div>
       </header>
       {(Object.keys(TRASH_KINDS) as TrashKind[]).map((k) => {
         const items = sections[k];
@@ -72,7 +76,7 @@ export default async function AdminLixeiraPage() {
                     <RestoreButton kind={k} ids={[i.id]} label="Restaurar" />
                     {PURGE_BLOCKED[k] ? null : (
                       <PurgeButton kind={k} ids={[i.id]} testId={`purge-${k}-${i.id}`} label="Excluir definitivamente" title="Excluir definitivamente este item?" items={[i.text]}
-                        warning={k === "fornecedores" ? SUPPLIER_IN_USE_REASON : undefined} />
+                        warning={k === "fornecedores" ? SUPPLIER_IN_USE_REASON : k === "custos" ? COST_ARCHIVE_REASON : undefined} />
                     )}
                   </span>
                 </li>))}</ul>

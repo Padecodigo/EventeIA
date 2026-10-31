@@ -405,6 +405,7 @@ export interface Database {
         last_seen_at: string;
         deleted_at?: string | null;
         deleted_by?: string | null;
+        anonymized_at?: string | null;
       }>;
       supplier_discovery_runs: Table<{
         id: string;
@@ -558,6 +559,8 @@ export interface Database {
         is_estimate: boolean | null;
         deleted_at: string | null;
         deleted_by: string | null;
+        archived_at?: string | null;
+        archived_by?: string | null;
         created_by: string | null;
         created_at: string;
         recurring?: boolean;
@@ -718,6 +721,7 @@ export interface Database {
         }[];
       };
       purge_user_deleted_events: { Args: { p_now?: string }; Returns: number };
+      purge_expired_cost_archive: { Args: { p_now?: string }; Returns: number };
       set_event_budget_limit: {
         Args: { p_event_id: string; p_cents: number | null };
         Returns: number | null;

@@ -18,7 +18,7 @@ import { requireAdmin } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
-const PATHS = ["/admin/lixeira", "/admin/custos", "/admin/financeiro", "/admin/consumo", "/admin/chamados", "/admin/fornecedores"];
+const PATHS = ["/admin/lixeira", "/admin/lixeira/arquivo-morto", "/admin/custos", "/admin/financeiro", "/admin/consumo", "/admin/chamados", "/admin/fornecedores"];
 
 /** Restaura itens da lixeira (um ou todos de uma seção). Somente admin. */
 export async function restoreAction(form: FormData): Promise<void> {
@@ -58,7 +58,7 @@ export async function purgeAction(_prev: PurgeState, form: FormData): Promise<Pu
     const { error } = await supabase.storage.from("support-attachments").remove(files);
     if (error) logger.warn({ count: files.length }, "lixeira: anexos não removidos do storage");
   }
-  logger.info({ adminId: admin.id, results: results.map(({ kind, deleted, skipped }) => ({ kind, deleted, skipped })) }, "lixeira: exclusão definitiva");
+  logger.info({ adminId: admin.id, results: results.map(({ kind, deleted, skipped, archived, anonymized }) => ({ kind, deleted, skipped, archived, anonymized })) }, "lixeira: exclusão definitiva");
   for (const p of PATHS) revalidatePath(p);
   return { ok: true, message: purgeSummary(results) };
 }

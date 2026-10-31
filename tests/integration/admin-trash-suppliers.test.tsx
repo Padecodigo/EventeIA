@@ -25,6 +25,9 @@ const { default: Depoimentos } = await import("@/app/admin/depoimentos/page");
 const { default: Fornecedores } = await import("@/app/admin/fornecedores/page");
 const { default: Fornecedor } = await import("@/app/admin/fornecedores/[id]/page");
 const { default: Lixeira } = await import("@/app/admin/lixeira/page");
+const { default: ArquivoMorto } = await import("@/app/admin/lixeira/arquivo-morto/page");
+const { GET: arquivoCsv } = await import("@/app/admin/lixeira/arquivo-morto/csv/route");
+const { ADMIN_NAV } = await import("@/lib/admin/nav");
 const { purgeAction, restoreAction } = await import("@/app/admin/lixeira/actions");
 const { deleteSupplierAction } = await import("@/app/admin/fornecedores/actions");
 
@@ -74,9 +77,9 @@ describe("fornecedores: excluir (soft delete)", () => {
 });
 
 describe("lixeira: exclusão definitiva", () => {
-  it("botões com confirmação digitada e aviso de permanente; custos sem botão definitivo", async () => {
+  it("botões com confirmação digitada e aviso de permanente; botão Arquivo morto dentro da lixeira", async () => {
     render(await Lixeira());
-    expect(screen.getByTestId("purge-blocked-custos")).toHaveTextContent("5 anos");
+    expect(screen.getByTestId("lixeira-arquivo-morto")).toHaveAttribute("href", "/admin/lixeira/arquivo-morto");
     fireEvent.click(screen.getByTestId("lixeira-esvaziar"));
     expect(screen.getAllByText(/Esta ação é permanente/).length).toBeGreaterThan(0);
     const confirm = screen.getByTestId("lixeira-esvaziar-confirm");
@@ -92,16 +95,51 @@ describe("lixeira: exclusão definitiva", () => {
     expect(tables.suppliers).toHaveLength(2);
   });
 
-  it("Esvaziar lixeira apaga só itens da lixeira, mantém custos e registra auditoria", async () => {
+  it("Esvaziar deixa a lixeira VAZIA: apaga soltos, arquiva custos, anonimiza fornecedor referenciado", async () => {
+    const S3 = "00000000-0000-4000-8000-000000000003";
+    tables.suppliers.push({ ...sup(S3, "Buffet Contatado", "2026-10-20T00:00:00Z"), phone_e164: "+5512999990000", contact_email: "x@y.com", website_url: "https://b.com", source_url: "https://src", external_id: "e1" });
+    tables.prospect_conversations = [{ id: "pc1", supplier_id: S3 }];
     tables.support_tickets.push({ id: "00000000-0000-4000-8000-0000000000t1", deleted_at: "2026-10-21", attachment_path: "u/a.png" });
     const r = await purgeAction(null, fd({ kind: "all", confirm: "EXCLUIR" }));
     expect(r?.ok).toBe(true);
     expect(r?.message).toMatch(/2 itens apagados/);
-    expect(r?.message).toContain("5 anos");
-    expect(tables.suppliers.map((s) => s.id)).toEqual([S1]);
-    expect(tables.cost_entries).toHaveLength(1);
-    expect(tables.admin_audit_log.length).toBe(2);
+    expect(r?.message).toMatch(/1 custo movido para o Arquivo morto/);
+    expect(r?.message).toMatch(/1 fornecedor anonimizado/);
+    expect(tables.suppliers.map((s) => s.id)).toEqual([S1, S3]);
+    expect(tables.suppliers[1]).toMatchObject({ name: "Fornecedor removido", phone_e164: null, contact_email: null, website_url: null, external_id: null });
+    expect(tables.suppliers[1].anonymized_at).toBeTruthy();
+    expect(tables.cost_entries[0].archived_at).toBeTruthy();
+    expect(tables.cost_entries[0].archived_by).toBe("admin1");
     expect(removed).toEqual([["u/a.png"]]);
+    cleanup();
+    render(await Lixeira());
+    for (const k of ["custos", "fornecedores", "chamados"]) expect(screen.getByTestId(`lixeira-${k}`)).toHaveTextContent("Nada na lixeira.");
+    expect(screen.queryByTestId("lixeira-esvaziar")).toBeNull();
+    // restaurar não traz de volta itens arquivados/anonimizados
+    await restoreAction(fd({ kind: "custos", id: "00000000-0000-4000-8000-0000000000c1" }));
+    expect(tables.cost_entries[0].deleted_at).not.toBeNull();
+    await restoreAction(fd({ kind: "fornecedores", id: S3 }));
+    expect(tables.suppliers[1].deleted_at).not.toBeNull();
+  });
+
+  it("Arquivo morto: lista somente leitura com data de retenção (5 anos) e CSV fiscal", async () => {
+    tables.cost_entries[0] = { ...tables.cost_entries[0], reason: "vps", quantity: 1, cost_micro_usd: 0, event_id: null, occurred_at: "2026-10-01T00:00:00.000Z", archived_at: "2026-10-31T20:00:00.000Z" };
+    render(await ArquivoMorto());
+    const card = screen.getByTestId("arquivo-custos");
+    expect(card).toHaveTextContent("Custos arquivados (1)");
+    expect(card).toHaveTextContent("2031");
+    expect(screen.getByTestId("arquivo-csv")).toHaveAttribute("href", "/admin/lixeira/arquivo-morto/csv");
+    expect(screen.queryByRole("button")).toBeNull(); // sem restaurar/excluir
+    const res = await arquivoCsv();
+    const text = await res.text();
+    expect(res.headers.get("content-type")).toContain("text/csv");
+    expect(text.split("\n")[0]).toContain("guardar_ate_utc");
+    expect(text).toContain("2031-10-31T20:00:00.000Z");
+  });
+
+  it("Arquivo morto não ganha aba nova no menu do admin", () => {
+    expect(JSON.stringify(ADMIN_NAV)).not.toContain("arquivo-morto");
+    expect(ADMIN_NAV.some((n) => n.href === "/admin/lixeira")).toBe(true);
   });
 
   it("Excluir definitivamente um item ativo (fora da lixeira) não faz nada", async () => {
