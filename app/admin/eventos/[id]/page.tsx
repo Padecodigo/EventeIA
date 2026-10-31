@@ -25,7 +25,7 @@ export default async function AdminEventoPage({ params }: { params: Promise<{ id
   const admin = getSupabaseAdmin();
   const { data: ev } = await admin.from("events").select("*").eq("id", id).maybeSingle();
   if (!ev) notFound();
-  // 0074: evento apagado pelo usuário — admin vê só o rótulo, sem conteúdo.
+  // 0075: evento apagado pelo usuário — admin vê só o rótulo, sem conteúdo.
   if (isUserDeleted(ev)) {
     return (
       <div className="flex flex-col gap-3" data-testid="admin-event-user-deleted">

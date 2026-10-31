@@ -1,5 +1,5 @@
 /**
- * Exclusão do histórico de eventos pelo usuário (0074).
+ * Exclusão do histórico de eventos pelo usuário (0075).
  * Regras: só eventos ENCERRADOS (completed/canceled), nunca ativos; soft delete
  * com 30 dias para desfazer; depois o job expurga o conteúdo do usuário.
  */
