@@ -5,6 +5,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * de busca (search_city_codes). Supabase/next mockados.
  */
 const updates: Record<string, unknown>[] = [];
+const lock: { discovery_started_at: string | null; interview_completed_at: string | null } = {
+  discovery_started_at: null,
+  interview_completed_at: null,
+};
 const startDiscovery = vi.fn(async () => undefined);
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
@@ -22,7 +26,7 @@ vi.mock("@/lib/supabase/server", () => ({
       q.select = () => q;
       q.eq = () => q;
       q.not = async () => ({ error: null });
-      q.maybeSingle = async () => ({ data: { id: EVENT_ID, event_type: "aniversario", guest_count: 50, status: "active" } });
+      q.maybeSingle = async () => ({ data: { id: EVENT_ID, event_type: "aniversario", guest_count: 50, status: "active", ...lock } });
       q.upsert = async () => ({ error: null });
       q.update = (row: Record<string, unknown>) => {
         if (table === "events") updates.push(row);
@@ -51,6 +55,8 @@ describe("entrevista: cidade IBGE + cidades de busca", () => {
   beforeEach(() => {
     updates.length = 0;
     startDiscovery.mockClear();
+    lock.discovery_started_at = null;
+    lock.interview_completed_at = null;
   });
 
   it("grava cidade/UF/IBGE e extras válidos; dispara a descoberta", async () => {
@@ -74,5 +80,21 @@ describe("entrevista: cidade IBGE + cidades de busca", () => {
     expect(await submit({ city: "Taubaté" })).toEqual({ error: "Escolha a cidade da festa na lista e responda as perguntas." });
     expect(await submit({ cityCode: "1234567" })).toEqual({ error: "Escolha a cidade da festa na lista." });
     expect(updates).toHaveLength(0);
+  });
+});
+
+describe("regressão 31/10: entrevista de evento iniciado (0073)", () => {
+  beforeEach(() => {
+    updates.length = 0;
+    startDiscovery.mockClear();
+  });
+
+  it("não regrava a entrevista de evento ativo com entrevista concluída", async () => {
+    lock.interview_completed_at = "2026-10-31T16:00:00Z";
+    lock.discovery_started_at = "2026-10-31T16:05:00Z";
+    const r = await submit({ cityCode: "3554102" });
+    expect(r).toEqual({ error: expect.stringMatching(/só o orçamento limite/i) as unknown });
+    expect(updates).toHaveLength(0);
+    expect(startDiscovery).not.toHaveBeenCalled();
   });
 });

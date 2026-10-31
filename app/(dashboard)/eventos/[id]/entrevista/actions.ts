@@ -8,6 +8,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { parseAnswers, resolveRequirements } from "@/lib/catalog/rules";
 import { ALL_EVENT_TYPES, CATALOG_VERSION } from "@/lib/catalog/v1";
+import { isEventStarted, STARTED_EVENT_LOCK_MESSAGE } from "@/lib/events/edit-lock";
 import { kickoffDiscovery } from "@/lib/discovery/kickoff-runtime";
 import type { EventType } from "@/lib/engine/types";
 import { findMunicipioByCode, parseSearchCityCodes } from "@/lib/geo/municipios";
@@ -56,11 +57,15 @@ export async function saveInterviewAction(
   const supabase = await createSupabaseServerClient();
   const { data: event } = await supabase
     .from("events")
-    .select("id,event_type,guest_count")
+    .select("id,event_type,guest_count,status,discovery_started_at,interview_completed_at")
     .eq("id", parsed.data.eventId)
     .maybeSingle();
   if (event === null) {
     return { error: "Evento não encontrado." };
+  }
+  // 0073: evento iniciado não aceita nova entrevista (o banco também barra).
+  if (isEventStarted(event)) {
+    return { error: STARTED_EVENT_LOCK_MESSAGE };
   }
 
   const eventType = z

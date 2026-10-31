@@ -8,6 +8,7 @@ import { FollowInstagramCard } from "@/components/domain/follow-instagram-card";
 import { defaultAnswers, parseAnswers } from "@/lib/catalog/rules";
 import { ALL_EVENT_TYPES, EVENT_TYPE_LABELS } from "@/lib/catalog/v1";
 import type { EventType } from "@/lib/engine/types";
+import { isEventStarted, STARTED_EVENT_LOCK_MESSAGE } from "@/lib/events/edit-lock";
 import { findMunicipioByCode, resolveMunicipio } from "@/lib/geo/municipios";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -19,10 +20,25 @@ export default async function EventInterviewPage({ params }: { params: Promise<{
   const supabase = await createSupabaseServerClient();
   const { data: event } = await supabase
     .from("events")
-    .select("id,title,event_type,guest_count,city,city_uf,city_ibge_code,search_city_codes,interview_answers")
+    .select("id,title,event_type,guest_count,city,city_uf,city_ibge_code,search_city_codes,interview_answers,status,discovery_started_at,interview_completed_at")
     .eq("id", idParsed.data)
     .maybeSingle();
   if (event === null) notFound();
+
+  // 0073: evento iniciado não reabre a entrevista.
+  if (isEventStarted(event)) {
+    return (
+      <div className="flex flex-col gap-4">
+        <h1 className="font-serif text-display-2 font-display">{event.title}</h1>
+        <p role="note" data-testid="interview-locked" className="text-sm text-vinho/80">
+          {STARTED_EVENT_LOCK_MESSAGE}
+        </p>
+        <Link href={`/eventos/${event.id}`} className="text-sm text-primaria underline underline-offset-4">
+          Voltar ao evento
+        </Link>
+      </div>
+    );
+  }
 
   const typeParsed = z.enum(ALL_EVENT_TYPES as [EventType, ...EventType[]]).safeParse(event.event_type);
   if (!typeParsed.success) notFound();

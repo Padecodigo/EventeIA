@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 
 import { z } from "zod";
 
+import { isEventStarted, STARTED_EVENT_LOCK_MESSAGE } from "@/lib/events/edit-lock";
+
 import { requireUser } from "@/lib/auth";
 import { EVENT_STYLES, SPACE_TYPES } from "@/lib/catalog/v1";
 import { parseBudgetLimitInput } from "@/lib/events/budget-limit";
@@ -211,7 +213,7 @@ export async function updateEventDetailsAction(
   const supabase = await createSupabaseServerClient();
   const { data: event } = await supabase
     .from("events")
-    .select("id,status")
+    .select("id,status,discovery_started_at,interview_completed_at")
     .eq("id", parsed.data.eventId)
     .maybeSingle();
   if (event === null) {
@@ -219,6 +221,9 @@ export async function updateEventDetailsAction(
   }
   if (event.status === "canceled") {
     return { error: "Um evento excluído não pode ser editado." };
+  }
+  if (isEventStarted(event)) {
+    return { error: STARTED_EVENT_LOCK_MESSAGE };
   }
 
   const { data: updated, error } = await supabase
