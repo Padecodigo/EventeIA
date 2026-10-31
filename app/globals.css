@@ -180,9 +180,9 @@
 .ev-how-l1 { animation-name: ev-how-l1; }
 .ev-how-l2 { animation-name: ev-how-l2; }
 .ev-how-l3 { animation-name: ev-how-l3; }
-@keyframes ev-how-l1 { 0%, 32% { background: #FBE3D3; color: #A4481F; } 35%, 100% { background: transparent; color: inherit; } }
-@keyframes ev-how-l2 { 0%, 32% { background: transparent; color: inherit; } 35%, 65% { background: #FBE3D3; color: #A4481F; } 68%, 100% { background: transparent; color: inherit; } }
-@keyframes ev-how-l3 { 0%, 65% { background: transparent; color: inherit; } 68%, 98% { background: #FBE3D3; color: #A4481F; } 100% { background: transparent; color: inherit; } }
+@keyframes ev-how-l1 { 0%, 32% { background: #FBE3D3; color: #A4481F; } 35%, 100% { background: transparent; color: #2B2724; } }
+@keyframes ev-how-l2 { 0%, 32% { background: transparent; color: #2B2724; } 35%, 65% { background: #FBE3D3; color: #A4481F; } 68%, 100% { background: transparent; color: #2B2724; } }
+@keyframes ev-how-l3 { 0%, 65% { background: transparent; color: #2B2724; } 68%, 98% { background: #FBE3D3; color: #A4481F; } 100% { background: transparent; color: #2B2724; } }
 @media (prefers-reduced-motion: reduce) {
   .ev-how-scene, .ev-how-msg, .ev-how-card, .ev-how-check, .ev-how-label { animation: none !important; }
   .ev-how-s1, .ev-how-s2 { opacity: 0; }

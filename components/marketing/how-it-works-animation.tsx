@@ -62,7 +62,7 @@ export function HowItWorksAnimation() {
         </g>
       </svg>
       <figcaption>
-        <ol className="mt-4 grid grid-cols-3 gap-2 text-center text-[12px] font-semibold leading-tight text-vinho/60 sm:text-[13px]">
+        <ol className="mt-4 grid grid-cols-3 gap-2 text-center text-[12px] font-semibold leading-tight text-vinho/80 sm:text-[13px]">
           {STEP_LABELS.map((label, i) => (
             <li key={label} className={`ev-how-label ev-how-l${i + 1} rounded-full px-2 py-1.5`}>
               {i + 1}. {label}

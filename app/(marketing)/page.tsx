@@ -129,7 +129,7 @@ export default async function LandingPage() {
               </span>
               <span>Sem mensalidade · Pix seguro ou cartão</span>
             </div>
-            <p className="mt-4 text-xs text-vinho/60">
+            <p className="mt-4 text-xs text-vinho/80">
               É fornecedor de eventos?{" "}
               <Link prefetch={false} href="/seja-fornecedor" data-testid="link-fornecedor" className="underline underline-offset-2 hover:text-coral-escuro">
                 Veja como receber pedidos de orçamento
