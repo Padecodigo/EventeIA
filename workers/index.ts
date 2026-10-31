@@ -11,6 +11,10 @@ import {
   markMetaWebhookFailed,
   type MetaWebhookJobData,
 } from "@/lib/jobs/meta-webhook";
+import {
+  handleProspectReplyJob,
+  type ProspectReplyJobData,
+} from "@/lib/jobs/prospect-reply";
 import { logger } from "@/lib/logger";
 import { QUEUE_NAMES, getQueue, getRedisConnection } from "@/lib/queue";
 import { createDiscoveryWorker } from "@/lib/queue/discovery-worker";
@@ -56,6 +60,14 @@ metaWebhooksWorker.on("failed", (job, error) => {
     });
   }
 });
+
+const prospectReplyWorker = new Worker<ProspectReplyJobData>(
+  QUEUE_NAMES.prospectReply,
+  async (job) => {
+    await handleProspectReplyJob(job.data);
+  },
+  { connection, concurrency: 2 },
+);
 
 const reconcileWorker = new Worker(
   QUEUE_NAMES.asaasReconcile,
@@ -168,7 +180,7 @@ void getQueue(QUEUE_NAMES.creditsExpireLegacy)
   })
   .catch(() => undefined);
 
-const workers = [asaasWorker, metaWebhooksWorker, reconcileWorker, balanceWorker, artCleanupWorker, prospectPostDeleteWorker, instagramPublishWorker, marketingAutopilotWorker, discoveryWorker, quoteExtractionWorker];
+const workers = [asaasWorker, metaWebhooksWorker, prospectReplyWorker, reconcileWorker, balanceWorker, artCleanupWorker, prospectPostDeleteWorker, instagramPublishWorker, marketingAutopilotWorker, discoveryWorker, quoteExtractionWorker];
 
 for (const worker of workers) {
   worker.on("error", (error) => {

@@ -1,6 +1,5 @@
 import "server-only";
 
-import { getDeepSeekClient } from "@/lib/deepseek/client";
 import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { sendPrivateReply } from "@/lib/meta/publishing";
@@ -13,16 +12,17 @@ import {
 import type { MetaCommentEvent, MetaInboundMessage } from "@/lib/meta/webhook";
 import { PRIVATE_REPLY_OPENER } from "@/lib/prospecting/content";
 import { handleInbound, type ProspectStore } from "@/lib/prospecting/inbound";
-import { respondToInbound, shouldAgentRespond } from "@/lib/prospecting/respond";
+import { shouldAgentRespond } from "@/lib/prospecting/respond";
 import {
-  createSupabaseRespondPorts,
   defaultRespondDb,
-  loadHistory,
   markSupplierOptOut,
   type RespondDb,
 } from "@/lib/prospecting/supabase-respond";
 import { createSupabaseProspectStore } from "@/lib/prospecting/supabase-store";
+import { enqueue, QUEUE_NAMES } from "@/lib/queue";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+
+import type { ProspectReplyJobData } from "./prospect-reply";
 
 /**
  * Processamento assíncrono do webhook do Meta (Instagram + Messenger), movido
@@ -83,10 +83,7 @@ export interface MetaWebhookJobDeps {
   inbound: typeof handleInbound;
   markOptOut: typeof markSupplierOptOut;
   shouldRespond: typeof shouldAgentRespond;
-  loadHistory: typeof loadHistory;
-  respond: typeof respondToInbound;
-  getClient: typeof getDeepSeekClient;
-  buildPorts: typeof createSupabaseRespondPorts;
+  enqueueReply: (data: ProspectReplyJobData) => Promise<boolean>;
   sendReply: typeof sendPrivateReply;
   now: () => Date;
 }
@@ -114,10 +111,13 @@ export function defaultMetaWebhookJobDeps(): MetaWebhookJobDeps {
     inbound: handleInbound,
     markOptOut: markSupplierOptOut,
     shouldRespond: shouldAgentRespond,
-    loadHistory,
-    respond: respondToInbound,
-    getClient: getDeepSeekClient,
-    buildPorts: createSupabaseRespondPorts,
+    enqueueReply: (data) =>
+      enqueue(QUEUE_NAMES.prospectReply, "reply", { ...data }, {
+        jobId: `reply_${data.conversationId}`,
+        delayMs: 8000,
+        removeOnComplete: true,
+        removeOnFail: true,
+      }),
     sendReply: sendPrivateReply,
     now: () => new Date(),
   };
@@ -187,18 +187,18 @@ async function processMessage(message: MetaInboundMessage, deps: MetaWebhookJobD
         configured(env.accessToken) &&
         configured(env.igBusinessId)
       ) {
-        const history = await deps.loadHistory(deps.respondDb, outcome.conversation.id);
-        await deps.respond({
-          client: deps.getClient(),
-          context: { category: supplier.category },
-          history,
-          ports: deps.buildPorts({
-            db: deps.respondDb,
-            message: { channel: "instagram", instagramBusinessId: env.igBusinessId, accessToken: env.accessToken },
-            recipientId: message.senderId,
-          }),
+        // Debounce/rate-limit no job `prospect-reply` (jobId `reply_<conversa>`).
+        //
+        // Tetos de negócio (maxPriceCents/maxDeadlineDays) ficam undefined aqui:
+        // não há coluna de orçamento/prazo ligando a conversa ao evento — o
+        // `prospect_conversations` não tem `event_id` e `events` não guarda teto
+        // (apenas `budget_snapshots.total_cents`, que é cena calculada, não limite).
+        await deps.enqueueReply({
           conversationId: outcome.conversation.id,
+          channel: "instagram",
+          recipientId: message.senderId,
           supplierId: supplier.id,
+          category: supplier.category,
         });
       }
     }
@@ -226,18 +226,13 @@ async function processMessage(message: MetaInboundMessage, deps: MetaWebhookJobD
     if (outcome.recorded && outcome.action.action === "opt_out") {
       await deps.markOptOut(deps.respondDb, outcome.conversation.id, null);
     } else if (deps.shouldRespond(outcome)) {
-      const history = await deps.loadHistory(deps.respondDb, outcome.conversation.id);
-      await deps.respond({
-        client: deps.getClient(),
-        context: { category: "evento", supplierKnown: false },
-        history,
-        ports: deps.buildPorts({
-          db: deps.respondDb,
-          message: { channel: "messenger", pageId: env.pageId, accessToken: env.accessToken },
-          recipientId: message.senderId,
-        }),
+      await deps.enqueueReply({
         conversationId: outcome.conversation.id,
+        channel: "messenger",
+        recipientId: message.senderId,
         supplierId: null,
+        category: "evento",
+        supplierKnown: false,
       });
     }
   }

@@ -2,6 +2,8 @@ import { z } from "zod";
 
 import type { ProcessStage, WhatsAppChannel } from "@/lib/usage/stages";
 
+import { parseFencedJson } from "./fence-json";
+
 /**
  * Roteador de LLM provider-agnóstico.
  * - DeepSeek é o CÉREBRO primário (modelo via DEEPSEEK_MODEL): extração de cotação, leitura da
@@ -174,16 +176,6 @@ export interface Router {
   record: UsageLedger["record"];
 }
 
-function parseJson(content: string): unknown {
-  const fenced = /```(?:json)?\s*([\s\S]*?)```/i.exec(content);
-  const raw = fenced?.[1] ?? content;
-  try {
-    return JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1)) as unknown;
-  } catch {
-    return undefined;
-  }
-}
-
 export function createRouter(options: {
   clients: readonly LlmClient[];
   ledger: UsageLedger;
@@ -258,7 +250,7 @@ export function createRouter(options: {
           inTok = res.inputTokens ?? inEst;
           outTok = res.outputTokens ?? estimateTokens(res.content);
           hitTok = Math.min(res.cacheHitTokens ?? 0, inTok);
-          const parsed = schema.safeParse(parseJson(res.content));
+          const parsed = schema.safeParse(parseFencedJson(res.content));
           if (!parsed.success) outcome = "invalid";
           else if (confidence !== undefined && confidence(parsed.data) < MIN_CONFIDENCE)
             outcome = "low_confidence";

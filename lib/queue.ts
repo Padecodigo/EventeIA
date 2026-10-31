@@ -25,6 +25,7 @@ export const QUEUE_NAMES = {
   prospectPostDelete: "prospect-post-delete",
   instagramPublish: "instagram-publish",
   metaWebhooks: "meta-webhooks",
+  prospectReply: "prospect-reply",
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
@@ -74,12 +75,19 @@ export async function enqueue(
   queueName: QueueName,
   jobName: string,
   data: Record<string, unknown>,
-  opts?: { jobId?: string; delayMs?: number },
+  opts?: {
+    jobId?: string;
+    delayMs?: number;
+    removeOnComplete?: boolean | number;
+    removeOnFail?: boolean | number;
+  },
 ): Promise<boolean> {
   try {
     const jobOpts = {
       ...(opts?.jobId !== undefined ? { jobId: opts.jobId } : {}),
       ...(opts?.delayMs !== undefined ? { delay: Math.max(0, opts.delayMs) } : {}),
+      ...(opts?.removeOnComplete !== undefined ? { removeOnComplete: opts.removeOnComplete } : {}),
+      ...(opts?.removeOnFail !== undefined ? { removeOnFail: opts.removeOnFail } : {}),
     };
     await Promise.race([
       getQueue(queueName).add(jobName, data, jobOpts),

@@ -4,17 +4,22 @@ import { handleMetaWebhookJob } from "@/lib/jobs/meta-webhook";
 import type { MetaInboundMessage } from "@/lib/meta/webhook";
 
 /**
- * Regressão LGPD: o processamento do webhook do Meta NUNCA chama o agente
- * (respondToInbound) quando a mensagem é um pedido de parada ("PARAR") ou
- * quando a conversa já está `opted_out`. O opt-out determinístico vive em
- * `handleInbound`; aqui validamos que o job `handleMetaWebhookJob` respeita a
- * guarda `shouldAgentRespond` (a rota apenas persiste e enfileira).
+ * Regressão LGPD: o processamento do webhook do Meta NUNCA enfileira a resposta
+ * do agente quando a mensagem é um pedido de parada ("PARAR") ou quando a
+ * conversa já está `opted_out`. O opt-out determinístico vive em `handleInbound`;
+ * aqui validamos que o job `handleMetaWebhookJob` respeita a guarda
+ * `shouldAgentRespond` (a rota apenas persiste e enfileira).
  */
 
 const state = vi.hoisted(() => ({
-  respondCalls: 0,
   markOptOutCalls: [] as { conversationId: string; supplierId: string | null }[],
   conversations: new Map<string, { id: string; status: string }>(),
+  enqueueCalls: [] as {
+    queueName: string;
+    name: string;
+    data: Record<string, unknown>;
+    opts?: { jobId?: string; delayMs?: number; removeOnComplete?: boolean | number; removeOnFail?: boolean | number };
+  }[],
   seq: 0,
 }));
 
@@ -27,6 +32,19 @@ vi.mock("@/lib/env", () => ({
     META_PAGE_ID: "page-1",
     META_PROSPECT_KEYWORD: "cotação",
   }),
+}));
+
+vi.mock("@/lib/queue", () => ({
+  QUEUE_NAMES: { prospectReply: "prospect-reply" },
+  enqueue: async (
+    queueName: string,
+    name: string,
+    data: Record<string, unknown>,
+    opts?: { jobId?: string; delayMs?: number; removeOnComplete?: boolean | number; removeOnFail?: boolean | number },
+  ) => {
+    state.enqueueCalls.push({ queueName, name, data, opts });
+    return true;
+  },
 }));
 
 vi.mock("@/lib/supabase/admin", async () => {
@@ -67,24 +85,6 @@ vi.mock("@/lib/prospecting/supabase-store", () => ({
   },
 }));
 
-vi.mock("@/lib/deepseek/client", () => ({
-  getDeepSeekClient: () => ({
-    mode: "mock",
-    complete: async () => JSON.stringify({ reply: "ok", opt_out: false }),
-  }),
-}));
-
-vi.mock("@/lib/prospecting/respond", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/prospecting/respond")>();
-  return {
-    ...actual,
-    respondToInbound: async () => {
-      state.respondCalls += 1;
-      return { action: "replied", sent: true };
-    },
-  };
-});
-
 vi.mock("@/lib/prospecting/supabase-respond", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/prospecting/supabase-respond")>();
   return {
@@ -109,33 +109,43 @@ function igDm(text: string): MetaInboundMessage {
   };
 }
 
+const replyJobs = () => state.enqueueCalls.filter((c) => c.queueName === "prospect-reply");
+
 describe("handleMetaWebhookJob — opt-out bloqueia a resposta do agente", () => {
   beforeEach(() => {
-    state.respondCalls = 0;
     state.markOptOutCalls = [];
     state.conversations.clear();
+    state.enqueueCalls = [];
     state.seq = 0;
   });
 
-  it("DM 'PARAR' ⇒ respondToInbound NÃO é chamado e marca opt-out com o supplier id", async () => {
+  it("DM 'PARAR' ⇒ NÃO enfileira resposta e marca opt-out com o supplier id", async () => {
     await handleMetaWebhookJob({ kind: "message", webhookEventId: "wh1", event: igDm("PARAR") });
-    expect(state.respondCalls).toBe(0);
+    expect(replyJobs()).toHaveLength(0);
     expect(state.markOptOutCalls).toEqual([{ conversationId: "c1", supplierId: "s1" }]);
   });
 
-  it("conversa já opted_out com texto normal ⇒ respondToInbound NÃO é chamado", async () => {
+  it("conversa já opted_out com texto normal ⇒ NÃO enfileira resposta", async () => {
     state.conversations.set("instagram:111", { id: "c1", status: "opted_out" });
     await handleMetaWebhookJob({ kind: "message", webhookEventId: "wh1", event: igDm("olá, tudo bem?") });
-    expect(state.respondCalls).toBe(0);
+    expect(replyJobs()).toHaveLength(0);
   });
 
-  it("texto normal em conversa nova ⇒ respondToInbound É chamado e opt-out NÃO é marcado", async () => {
+  it("texto normal em conversa nova ⇒ enfileira resposta (debounce) e opt-out NÃO é marcado", async () => {
     await handleMetaWebhookJob({
       kind: "message",
       webhookEventId: "wh1",
       event: igDm("tem buffet para 100 pessoas?"),
     });
-    expect(state.respondCalls).toBe(1);
+    const jobs = replyJobs();
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]?.opts).toMatchObject({
+      jobId: "reply_c1",
+      delayMs: 8000,
+      removeOnComplete: true,
+      removeOnFail: true,
+    });
+    expect(jobs[0]?.data).toMatchObject({ conversationId: "c1", channel: "instagram" });
     expect(state.markOptOutCalls).toEqual([]);
   });
 });

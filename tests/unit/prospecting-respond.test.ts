@@ -23,7 +23,7 @@ const emptyQuote: StructuredQuote = {
   validUntil: null,
 };
 
-function fakePorts(): RespondPorts & {
+function fakePorts(sendOk = true): RespondPorts & {
   replies: string[];
   quotes: StructuredQuote[];
   optOuts: number;
@@ -42,6 +42,7 @@ function fakePorts(): RespondPorts & {
     },
     async sendReply(_id, text) {
       replies.push(text);
+      return sendOk;
     },
     async saveQuote(_c, _s, quote) {
       quotes.push(quote);
@@ -95,6 +96,46 @@ describe("aplicação da resposta do agente", () => {
     const result = await applyAgentReply(ports, { ...ids, reply: base });
     expect(result.action).toBe("replied");
     expect(ports.replies).toHaveLength(1);
+  });
+
+  it("falha de envio reflete sent:false", async () => {
+    const ports = fakePorts(false);
+    const result = await applyAgentReply(ports, { ...ids, reply: base });
+    expect(result).toEqual({ action: "replied", sent: false });
+  });
+
+  it("cotação acima do teto de preço escala mesmo com done=true", async () => {
+    const ports = fakePorts();
+    const over: AgentReply = { ...base, quote: { ...emptyQuote, priceCents: 400000 }, done: true };
+    const result = await applyAgentReply(ports, { ...ids, reply: over, maxPriceCents: 300000 });
+    expect(result).toEqual({ action: "escalated", sent: false });
+    expect(ports.escalations).toEqual(["preço R$ 4000,00 acima do teto R$ 3000,00"]);
+    expect(ports.quotes).toHaveLength(0);
+    expect(ports.replies).toHaveLength(0);
+  });
+
+  it("prazo acima do teto escala com reason real", async () => {
+    const ports = fakePorts();
+    const over: AgentReply = { ...base, quote: { ...emptyQuote, deadlineDays: 30 } };
+    const result = await applyAgentReply(ports, { ...ids, reply: over, maxDeadlineDays: 15 });
+    expect(result).toEqual({ action: "escalated", sent: false });
+    expect(ports.escalations).toEqual(["prazo 30 dias acima de 15 dias"]);
+  });
+
+  it("cotação sem preço com teto definido escala (preço nulo)", async () => {
+    const ports = fakePorts();
+    const over: AgentReply = { ...base, quote: { ...emptyQuote, priceCents: null } };
+    const result = await applyAgentReply(ports, { ...ids, reply: over, maxPriceCents: 300000 });
+    expect(result.action).toBe("escalated");
+    expect(ports.escalations[0]).toContain("sem preço");
+  });
+
+  it("cotação dentro do teto não escala", async () => {
+    const ports = fakePorts();
+    const ok: AgentReply = { ...base, quote: emptyQuote };
+    const result = await applyAgentReply(ports, { ...ids, reply: ok, maxPriceCents: 300000, maxDeadlineDays: 15 });
+    expect(result.action).toBe("quoted");
+    expect(ports.escalations).toHaveLength(0);
   });
 });
 
@@ -156,15 +197,17 @@ describe("respondToInbound", () => {
     expect(result?.action).toBe("quoted");
   });
 
-  it("devolve null quando o agente responde inválido", async () => {
+  it("devolve escalated quando o agente responde inválido", async () => {
     const client: DeepSeekClient = { mode: "mock", complete: () => Promise.resolve("lixo") };
+    const ports = fakePorts();
     const result = await respondToInbound({
       client,
       context: { category: "buffet" },
       history: [],
-      ports: fakePorts(),
+      ports,
       ...ids,
     });
-    expect(result).toBeNull();
+    expect(result).toEqual({ action: "escalated", sent: false });
+    expect(ports.escalations).toEqual(["saída inválida da IA"]);
   });
 });

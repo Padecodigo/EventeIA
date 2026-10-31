@@ -177,7 +177,83 @@ describe("meta — parse de comentários (post de isca)", () => {
 
   it("não trata comentário como DM", () => {
     const payload = { object: "instagram", entry: [{ changes: [{ field: "comments", value: { id: "c1", text: "x", from: { id: "u1", username: "a" } } }] }] };
-    expect(parseMetaWebhook(payload)).toBeNull();
+    expect(parseMetaWebhook(payload)).toEqual([]);
+  });
+
+  it("entrada com campos mistos (messages + comments) não derruba o parse", () => {
+    const payload = {
+      object: "instagram",
+      entry: [
+        {
+          id: "1784",
+          changes: [
+            {
+              field: "messages",
+              value: {
+                sender: { id: "111" },
+                recipient: { id: "1784" },
+                message: { mid: "m1", text: "tem buffet para 100?" },
+              },
+            },
+            {
+              field: "comments",
+              value: { id: "c1", text: "quero COTAÇÃO", from: { id: "u1", username: "buffet_da_ana" }, media: { id: "m9" } },
+            },
+          ],
+        },
+      ],
+    };
+    expect(parseMetaWebhook(payload)).toEqual([
+      { source: "instagram", eventId: "m1", senderId: "111", recipientId: "1784", text: "tem buffet para 100?" },
+    ]);
+    expect(parseMetaComments(payload)).toEqual([
+      { commentId: "c1", text: "quero COTAÇÃO", senderId: "u1", senderUsername: "buffet_da_ana", mediaId: "m9" },
+    ]);
+  });
+
+  it("item inválido no meio do changes é ignorado sem derrubar o resto", () => {
+    const payload = {
+      object: "instagram",
+      entry: [
+        {
+          id: "1784",
+          changes: [
+            { field: "messages", value: { sender: { id: "111" } } }, // sem recipient/message → inválido
+            {
+              field: "messages",
+              value: {
+                sender: { id: "222" },
+                recipient: { id: "1784" },
+                message: { mid: "m2", text: "ok" },
+              },
+            },
+          ],
+        },
+      ],
+    };
+    expect(parseMetaWebhook(payload)).toEqual([
+      { source: "instagram", eventId: "m2", senderId: "222", recipientId: "1784", text: "ok" },
+    ]);
+  });
+
+  it("trunca texto acima de 4000 caracteres", () => {
+    const long = "x".repeat(5000);
+    const messages = parseMetaWebhook({
+      object: "instagram",
+      entry: [
+        {
+          id: "1784",
+          changes: [
+            {
+              field: "messages",
+              value: { sender: { id: "111" }, recipient: { id: "1784" }, message: { mid: "m1", text: long } },
+            },
+          ],
+        },
+      ],
+    });
+    expect(messages?.[0]?.text).toHaveLength(4000);
+    expect(messages?.[0]?.text).toBe(long.slice(0, 4000));
   });
 
   it("ignora payload de DM (sem field comments)", () => {

@@ -72,7 +72,7 @@ function comment(commentId: string, text: string, senderUsername = "buffet_da_an
 
 function makeDeps(overrides: Partial<MetaWebhookJobDeps> = {}) {
   const webhookEvents = fakeWebhookEvents();
-  const respond = vi.fn(async () => ({ action: "replied" as const, sent: true }));
+  const enqueueReply = vi.fn(async (_data: unknown) => true);
   const markOptOut = vi.fn(async () => undefined);
   const sendReply = vi.fn(async (_input: unknown) => ({ ok: true as const, id: "m" }));
   const inbound = vi.fn(async () => ({
@@ -82,7 +82,6 @@ function makeDeps(overrides: Partial<MetaWebhookJobDeps> = {}) {
   }));
   const resolveSupplier = vi.fn(async () => ({ id: "s1", name: "Buffet da Ana", category: "buffet" }));
   const resolveSupplierByHandle = vi.fn(async () => null);
-  const loadHistory = vi.fn(async () => []);
 
   const deps = {
     env: { keyword: "cotação", accessToken: "tok", igBusinessId: "ig-1", pageId: "pg-1" },
@@ -95,37 +94,38 @@ function makeDeps(overrides: Partial<MetaWebhookJobDeps> = {}) {
     inbound,
     markOptOut,
     shouldRespond: shouldAgentRespond,
-    loadHistory,
-    respond,
-    getClient: () => ({ mode: "mock" as const, complete: async () => "{}" }),
-    buildPorts: () => ({
-      sendReply: async () => undefined,
-      saveQuote: async () => undefined,
-      markOptOut: async () => undefined,
-      escalate: async () => undefined,
-    }),
+    enqueueReply,
     sendReply,
     now: () => new Date("2026-10-27T12:00:00Z"),
     ...overrides,
   } as MetaWebhookJobDeps;
 
-  return { deps, webhookEvents, respond, markOptOut, sendReply, inbound, resolveSupplierByHandle };
+  return { deps, webhookEvents, enqueueReply, markOptOut, sendReply, inbound, resolveSupplierByHandle };
 }
 
 describe("handleMetaWebhookJob", () => {
-  it("DM normal (Instagram): resolve fornecedor e responde", async () => {
-    const { deps, respond, markOptOut, webhookEvents } = makeDeps();
+  it("DM normal (Instagram): resolve fornecedor e enfileira a resposta", async () => {
+    const { deps, enqueueReply, markOptOut, webhookEvents } = makeDeps();
     await handleMetaWebhookJob(
       { kind: "message", webhookEventId: "wh1", event: msg("m1", "instagram", "tem buffet para 100?") },
       deps,
     );
-    expect(respond).toHaveBeenCalledTimes(1);
+    expect(enqueueReply).toHaveBeenCalledTimes(1);
+    expect(enqueueReply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        conversationId: "c1",
+        channel: "instagram",
+        recipientId: "111",
+        supplierId: "s1",
+        category: "buffet",
+      }),
+    );
     expect(markOptOut).not.toHaveBeenCalled();
     expect(webhookEvents.updates).toEqual([{ externalEventId: "m1", status: "processed" }]);
   });
 
-  it("opt-out determinístico: marca e NÃO responde", async () => {
-    const { deps, respond, markOptOut } = makeDeps({
+  it("opt-out determinístico: marca e NÃO enfileira resposta", async () => {
+    const { deps, enqueueReply, markOptOut } = makeDeps({
       inbound: vi.fn(async () => ({
         action: { action: "opt_out" as const },
         conversation: { id: "c1", status: "opted_out" as const },
@@ -137,18 +137,18 @@ describe("handleMetaWebhookJob", () => {
       deps,
     );
     expect(markOptOut).toHaveBeenCalledWith(deps.respondDb, "c1", "s1");
-    expect(respond).not.toHaveBeenCalled();
+    expect(enqueueReply).not.toHaveBeenCalled();
   });
 
   it("evento já processado: no-op", async () => {
-    const { deps, respond, inbound, webhookEvents } = makeDeps();
+    const { deps, enqueueReply, inbound, webhookEvents } = makeDeps();
     webhookEvents.statuses.set("m1", "processed");
     await handleMetaWebhookJob(
       { kind: "message", webhookEventId: "wh1", event: msg("m1", "instagram", "olá") },
       deps,
     );
     expect(inbound).not.toHaveBeenCalled();
-    expect(respond).not.toHaveBeenCalled();
+    expect(enqueueReply).not.toHaveBeenCalled();
     expect(webhookEvents.updates).toHaveLength(0);
   });
 
@@ -171,7 +171,7 @@ describe("handleMetaWebhookJob", () => {
 
   it("erros durante o processamento propagam para o BullMQ repetir", async () => {
     const { deps } = makeDeps({
-      respond: vi.fn(async () => {
+      enqueueReply: vi.fn(async () => {
         throw new Error("boom");
       }),
     });
