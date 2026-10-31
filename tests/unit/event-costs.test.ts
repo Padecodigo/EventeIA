@@ -35,7 +35,7 @@ describe("buildEventCosts", () => {
     cost({ provider: "google_places", quantity: 3, costBrlCents: 57 }),
     cost({ provider: "deepseek", costBrlCents: 20 }),
     cost({ provider: "deepseek", costBrlCents: 10 }),
-    cost({ provider: "evolution", quantity: 5, costBrlCents: 0, estimated: true }),
+    cost({ provider: "resend", quantity: 5, costBrlCents: 0, estimated: true }),
     cost({ provider: "vps", kind: "fixed", costBrlCents: 5000 }),
     cost({ eventId: "e2", provider: "serper", costBrlCents: 500 }),
     cost({ eventId: null, provider: "resend", costBrlCents: 1 }),

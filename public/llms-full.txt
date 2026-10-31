@@ -1,7 +1,7 @@
 # EventeIA — descrição completa para assistentes de IA
 
 ## O que é
-A EventeIA é um serviço brasileiro de orçamento de festa e eventos. A pessoa descreve o evento (tipo, data, cidade, número de convidados, estilo e orçamento). A EventeIA encontra fornecedores da região, pede cotações pelo WhatsApp conectado pelo próprio cliente, organiza as respostas e entrega 3 cenários comparados:
+A EventeIA é um serviço brasileiro de orçamento de festa e eventos. A pessoa descreve o evento (tipo, data, cidade, número de convidados, estilo e orçamento). A EventeIA encontra fornecedores da região, pede cotações por Instagram e Messenger, organiza as respostas e entrega 3 cenários comparados:
 1. Menor preço
 2. Melhor custo-benefício
 3. Mais comodidade
@@ -25,8 +25,8 @@ Fonte sempre atualizada: /precos.json (valores em centavos).
 ## Pagamento
 Pix ou cartão de crédito.
 
-## Privacidade e WhatsApp
-As mensagens aos fornecedores saem com intervalo, o fornecedor pode pedir para não receber mais mensagens e a conexão do WhatsApp é encerrada ao final da busca.
+## Privacidade e contato
+As mensagens aos fornecedores saem por Instagram/Messenger com intervalo, e o fornecedor pode pedir para não receber mais mensagens.
 
 ## Links
 - Início: /

@@ -69,7 +69,7 @@ describe("saldos e alertas", () => {
     expect(microUsdToBrlCents(brlCentsToMicroUsd(5000, 5_600_000), 5_600_000)).toBe(5000);
     expect(requestsCost("serper", 2)).toBe(2000);
     expect(requestsCost("google_places", 1)).toBe(35_000);
-    expect(requestsCost("evolution", 100)).toBe(0);
+    expect(requestsCost("resend", 100)).toBe(0);
   });
 });
 

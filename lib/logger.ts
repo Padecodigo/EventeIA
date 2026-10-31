@@ -2,7 +2,7 @@ import pino from "pino";
 
 import { redactSecrets } from "./security";
 
-const SECRET_KEYS = ["token", "apikey", "authorization", "x-evolution-token", "secret", "password"];
+const SECRET_KEYS = ["token", "apikey", "authorization", "secret", "password"];
 
 /** Mascara segredos em campos conhecidos e em query strings dentro de strings. */
 export function scrubLogFields(obj: Record<string, unknown>): Record<string, unknown> {

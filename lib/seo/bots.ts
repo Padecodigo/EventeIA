@@ -39,5 +39,4 @@ export const SEARCH_AND_AI_BOTS = [
   // Prévias de link
   "Twitterbot",
   "LinkedInBot",
-  "WhatsApp",
 ] as const;

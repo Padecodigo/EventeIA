@@ -144,7 +144,7 @@ export default async function CustosPage({ searchParams }: { searchParams?: Prom
         <p className="text-caption text-vinho/60">
           Custo total, receita (valor pago pelo cliente) e margem de cada evento. Toque em um evento para ver onde o dinheiro foi gasto, por ferramenta.
           <strong> Real</strong> = DeepSeek (tokens informados pela API) e taxa Asaas devolvida pelo webhook. <strong>Estimado</strong> = nº de chamadas × preço de referência
-          (Serper, Google Places, Resend, WhatsApp) e taxa Asaas ainda não informada (Pix R$ 0,99; cartão R$ 0,49 + 1,99%).
+          (Serper, Google Places, Resend) e taxa Asaas ainda não informada (Pix R$ 0,99; cartão R$ 0,49 + 1,99%).
         </p>
         <nav className="mt-3 flex flex-wrap gap-2 text-sm" aria-label="Ordenar eventos">
           {(Object.keys(SORT_LABELS) as EventCostSort[]).map((k) => (

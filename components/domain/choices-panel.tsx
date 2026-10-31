@@ -29,10 +29,6 @@ const initialState: QuotationChoiceState = {};
 
 function ChoiceRow({ eventId, row }: { eventId: string; row: ChoiceRowView }) {
   const [state, action, pending] = useActionState(chooseQuotationOptionAction, initialState);
-  const waLink =
-    row.vendorContact !== null
-      ? `https://wa.me/${row.vendorContact.replace(/\D/g, "")}`
-      : null;
 
   return (
     <article className="rounded-xl border border-line-subtle p-4">
@@ -88,19 +84,7 @@ function ChoiceRow({ eventId, row }: { eventId: string; row: ChoiceRowView }) {
         <p className="mt-2 text-caption text-vinho/70">
           {state.relayed === true
             ? "Escolha registrada e enviada ao fornecedor."
-            : waLink !== null
-              ? "Escolha registrada. O aviso automático não saiu — fale com o fornecedor pelo WhatsApp: "
-              : "Escolha registrada."}
-          {state.relayed === true ? null : waLink !== null ? (
-            <a
-              href={waLink}
-              target="_blank"
-              rel="noreferrer"
-              className="underline decoration-champagne underline-offset-4"
-            >
-              abrir conversa
-            </a>
-          ) : null}
+            : "Escolha registrada."}
         </p>
       ) : null}
     </article>
@@ -118,7 +102,7 @@ export function ChoicesPanel({ eventId, rows }: { eventId: string; rows: ChoiceR
       <h2 className="font-serif text-title-1">Escolhas do fornecedor</h2>
       <p className="mt-2 max-w-prose text-sm text-vinho/70">
         Alguns fornecedores oferecem mais de uma opção. Escolha a que prefere — registramos aqui e
-        avisamos o fornecedor pelo WhatsApp quando possível.
+        avisamos o fornecedor quando possível.
       </p>
       <div className="mt-5 flex flex-col gap-4">
         {rows.map((row) => (

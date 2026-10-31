@@ -94,9 +94,9 @@ export function buildOverpassQuery(city: string, category: string, opts: { uf?: 
   return `[out:json][timeout:25];${overpassAreaClause({ city, ...opts })}(${parts.join("")});out tags 150;`;
 }
 
-/** Todos os telefones das tags (WhatsApp/celular primeiro), normalizados; só celulares (WhatsApp). */
+/** Todos os telefones das tags (celular primeiro), normalizados; só celulares. */
 export function mobilePhonesFromTags(tags: Record<string, string>): string[] {
-  const keys = ["contact:whatsapp", "whatsapp", "contact:mobile", "mobile", "phone", "contact:phone", "phone:mobile"];
+  const keys = ["contact:mobile", "mobile", "phone", "contact:phone", "phone:mobile"];
   const out: string[] = [];
   for (const k of keys) {
     for (const raw of (tags[k] ?? "").split(/[;,/]/)) {

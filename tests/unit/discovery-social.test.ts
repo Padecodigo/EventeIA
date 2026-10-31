@@ -28,10 +28,10 @@ describe("SocialProvider", () => {
     expect(p).toContain("Taubaté (SP, Brasil)");
     expect(p).toContain("não faça login");
   });
-  it("extrai nome, link do perfil, telefone/WhatsApp; marca origem e dedupe por @", () => {
+  it("extrai nome, link do perfil e telefone; marca origem e dedupe por @", () => {
     const r = parseSocialResponse(
       text([
-        { name: "Buffet Sabor", profile_url: "https://instagram.com/buffetsabor", whatsapp_link: "https://wa.me/5512991234567" },
+        { name: "Buffet Sabor", profile_url: "https://instagram.com/buffetsabor", phone: "(12) 99123-4567" },
         { name: "Buffet Sabor (dup)", profile_url: "https://www.instagram.com/BuffetSabor/" },
         { name: "Post", profile_url: "https://www.instagram.com/p/xyz" },
         { name: "Doces Ana", profile_url: "https://facebook.com/docesana", phone: "(12) 3333-4444" },
@@ -39,7 +39,7 @@ describe("SocialProvider", () => {
       query,
     );
     expect(r).toHaveLength(2);
-    expect(r[0]).toMatchObject({ name: "Buffet Sabor", externalId: "instagram:buffetsabor", sourceUrl: "https://www.instagram.com/buffetsabor", whatsappLink: "https://wa.me/5512991234567", city: "Taubaté" });
+    expect(r[0]).toMatchObject({ name: "Buffet Sabor", externalId: "instagram:buffetsabor", sourceUrl: "https://www.instagram.com/buffetsabor", phone: "(12) 99123-4567", city: "Taubaté" });
     expect(r[1]).toMatchObject({ externalId: "facebook:docesana", phone: "(12) 3333-4444" });
   });
   it("chama xAI só com web_search e mapeia 429 para cota", async () => {
@@ -73,7 +73,7 @@ describe("integração com a ingestão (dedupe com outros provedores)", () => {
     } as unknown as DiscoveryDeps;
     const suppliers = parseSocialResponse(
       text([
-        { name: "Buffet Sabor", profile_url: "https://instagram.com/buffetsabor", whatsapp_link: "https://wa.me/5512991234567" },
+        { name: "Buffet Sabor", profile_url: "https://instagram.com/buffetsabor", phone: "(12) 99123-4567" },
         { name: "Sem Fone", profile_url: "https://instagram.com/semfone" },
         { name: "Doces Ana", profile_url: "https://facebook.com/docesana", phone: "(12) 99777-1234" },
       ]),

@@ -1,5 +1,5 @@
 /**
- * Notificação "quotations_ready": fim da coleta + desconexão segura do WhatsApp.
+ * Notificação "quotations_ready": fim da coleta de cotações.
  * Idempotente por evento (idempotency_key UNIQUE). Dependências injetadas.
  */
 
@@ -42,14 +42,13 @@ export function renderQuotationsReadyEmail(input: {
       ? "O prazo de 24h de coleta terminou"
       : input.reason === "collection_complete"
         ? "Recebemos as cotações necessárias"
-        : "A conexão com o seu WhatsApp caiu";
+        : "A coleta foi interrompida";
   return {
     subject: `Suas cotações de "${input.eventTitle}" estão prontas`,
     text: [
       `Olá, ${input.displayName}.`,
       "",
       `${why} e a busca de orçamentos para "${input.eventTitle}" foi concluída.`,
-      "Por segurança, a conexão com o seu WhatsApp foi encerrada pela EventeIA.",
       "As propostas recebidas já estão organizadas no seu painel.",
       "",
       "Com carinho,",

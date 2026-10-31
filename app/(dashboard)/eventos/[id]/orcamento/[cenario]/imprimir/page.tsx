@@ -102,7 +102,7 @@ export default async function PrintScenarioPage({
         </p>
       ) : null}
       <p className="mt-8 text-caption text-vinho/60">
-        Valores informados pelos fornecedores via WhatsApp; confirme diretamente com cada um.
+        Valores informados pelos fornecedores; confirme diretamente com cada um.
       </p>
     </article>
   );

@@ -34,7 +34,6 @@ Formato: `<domínio>.<ação_no_passado>` — domínios fechados; ações no pas
 | `webhook` | `webhook.received`, `webhook.duplicated`, `webhook.unmapped_status`, `webhook.rejected` |
 | `subscription` | `subscription.created`, `subscription.renewed`, `subscription.overdue`, `subscription.canceled` |
 | `credits` | `credits.granted`, `credits.consumed`, `credits.refunded`, `credits.expired`, `credits.adjusted` |
-| `whatsapp` | `whatsapp.queued`, `whatsapp.sent`, `whatsapp.delivered`, `whatsapp.failed`, `whatsapp.skipped_no_consent`, `whatsapp.instance_disconnected`, `whatsapp.instance_reconnected`, `whatsapp.status_ignored` |
 | `vendor` | `vendor.prospected`, `vendor.opt_out`, `vendor.replied`, `vendor.escalated` |
 | `consent` | `consent.opted_in`, `consent.opted_out` |
 | `coupon` | `coupon.created`, `coupon.updated`, `coupon.deleted`, `coupon.redeemed` |
@@ -88,7 +87,6 @@ Exemplo:
 | `payment.confirmed` / `refunded` / `overdue` | `event_id`, `amount_cents`, `billing_type` | nome do cliente, CPF, e-mail |
 | `coupon.redeemed` | `coupon`, `discount_cents` | e-mail, telefone |
 | `credits.*` | `workspace_id`, `amount`, `entry_type` | telefone, nome |
-| `whatsapp.*` | `message_id`, `template`, `status` (telefone **mascarado**) | corpo completo da mensagem, número cru |
 | `quotation.*` | `quotation_id`, `event_id`, `category` | valores de terceiros além de `amount_cents` |
 | `event.*` | `event_id`, `event_type`, `status` | convidados, endereço |
 | `auth.signed_up` | `user_id_hash` (sha256 com pepper) | e-mail, telefone |

@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 export const revalidate = 86400;
 
-/** Imagem de compartilhamento 1200x630 (WhatsApp, Instagram, Facebook, X, LinkedIn). */
+/** Imagem de compartilhamento 1200x630 (Instagram, Facebook, X, LinkedIn). */
 export function GET(): ImageResponse {
   return new ImageResponse(
     (
@@ -23,7 +23,7 @@ export function GET(): ImageResponse {
           Orçamento de festa sem dor de cabeça.
         </div>
         <div style={{ fontSize: 34, marginTop: 28, maxWidth: 1000, color: "#5A3A34" }}>
-          Cotamos fornecedores pelo WhatsApp e entregamos 3 opções: preço, custo-benefício e comodidade.
+          Cotamos fornecedores pelo Instagram e entregamos 3 opções: preço, custo-benefício e comodidade.
         </div>
         <div style={{ fontSize: 28, marginTop: 40, color: "#A3485A" }}>
           Vale do Paraíba · São Paulo

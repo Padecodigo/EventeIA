@@ -21,7 +21,7 @@ export const ACTIVITY_LABELS: Record<string, string> = {
   "payment.overdue": "Pagamento vencido",
   "payment.refunded": "Pagamento reembolsado",
   "quotation.created": "Cotação registrada",
-  "quotation.dispatched": "Resumo enviado no WhatsApp",
+  "quotation.dispatched": "Resumo entregue",
   "credits.granted": "Créditos adicionados",
   "credits.consumed": "Crédito consumido",
   "credits.expired": "Créditos expirados",
@@ -31,8 +31,8 @@ export const ACTIVITY_LABELS: Record<string, string> = {
   "testimonial.rejected": "Depoimento rejeitado",
   "testimonial.unpublished": "Depoimento despublicado",
   "profile.updated": "Perfil atualizado",
-  "consent.opted_in": "WhatsApp autorizado",
-  "consent.opted_out": "WhatsApp revogado",
+  "consent.opted_in": "Contato autorizado",
+  "consent.opted_out": "Contato revogado",
 };
 
 export function activityLabel(type: string): string {
@@ -56,7 +56,7 @@ export function activityDetailFromPayload(payload: unknown): string | undefined 
     return `${String(record.quotations)} cotação(ões)`;
   }
   if (typeof record.channel === "string") {
-    return record.channel === "whatsapp" ? "WhatsApp" : record.channel;
+    return record.channel === "whatsapp" ? "legado" : record.channel;
   }
   return undefined;
 }

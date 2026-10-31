@@ -9,9 +9,9 @@ import {
 describe("rótulos do histórico", () => {
   it("mapeiam eventos canônicos para texto humano", () => {
     expect(activityLabel("payment.confirmed")).toBe("Pagamento confirmado");
-    expect(activityLabel("quotation.dispatched")).toBe("Resumo enviado no WhatsApp");
+    expect(activityLabel("quotation.dispatched")).toBe("Resumo entregue");
     expect(activityLabel("credits.consumed")).toBe("Crédito consumido");
-    expect(activityLabel("consent.opted_in")).toBe("WhatsApp autorizado");
+    expect(activityLabel("consent.opted_in")).toBe("Contato autorizado");
   });
 
   it("evento desconhecido cai no próprio tipo (nunca vazio)", () => {
@@ -39,7 +39,7 @@ describe("detalhe do histórico", () => {
   it("descreve créditos, cotações e canal", () => {
     expect(activityDetailFromPayload({ credits: 1 })).toBe("1 crédito(s)");
     expect(activityDetailFromPayload({ quotations: 3 })).toBe("3 cotação(ões)");
-    expect(activityDetailFromPayload({ channel: "whatsapp" })).toBe("WhatsApp");
+    expect(activityDetailFromPayload({ channel: "whatsapp" })).toBe("legado");
   });
 
   it("retorna undefined para payload vazio ou inválido", () => {

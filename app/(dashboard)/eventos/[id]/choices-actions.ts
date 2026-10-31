@@ -26,9 +26,7 @@ const choiceSchema = z.object({
 
 /**
  * Escolhe UMA opção/pacote de uma cotação (ex.: "Pacote prata" x "Pacote ouro").
- * Registra a escolha (snapshot) e tenta avisar o fornecedor pelo canal do evento
- * (Cloud API ou Evolution). Se o aviso falhar, a escolha continua salva — o usuário
- * pode falar com o fornecedor pelo link direto no painel.
+ * Registra a escolha (snapshot). A escolha continua salva mesmo sem aviso ao fornecedor.
  */
 export async function chooseQuotationOptionAction(
   _previous: QuotationChoiceState,
@@ -113,7 +111,7 @@ export async function chooseQuotationOptionAction(
     // feed não bloqueia a escolha
   }
 
-  // WhatsApp removido: não há relay ao fornecedor.
+  // Sem canal de saída: não há relay ao fornecedor.
   const relayed = false;
 
   revalidatePath(`/eventos/${event.id}`);

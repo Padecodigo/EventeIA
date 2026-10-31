@@ -144,8 +144,7 @@ export function BuyTicketForm({
       <h2 className="font-serif text-title-1">Liberar este evento</h2>
       <p className="mt-2 text-sm text-vinho/70">
         Tíquete único de <strong className="text-vinho">{priceFormatted}</strong> — pagamento via
-        Pix ou cartão de crédito. Inclui orçamento completo, cotações ilimitadas e disparos pelo
-        WhatsApp.
+        Pix ou cartão de crédito. Inclui orçamento completo e cotações ilimitadas.
       </p>
 
       {welcome !== null && !couponApplied ? (

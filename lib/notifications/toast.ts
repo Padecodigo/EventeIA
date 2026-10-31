@@ -3,7 +3,7 @@
 import { z } from "zod";
 
 export const QUOTATIONS_READY_TOAST =
-  "Busca finalizada e conexão do WhatsApp encerrada por segurança. Seus orçamentos estão prontos.";
+  "Busca finalizada. Seus orçamentos estão prontos no painel.";
 
 export const notificationItemSchema = z.object({
   id: z.string().uuid(),

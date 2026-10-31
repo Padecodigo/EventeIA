@@ -32,7 +32,7 @@ create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   role text not null default 'b2c' check (role in ('b2c','b2b','admin')),
   display_name text not null,
-  phone_e164 text,                      -- E.164 p/ WhatsApp: +5511999999999
+  phone_e164 text,                      -- E.164: +5511999999999
   document_type text not null default 'cpf' check (document_type in ('cpf','cnpj')),
   document_number text,                 -- CPF/CNPJ: criptografar/mascarar — ver §7
   asaas_customer_id text unique,
@@ -80,7 +80,7 @@ create table public.events (
 --   *     -> canceled            (soft delete; nunca DELETE físico)
 -- Nenhuma transição leva a 'active': ativação é exclusiva do servidor
 -- (webhook do pagamento e créditos), para o cliente não liberar a descoberta
--- e o WhatsApp sem pagar.
+-- e o contato com fornecedores sem pagar.
 
 -- Tíquete B2C (1 por evento quando comprado)
 create table public.event_tickets (

@@ -175,7 +175,7 @@ export function createCollectorDeps(): CollectorDeps {
     },
 
     async sendFollowUp({ eventId, prospectId, text, n }) {
-      // WhatsApp removido: não há canal de saída. Registra a intenção cancelada (auditoria).
+      // Sem canal de saída: registra a intenção cancelada (auditoria).
       const idempotencyKey = `followup:${prospectId}:${String(n)}`;
       await admin.from("whatsapp_messages").upsert(
         {

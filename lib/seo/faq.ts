@@ -18,7 +18,7 @@ export function buildFaq(ticketPriceCents: number): FaqItem[] {
     },
     {
       q: "Como os fornecedores são contatados?",
-      a: "Pelo WhatsApp que você conecta ao iniciar a busca. As mensagens saem com intervalo, o fornecedor pode pedir para não receber mais e, ao final da busca, a conexão é encerrada por segurança.",
+      a: "Pelo Instagram e pelo Messenger (Meta) — os fornecedores que seguem ou comentam recebem a nossa DM com o pedido de orçamento. Quem quiser pode parar de receber a qualquer momento.",
     },
     {
       q: "Quanto custa um orçamento de festa pela EventeIA?",

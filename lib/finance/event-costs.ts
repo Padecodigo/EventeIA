@@ -4,13 +4,13 @@
  *
  * Real × estimado:
  * - DeepSeek/LLM: tokens reais devolvidos pela API × preço de tabela ⇒ REAL (calculado).
- * - Serper, Google Places, Resend, WhatsApp/Evolution: nº real de chamadas × preço de referência ⇒ ESTIMADO.
+ * - Serper, Google Places, Resend: nº real de chamadas × preço de referência ⇒ ESTIMADO.
  * - Asaas: taxa real do webhook (netValue); sem ela, estimada (Pix R$ 0,99; cartão R$ 0,49 + 1,99%).
  */
 import { PAID_STATUSES, type CostRow, type RevenueRow } from "./report";
 
 /** Provedores medidos por contagem de chamadas × preço de referência. */
-export const METERED_PROVIDERS = new Set(["serper", "google_places", "resend", "whatsapp", "evolution", "search", "fetch"]);
+export const METERED_PROVIDERS = new Set(["serper", "google_places", "resend", "search", "fetch"]);
 const LLM_PROVIDERS = new Set(["deepseek", "xai", "grok", "nim"]);
 
 export const ASAAS_PIX_FEE_CENTS = 99;

@@ -242,8 +242,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           <section className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
             <h2 className="font-serif text-title-1">Evento ativo.</h2>
             <p className="mt-2 text-sm text-vinho/70">
-              O orçamento completo está liberado. As cotações e os disparos pelo WhatsApp serão
-              organizados aqui — acompanhe as notificações.
+              O orçamento completo está liberado. As cotações serão organizadas aqui — acompanhe as
+              notificações.
             </p>
             <p className="mt-4 text-caption text-vinho/70">
               Próximo passo: pedir cotações aos fornecedores da sua região.

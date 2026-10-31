@@ -47,7 +47,7 @@ export function cachedPricesSync(): FinancePrices {
 
 type CostInsert = Database["public"]["Tables"]["cost_entries"]["Insert"];
 
-/** Lança um custo variável (search/fetch/whatsapp...) com câmbio gravado. Best-effort. */
+/** Lança um custo variável (search/fetch/serper...) com câmbio gravado. Best-effort. */
 export async function recordCostEntry(
   entry: Omit<CostInsert, "fx_brl_per_usd_micro" | "cost_brl_cents"> & { cost_micro_usd: number },
 ): Promise<void> {

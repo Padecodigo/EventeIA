@@ -28,9 +28,6 @@ import { isAutopilotEnabled } from "@/lib/marketing/settings";
 /**
  * Processo de workers (BullMQ) — separado do runtime do Next.
  * Execução: `pnpm workers` (ver README).
- *
- * WhatsApp/Evolution foram removidos: os workers de sessão, prospecção e saúde
- * da instância não são mais registrados.
  */
 const connection = getRedisConnection();
 

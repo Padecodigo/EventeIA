@@ -96,18 +96,6 @@ async function upsertProfile(
   if (error !== null) {
     throw new Error(`falha ao atualizar perfil: ${error.message}`);
   }
-
-  await admin.from("consents").upsert(
-    {
-      profile_id: user.id,
-      phone_e164: input.phone,
-      channel: "whatsapp",
-      status: "opted_in",
-      source: "demo_seed",
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "phone_e164,channel" },
-  );
 }
 
 async function seedAna(ana: DemoUser): Promise<void> {
@@ -295,7 +283,7 @@ async function seedAna(ana: DemoUser): Promise<void> {
       actor_type: "user" as const,
       aggregate_type: "event",
       aggregate_id: eventId,
-      payload: { quotations: 3, channel: "whatsapp" },
+      payload: { quotations: 3 },
       correlation_id: eventId,
       source: "app" as const,
     },

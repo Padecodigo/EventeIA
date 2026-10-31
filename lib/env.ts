@@ -66,7 +66,7 @@ const serverSchema = z.object({
   XAI_MODEL: z.string().optional(),
   DISCOVERY_PROVIDERS: z.string().optional(),
   DISCOVERY_INGEST_SECRET: z.string().min(32).optional().or(z.literal("")),
-  // true = nunca envia WhatsApp (testes/homologação): prospects ficam dry_run.
+  // true = nunca dispara contato real (testes/homologação): prospects ficam dry_run.
   DISCOVERY_DRY_RUN: z
     .enum(["true", "false", "1", "0", ""])
     .default("false")

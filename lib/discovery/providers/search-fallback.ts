@@ -227,7 +227,7 @@ export function createDeepseekSearchProvider(opts: DeepseekSearchOptions): Disco
   return {
     name: "deepseek_search",
     async search(q) {
-      const local = await call(`${queryText(q)} telefone whatsapp lang:pt`);
+      const local = await call(`${queryText(q)} telefone contato lang:pt`);
       let social: { title: string; link: string; snippet: string }[] = [];
       try {
         social = await call(`${queryText(q)} (site:instagram.com OR site:facebook.com)`);

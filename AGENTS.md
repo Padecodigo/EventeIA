@@ -17,7 +17,7 @@ Este arquivo define **como agentes — humanos ou artificiais — devem se compo
 | Frase humanizada | “A clareza financeira e a inteligência que o seu evento merece.” |
 | Posicionamento | Editorial, sofisticado, humanizado; foco em inteligência de custos/cotações |
 | Gateway de pagamento | Asaas (Pix dinâmico e cartão; CPF hoje, CNPJ ME/SLU no futuro) |
-| Stack | Next.js (App Router) · Tailwind CSS · Supabase (Auth/RLS/PostgreSQL) · Asaas API · BullMQ · Evolution API (WhatsApp) |
+| Stack | Next.js (App Router) · Tailwind CSS · Supabase (Auth/RLS/PostgreSQL) · Asaas API · BullMQ · Meta (Instagram/Messenger) |
 | Metodologia | **Trunk-Based Development** com pequenas alterações incrementais e contínuas |
 
 A pasta [`.context/`](.context/) é a **fonte da verdade** do produto e da arquitetura. **Leia os documentos de contexto relevantes antes de alterar qualquer código.**
@@ -30,7 +30,6 @@ A pasta [`.context/`](.context/) é a **fonte da verdade** do produto e da arqui
 | [`.context/DESIGN_SYSTEM.md`](.context/DESIGN_SYSTEM.md) | Paleta, tipografia, tokens CSS e regras de componentes visuais |
 | [`.context/PAYMENTS.md`](.context/PAYMENTS.md) | Asaas, webhooks idempotentes, fluxos B2C e B2B |
 | [`.context/DATABASE_RLS.md`](.context/DATABASE_RLS.md) | Schemas de tabelas e políticas Supabase RLS |
-| [`.context/WHATSAPP_EVOLUTION.md`](.context/WHATSAPP_EVOLUTION.md) | Arquitetura de disparos via Evolution API + BullMQ |
 | [`.context/COMMERCIAL_MODEL.md`](.context/COMMERCIAL_MODEL.md) | Precificação, tíquetes B2C, franquia de créditos B2B |
 | [`.context/FEEDS.md`](.context/FEEDS.md) | Registro de eventos do sistema, logs e auditoria |
 | [`.context/SECURITY.md`](.context/SECURITY.md) | Proteção de dados, sanitização (SAN) e mitigação de vulnerabilidades |
@@ -86,7 +85,7 @@ As ações abaixo são **terminantemente proibidas**, em qualquer ambiente:
 - **TypeScript `strict: true`**, sem exceções. Tipos de Supabase gerados (`supabase gen types`), nunca `any` para tabelas.
 - **App Router**: Server Components por padrão; `"use client"` apenas em folhas interativas (inputs, modais, gráficos). A lógica de negócio **nunca** vive em componentes — vive em `lib/` e é chamada por Server Actions ou Route Handlers.
 - **Camadas** (ver [ARCHITECTURE.md](.context/ARCHITECTURE.md)):
-  `app/` → chama → `lib/` → chama → Supabase/Asaas/Evolution.
+  `app/` → chama → `lib/` → chama → Supabase/Asaas/Meta.
   `lib/engine/` é **puro**: zero I/O, zero dependências de framework, determinístico e versionado.
 - **Acesso a dados**: sempre via clientes Supabase tipados (`lib/supabase/`). Qualquer consulta que ignore RLS deve ser justificada em comentário e executada no servidor.
 - **Validação**: toda fronteira (route handler, server action, webhook, worker job) valida entrada com **zod**. Nenhuma exceção.
@@ -112,7 +111,7 @@ As ações abaixo são **terminantemente proibidas**, em qualquer ambiente:
   - Integração de webhooks: replay duplicado, fora de ordem e com token inválido.
   - RLS: testes de política (pgTAP ou equivalente) para cada tabela — ver [DATABASE_RLS.md](.context/DATABASE_RLS.md).
 - Nunca remover/comentar um teste para aprovar um PR. Se o teste está errado, **corrija o teste no mesmo PR** com justificativa.
-- Testes são determinísticos: sem acessos de rede reais (mockar Asaas/Evolution), sem `sleep` mágicos, sem ordenação implícita.
+- Testes são determinísticos: sem acessos de rede reais (mockar Asaas/Meta), sem `sleep` mágicos, sem ordenação implícita.
 
 ---
 

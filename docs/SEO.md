@@ -1,10 +1,10 @@
 # SEO e descoberta por buscadores e IAs
 
 ## O que já está no código
-- `app/robots.ts` → `/robots.txt`: libera páginas públicas para buscadores e robôs de IA, e bloqueia `/painel`, `/admin`, `/api`, `/dev`, `/eventos`, `/creditos`, `/perfil` e `/depoimento`. Os robôs liberados estão em `lib/seo/bots.ts`: Googlebot, Google-Extended, Bingbot, GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot, Claude-User, Claude-SearchBot, PerplexityBot, Perplexity-User, meta-externalagent, meta-externalfetcher, FacebookBot, facebookexternalhit, Applebot, Applebot-Extended, DuckDuckBot, Amazonbot, YouBot, CCBot, Bytespider, YandexBot, SeznamBot, Twitterbot, LinkedInBot e WhatsApp. xAI/Grok e Manus não publicam user-agent de crawler; a regra `*` cobre esses robôs.
+- `app/robots.ts` → `/robots.txt`: libera páginas públicas para buscadores e robôs de IA, e bloqueia `/painel`, `/admin`, `/api`, `/dev`, `/eventos`, `/creditos`, `/perfil` e `/depoimento`. Os robôs liberados estão em `lib/seo/bots.ts`: Googlebot, Google-Extended, Bingbot, GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot, Claude-User, Claude-SearchBot, PerplexityBot, Perplexity-User, meta-externalagent, meta-externalfetcher, FacebookBot, facebookexternalhit, Applebot, Applebot-Extended, DuckDuckBot, Amazonbot, YouBot, CCBot, Bytespider, YandexBot, SeznamBot, Twitterbot e LinkedInBot. xAI/Grok e Manus não publicam user-agent de crawler; a regra `*` cobre esses robôs.
 - `app/sitemap.ts` → `/sitemap.xml`, com as rotas públicas de `PUBLIC_ROUTES`.
 - Metadata por página (`pageMetadata` em `lib/seo/site.ts`): título, descrição, palavras-chave, canonical (a partir de `NEXT_PUBLIC_SITE_URL`) e Open Graph/Twitter com `og:locale=pt_BR`.
-- `/og` gera a imagem de compartilhamento 1200x630 para WhatsApp, Instagram, Facebook, X e LinkedIn.
+- `/og` gera a imagem de compartilhamento 1200x630 para Instagram, Facebook, X e LinkedIn.
 - O JSON-LD da home inclui Organization, WebSite, Service/SoftwareApplication com ofertas dos planos, LocalBusiness com `areaServed` do Vale do Paraíba e FAQPage.
 - `/llms.txt`, `/llms-full.txt` e `/precos.json` trazem o resumo e os preços para assistentes de IA.
 - IndexNow: `/indexnow-key.txt` serve `INDEXNOW_KEY`. Use `pnpm seo:indexnow` (dry-run) ou `pnpm seo:indexnow --send [urls]`.
@@ -34,11 +34,11 @@
 1. Acesse https://business.google.com e clique em **Gerenciar agora**.
 2. Use o nome "EventeIA" e a categoria "Serviço de planejamento de eventos".
 3. Sem atendimento presencial, escolha **área de serviço** e marque São José dos Campos, Taubaté, Jacareí, Caçapava, Pindamonhangaba, Guaratinguetá e as demais cidades do Vale do Paraíba (até 20).
-4. Informe o telefone/WhatsApp e o site (`NEXT_PUBLIC_SITE_URL`), depois conclua a verificação (vídeo, telefone ou carta).
+4. Informe o telefone e o site (`NEXT_PUBLIC_SITE_URL`), depois conclua a verificação (vídeo, telefone ou carta).
 5. Preencha a descrição com as palavras-chave (orçamento de festa, festa infantil, casamento, 15 anos, formatura, corporativo) e publique fotos.
 6. Peça avaliações aos clientes; elas pesam muito na busca local.
 
 ## Prévias de links
-- Facebook/Instagram/WhatsApp: https://developers.facebook.com/tools/debug/ (clique em **Coletar novamente** após mudanças).
+- Facebook/Instagram: https://developers.facebook.com/tools/debug/ (clique em **Coletar novamente** após mudanças).
 - LinkedIn: https://www.linkedin.com/post-inspector/
 - X: a prévia aparece no compositor de posts.

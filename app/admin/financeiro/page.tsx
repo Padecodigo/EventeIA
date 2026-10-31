@@ -87,7 +87,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
         <div>
           <p className="text-overline uppercase tracking-[0.14em] text-vinho/70">Administração</p>
           <h1 className="font-serif text-display-2">Financeiro</h1>
-          <p className="text-sm text-vinho/70">Quanto gastou, onde, por quê — e quanto entrou, de quem, no período escolhido. Receitas vêm do Asaas (pagamentos confirmados); custos de IA vêm dos tokens reais; Serper, Google Places, e-mail e WhatsApp são estimados por chamada; custos fixos são lançados à mão.</p>
+          <p className="text-sm text-vinho/70">Quanto gastou, onde, por quê — e quanto entrou, de quem, no período escolhido. Receitas vêm do Asaas (pagamentos confirmados); custos de IA vêm dos tokens reais; Serper, Google Places e e-mail são estimados por chamada; custos fixos são lançados à mão.</p>
         </div>
         <form className="flex flex-wrap items-end gap-2" method="get">
           <label className="text-caption font-semibold">De (início)<input type="date" name="from" defaultValue={period.from} className="ml-1 rounded-full border border-line-subtle bg-off-white px-3 py-2 text-sm" /></label>

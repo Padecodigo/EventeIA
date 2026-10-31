@@ -28,12 +28,12 @@ export function ProfileForm({
       </div>
 
       <Field
-        label="WhatsApp"
+        label="Telefone"
         name="phone"
         type="tel"
         defaultValue={defaultPhone}
         placeholder="11 99999-9999"
-        hint="Usado para enviar cotações e o lembrete de depoimento."
+        hint="Usado para contato."
       />
       <Field
         label="CPF"

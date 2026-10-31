@@ -132,7 +132,6 @@ export function createDiscoveryDeps(): DiscoveryDeps {
             city: c.city,
             region_code: c.regionCode,
             last_seen_at: nowIso,
-            ...(c.viaWhatsappLink ? { whatsapp_verified: true } : {}),
           },
           { onConflict: "phone_e164" },
         )
@@ -176,7 +175,7 @@ export function createDiscoveryDeps(): DiscoveryDeps {
     },
 
     ensureInstance(ownerId) {
-      // WhatsApp/Evolution removidos: não há instância a conectar.
+      // Sem canal próprio de saída: não há instância a conectar.
       return Promise.resolve(`eventeia-${ownerId.slice(0, 8)}`);
     },
 

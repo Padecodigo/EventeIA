@@ -149,7 +149,7 @@ export default async function UsagePage({ searchParams }: { searchParams: Promis
       <section className="flex flex-col gap-3">
         <h2 className="font-serif text-title-1">Fechamentos por fora</h2>
         <p className="text-sm text-vinho/70">
-          Clientes que fecharam direto com o fornecedor (ex.: pelo próprio WhatsApp via Evolution) antes de consolidarmos a proposta.
+          Clientes que fecharam direto com o fornecedor (ex.: pelo contato direto nas redes) antes de consolidarmos a proposta.
         </p>
         <ul className="flex flex-wrap gap-2 text-sm">
           {closed.length === 0 ? <li className="text-caption text-vinho/70">Nenhum no período.</li> : closed.map((c) => (

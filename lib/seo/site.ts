@@ -14,7 +14,7 @@ export function absoluteUrl(path: string, base: string = siteUrl()): string {
 export const SITE_NAME = "EventeIA";
 
 export const SITE_DESCRIPTION =
-  "Orçamento de festa sem dor de cabeça: a EventeIA pede e compara orçamentos de fornecedores pelo WhatsApp para festa infantil, aniversário, 15 anos, formatura, casamento e evento corporativo com foco no Vale do Paraíba (São José dos Campos, Taubaté, Jacareí e região) e na cidade de São Paulo.";
+  "Orçamento de festa sem dor de cabeça: a EventeIA pede e compara orçamentos de fornecedores pelo Instagram e pelo Messenger para festa infantil, aniversário, 15 anos, formatura, casamento e evento corporativo com foco no Vale do Paraíba (São José dos Campos, Taubaté, Jacareí e região) e na cidade de São Paulo.";
 
 export const SEO_KEYWORDS = [
   "orçamento de festa",
@@ -47,8 +47,8 @@ export const SERVICE_AREA = [
 /** Região de foco do marketing (não restringe onde o evento pode acontecer). */
 export const FOCUS_REGION_LABEL = "Vale do Paraíba e São Paulo";
 
-/** Imagem padrão de compartilhamento (WhatsApp, Instagram, Facebook, X, LinkedIn). */
-export const OG_IMAGE = { url: "/og", width: 1200, height: 630, alt: "EventeIA — orçamentos de festa comparados pelo WhatsApp" } as const;
+/** Imagem padrão de compartilhamento (Instagram, Facebook, X, LinkedIn). */
+export const OG_IMAGE = { url: "/og", width: 1200, height: 630, alt: "EventeIA — orçamentos de festa comparados" } as const;
 
 /** Rotas públicas indexáveis (sitemap + llms.txt). */
 export const PUBLIC_ROUTES = [

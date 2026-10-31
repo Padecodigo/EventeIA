@@ -4,7 +4,7 @@ import { roundHalfUpDiv } from "./money";
  * Economia unitária dos planos (ver .context/COMMERCIAL_MODEL.md §3.4).
  *
  * Premissas conservadoras (Out/2026), em basis points (1 bp = 0,01%):
- * - custo direto por evento ativado: R$ 9,00 (infra + IA + WhatsApp + suporte)
+ * - custo direto por evento ativado: R$ 9,00 (infra + IA + suporte)
  * - Simples Nacional (Anexo III/ME): 600 bp (6% sobre o faturamento)
  * - Asaas Pix: R$ 1,99 por cobrança; cartão: 299 bp (2,99%) + R$ 0,49
  * - margem de contribuição mínima aceitável: 3.500 bp (35% por crédito)

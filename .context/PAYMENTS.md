@@ -55,7 +55,7 @@ subscriptions (
 -- Âncora de idempotência dos webhooks (por fonte + id externo)
 webhook_events (
   id uuid pk,
-  source text not null check (source in ('asaas','evolution')),
+  source text not null check (source in ('asaas','meta')),
   external_event_id text not null,
   payload jsonb not null,
   status text not null default 'received',  -- received|processing|processed|failed

@@ -7,7 +7,7 @@ export const PRIVACY_SECTIONS: readonly LegalSection[] = [
     id: "o-que-fazemos",
     title: "O que o EventeIA faz",
     paragraphs: [
-      "Você descreve o seu evento (tipo, data, cidade, número de convidados e o que precisa). O EventeIA busca fornecedores compatíveis, pede orçamentos a eles por WhatsApp e e-mail em dias úteis, das 9h às 18h, e organiza as respostas para você comparar.",
+      "Você descreve o seu evento (tipo, data, cidade, número de convidados e o que precisa). O EventeIA busca fornecedores compatíveis, pede orçamentos a eles por Instagram, Messenger e e-mail em dias úteis, das 9h às 18h, e organiza as respostas para você comparar.",
       "O serviço é vendido por créditos, avulsos ou em pacotes. Os créditos não vencem. Há também a opção de renovação mensal. O pagamento é feito por Pix ou cartão de crédito, processado pelo Asaas.",
     ],
   },
@@ -42,7 +42,7 @@ export const PRIVACY_SECTIONS: readonly LegalSection[] = [
       "OpenStreetMap, Serper e Google Places: busca de fornecedores.",
       "DeepSeek: organização das informações e das respostas com inteligência artificial.",
       "Resend: envio de e-mails.",
-      "WhatsApp: envio e recebimento de mensagens com fornecedores e com você.",
+      "Meta (Instagram e Messenger): envio e recebimento de mensagens com fornecedores e com você.",
       "Supabase: hospedagem do banco de dados e autenticação.",
       "Google: login com conta Google, quando você escolhe essa opção.",
       "Fornecedores: os dados do evento necessários para que eles enviem o orçamento.",
@@ -99,7 +99,7 @@ export const TERMS_SECTIONS: readonly LegalSection[] = [
     id: "servico",
     title: "O serviço",
     paragraphs: [
-      "O EventeIA ajuda você a orçar o seu evento: você descreve o que precisa, o sistema busca fornecedores, pede orçamentos por WhatsApp e e-mail em dias úteis, das 9h às 18h, e organiza as respostas para comparação.",
+      "O EventeIA ajuda você a orçar o seu evento: você descreve o que precisa, o sistema busca fornecedores, pede orçamentos por Instagram, Messenger e e-mail em dias úteis, das 9h às 18h, e organiza as respostas para comparação.",
       "Ao criar uma conta ou comprar créditos, você declara que leu e aceita estes Termos e a Política de Privacidade.",
     ],
   },

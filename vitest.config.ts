@@ -22,7 +22,6 @@ export default defineConfig({
         "lib/supabase/server.ts",
         "lib/supabase/browser.ts",
         "lib/asaas/client.ts",
-        "lib/whatsapp/evolution.ts",
         "lib/jobs/**",
       ],
     },

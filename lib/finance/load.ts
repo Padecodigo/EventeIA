@@ -21,7 +21,6 @@ export const PROVIDER_LABELS: Record<string, string> = {
   nim: "NVIDIA NIM",
   search: "DeepSeek Search",
   fetch: "Fetch API",
-  whatsapp: "WhatsApp",
   asaas: "Asaas",
   vps: "VPS",
   supabase: "Supabase",
@@ -29,7 +28,6 @@ export const PROVIDER_LABELS: Record<string, string> = {
   serper: "Serper",
   google_places: "Google Places",
   resend: "Resend (e-mail)",
-  evolution: "Evolution (WhatsApp)",
   meta: "Meta (Instagram/Messenger)",
   other: "Outros",
 };
