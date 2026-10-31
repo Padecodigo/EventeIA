@@ -92,7 +92,7 @@ select is(
 -- ============================================================
 set local role anon;
 
-select is((select count(*) from public.supplier_options), 0::bigint, 'anon não vê opções');
+select throws_ok($$ select count(*) from public.supplier_options $$, '42501', null, 'anon não vê opções (sem grant)');
 select throws_ok($$
   insert into public.supplier_options (supplier_id, name)
   values ('aaaa3333-0000-4000-8000-000000000001', 'opcao x')
