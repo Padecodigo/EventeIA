@@ -50,7 +50,7 @@ values ('eeeeeeee-0000-4000-8000-000000000005', 'eeeeeeee-0000-4000-8000-0000000
 -- ============================================================
 select is(
   array(
-    select c.relname
+    select c.relname::text
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
     where c.relname in ('prospect_posts','prospect_conversations','prospect_messages','prospect_quotes')
@@ -63,7 +63,7 @@ select is(
 
 select is(
   array(
-    select c.relname
+    select c.relname::text
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
     where c.relname in ('prospect_posts','prospect_conversations','prospect_messages','prospect_quotes')

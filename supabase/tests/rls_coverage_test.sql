@@ -27,7 +27,7 @@ select plan(2);
 -- 1) RLS habilitada em todas.
 select is(
   array(
-    select c.relname
+    select c.relname::text
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
     where n.nspname = 'public'
@@ -49,7 +49,7 @@ select is(
 -- 2) Política presente, ou allowlist deny-all, ou partição coberta pela tabela-mãe.
 select is(
   array(
-    select c.relname
+    select c.relname::text
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
     where n.nspname = 'public'
