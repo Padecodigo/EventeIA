@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { MetaTokenCard } from "@/components/admin/meta-token-card";
 import { readSearchStatus } from "@/lib/discovery/search-status";
 import { evaluateBalance, hasAutomaticFallback } from "@/lib/finance/balances";
 import { buildCostsPanel, lastMonths } from "@/lib/finance/costs-panel";
@@ -68,7 +69,7 @@ export default async function CustosPage({ searchParams }: { searchParams?: Prom
   const curMonth = brDate(now).slice(0, 7);
   const hasDeepseekKey = Boolean(process.env.DEEPSEEK_API_KEY);
   const searchStatus = await readSearchStatus();
-  const [{ data: balances }, { data: fixed }, { data: alerts }, { data: allAlerts }, { data: placesRows }, prices, fxMicro] = await Promise.all([
+  const [{ data: balances }, { data: fixed }, { data: alerts }, { data: allAlerts }, { data: placesRows }, { data: metaTokenRows }, prices, fxMicro] = await Promise.all([
     supabase.from("provider_balances").select("*").order("provider"),
     supabase
       .from("cost_entries")
@@ -81,6 +82,7 @@ export default async function CustosPage({ searchParams }: { searchParams?: Prom
     supabase.from("finance_alerts").select("id,provider,kind,balance_brl_cents,emailed,created_at").is("deleted_at", null).order("created_at", { ascending: false }).limit(10),
     supabase.from("finance_alerts").select("id,provider,created_at").is("deleted_at", null).order("created_at", { ascending: false }).limit(200),
     supabase.from("cost_entries").select("quantity").eq("provider", "google_places").eq("kind", "variable").is("deleted_at", null).gte("occurred_at", `${curMonth}-01T03:00:00Z`).limit(50_000),
+    supabase.from("meta_token_status").select("is_valid,expires_at,scopes,missing_scopes,optional_missing,checked_at").order("checked_at", { ascending: false }).limit(1),
     currentPrices(),
     currentFxMicro(),
   ]);
@@ -185,6 +187,8 @@ export default async function CustosPage({ searchParams }: { searchParams?: Prom
           </ul>
         )}
       </section>
+
+      <MetaTokenCard status={metaTokenRows?.[0] ?? null} />
 
       <section className="rounded-card border border-line-subtle bg-off-white p-5 shadow-soft">
         <h3 className="font-serif text-title-3">Saldos dos provedores</h3>
@@ -302,7 +306,7 @@ export default async function CustosPage({ searchParams }: { searchParams?: Prom
             {(alerts ?? []).map((a) => (
               <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                 <span>
-                {new Date(a.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })} · {label(a.provider)} · {a.kind === "low_balance" ? "saldo baixo" : a.kind === "low_runway" ? "fôlego curto" : "erro"}
+                {new Date(a.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })} · {label(a.provider)} · {a.kind === "low_balance" ? "saldo baixo" : a.kind === "low_runway" ? "fôlego curto" : a.kind === "meta_token" ? "token Meta" : "erro"}
                 {a.balance_brl_cents !== null ? ` · ${formatBRL(a.balance_brl_cents)}` : ""}{a.emailed ? " · e-mail enviado" : ""}
                 </span>
                 <ConfirmDelete target="alert" testId={`delete-alert-${a.id}`} label="Dispensar" title="Dispensar este alerta?"

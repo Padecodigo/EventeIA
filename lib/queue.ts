@@ -20,6 +20,7 @@ export const QUEUE_NAMES = {
   supplierDiscovery: "supplier-discovery-queue",
   quoteExtraction: "quote-extraction-queue",
   financeBalanceCheck: "finance-balance-check",
+  metaTokenHealth: "meta-token-health",
   artCleanup: "art-cleanup",
   marketingAutopilot: "marketing-autopilot",
   prospectPostDelete: "prospect-post-delete",

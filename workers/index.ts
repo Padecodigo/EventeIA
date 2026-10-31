@@ -16,6 +16,7 @@ import {
   type ProspectReplyJobData,
 } from "@/lib/jobs/prospect-reply";
 import { logger } from "@/lib/logger";
+import { runMetaTokenHealthCheck } from "@/lib/meta/token-health-monitor";
 import { QUEUE_NAMES, getQueue, getRedisConnection } from "@/lib/queue";
 import { createDiscoveryWorker } from "@/lib/queue/discovery-worker";
 import { createQuoteExtractionWorker } from "@/lib/queue/quote-extraction-worker";
@@ -86,6 +87,15 @@ const balanceWorker = new Worker(
   { connection, concurrency: 1 },
 );
 
+// Saúde do token da Meta: válido/escopos (banner/e-mail), diário 08:10.
+const metaTokenHealthWorker = new Worker(
+  QUEUE_NAMES.metaTokenHealth,
+  async () => {
+    await runMetaTokenHealthCheck();
+  },
+  { connection, concurrency: 1 },
+);
+
 // Publicidade automática (só quando o botão do admin está ligado).
 const marketingAutopilotWorker = new Worker(
   QUEUE_NAMES.marketingAutopilot,
@@ -146,6 +156,7 @@ const quoteExtractionWorker = createQuoteExtractionWorker(connection);
 // Agendamentos (America/Sao_Paulo):
 // 09:30 — conciliação Asaas (PAYMENTS.md §8)
 // 08:00 — saúde financeira
+// 08:10 — saúde do token Meta
 void getQueue(QUEUE_NAMES.asaasReconcile).add(
   "sweep",
   {},
@@ -171,6 +182,11 @@ void getQueue(QUEUE_NAMES.financeBalanceCheck).add(
   {},
   { repeat: { pattern: "0 8 * * *", tz: "America/Sao_Paulo" }, attempts: 3 },
 );
+void getQueue(QUEUE_NAMES.metaTokenHealth).add(
+  "check",
+  {},
+  { repeat: { pattern: "10 8 * * *", tz: "America/Sao_Paulo" }, attempts: 3 },
+);
 // Créditos nunca expiram (0037): remove o agendamento legado de expiração, se existir.
 void getQueue(QUEUE_NAMES.creditsExpireLegacy)
   .getRepeatableJobs()
@@ -180,7 +196,7 @@ void getQueue(QUEUE_NAMES.creditsExpireLegacy)
   })
   .catch(() => undefined);
 
-const workers = [asaasWorker, metaWebhooksWorker, prospectReplyWorker, reconcileWorker, balanceWorker, artCleanupWorker, prospectPostDeleteWorker, instagramPublishWorker, marketingAutopilotWorker, discoveryWorker, quoteExtractionWorker];
+const workers = [asaasWorker, metaWebhooksWorker, prospectReplyWorker, reconcileWorker, balanceWorker, metaTokenHealthWorker, artCleanupWorker, prospectPostDeleteWorker, instagramPublishWorker, marketingAutopilotWorker, discoveryWorker, quoteExtractionWorker];
 
 for (const worker of workers) {
   worker.on("error", (error) => {

@@ -473,13 +473,25 @@ export interface Database {
       finance_alerts: Table<{
         id: string;
         provider: string;
-        kind: "low_balance" | "low_runway" | "fetch_error";
+        kind: "low_balance" | "low_runway" | "fetch_error" | "meta_token";
         balance_brl_cents: number | null;
         runway_days: number | null;
         emailed: boolean;
         created_at: string;
         deleted_at: string | null;
         deleted_by: string | null;
+      }>;
+      meta_token_status: Table<{
+        id: string;
+        checked_at: string;
+        is_valid: boolean;
+        expires_at: string | null;
+        scopes: string[];
+        missing_scopes: string[];
+        optional_missing: string[];
+        error: string | null;
+        last_alert_at: string | null;
+        created_at: string;
       }>;
       fx_rates: Table<{
         rate_date: string;

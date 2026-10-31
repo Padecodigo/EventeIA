@@ -30,6 +30,7 @@ export const PROVIDER_LABELS: Record<string, string> = {
   google_places: "Google Places",
   resend: "Resend (e-mail)",
   evolution: "Evolution (WhatsApp)",
+  meta: "Meta (Instagram/Messenger)",
   other: "Outros",
 };
 
