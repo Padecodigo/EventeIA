@@ -101,12 +101,12 @@ export default async function LandingPage() {
               <span className="mt-3 block text-[clamp(1.35rem,2.3vw,2rem)] leading-[1.18] tracking-[-0.015em] text-coral-escuro">A gente encontra os fornecedores, compara os preços e entrega o orçamento pronto.</span>
             </h1>
             <p className="mt-5 max-w-lg text-[17px] leading-relaxed text-vinho/85">
-              Casamento, aniversário, 15 anos, formatura ou corporativo: em vez de você ligar para um por um, a EventeIA pede orçamento aos fornecedores da sua região pelas redes sociais, com foco no Vale do Paraíba e em São Paulo, e compara tudo. Você recebe{" "}
+              Casamento, aniversário, 15 anos, formatura ou corporativo<span className="sm:hidden">.</span><span className="hidden sm:inline">: em vez de você ligar para um por um, a EventeIA pede orçamento aos fornecedores da sua região pelas redes sociais, com foco no Vale do Paraíba e em São Paulo, e compara tudo.</span> Você recebe{" "}
               <strong className="font-semibold text-vinho">3 opções prontas</strong> — melhor preço, custo-benefício e
               comodidade — e só escolhe.
             </p>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:items-center">
               <Link
                 prefetch={false}
                 href="/registrar"

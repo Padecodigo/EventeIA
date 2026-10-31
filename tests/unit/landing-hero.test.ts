@@ -143,3 +143,12 @@ describe("landing — animação 'como funciona' (leve, sem JS)", () => {
     expect(reduced).toMatch(/\.ev-how-s3 \{ opacity: 1; \}/);
   });
 });
+
+describe("hero mobile-first", () => {
+  it("encurta o subtítulo no celular para o CTA ficar acima da dobra", async () => {
+    const { readFileSync } = await import("node:fs");
+    const src = readFileSync("app/(marketing)/page.tsx", "utf8");
+    expect(src).toContain('<span className="hidden sm:inline">: em vez de você ligar');
+    expect(src).toContain("mt-6 flex flex-col gap-3 sm:mt-8");
+  });
+});
