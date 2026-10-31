@@ -88,6 +88,24 @@ describe("ingestSupplierMessage", () => {
     ]);
   });
 
+  it("modera contatos da mensagem recebida antes de gravar", async () => {
+    const { store, inserted } = fakeStore();
+    const result = await ingestSupplierMessage(store, {
+      channel: "instagram",
+      externalUserId: "111",
+      ref: `event:${UUID}`,
+      windowKind: "standard_24h",
+      body: "Me chama no zap (11) 99999-9999 ou buffet@exemplo.com",
+      externalId: "mid-contact",
+      now: NOW,
+    });
+
+    expect(result.recorded).toBe(true);
+    expect(inserted[0]?.body).not.toContain("99999");
+    expect(inserted[0]?.body).not.toContain("buffet@exemplo.com");
+    expect(inserted[0]?.moderated).toBe(true);
+  });
+
   it("ref sem evento não vincula eventId", async () => {
     const { store, upserts } = fakeStore();
     await ingestSupplierMessage(store, {

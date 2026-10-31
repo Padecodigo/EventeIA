@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { EventChat } from "@/components/domain/event-chat";
 import { loadEventCost } from "@/lib/admin/event-finance";
 import { isUuid } from "@/lib/admin/search";
 import { requireAdmin } from "@/lib/auth";
 import { PROVIDER_LABELS } from "@/lib/finance/load";
 import { formatBRL } from "@/lib/money";
+import { listEventChatConversations } from "@/lib/outreach/chat-read";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 import { Card, EVENT_STATUS_LABELS, READ_ONLY_NOTE, fmtDate } from "../../ui";
@@ -22,12 +24,13 @@ export default async function AdminEventoPage({ params }: { params: Promise<{ id
   const admin = getSupabaseAdmin();
   const { data: ev } = await admin.from("events").select("*").eq("id", id).maybeSingle();
   if (!ev) notFound();
-  const [owner, prospects, pays, tickets, cost] = await Promise.all([
+  const [owner, prospects, pays, tickets, cost, conversations] = await Promise.all([
     admin.from("profiles").select("id,display_name,email").eq("id", ev.owner_profile_id).maybeSingle(),
     admin.from("vendor_prospects").select("id,vendor_name,vendor_category,status,supplier_id,last_message_at").eq("event_id", id).order("created_at", { ascending: false }).limit(300),
     admin.from("payments").select("id,purpose,billing_type,amount_cents,status,created_at").eq("event_id", id).order("created_at", { ascending: false }).limit(50),
     admin.from("support_tickets").select("id,subject,status,created_at").eq("event_id", id).is("deleted_at", null).order("created_at", { ascending: false }).limit(50),
     loadEventCost(id, ev.title),
+    listEventChatConversations(id),
   ]);
   const o = owner.data;
 
@@ -88,6 +91,19 @@ export default async function AdminEventoPage({ params }: { params: Promise<{ id
         <h3 className="font-serif text-title-3">Chamados deste evento</h3>
         {(tickets.data ?? []).length === 0 ? <p className="text-caption text-vinho/70">Nenhum chamado.</p> : (
           <ul className="text-sm">{(tickets.data ?? []).map((t) => <li key={t.id} className="border-t border-line-subtle py-1"><Link className="underline" href={`/admin/chamados/${t.id}`}>{t.subject}</Link> · {t.status} · {fmtDate(t.created_at)}</li>)}</ul>
+        )}
+      </Card>
+
+      <Card testId="event-chat">
+        <h3 className="font-serif text-title-3">Conversas mediadas (fornecedores)</h3>
+        <p className="mb-3 text-caption text-vinho/70">
+          Visão do agente: acompanhe a conversa e intervenha quando necessário. O relay segue a janela
+          da Meta e a moderação de contatos.
+        </p>
+        {conversations.length === 0 ? (
+          <p className="text-caption text-vinho/70">Nenhuma conversa de fornecedor neste evento.</p>
+        ) : (
+          <EventChat eventId={id} conversations={conversations} mode="admin" />
         )}
       </Card>
     </div>

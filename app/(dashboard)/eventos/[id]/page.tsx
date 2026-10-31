@@ -7,7 +7,9 @@ import { ActivateWithCredit } from "@/components/domain/activate-with-credit";
 import { BudgetTable } from "@/components/domain/budget-table";
 import { BuyTicketForm } from "@/components/domain/buy-ticket-form";
 import { ChoicesPanel } from "@/components/domain/choices-panel";
+import { EventChat } from "@/components/domain/event-chat";
 import { EventLifecycleActions } from "@/components/domain/event-lifecycle-actions";
+import { EventSupportChat } from "@/components/domain/event-support-chat";
 import { QuotationsPanel } from "@/components/domain/quotations-panel";
 import { QuotePreparingNotice } from "@/components/domain/quote-preparing-notice";
 import { ScenariosPanel } from "@/components/domain/scenarios-panel";
@@ -24,6 +26,7 @@ import { lookupLuckyCoupon } from "@/lib/lucky/server";
 import { formatBRL } from "@/lib/money";
 import { offerDiscountCents } from "@/lib/offers/pure";
 import { activeUserOffer } from "@/lib/offers/server";
+import { listEventChatConversations } from "@/lib/outreach/chat-read";
 import { parseQuotationOptions } from "@/lib/quotes/choices";
 import { categoryLabel } from "@/lib/quotes/labels";
 import { latestScenarios } from "@/lib/quotes/scenarios";
@@ -214,6 +217,9 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           status: row.status,
         }))
     : [];
+  const chatConversations = unlocked
+    ? await listEventChatConversations(event.id)
+    : [];
 
   return (
     <div className="flex flex-col gap-8">
@@ -302,8 +308,11 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           <QuotationsPanel eventId={event.id} quotations={quotationsResult.data ?? []} />
           <ChoicesPanel eventId={event.id} rows={choiceViews} />
           <SupplierOptionsPanel eventId={event.id} rows={selectionViews} />
+          <EventChat eventId={event.id} conversations={chatConversations} />
         </>
       ) : null}
+
+      <EventSupportChat />
     </div>
   );
 }

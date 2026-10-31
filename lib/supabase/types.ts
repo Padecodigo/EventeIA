@@ -414,6 +414,7 @@ export interface Database {
         body: string;
         moderated: boolean;
         external_id: string | null;
+        author: "user" | "agent" | "system" | null;
         created_at: string;
       }>;
       supplier_options: Table<{

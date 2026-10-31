@@ -2,6 +2,7 @@ import "server-only";
 
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
+import { moderateContactInfo } from "./moderation";
 import type { SupplierConversationStatus } from "./send-guard";
 import { eventIdFromRef, windowExpiresAt, type WindowKind } from "./window";
 
@@ -193,11 +194,13 @@ export async function ingestSupplierMessage(
     status: existing !== null && existing.status === "opted_out" ? "opted_out" : "open",
   });
 
+  const moderation = moderateContactInfo(input.body);
   const recorded = await store.insertMessage({
     conversationId: conversation.id,
     direction: "in",
-    body: input.body,
+    body: moderation.text,
     externalId: input.externalId,
+    ...(moderation.masked ? { moderated: true } : {}),
   });
 
   return { conversationId: conversation.id, recorded };

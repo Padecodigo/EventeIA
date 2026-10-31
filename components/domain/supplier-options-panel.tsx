@@ -121,7 +121,10 @@ export function SupplierOptionsPanel({
   }
 
   return (
-    <section className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
+    <section
+      id="fornecedores"
+      className="scroll-mt-24 rounded-card border border-line-subtle bg-off-white p-6 shadow-soft"
+    >
       <h2 className="font-serif text-title-1">Produtos e opções dos fornecedores</h2>
       <p className="mt-2 max-w-prose text-sm text-vinho/70">
         Compare as opções oferecidas por cada fornecedor e escolha a que prefere. Nenhuma opção é
