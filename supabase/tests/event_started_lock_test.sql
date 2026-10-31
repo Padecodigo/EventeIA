@@ -56,7 +56,7 @@ select throws_ok($$ update public.events set interview_answers = '{"a":2}'::json
   'REGRESSÃO: dono não edita a entrevista com a busca em andamento');
 select throws_ok($$ update public.events set guest_count = 80 where id = 'a1c32222-0000-4000-8000-000000000001' $$,
   '42501', null, 'dono não altera convidados');
-select throws_ok($$ update public.events set search_start_date = null where id = 'a1c32222-0000-4000-8000-000000000001' $$,
+select throws_ok($$ update public.events set search_start_date = '2027-11-10' where id = 'a1c32222-0000-4000-8000-000000000001' $$,
   '42501', null, 'dono não altera a data de início depois que a busca começou');
 select throws_ok($$ update public.event_requirements set quantity = 99 where event_id = 'a1c32222-0000-4000-8000-000000000001' $$,
   '42501', null, 'dono não altera requisitos da entrevista');
