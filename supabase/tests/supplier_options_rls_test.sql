@@ -98,7 +98,7 @@ select throws_ok($$
   values ('aaaa3333-0000-4000-8000-000000000001', 'opcao x')
 $$, '42501', null, 'anon não insere opção');
 
-select is((select count(*) from public.supplier_selections), 0::bigint, 'anon não vê seleções');
+select throws_ok($$ select count(*) from public.supplier_selections $$, '42501', null, 'anon não vê seleções (sem grant)');
 select throws_ok($$
   insert into public.supplier_selections (event_id, supplier_id)
   values ('aaaa2222-0000-4000-8000-000000000001', 'aaaa3333-0000-4000-8000-000000000001')
