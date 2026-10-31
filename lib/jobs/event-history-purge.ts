@@ -10,7 +10,7 @@ type PurgeClient = {
 
 /**
  * Job diário: expurga o conteúdo dos eventos apagados pelo usuário há mais de
- * 30 dias (0073). Idempotente: eventos já expurgados são ignorados pela função.
+ * 30 dias (0074). Idempotente: eventos já expurgados são ignorados pela função.
  */
 export async function runEventHistoryPurge(
   client: PurgeClient = getSupabaseAdmin() as unknown as PurgeClient,

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { isUuid } from "@/lib/admin/search";
 import { requireAdmin } from "@/lib/auth";
+import { ADMIN_USER_DELETED_LABEL, isUserDeleted } from "@/lib/events/history-deletion";
 import { formatBRL } from "@/lib/money";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
@@ -18,7 +19,7 @@ export default async function AdminClientePage({ params }: { params: Promise<{ i
   const { data: p } = await admin.from("profiles").select("id,display_name,email,phone_e164,contact_whatsapp_e164,instagram_handle,role,document_type,created_at").eq("id", id).maybeSingle();
   if (!p) notFound();
   const [events, pays, tickets] = await Promise.all([
-    admin.from("events").select("id,title,event_date,status,city").eq("owner_profile_id", id).order("created_at", { ascending: false }).limit(100),
+    admin.from("events").select("id,title,event_date,status,city,user_deleted_at").eq("owner_profile_id", id).order("created_at", { ascending: false }).limit(100),
     admin.from("payments").select("id,event_id,amount_cents,billing_type,status,created_at").eq("profile_id", id).order("created_at", { ascending: false }).limit(100),
     admin.from("support_tickets").select("id,subject,status,created_at").eq("user_id", id).is("deleted_at", null).order("created_at", { ascending: false }).limit(50),
   ]);
@@ -45,7 +46,7 @@ export default async function AdminClientePage({ params }: { params: Promise<{ i
       <Card testId="client-events">
         <h3 className="font-serif text-title-3">Eventos ({(events.data ?? []).length})</h3>
         {(events.data ?? []).length === 0 ? <p className="text-caption text-vinho/70">Nenhum evento.</p> : (
-          <ul className="text-sm">{(events.data ?? []).map((e) => <li key={e.id} className="border-t border-line-subtle py-1"><Link className="underline" href={`/admin/eventos/${e.id}`}>{e.title}</Link> · {fmtDate(e.event_date)} · {e.city ?? "sem cidade"} · {EVENT_STATUS_LABELS[e.status] ?? e.status}</li>)}</ul>
+          <ul className="text-sm">{(events.data ?? []).map((e) => isUserDeleted(e) ? <li key={e.id} className="border-t border-line-subtle py-1 text-vinho/60">{ADMIN_USER_DELETED_LABEL}</li> : <li key={e.id} className="border-t border-line-subtle py-1"><Link className="underline" href={`/admin/eventos/${e.id}`}>{e.title}</Link> · {fmtDate(e.event_date)} · {e.city ?? "sem cidade"} · {EVENT_STATUS_LABELS[e.status] ?? e.status}</li>)}</ul>
         )}
       </Card>
       <Card testId="client-payments">

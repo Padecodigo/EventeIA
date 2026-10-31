@@ -41,7 +41,7 @@ export async function searchAdmin(db: SearchDb, raw: unknown, per = 10): Promise
   const [byName, byEmail, events, tickets, suppliers] = await Promise.all([
     run("profiles", "id,display_name,email,role", "display_name"),
     uuid ? Promise.resolve([] as Row[]) : run("profiles", "id,display_name,email,role", "email"),
-    run("events", "id,title,event_date,status,city", "title"),
+    run("events", "id,title,event_date,status,city", "title", (x) => x.is("user_deleted_at", null)),
     run("support_tickets", "id,subject,status,created_at", "subject", (x) => x.is("deleted_at", null)),
     run("suppliers", "id,name,category,city", "name", (x) => x.is("deleted_at", null)),
   ]);

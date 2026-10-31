@@ -1,5 +1,5 @@
 /**
- * Exclusão do histórico de eventos pelo usuário (0073).
+ * Exclusão do histórico de eventos pelo usuário (0074).
  * Regras: só eventos ENCERRADOS (completed/canceled), nunca ativos; soft delete
  * com 30 dias para desfazer; depois o job expurga o conteúdo do usuário.
  */
@@ -39,3 +39,10 @@ export const DELETION_KEEPS = [
   "Registros financeiros obrigatórios (pagamentos, tíquetes e créditos)",
   "Prova do seu consentimento de repasse de contato (LGPD)",
 ] as const;
+
+/** Rótulo único que o admin vê para evento apagado pelo usuário — sem conteúdo. */
+export const ADMIN_USER_DELETED_LABEL = "apagado pelo usuário";
+
+export function isUserDeleted(event: { user_deleted_at?: string | null }): boolean {
+  return event.user_deleted_at !== null && event.user_deleted_at !== undefined;
+}

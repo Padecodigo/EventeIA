@@ -22,7 +22,7 @@ const scopeSchema = z.union([
 
 /**
  * Apaga (soft delete) um evento encerrado ou todo o histórico encerrado.
- * Exige digitar APAGAR. Posse/estado são validados de novo na RPC (0073).
+ * Exige digitar APAGAR. Posse/estado são validados de novo na RPC (0074).
  */
 export async function deleteEventHistoryAction(
   _previous: HistoryDeletionState,

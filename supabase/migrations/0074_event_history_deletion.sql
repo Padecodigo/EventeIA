@@ -1,4 +1,4 @@
--- 0073 — Exclusão do histórico de eventos pelo usuário (LGPD art. 18, VI) — aditiva.
+-- 0074 — Exclusão do histórico de eventos pelo usuário (LGPD art. 18, VI) — aditiva.
 --
 -- Fluxo:
 --   1) Soft delete: o DONO pede a exclusão de eventos ENCERRADOS (completed/canceled).

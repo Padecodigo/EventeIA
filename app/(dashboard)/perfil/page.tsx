@@ -22,7 +22,7 @@ export default async function ProfilePage() {
   const hasPassword = await accountHasPassword(authData.user);
   const hasGoogle = (authData.user?.identities ?? []).some((i) => i.provider === "google");
 
-  // Histórico (0073): só eventos encerrados do próprio usuário; apagados somem pela RLS.
+  // Histórico (0074): só eventos encerrados do próprio usuário; apagados somem pela RLS.
   const { data: closedRows } = await supabase
     .from("events")
     .select("id,title,event_date,status")

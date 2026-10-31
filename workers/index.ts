@@ -158,7 +158,7 @@ const instagramPublishWorker = new Worker(
   { connection, concurrency: 1 },
 );
 
-// Expurgo do histórico apagado pelo usuário (carência de 30 dias, 0073).
+// Expurgo do histórico apagado pelo usuário (carência de 30 dias, 0074).
 const eventHistoryPurgeWorker = new Worker(
   QUEUE_NAMES.eventHistoryPurge,
   async () => {
