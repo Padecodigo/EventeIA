@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import type { RespondDb } from "@/lib/prospecting/supabase-respond";
-import { createSupabaseRespondPorts, loadHistory } from "@/lib/prospecting/supabase-respond";
+import {
+  createSupabaseRespondPorts,
+  loadHistory,
+  markSupplierOptOut,
+} from "@/lib/prospecting/supabase-respond";
 
 interface FakeDb {
   inserted: Record<string, unknown>[];
@@ -89,5 +93,27 @@ describe("portas de resposta", () => {
     const d = deps();
     await createSupabaseRespondPorts(d).escalate("c1", "fora");
     expect(d.db.updates.some((u) => u.values.status === "awaiting_human")).toBe(true);
+  });
+});
+
+describe("markSupplierOptOut", () => {
+  it("marca a conversa como opted_out e o fornecedor como opt-out", async () => {
+    const db = fakeDb();
+    await markSupplierOptOut(db, "c1", "s1");
+    expect(
+      db.updates.some((u) => u.table === "prospect_conversations" && u.values.status === "opted_out"),
+    ).toBe(true);
+    const supplier = db.updates.find((u) => u.table === "suppliers");
+    expect(supplier?.values).toMatchObject({ status: "opt-out" });
+    expect(supplier?.values).toHaveProperty("opt_out_at");
+  });
+
+  it("sem fornecedor conhecido só marca a conversa", async () => {
+    const db = fakeDb();
+    await markSupplierOptOut(db, "c1", null);
+    expect(
+      db.updates.some((u) => u.table === "prospect_conversations" && u.values.status === "opted_out"),
+    ).toBe(true);
+    expect(db.updates.some((u) => u.table === "suppliers")).toBe(false);
   });
 });

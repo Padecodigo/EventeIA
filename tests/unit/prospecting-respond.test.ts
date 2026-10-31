@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import type { AgentReply } from "@/lib/prospecting/agent";
+import type { HandleInboundResult } from "@/lib/prospecting/inbound";
 import type { StructuredQuote } from "@/lib/prospecting/quote";
-import { applyAgentReply, respondToInbound, type RespondPorts } from "@/lib/prospecting/respond";
+import {
+  applyAgentReply,
+  respondToInbound,
+  shouldAgentRespond,
+  type RespondPorts,
+} from "@/lib/prospecting/respond";
 import type { DeepSeekClient } from "@/lib/deepseek/client";
 
 const emptyQuote: StructuredQuote = {
@@ -53,12 +59,13 @@ const base: AgentReply = { reply: "oi", quote: null, escalate: false, done: fals
 const ids = { conversationId: "c1", supplierId: "s1" };
 
 describe("aplicação da resposta do agente", () => {
-  it("opt-out marca e responde despedida", async () => {
+  it("opt-out do LLM NÃO desinscreve: escala e não responde", async () => {
     const ports = fakePorts();
     const result = await applyAgentReply(ports, { ...ids, reply: { ...base, optOut: true } });
-    expect(result.action).toBe("opt_out");
-    expect(ports.optOuts).toBe(1);
-    expect(ports.replies).toHaveLength(1);
+    expect(result).toEqual({ action: "escalated", sent: false });
+    expect(ports.optOuts).toBe(0);
+    expect(ports.escalations).toEqual(["possível opt-out sinalizado pela IA — revisar"]);
+    expect(ports.replies).toHaveLength(0);
   });
 
   it("salva a cotação e responde", async () => {
@@ -88,6 +95,46 @@ describe("aplicação da resposta do agente", () => {
     const result = await applyAgentReply(ports, { ...ids, reply: base });
     expect(result.action).toBe("replied");
     expect(ports.replies).toHaveLength(1);
+  });
+});
+
+describe("shouldAgentRespond", () => {
+  const conversation = (status: HandleInboundResult["conversation"]["status"]) => ({ id: "c1", status });
+
+  it("normal: conversa aberta gravada responde", () => {
+    const outcome: HandleInboundResult = {
+      action: { action: "open_conversation", messageId: "m1" },
+      conversation: conversation("awaiting_human"),
+      recorded: true,
+    };
+    expect(shouldAgentRespond(outcome)).toBe(true);
+  });
+
+  it("opt_out action: não responde", () => {
+    const outcome: HandleInboundResult = {
+      action: { action: "opt_out" },
+      conversation: conversation("opted_out"),
+      recorded: true,
+    };
+    expect(shouldAgentRespond(outcome)).toBe(false);
+  });
+
+  it("conversa opted_out com texto normal: não responde", () => {
+    const outcome: HandleInboundResult = {
+      action: { action: "open_conversation", messageId: "m1" },
+      conversation: conversation("opted_out"),
+      recorded: true,
+    };
+    expect(shouldAgentRespond(outcome)).toBe(false);
+  });
+
+  it("replay idempotente (recorded=false): não responde", () => {
+    const outcome: HandleInboundResult = {
+      action: { action: "open_conversation", messageId: "m1" },
+      conversation: conversation("awaiting_human"),
+      recorded: false,
+    };
+    expect(shouldAgentRespond(outcome)).toBe(false);
   });
 });
 

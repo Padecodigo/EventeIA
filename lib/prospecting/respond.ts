@@ -2,6 +2,7 @@ import type { DeepSeekClient } from "@/lib/deepseek/client";
 
 import type { AgentContext, AgentMessage, AgentReply } from "./agent";
 import { runAgent } from "./agent-runtime";
+import type { HandleInboundResult } from "./inbound";
 import type { StructuredQuote } from "./quote";
 
 /**
@@ -23,16 +24,31 @@ export interface ApplyResult {
   sent: boolean;
 }
 
+/**
+ * Guarda de opt-out (LGPD): decide se o agente pode responder a uma entrada já
+ * tratada. O opt-out determinístico é responsabilidade de `handleInbound` (via
+ * `isOptOut`); aqui apenas evitamos disparar o agente quando a conversa já está
+ * optada-fora ou quando a mensagem é um pedido de parada.
+ */
+export function shouldAgentRespond(outcome: HandleInboundResult): boolean {
+  if (!outcome.recorded) return false;
+  if (outcome.action.action === "opt_out") return false;
+  if (outcome.conversation.status === "opted_out") return false;
+  return true;
+}
+
 export async function applyAgentReply(
   ports: RespondPorts,
   input: { conversationId: string; supplierId: string | null; reply: AgentReply },
 ): Promise<ApplyResult> {
   const { reply, conversationId, supplierId } = input;
 
+  // O opt-out determinístico é tratado em `handleInbound`. O sinal `optOut` do
+  // LLM é só uma dica: NÃO desinscreve o fornecedor (falsos positivos do modelo
+  // causavam cancelamento silencioso) — apenas escala para revisão humana.
   if (reply.optOut) {
-    await ports.markOptOut(conversationId, supplierId);
-    await ports.sendReply(conversationId, reply.reply);
-    return { action: "opt_out", sent: true };
+    await ports.escalate(conversationId, "possível opt-out sinalizado pela IA — revisar");
+    return { action: "escalated", sent: false };
   }
 
   const quoted = reply.quote !== null;

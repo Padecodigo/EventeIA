@@ -14,11 +14,12 @@ import { verifyChallenge, verifyHubSignature } from "@/lib/meta/signature";
 import { parseMetaComments, parseMetaWebhook } from "@/lib/meta/webhook";
 import { PRIVATE_REPLY_OPENER } from "@/lib/prospecting/content";
 import { handleInbound } from "@/lib/prospecting/inbound";
-import { respondToInbound } from "@/lib/prospecting/respond";
+import { respondToInbound, shouldAgentRespond } from "@/lib/prospecting/respond";
 import {
   createSupabaseRespondPorts,
   defaultRespondDb,
   loadHistory,
+  markSupplierOptOut,
 } from "@/lib/prospecting/supabase-respond";
 import { createSupabaseProspectStore } from "@/lib/prospecting/supabase-store";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -118,8 +119,12 @@ export async function POST(request: Request): Promise<NextResponse> {
           },
           { keyword, now: new Date() },
         );
-        // Só responde uma vez por evento (idempotente) e se houver como enviar.
-        if (outcome.recorded && accessToken !== undefined && accessToken.length > 0 && igBusinessId !== undefined && igBusinessId.length > 0) {
+        // Opt-out determinístico (isOptOut em handleInbound): marca e NÃO responde.
+        if (outcome.recorded && outcome.action.action === "opt_out") {
+          await markSupplierOptOut(respondDb, outcome.conversation.id, supplier.id);
+        }
+        // Só responde uma vez por evento (idempotente), se não for opt-out e se houver como enviar.
+        else if (shouldAgentRespond(outcome) && accessToken !== undefined && accessToken.length > 0 && igBusinessId !== undefined && igBusinessId.length > 0) {
           const history = await loadHistory(respondDb, outcome.conversation.id);
           await respondToInbound({
             client: getDeepSeekClient(),
@@ -150,7 +155,9 @@ export async function POST(request: Request): Promise<NextResponse> {
         },
         { keyword, now: new Date() },
       );
-      if (outcome.recorded) {
+      if (outcome.recorded && outcome.action.action === "opt_out") {
+        await markSupplierOptOut(respondDb, outcome.conversation.id, null);
+      } else if (shouldAgentRespond(outcome)) {
         const history = await loadHistory(respondDb, outcome.conversation.id);
         await respondToInbound({
           client: getDeepSeekClient(),
