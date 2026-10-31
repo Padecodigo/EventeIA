@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 
 import { EventInterview } from "@/components/domain/event-interview";
+import { FollowInstagramCard } from "@/components/domain/follow-instagram-card";
 import { defaultAnswers, parseAnswers } from "@/lib/catalog/rules";
 import { ALL_EVENT_TYPES, EVENT_TYPE_LABELS } from "@/lib/catalog/v1";
 import type { EventType } from "@/lib/engine/types";
@@ -43,6 +44,7 @@ export default async function EventInterviewPage({ params }: { params: Promise<{
           Voltar ao evento
         </Link>
       </header>
+      <FollowInstagramCard />
       <EventInterview
         eventId={event.id}
         eventType={eventType}

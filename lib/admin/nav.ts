@@ -12,6 +12,7 @@ export const ADMIN_NAV = [
   { href: "/admin/chamados", label: "Chamados", description: "Atendimento e tickets de suporte." },
   { href: "/admin/eventos", label: "Eventos", description: "Todos os eventos (somente leitura)." },
   { href: "/admin/clientes", label: "Clientes", description: "Contas, eventos e pagamentos (somente leitura)." },
+  { href: "/admin/cadastros", label: "Cadastros", description: "Cadastros recentes: seguir de volta no Instagram." },
   { href: "/admin/fornecedores", label: "Fornecedores", description: "Fornecedores encontrados (somente leitura)." },
   { href: "/admin/prospeccao", label: "Prospecção", description: "Posts de isca: aprovar e publicar no Instagram." },
   { href: "/admin/instagram", label: "Instagram", description: "Sessão do navegador: logar, deslogar e trocar conta." },
