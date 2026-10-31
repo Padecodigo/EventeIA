@@ -14,7 +14,7 @@ const BIA = "22222222-2222-4222-8222-222222222222";
 
 const tables = {
   profiles: [
-    { id: ANA, display_name: "Ana Souza", email: "ana@example.com", phone_e164: "+5511999999999", created_at: "2026-10-22T12:00:00Z" },
+    { id: ANA, display_name: "Ana Souza", email: "ana@example.com", phone_e164: "+5511999999999", instagram_handle: "anasouza", created_at: "2026-10-22T12:00:00Z" },
     { id: BIA, display_name: "", created_at: "2026-10-20T12:00:00Z" },
   ],
   events: [
@@ -53,7 +53,7 @@ describe("cadastros recentes", () => {
         id: ANA,
         displayName: "Ana Souza",
         createdAt: "2026-10-22T12:00:00Z",
-        instagramHandle: null,
+        instagramHandle: "anasouza",
         latestEvent: { id: "e-novo", title: "Aniversário Ana" },
       },
       {
@@ -71,13 +71,21 @@ describe("cadastros recentes", () => {
     expect(queries).toContainEqual({ table: "profiles", op: "order", args: ["created_at", { ascending: false }] });
   });
 
-  it("regressão: nunca seleciona e-mail, telefone ou instagram_handle inexistente", () => {
+  it("regressão: nunca seleciona e-mail ou telefone; lê instagram_handle", () => {
     const { db, queries } = fakeSignupsDb(tables);
     return loadRecentSignups(db).then(() => {
       const columns = queries.filter((q) => q.op === "select").map((q) => String(q.args[0]));
-      expect(columns).toEqual(["id,display_name,created_at", "id,owner_profile_id,title,created_at"]);
-      for (const selected of columns) expect(selected).not.toMatch(/email|phone|instagram/i);
+      expect(columns).toEqual(["id,display_name,instagram_handle,created_at", "id,owner_profile_id,title,created_at"]);
+      for (const selected of columns) expect(selected).not.toMatch(/email|phone|whatsapp/i);
     });
+  });
+
+  it("mapeia instagram_handle do perfil para a coluna Instagram", async () => {
+    const { db } = fakeSignupsDb(tables);
+    const rows = await loadRecentSignups(db);
+    const ana = rows.find((row) => row.displayName === "Ana Souza");
+    expect(ana?.instagramHandle).toBe("anasouza");
+    expect(instagramLabel(ana?.instagramHandle)).toBe("@anasouza");
   });
 
   it("perfil sem nenhum evento continua listado", async () => {

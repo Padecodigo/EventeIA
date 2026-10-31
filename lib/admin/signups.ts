@@ -3,7 +3,7 @@ import { requireAdmin } from "@/lib/auth";
 /**
  * Cadastros recentes para o admin (somente leitura) — usado para seguir de volta no Instagram.
  * Lê apenas colunas existentes em profiles/events; e-mail e telefone nunca entram na consulta.
- * `instagram_handle` ainda não existe em main: o loader o deixa indefinido até a migração própria.
+ * `instagram_handle` vem da migração 0064 (campo opcional do perfil).
  */
 type Row = Record<string, unknown>;
 type Result = { data: Row[] | null; error?: { message: string } | null };
@@ -84,7 +84,7 @@ export async function loadRecentSignups(db: SignupDb): Promise<SignupRow[]> {
   await requireAdmin();
 
   const profiles = rows(
-    await db.from("profiles").select("id,display_name,created_at").order("created_at", { ascending: false }).limit(100),
+    await db.from("profiles").select("id,display_name,instagram_handle,created_at").order("created_at", { ascending: false }).limit(100),
     "cadastros",
   );
   if (profiles.length === 0) return [];
