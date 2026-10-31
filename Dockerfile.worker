@@ -22,4 +22,8 @@ COPY workers ./workers
 # storageState da sessão logada (monte um volume em /data).
 ENV INSTAGRAM_SESSION_FILE=/data/instagram-session.json
 
+# tsx precisa do tsconfig.workers.json (stub de `server-only`); sem isso o
+# worker cai no boot com "This module cannot be imported from a Client Component".
+ENV TSX_TSCONFIG_PATH=tsconfig.workers.json
+
 CMD ["pnpm", "exec", "tsx", "workers/index.ts"]
