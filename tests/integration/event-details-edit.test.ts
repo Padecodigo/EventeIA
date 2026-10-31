@@ -8,7 +8,7 @@ let eventRow: {
   id: string;
   status: string;
   discovery_started_at?: string | null;
-  interview_completed_at?: string | null;
+  search_start_date?: string | null;
 } | null = null;
 const updates: Record<string, unknown>[] = [];
 
@@ -59,7 +59,7 @@ async function submit(fields: Record<string, string>) {
 }
 
 beforeEach(() => {
-  eventRow = { id: EVENT_ID, status: "active", discovery_started_at: null, interview_completed_at: null };
+  eventRow = { id: EVENT_ID, status: "active", discovery_started_at: null, search_start_date: null };
   updates.length = 0;
 });
 
@@ -137,15 +137,15 @@ describe("editar dados do evento", () => {
 });
 
 describe("evento iniciado (0073)", () => {
-  it("bloqueia edição quando a entrevista já foi concluída", async () => {
-    eventRow = { id: EVENT_ID, status: "active", discovery_started_at: null, interview_completed_at: "2026-10-31T16:00:00Z" };
+  it("bloqueia edição depois do início agendado da busca", async () => {
+    eventRow = { id: EVENT_ID, status: "active", discovery_started_at: null, search_start_date: "2026-01-05" };
     const result = await submit({ guestCount: "150" });
     expect(result.error).toMatch(/só o orçamento limite/i);
     expect(updates).toHaveLength(0);
   });
 
   it("bloqueia edição com a busca em andamento", async () => {
-    eventRow = { id: EVENT_ID, status: "active", discovery_started_at: "2026-10-31T16:00:00Z", interview_completed_at: null };
+    eventRow = { id: EVENT_ID, status: "active", discovery_started_at: "2026-10-31T16:00:00Z", search_start_date: null };
     const result = await submit({ guestCount: "150" });
     expect(result.error).toMatch(/já começou/i);
     expect(updates).toHaveLength(0);

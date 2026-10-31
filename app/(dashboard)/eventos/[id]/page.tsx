@@ -167,7 +167,6 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   const canEditBudgetLimit =
     viewer !== null &&
     (viewer.id === event.owner_profile_id || viewerProfile?.role === "admin") &&
-    event.status !== "completed" &&
     event.status !== "canceled";
   const { data: budgetHistoryRows } = await supabase
     .from("event_budget_limit_history")
@@ -379,7 +378,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           {interviewDone && event.quotes_delivered_at === null ? (
             <QuotePreparingNotice searchStartDate={event.search_start_date} />
           ) : null}
-          {canEditSearchStart(event) ? (
+          {canEditSearchStart(event) && !editLocked ? (
             <SearchStartEditor
               eventId={event.id}
               searchStartDate={event.search_start_date}

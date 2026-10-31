@@ -213,7 +213,7 @@ export async function updateEventDetailsAction(
   const supabase = await createSupabaseServerClient();
   const { data: event } = await supabase
     .from("events")
-    .select("id,status,discovery_started_at,interview_completed_at")
+    .select("id,status,discovery_started_at,search_start_date")
     .eq("id", parsed.data.eventId)
     .maybeSingle();
   if (event === null) {
