@@ -25,6 +25,7 @@ export const QUEUE_NAMES = {
   metaWebhooks: "meta-webhooks",
   prospectReply: "prospect-reply",
   metaWindowSweep: "meta-window-sweep",
+  eventHistoryPurge: "event-history-purge",
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
