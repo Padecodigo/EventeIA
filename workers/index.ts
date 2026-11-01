@@ -2,11 +2,13 @@ import { DelayedError, Worker } from "bullmq";
 
 
 import { serverEnv } from "@/lib/env";
+import { stopEventBackgroundWork } from "@/lib/events/stop";
 import { runBalanceCheck } from "@/lib/finance/balance-monitor";
 import { publishWithBrowser } from "@/lib/instagram-browser/publish";
 import { runAsaasReconcileSweep } from "@/lib/jobs/asaas-reconcile";
 import { handleAsaasWebhookJob, type AsaasWebhookJob } from "@/lib/jobs/asaas-webhook";
 import { runCostArchivePurge } from "@/lib/jobs/cost-archive-purge";
+import { runClosedReportPurge, runEventClosureSweep, type ClosureDb } from "@/lib/jobs/event-closure";
 import { runEventHistoryPurge } from "@/lib/jobs/event-history-purge";
 import {
   externalEventIdOf,
@@ -21,6 +23,7 @@ import {
 import { logger } from "@/lib/logger";
 import { publishAutopilotPost } from "@/lib/marketing/autopilot";
 import { isAutopilotEnabled } from "@/lib/marketing/settings";
+import type { MetaPublishConfig } from "@/lib/meta/publishing";
 import { runMetaTokenHealthCheck } from "@/lib/meta/token-health-monitor";
 import { OutsideBusinessHoursError } from "@/lib/outreach/business-defer";
 import { runSupplierWindowSweep } from "@/lib/outreach/supplier-conversations";
@@ -29,12 +32,18 @@ import { deleteFinishedProspectPosts } from "@/lib/prospecting/delete-posts";
 import { QUEUE_NAMES, getQueue, getRedisConnection } from "@/lib/queue";
 import { createDiscoveryWorker } from "@/lib/queue/discovery-worker";
 import { createQuoteExtractionWorker } from "@/lib/queue/quote-extraction-worker";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 /**
  * Processo de workers (BullMQ) — separado do runtime do Next.
  * Execução: `pnpm workers` (ver README).
  */
 const connection = getRedisConnection();
+
+function closureDb(): ClosureDb {
+  const admin: unknown = getSupabaseAdmin();
+  return admin as ClosureDb;
+}
 
 const asaasWorker = new Worker<AsaasWebhookJob>(
   QUEUE_NAMES.asaasWebhooks,
@@ -148,17 +157,22 @@ const prospectPostDeleteWorker = new Worker(
   QUEUE_NAMES.prospectPostDelete,
   async () => {
     const env = serverEnv();
-    if (env.META_ACCESS_TOKEN === undefined || env.META_INSTAGRAM_BUSINESS_ID === undefined) {
+    const accessToken = env.META_ACCESS_TOKEN;
+    const igUserId = env.META_INSTAGRAM_BUSINESS_ID;
+    const meta: MetaPublishConfig | null =
+      accessToken === undefined || igUserId === undefined
+        ? null
+        : { igUserId, accessToken, apiVersion: env.META_API_VERSION, apiHost: env.META_API_HOST };
+    // P2 (0080): encerra eventos prontos e limpa posts de eventos encerrados.
+    await runEventClosureSweep({
+      db: closureDb(),
+      meta,
+      stopBackgroundWork: stopEventBackgroundWork,
+    });
+    if (meta === null) {
       return; // Meta não configurada: não há mídia para apagar.
     }
-    const deleted = await deleteFinishedProspectPosts({
-      meta: {
-        igUserId: env.META_INSTAGRAM_BUSINESS_ID,
-        accessToken: env.META_ACCESS_TOKEN,
-        apiVersion: env.META_API_VERSION,
-        apiHost: env.META_API_HOST,
-      },
-    });
+    const deleted = await deleteFinishedProspectPosts({ meta });
     if (deleted > 0) {
       logger.info({ deleted }, "posts de isca excluídos após prospecção");
     }
@@ -182,6 +196,7 @@ const eventHistoryPurgeWorker = new Worker(
   QUEUE_NAMES.eventHistoryPurge,
   async () => {
     await runEventHistoryPurge();
+    await runClosedReportPurge(closureDb());
   },
   { connection, concurrency: 1 },
 );
