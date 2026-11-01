@@ -80,7 +80,7 @@ select lives_ok($$ update public.events set discovery_status = 'completed', coll
   where id = 'a1c32222-0000-4000-8000-000000000002' $$, 'job do servidor atualiza a busca');
 reset role;
 select is((select interview_answers from public.events where id = 'a1c32222-0000-4000-8000-000000000001'),
-  '{"a":1}'::jsonb, 'entrevista permaneceu intacta');
+  null::jsonb, 'P2: entrevista apagada ao encerrar (0080)');
 
 select * from finish();
 rollback;

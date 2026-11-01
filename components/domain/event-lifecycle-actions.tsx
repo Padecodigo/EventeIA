@@ -19,7 +19,7 @@ const CONFIRMATIONS: Record<
 > = {
   complete: {
     title: "Encerrar o evento?",
-    body: "O evento será marcado como concluído e a coleta de cotações será finalizada.",
+    body: "O evento será concluído e a coleta de cotações finalizada. As conversas, respostas da entrevista, histórico e posts serão apagados agora; o relatório e os contatos dos fornecedores escolhidos ficam disponíveis até 72h depois da data do evento.",
     confirm: "Encerrar",
     pending: "Encerrando…",
   },
