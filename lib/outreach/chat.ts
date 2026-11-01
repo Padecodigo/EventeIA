@@ -149,7 +149,8 @@ export async function sendChatMessage(
     external_id: sent.messageId,
     author: input.author,
   });
-  if (error !== null) {
+  // 23505: o eco da Meta já espelhou este mid — a mensagem saiu e está no chat.
+  if (error !== null && error.code !== "23505") {
     return { ok: false, error: "Não foi possível registrar a mensagem. Tente novamente.", closed: false };
   }
 

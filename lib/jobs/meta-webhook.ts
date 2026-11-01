@@ -10,11 +10,13 @@ import {
   type MetaSupplierLookup,
   instagramHandleFromSid,
 } from "@/lib/meta/resolve";
-import type { MetaCommentEvent, MetaInboundMessage } from "@/lib/meta/webhook";
+import type { MetaCommentEvent, MetaEchoMessage, MetaInboundMessage } from "@/lib/meta/webhook";
 import { assertBusinessHours } from "@/lib/outreach/business-defer";
+import { isOwnAppEcho } from "@/lib/outreach/echo";
 import {
   createSupabaseSupplierConversationStore,
   ingestSupplierMessage,
+  mirrorOutboundMessage,
   type SupplierConversationStore,
 } from "@/lib/outreach/supplier-conversations";
 import { eventIdFromRef, windowKindFromReferral } from "@/lib/outreach/window";
@@ -44,9 +46,9 @@ import type { ProspectReplyJobData } from "./prospect-reply";
  */
 
 export interface MetaWebhookJobData {
-  kind: "message" | "comment";
+  kind: "message" | "comment" | "echo";
   webhookEventId: string;
-  event: MetaInboundMessage | MetaCommentEvent;
+  event: MetaInboundMessage | MetaCommentEvent | MetaEchoMessage;
 }
 
 interface WebhookEventRow {
@@ -77,6 +79,7 @@ export interface MetaWebhookJobDeps {
     accessToken?: string;
     igBusinessId?: string;
     pageId?: string;
+    appId?: string;
   };
   store: ProspectStore;
   respondDb: RespondDb;
@@ -120,6 +123,7 @@ export function defaultMetaWebhookJobDeps(): MetaWebhookJobDeps {
       accessToken: env.META_ACCESS_TOKEN,
       igBusinessId: env.META_INSTAGRAM_BUSINESS_ID,
       pageId: env.META_PAGE_ID,
+      appId: env.META_APP_ID,
     },
     store: createSupabaseProspectStore(),
     respondDb: defaultRespondDb(),
@@ -153,9 +157,8 @@ export function defaultMetaWebhookJobDeps(): MetaWebhookJobDeps {
 }
 
 export function externalEventIdOf(data: MetaWebhookJobData): string {
-  return data.kind === "message"
-    ? (data.event as MetaInboundMessage).eventId
-    : (data.event as MetaCommentEvent).commentId;
+  if (data.kind === "comment") return (data.event as MetaCommentEvent).commentId;
+  return (data.event as MetaInboundMessage | MetaEchoMessage).eventId;
 }
 
 async function loadWebhookEvent(
@@ -191,6 +194,7 @@ async function updateWebhookEventStatus(
 
 async function processMessage(message: MetaInboundMessage, deps: MetaWebhookJobDeps): Promise<void> {
   const { env } = deps;
+
   let supplier: MetaSupplier = null;
 
   if (message.source === "instagram" && configured(env.accessToken)) {
@@ -295,6 +299,21 @@ async function processMessage(message: MetaInboundMessage, deps: MetaWebhookJobD
   });
 }
 
+/**
+ * P3: eco de mensagem nossa → só espelha no chat do site. Nunca aciona o agente
+ * nem envia nada. Eco do próprio app já foi gravado por quem enviou.
+ */
+async function processEcho(echo: MetaEchoMessage, deps: MetaWebhookJobDeps): Promise<void> {
+  if (isOwnAppEcho(echo.appId, deps.env.appId)) return;
+  await mirrorOutboundMessage(deps.supplierConversations, {
+    channel: echo.source,
+    externalUserId: echo.recipientId,
+    body: echo.text,
+    externalId: echo.eventId,
+    author: "agent",
+  });
+}
+
 async function processComment(comment: MetaCommentEvent, deps: MetaWebhookJobDeps): Promise<void> {
   const { env } = deps;
   // Qualquer @ marcado que comente conta como contato (idempotente).
@@ -364,6 +383,8 @@ export async function handleMetaWebhookJob(
 
   if (data.kind === "message") {
     await processMessage(data.event as MetaInboundMessage, deps);
+  } else if (data.kind === "echo") {
+    await processEcho(data.event as MetaEchoMessage, deps);
   } else {
     await processComment(data.event as MetaCommentEvent, deps);
   }

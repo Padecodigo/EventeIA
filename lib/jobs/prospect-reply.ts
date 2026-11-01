@@ -4,6 +4,7 @@ import { getDeepSeekClient } from "@/lib/deepseek/client";
 import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { assertBusinessHours } from "@/lib/outreach/business-defer";
+import { createSupabaseSupplierConversationStore, mirrorOutboundMessage } from "@/lib/outreach/supplier-conversations";
 import { createCoveragePorts } from "@/lib/prospecting/coverage-store";
 import { withCoverageLoop, type CoveragePorts } from "@/lib/prospecting/coverage-turn";
 import type { ConversationStatus } from "@/lib/prospecting/inbound";
@@ -59,6 +60,8 @@ export interface ProspectReplyJobDeps {
   respond: typeof respondToInbound;
   getClient: typeof getDeepSeekClient;
   buildPorts: typeof createSupabaseRespondPorts;
+  /** P3: espelha a resposta do agente no chat do evento (só grava). */
+  mirror?: (input: { channel: "instagram" | "messenger"; externalUserId: string; body: string; externalId: string | null }) => Promise<void>;
   maxRepliesPerHour?: number;
   /** Loop de cobertura item a item (0078). Ausente = desligado. */
   coverage?: (client: ReturnType<typeof getDeepSeekClient>, category: string) => CoveragePorts;
@@ -110,6 +113,9 @@ export function defaultProspectReplyJobDeps(): ProspectReplyJobDeps {
     respond: respondToInbound,
     getClient: getDeepSeekClient,
     buildPorts: createSupabaseRespondPorts,
+    mirror: async (input) => {
+      await mirrorOutboundMessage(createSupabaseSupplierConversationStore(), { ...input, author: "agent" });
+    },
     coverage: (client, category) => createCoveragePorts({ client, category }),
   };
 }
@@ -154,6 +160,12 @@ export async function handleProspectReplyJob(
       db: deps.respondDb,
       message: messageConfig(data, deps.env),
       recipientId: data.recipientId,
+      ...(deps.mirror !== undefined
+        ? {
+            mirror: (text: string, messageId: string | null) =>
+              deps.mirror!({ channel: data.channel, externalUserId: data.recipientId, body: text, externalId: messageId }),
+          }
+        : {}),
     });
 
     const max = deps.maxRepliesPerHour ?? 6;

@@ -31,6 +31,19 @@ export interface MetaInboundMessage {
   referral?: MetaReferral | null;
 }
 
+/**
+ * P3: eco de mensagem enviada PELA nossa conta (Instagram/Página) ao fornecedor.
+ * `recipientId` = fornecedor. `appId` = app que enviou (ausente quando digitada
+ * na caixa de entrada da Meta / app do Instagram).
+ */
+export interface MetaEchoMessage {
+  source: MetaInboundSource;
+  eventId: string;
+  recipientId: string;
+  text: string;
+  appId: string | null;
+}
+
 const TEXT_MAX_CHARS = 4000;
 
 function truncate(text: string): string {
@@ -41,6 +54,7 @@ const textMessage = z.object({
   mid: z.string().min(1),
   text: z.string(),
   is_echo: z.boolean().optional(),
+  app_id: z.union([z.string(), z.number()]).optional(),
 });
 
 const referralSchema = z.object({
@@ -133,7 +147,8 @@ function parseMessagingArray(root: Record<string, unknown>, source: MetaInboundS
       const parsed = messengerValue.safeParse(item);
       if (!parsed.success) continue;
       const { sender, recipient, message } = parsed.data;
-      // Eco das nossas próprias mensagens enviadas: nunca tratar como inbound.
+      // Eco das nossas próprias mensagens enviadas: nunca tratar como inbound
+      // (o espelhamento P3 usa `parseMetaEchoes`).
       if (message.is_echo === true) continue;
       const text = truncate(message.text);
       if (text.length === 0) continue;
@@ -217,4 +232,39 @@ export function parseMetaComments(raw: unknown): MetaCommentEvent[] | null {
   if (!isRecord(raw)) return null;
   if (raw.object !== "instagram") return null;
   return parseInstagramComments(raw);
+}
+
+/** Ecos (is_echo) de texto, nos formatos `messaging[]` e `changes[]`. Dedupe por mid. */
+export function parseMetaEchoes(raw: unknown): MetaEchoMessage[] {
+  if (!isRecord(raw) || !isArray(raw.entry)) return [];
+  const source: MetaInboundSource | null =
+    raw.object === "instagram" ? "instagram" : raw.object === "page" ? "messenger" : null;
+  if (source === null) return [];
+  const out: MetaEchoMessage[] = [];
+  const seen = new Set<string>();
+  const push = (value: unknown) => {
+    const parsed = messengerValue.safeParse(value);
+    if (!parsed.success || parsed.data.message.is_echo !== true) return;
+    const { recipient, message } = parsed.data;
+    const text = truncate(message.text);
+    if (text.length === 0 || seen.has(message.mid)) return;
+    seen.add(message.mid);
+    out.push({
+      source,
+      eventId: message.mid,
+      recipientId: recipient.id,
+      text,
+      appId: message.app_id === undefined ? null : String(message.app_id),
+    });
+  };
+  for (const entry of raw.entry) {
+    if (!isRecord(entry)) continue;
+    if (isArray(entry.messaging)) entry.messaging.forEach(push);
+    if (source === "instagram" && isArray(entry.changes)) {
+      for (const change of entry.changes) {
+        if (isRecord(change) && change.field === "messages") push(change.value);
+      }
+    }
+  }
+  return out;
 }

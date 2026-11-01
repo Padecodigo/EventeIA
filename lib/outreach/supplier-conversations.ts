@@ -102,6 +102,8 @@ export interface SupplierConversationStore {
     body: string;
     externalId?: string | null;
     moderated?: boolean;
+    /** Autor da saída (0067): user | agent | system. Entrada não tem autor. */
+    author?: "user" | "agent" | "system";
   }): Promise<boolean>;
 }
 
@@ -148,6 +150,7 @@ export function createSupabaseSupplierConversationStore(
         body: input.body,
         moderated: input.moderated ?? false,
         external_id: input.externalId ?? null,
+        ...(input.author !== undefined ? { author: input.author } : {}),
       });
       if (error !== null) {
         if (error.code === UNIQUE_VIOLATION) return false; // evento já gravado
@@ -282,4 +285,37 @@ export async function runSupplierWindowSweep(now: Date = new Date()): Promise<nu
   const closed = await markExpiredWindows(admin as unknown as WindowSweepDb, now);
   await markSilentSupplierSelections(admin as unknown as SilentSelectionSweepDb, now);
   return closed;
+}
+
+export interface MirrorOutboundInput {
+  channel: Channel;
+  /** IGSID/PSID do fornecedor (destinatário). */
+  externalUserId: string;
+  body: string;
+  externalId: string | null;
+  author: "agent" | "system";
+}
+
+/**
+ * P3 — espelha no chat do site uma mensagem que saiu ao fornecedor por fora do
+ * painel (agente de prospecção ou equipe pela caixa de entrada da Meta).
+ * Só grava: NUNCA envia nada. Sem conversa canônica, não cria (retorna false).
+ * Idempotente por (conversa, mid). Texto moderado como o resto do chat.
+ */
+export async function mirrorOutboundMessage(
+  store: SupplierConversationStore,
+  input: MirrorOutboundInput,
+): Promise<boolean> {
+  const conversation = await store.find(input.channel, input.externalUserId);
+  if (conversation === null) return false;
+  const moderation = moderateContactInfo(input.body);
+  if (moderation.text.length === 0) return false;
+  return store.insertMessage({
+    conversationId: conversation.id,
+    direction: "out",
+    body: moderation.text,
+    externalId: input.externalId,
+    author: input.author,
+    ...(moderation.masked ? { moderated: true } : {}),
+  });
 }

@@ -4,7 +4,8 @@ import { serverEnv } from "@/lib/env";
 import type { MetaWebhookJobData } from "@/lib/jobs/meta-webhook";
 import { logger } from "@/lib/logger";
 import { verifyChallenge, verifyHubSignature } from "@/lib/meta/signature";
-import { parseMetaComments, parseMetaWebhook } from "@/lib/meta/webhook";
+import { parseMetaComments, parseMetaEchoes, parseMetaWebhook } from "@/lib/meta/webhook";
+import { isOwnAppEcho } from "@/lib/outreach/echo";
 import { getQueue, QUEUE_NAMES } from "@/lib/queue";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/types";
@@ -139,6 +140,18 @@ export async function POST(request: Request): Promise<NextResponse> {
   for (const message of messages ?? []) {
     try {
       if (await persistAndEnqueue(admin, "message", message.eventId, message)) enqueued += 1;
+    } catch (caught) {
+      const reason = caught instanceof Error ? caught.message : "desconhecido";
+      return NextResponse.json({ error: reason }, { status: 500 });
+    }
+  }
+
+  // P3: eco de mensagem digitada fora do app (caixa da Meta/app do IG) é
+  // espelhado no chat do evento. Eco do nosso próprio app já foi gravado.
+  for (const echo of parseMetaEchoes(json)) {
+    if (isOwnAppEcho(echo.appId, serverEnv().META_APP_ID)) continue;
+    try {
+      if (await persistAndEnqueue(admin, "echo", echo.eventId, echo)) enqueued += 1;
     } catch (caught) {
       const reason = caught instanceof Error ? caught.message : "desconhecido";
       return NextResponse.json({ error: reason }, { status: 500 });

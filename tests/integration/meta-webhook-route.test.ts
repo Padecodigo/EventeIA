@@ -28,6 +28,7 @@ vi.mock("@/lib/env", () => ({
     META_ACCESS_TOKEN: "access-token",
     META_INSTAGRAM_BUSINESS_ID: "ig-biz-1",
     META_PAGE_ID: "page-1",
+    META_APP_ID: "2618353308635056",
     META_PROSPECT_KEYWORD: "cotação",
   }),
 }));
@@ -173,14 +174,25 @@ describe("POST /api/meta/webhook", () => {
     expect(state.enqueued.map((j) => j.jobId)).toEqual(["meta_mid-real"]);
   });
 
-  it("eco da própria conta (is_echo) não é enfileirado", async () => {
+  it("eco enviado pelo nosso app (is_echo + app_id próprio) não é enfileirado", async () => {
     const { POST } = await import("@/app/api/meta/webhook/route");
     const body = {
       object: "instagram",
-      entry: [{ id: "1784", messaging: [{ sender: { id: "1784" }, recipient: { id: "111" }, message: { mid: "mid-echo", text: "olá", is_echo: true } }] }],
+      entry: [{ id: "1784", messaging: [{ sender: { id: "1784" }, recipient: { id: "111" }, message: { mid: "mid-echo", text: "olá", is_echo: true, app_id: 2618353308635056 } }] }],
     };
     await POST(call(body));
     expect(state.enqueued).toHaveLength(0);
+  });
+
+  it("P3: eco digitado na caixa da Meta vira job 'echo' (nunca 'message')", async () => {
+    const { POST } = await import("@/app/api/meta/webhook/route");
+    const body = {
+      object: "instagram",
+      entry: [{ id: "1784", messaging: [{ sender: { id: "1784" }, recipient: { id: "111" }, message: { mid: "mid-echo-h", text: "oi, aqui é a equipe", is_echo: true } }] }],
+    };
+    await POST(call(body));
+    expect(state.enqueued.map((j) => j.jobId)).toEqual(["meta_mid-echo-h"]);
+    expect(JSON.stringify(state.enqueued[0])).toContain('"kind":"echo"');
   });
 
   it("duplicado já processado (status processed) não enfileira de novo", async () => {
