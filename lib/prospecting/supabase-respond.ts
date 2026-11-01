@@ -4,12 +4,12 @@ import { serverEnv } from "@/lib/env";
 import { emitFeed } from "@/lib/feeds";
 import { logger } from "@/lib/logger";
 import { sendInstagramText, sendMessengerText, type MetaSendResult } from "@/lib/meta/client";
-import type { Json } from "@/lib/supabase/types";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import type { Json } from "@/lib/supabase/types";
 
 import type { AgentMessage } from "./agent";
-import type { StructuredQuote } from "./quote";
 import { notifyEscalation, type EscalationNotice } from "./notify";
+import type { StructuredQuote } from "./quote";
 import type { RespondPorts } from "./respond";
 
 /**
@@ -94,6 +94,8 @@ export interface RespondPortsDeps {
   notify?: (notice: EscalationNotice) => Promise<void>;
   /** Injetável nos testes; default = clientes reais da Graph API. */
   send?: (message: MetaSendConfig, recipientId: string, text: string) => Promise<MetaSendResult>;
+  /** P3: espelha a resposta enviada no chat do evento. Falha não desfaz o envio. */
+  mirror?: (text: string, messageId: string | null) => Promise<void>;
 }
 
 async function defaultSend(
@@ -179,6 +181,13 @@ export function createSupabaseRespondPorts(deps: RespondPortsDeps): RespondPorts
       });
       if (error !== null) {
         logger.warn({ code: error.code, conversationId }, "falha ao gravar mensagem de saída");
+      }
+      if (deps.mirror !== undefined) {
+        try {
+          await deps.mirror(text, result.messageId ?? null);
+        } catch {
+          logger.warn({ conversationId }, "falha ao espelhar resposta no chat do evento");
+        }
       }
       return true;
     },

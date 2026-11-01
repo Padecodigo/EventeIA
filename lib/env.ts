@@ -34,6 +34,8 @@ const serverSchema = z.object({
   // Page access token (Messenger Send API exige token de Página). Só servidor.
   META_PAGE_ACCESS_TOKEN: z.string().optional(),
   META_APP_SECRET: z.string().optional(),
+  /** Id público do app Meta: ecos enviados por ele já foram espelhados por quem enviou. */
+  META_APP_ID: z.string().default("2618353308635056"),
   META_VERIFY_TOKEN: z.string().optional(),
   META_PAGE_ID: z.string().optional(),
   META_INSTAGRAM_BUSINESS_ID: z.string().optional(),
