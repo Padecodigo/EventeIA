@@ -147,3 +147,30 @@ describe("regressão: horário comercial no prospect-reply", () => {
     expect(loaded).toBe(false);
   });
 });
+
+describe("handleProspectReplyJob + loop de cobertura (0078)", () => {
+  it("passa as portas envolvidas pelo loop quando a cobertura está ligada", async () => {
+    const load = vi.fn(async () => null);
+    let portsSeen: unknown = null;
+    const { deps } = makeDeps({
+      coverage: () => ({ load, latestQuoteId: async () => null, save: async () => undefined, classify: async () => "{}", now: () => new Date() }),
+      respond: async (input) => {
+        portsSeen = input.ports;
+        return { action: "replied" as const, sent: true };
+      },
+    });
+    await handleProspectReplyJob(data, deps);
+    expect(load).toHaveBeenCalledWith("c1");
+    expect(portsSeen).not.toBeNull();
+  });
+
+  it("domingo: adia antes de tocar na cobertura (horário comercial)", async () => {
+    const load = vi.fn(async () => null);
+    const { deps } = makeDeps({
+      now: () => new Date("2026-11-01T13:00:00Z"),
+      coverage: () => ({ load, latestQuoteId: async () => null, save: async () => undefined, classify: async () => "{}", now: () => new Date() }),
+    });
+    await expect(handleProspectReplyJob(data, deps)).rejects.toThrow();
+    expect(load).not.toHaveBeenCalled();
+  });
+});

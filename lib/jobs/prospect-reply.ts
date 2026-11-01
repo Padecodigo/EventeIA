@@ -4,6 +4,8 @@ import { getDeepSeekClient } from "@/lib/deepseek/client";
 import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { assertBusinessHours } from "@/lib/outreach/business-defer";
+import { createCoveragePorts } from "@/lib/prospecting/coverage-store";
+import { withCoverageLoop, type CoveragePorts } from "@/lib/prospecting/coverage-turn";
 import type { ConversationStatus } from "@/lib/prospecting/inbound";
 import { respondToInbound } from "@/lib/prospecting/respond";
 import {
@@ -58,6 +60,8 @@ export interface ProspectReplyJobDeps {
   getClient: typeof getDeepSeekClient;
   buildPorts: typeof createSupabaseRespondPorts;
   maxRepliesPerHour?: number;
+  /** Loop de cobertura item a item (0078). Ausente = desligado. */
+  coverage?: (client: ReturnType<typeof getDeepSeekClient>) => CoveragePorts;
   now?: () => Date;
 }
 
@@ -106,6 +110,7 @@ export function defaultProspectReplyJobDeps(): ProspectReplyJobDeps {
     respond: respondToInbound,
     getClient: getDeepSeekClient,
     buildPorts: createSupabaseRespondPorts,
+    coverage: (client) => createCoveragePorts({ client }),
   };
 }
 
@@ -158,14 +163,25 @@ export async function handleProspectReplyJob(
     }
 
     const history = await deps.loadHistory(deps.respondDb, data.conversationId);
+    const client = deps.getClient();
+    const replyPorts =
+      deps.coverage === undefined
+        ? ports
+        : await withCoverageLoop({
+            ports,
+            coverage: deps.coverage(client),
+            conversationId: data.conversationId,
+            category: data.category,
+            history,
+          });
     await deps.respond({
-      client: deps.getClient(),
+      client,
       context: {
         category: data.category,
         ...(data.supplierKnown !== undefined ? { supplierKnown: data.supplierKnown } : {}),
       },
       history,
-      ports,
+      ports: replyPorts,
       conversationId: data.conversationId,
       supplierId: data.supplierId,
     });
