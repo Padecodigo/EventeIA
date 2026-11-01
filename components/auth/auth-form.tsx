@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { useActionState, useState } from "react";
+import { useActionState, useCallback, useState } from "react";
 
 import {
   signInAction,
@@ -10,6 +10,7 @@ import {
   signUpAction,
   type AuthActionState,
 } from "@/app/(auth)/actions";
+import { GoogleGisButton } from "@/components/auth/google-gis-button";
 import { InstagramStep } from "@/components/auth/instagram-step";
 import { TermsCheckbox } from "@/components/legal/terms-checkbox";
 import { TERMS_FIELD } from "@/lib/legal/terms";
@@ -35,7 +36,12 @@ export function AuthForm({ mode, oauthError }: { mode: AuthMode; oauthError?: st
   const instagramBlocked = isSignUp && !confirmedInstagram;
   const termsHidden =
     isSignUp && acceptedTerms ? <input type="hidden" name={TERMS_FIELD} value="on" /> : null;
-  const googleError = googleState.error ?? oauthError;
+  const [gisUnavailable, setGisUnavailable] = useState(false);
+  const [gisError, setGisError] = useState<string | undefined>(undefined);
+  const handleGisUnavailable = useCallback(() => setGisUnavailable(true), []);
+  const googleError = gisError ?? googleState.error ?? oauthError;
+  // Botão oficial do Google quando liberado; o fluxo OAuth antigo fica como alternativa.
+  const showGis = !gisUnavailable && !termsBlocked && !instagramBlocked;
 
   return (
     <div>
@@ -71,20 +77,30 @@ export function AuthForm({ mode, oauthError }: { mode: AuthMode; oauthError?: st
       <form action={googleAction} className={isSignUp ? "mt-4" : "mt-8"}>
         {isSignUp ? <input type="hidden" name="intent" value="signup" /> : null}
         {termsHidden}
-        <button
-          type="submit"
-          disabled={googlePending || termsBlocked || instagramBlocked}
-          className="flex h-14 w-full items-center justify-center gap-3 rounded-full bg-primaria text-base font-semibold text-on-primary shadow-[0_10px_24px_-12px_rgba(240,160,112,0.7)] transition hover:bg-primaria-escura disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <span className="flex size-8 items-center justify-center rounded-full bg-white">
-            <GoogleIcon />
-          </span>
-          {googlePending
-            ? "Abrindo o Google…"
-            : isSignUp
-              ? "Criar conta com Google"
-              : "Entrar com Google"}
-        </button>
+        {showGis ? (
+          <GoogleGisButton
+            intent={isSignUp ? "signup" : "signin"}
+            acceptedTerms={acceptedTerms}
+            onUnavailable={handleGisUnavailable}
+            onError={setGisError}
+          />
+        ) : (
+          <button
+            type="submit"
+            data-testid="google-oauth-fallback"
+            disabled={googlePending || termsBlocked || instagramBlocked}
+            className="flex h-14 w-full items-center justify-center gap-3 rounded-full bg-primaria text-base font-semibold text-on-primary shadow-[0_10px_24px_-12px_rgba(240,160,112,0.7)] transition hover:bg-primaria-escura disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <span className="flex size-8 items-center justify-center rounded-full bg-white">
+              <GoogleIcon />
+            </span>
+            {googlePending
+              ? "Abrindo o Google…"
+              : isSignUp
+                ? "Criar conta com Google"
+                : "Entrar com Google"}
+          </button>
+        )}
         <p className="mt-2 text-center text-caption text-vinho/70">
           Um clique, sem senha. Avisamos no seu e-mail quando o orçamento ficar pronto.
         </p>
@@ -108,47 +124,49 @@ export function AuthForm({ mode, oauthError }: { mode: AuthMode; oauthError?: st
         {termsHidden}
         {isSignUp ? (
           <>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="full-name" className="text-sm font-medium text-vinho">
-              Nome completo
-            </label>
-            <input
-              id="full-name"
-              name="fullName"
-              required
-              autoComplete="name"
-              className="h-12 rounded-xl border border-line-subtle bg-off-white px-4 text-sm text-vinho"
-            />
-          </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="full-name" className="text-sm font-medium text-vinho">
+                Nome completo
+              </label>
+              <input
+                id="full-name"
+                name="fullName"
+                required
+                autoComplete="name"
+                className="h-12 rounded-xl border border-line-subtle bg-off-white px-4 text-sm text-vinho"
+              />
+            </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="whatsapp" className="text-sm font-medium text-vinho">
-              WhatsApp <span className="font-normal text-vinho/60">(opcional)</span>
-            </label>
-            <input
-              id="whatsapp"
-              name="whatsapp"
-              type="tel"
-              autoComplete="tel"
-              placeholder="11 99999-9999"
-              className="h-12 rounded-xl border border-line-subtle bg-off-white px-4 text-sm text-vinho"
-            />
-            <p className="text-caption text-vinho/70">Seu número, para contato. Fica restrito à sua conta.</p>
-          </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="whatsapp" className="text-sm font-medium text-vinho">
+                WhatsApp <span className="font-normal text-vinho/60">(opcional)</span>
+              </label>
+              <input
+                id="whatsapp"
+                name="whatsapp"
+                type="tel"
+                autoComplete="tel"
+                placeholder="11 99999-9999"
+                className="h-12 rounded-xl border border-line-subtle bg-off-white px-4 text-sm text-vinho"
+              />
+              <p className="text-caption text-vinho/70">
+                Seu número, para contato. Fica restrito à sua conta.
+              </p>
+            </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="instagram" className="text-sm font-medium text-vinho">
-              Instagram <span className="font-normal text-vinho/60">(opcional)</span>
-            </label>
-            <input
-              id="instagram"
-              name="instagram"
-              type="text"
-              placeholder="@seu.perfil"
-              className="h-12 rounded-xl border border-line-subtle bg-off-white px-4 text-sm text-vinho"
-            />
-            <p className="text-caption text-vinho/70">Seu @ de Instagram, para contato.</p>
-          </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="instagram" className="text-sm font-medium text-vinho">
+                Instagram <span className="font-normal text-vinho/60">(opcional)</span>
+              </label>
+              <input
+                id="instagram"
+                name="instagram"
+                type="text"
+                placeholder="@seu.perfil"
+                className="h-12 rounded-xl border border-line-subtle bg-off-white px-4 text-sm text-vinho"
+              />
+              <p className="text-caption text-vinho/70">Seu @ de Instagram, para contato.</p>
+            </div>
           </>
         ) : null}
 

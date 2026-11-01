@@ -18,11 +18,12 @@ const securityHeaders = [
 const cspProduction = [
   "default-src 'self'",
   // Cloudflare Web Analytics (beacon injetado pelo proxy da Cloudflare).
-  "script-src 'self' 'unsafe-inline' https://*.supabase.co https://static.cloudflareinsights.com",
-  "style-src 'self' 'unsafe-inline'",
+  "script-src 'self' 'unsafe-inline' https://*.supabase.co https://static.cloudflareinsights.com https://accounts.google.com/gsi/client",
+  "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style",
   "img-src 'self' data: https://*.supabase.co",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co https://*.asaas.com https://cloudflareinsights.com",
+  "connect-src 'self' https://*.supabase.co https://*.asaas.com https://cloudflareinsights.com https://accounts.google.com/gsi/",
+  "frame-src https://accounts.google.com/gsi/",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

@@ -212,6 +212,52 @@ export async function signInWithGoogleAction(
   redirect(data.url);
 }
 
+const idTokenSchema = z.object({
+  credential: z.string().min(20).max(8192),
+  nonce: z.string().regex(/^[0-9a-f]{64}$/),
+  intent: z.enum(["signin", "signup"]),
+  acceptedTerms: z.boolean(),
+});
+
+/**
+ * Login/cadastro com o botão oficial do Google (Google Identity Services):
+ * troca o ID token do Google por uma sessão do Supabase. O nonce cru vai para
+ * o Supabase; o Google recebeu o hash SHA-256 dele.
+ */
+export async function signInWithGoogleIdTokenAction(input: {
+  credential: string;
+  nonce: string;
+  intent: "signin" | "signup";
+  acceptedTerms: boolean;
+}): Promise<AuthActionState & { redirectTo?: string }> {
+  const parsed = idTokenSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: "Não foi possível entrar com Google. Tente novamente." };
+  }
+  const { credential, nonce, intent, acceptedTerms } = parsed.data;
+  if (intent === "signup" && !acceptedTerms) {
+    return { error: TERMS_ERROR };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.auth.signInWithIdToken({
+    provider: "google",
+    token: credential,
+    nonce,
+  });
+  if (error !== null || data.user === null) {
+    return { error: "Não foi possível entrar com Google. Tente novamente." };
+  }
+
+  // Mesmo pós-login do /auth/callback: oferta de boas-vindas, aceite dos termos e marca de sessão.
+  await bindWelcomeOfferToUser(data.user.id);
+  if (intent === "signup") {
+    await recordTermsAcceptance(data.user.id, "signup");
+  }
+  (await cookies()).set(SESSION_COOKIE, String(Date.now()), SESSION_COOKIE_OPTIONS);
+  return { redirectTo: "/painel" };
+}
+
 const resetSchema = z.object({ email: z.string().trim().email() });
 
 /**

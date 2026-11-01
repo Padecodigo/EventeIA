@@ -2,7 +2,6 @@
 import "@testing-library/jest-dom/vitest";
 
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 // Login é 100% server-side: as actions vivem em "use server" com cadeia
@@ -12,6 +11,18 @@ vi.mock("@/app/(auth)/actions", () => ({
   signUpAction: vi.fn(),
   signInWithGoogleAction: vi.fn(),
 }));
+
+// Nestes testes o script do Google "não carrega": o formulário cai no fluxo
+// OAuth antigo (fallback). O caminho com o botão oficial está em auth-form-gis.test.tsx.
+vi.mock("@/components/auth/google-gis-button", async () => {
+  const { useEffect } = await import("react");
+  return {
+    GoogleGisButton: ({ onUnavailable }: { onUnavailable: () => void }) => {
+      useEffect(() => onUnavailable(), [onUnavailable]);
+      return null;
+    },
+  };
+});
 
 import { AuthForm } from "@/components/auth/auth-form";
 
@@ -138,7 +149,7 @@ describe("AuthForm — passo do Instagram no cadastro", () => {
     fireEvent.click(screen.getByLabelText(/Já sigo @eventeia/));
 
     expect(emailButton).toBeEnabled();
-    expect(googleButton).toBeEnabled();
+    expect(screen.getByRole("button", { name: /Criar conta com Google/ })).toBeEnabled();
   });
 
   it("mostra os links de seguir e enviar mensagem", () => {
