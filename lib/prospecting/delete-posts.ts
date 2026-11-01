@@ -8,7 +8,8 @@ import { ORPHAN_POST_TTL_MS, shouldDeletePost } from "./delete-policy";
 
 /**
  * Varre os posts de isca publicados e apaga no Instagram aqueles cuja
- * prospecção terminou (evento completed/canceled) ou, sem evento, após o TTL.
+ * prospecção terminou (evento completed/canceled), cujos @ marcados já
+ * contataram todos, ou, sem evento, após o TTL.
  * Idempotente: só considera `status='published'` com `deleted_at IS NULL`.
  */
 
@@ -24,6 +25,8 @@ interface PostRow {
   ig_media_id: string | null;
   event_id: string | null;
   created_at: string;
+  tagged_handles?: string[] | null;
+  contacted_handles?: string[] | null;
 }
 
 interface EventRow {
@@ -70,7 +73,7 @@ export async function deleteFinishedProspectPosts(
 
   const { data: posts, error: listError } = await db
     .from("prospect_posts")
-    .select("id,ig_media_id,event_id,created_at")
+    .select("id,ig_media_id,event_id,created_at,tagged_handles,contacted_handles")
     .eq("status", "published")
     .is("deleted_at", null)
     .not("ig_media_id", "is", null)
@@ -96,7 +99,16 @@ export async function deleteFinishedProspectPosts(
   let deleted = 0;
   for (const post of candidates) {
     const eventStatus = post.event_id !== null ? (statusByEvent.get(post.event_id) ?? null) : null;
-    if (!shouldDeletePost({ eventStatus, createdAt: new Date(post.created_at), now, orphanTtlMs })) {
+    if (
+      !shouldDeletePost({
+        eventStatus,
+        createdAt: new Date(post.created_at),
+        now,
+        orphanTtlMs,
+        taggedHandles: post.tagged_handles ?? [],
+        contactedHandles: post.contacted_handles ?? [],
+      })
+    ) {
       continue;
     }
 

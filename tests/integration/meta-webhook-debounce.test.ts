@@ -51,6 +51,7 @@ vi.mock("@/lib/supabase/admin", async () => {
 vi.mock("@/lib/meta/resolve", () => ({
   resolveInstagramSupplier: async () => ({ id: "s1", name: "Buffet da Ana", category: "buffet" }),
   resolveInstagramSupplierByHandle: async () => null,
+  instagramHandleFromSid: async () => null,
   instagramProfileUrl: (handle: string) => `https://www.instagram.com/${handle}`,
 }));
 
