@@ -126,6 +126,8 @@ export interface FirstContactInput {
   guestCount: number;
   items: { label: string; quantity: number; unit: Unit; notes?: string | null }[];
   specialRequest?: string;
+  /** Itens livres do cliente nesta categoria: perguntamos se oferecem exatamente isso. */
+  freeItems?: readonly string[];
   sourceProvider: string;
   /** Momento do envio (saudação pelo horário de SP). */
   now?: Date;
@@ -143,15 +145,29 @@ export function renderDiscoveryFirstContact(input: FirstContactInput): string {
     .filter((n) => n.length > 0)
     .slice(0, 2)
     .join("; ");
-  const extra = [notes, details ?? ""].filter((v) => v.length > 0).join(". ").slice(0, 160);
+  const extra = [notes, details ?? ""]
+    .filter((v) => v.length > 0)
+    .join(". ")
+    .slice(0, 160);
   const text = [
     "Olá! Aqui é da EventeIA.",
     `Procuramos ${input.category} para ${input.eventTypeLabel} em ${input.city}, para ${String(input.guestCount)} convidados.`,
     extra.length > 0 ? `Detalhes: ${extra}.` : "",
+    freeAsk(input.freeItems),
   ]
     .filter((part) => part.length > 0)
     .join(" ");
   return text.length > 900 ? `${text.slice(0, 895).trimEnd()}…` : text;
+}
+
+/** "Vocês oferecem exatamente: a; b?" — itens já limpos (lib/catalog/free-items), ≤ 5, ≤ 300. */
+export function freeAsk(items: readonly string[] | undefined): string {
+  const list = (items ?? [])
+    .map((i) => i.replace(/(https?:\/\/|www\.)\S*/gi, "").trim())
+    .filter((i) => i.length > 1)
+    .slice(0, 5);
+  if (list.length === 0) return "";
+  return `Vocês oferecem exatamente: ${list.join("; ").slice(0, 300)}?`;
 }
 
 export interface SearchCity {
@@ -166,7 +182,11 @@ export const MAX_SEARCH_CITIES = 10;
  * Cidades onde a descoberta procura: a cidade do evento SEMPRE primeiro,
  * depois as extras escolhidas pelo usuário (sem repetição, teto MAX_SEARCH_CITIES).
  */
-export function searchCitiesFor(event: { city: string; cityUf?: string | null; searchCities?: readonly SearchCity[] }): SearchCity[] {
+export function searchCitiesFor(event: {
+  city: string;
+  cityUf?: string | null;
+  searchCities?: readonly SearchCity[];
+}): SearchCity[] {
   const out: SearchCity[] = [];
   const seen = new Set<string>();
   const add = (c: SearchCity) => {

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { isFreeItemCode } from "@/lib/catalog/free-items";
 import type { DeepSeekClient } from "@/lib/deepseek/client";
 import { normalizeScopeItem } from "@/lib/quotes/scope-items";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -25,8 +26,14 @@ interface DbRow {
 interface CoverageDb {
   from(table: "prospect_quotes"): {
     select(columns: string): {
-      eq(column: string, value: string): {
-        order(column: string, options: { ascending: boolean }): {
+      eq(
+        column: string,
+        value: string,
+      ): {
+        order(
+          column: string,
+          options: { ascending: boolean },
+        ): {
           limit(count: number): Promise<{ data: { id: string }[] | null }>;
         };
       };
@@ -44,9 +51,13 @@ interface CoverageDb {
 }
 
 function toRow(r: DbRow): CoverageRow {
-  const coverage = (COVERAGE_VALUES as readonly string[]).includes(r.coverage) ? (r.coverage as CoverageValue) : "unknown";
+  const coverage = (COVERAGE_VALUES as readonly string[]).includes(r.coverage)
+    ? (r.coverage as CoverageValue)
+    : "unknown";
   return {
-    itemCode: normalizeScopeItem(r.item_code),
+    itemCode: isFreeItemCode(r.item_code)
+      ? (r.item_code as CoverageRow["itemCode"])
+      : normalizeScopeItem(r.item_code),
     coverage,
     extraPriceCents: r.extra_price_cents === null ? null : Number(r.extra_price_cents),
     quantityCovered: r.quantity_covered,
@@ -86,7 +97,10 @@ export function createCoveragePorts(input: {
     async load(conversationId) {
       const quoteId = await latestQuoteId(conversationId);
       if (quoteId === null) return null;
-      const { data } = await db.from("quote_item_coverage").select("*").eq("prospect_quote_id", quoteId);
+      const { data } = await db
+        .from("quote_item_coverage")
+        .select("*")
+        .eq("prospect_quote_id", quoteId);
       if (data === null || data.length === 0) return null;
       return { quoteId, rows: data.map(toRow) };
     },

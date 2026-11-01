@@ -53,7 +53,9 @@ function QuestionField({
       <legend id={labelId} className="px-1 text-sm font-medium text-vinho">
         {question.label}
       </legend>
-      {question.hint !== undefined ? <p className="text-caption text-vinho/70">{question.hint}</p> : null}
+      {question.hint !== undefined ? (
+        <p className="text-caption text-vinho/70">{question.hint}</p>
+      ) : null}
       {question.kind === "boolean" ? (
         <div className="flex gap-2" role="radiogroup" aria-labelledby={labelId}>
           {[true, false].map((opt) => (
@@ -104,11 +106,13 @@ function QuestionField({
         <textarea
           aria-labelledby={labelId}
           maxLength={question.maxLength}
-          rows={4}
+          rows={5}
+          enterKeyHint="done"
+          autoCapitalize="sentences"
           value={typeof value === "string" ? value : ""}
           placeholder={question.placeholder}
           onChange={(e) => onChange(e.target.value)}
-          className="rounded-xl border border-line-subtle bg-off-white px-4 py-3 text-sm text-vinho placeholder:text-vinho/60"
+          className="min-h-32 w-full resize-y rounded-xl border border-line-subtle bg-off-white px-4 py-3 text-base leading-relaxed text-vinho placeholder:text-vinho/60 sm:text-sm"
         />
       ) : (
         <input
@@ -202,25 +206,41 @@ export function EventInterview({
 
           {current.code === "local" ? (
             <div className="flex flex-col gap-4 rounded-xl border border-line-subtle bg-white/60 p-4">
-              <CityPicker name="" label="Cidade da festa" initial={initialCity} onChange={setEventCity} />
+              <CityPicker
+                name=""
+                label="Cidade da festa"
+                initial={initialCity}
+                onChange={setEventCity}
+              />
               <p className="text-caption text-vinho/70">
                 Buscamos fornecedores nesta cidade. Se quiser, adicione cidades vizinhas abaixo.
               </p>
-              <SearchCitiesPicker eventCity={eventCity} value={extraCities} onChange={setSearchCities} />
+              <SearchCitiesPicker
+                eventCity={eventCity}
+                value={extraCities}
+                onChange={setSearchCities}
+              />
             </div>
           ) : null}
 
           {visible
             .filter((q) => q.step === current.code)
             .map((q) => (
-              <QuestionField key={q.id} question={q} value={answers[q.id]} onChange={(v) => setAnswer(q.id, v)} />
+              <QuestionField
+                key={q.id}
+                question={q}
+                value={answers[q.id]}
+                onChange={(v) => setAnswer(q.id, v)}
+              />
             ))}
         </div>
       ) : (
         <div className="mt-4">
           <h2 className="font-serif text-title-2">O que vamos cotar</h2>
           <p className="mt-1 text-sm text-vinho/75">
-            {city === "" ? "Informe a cidade na primeira etapa." : `Em ${city}, para ${guestCount} convidados.`}
+            {city === ""
+              ? "Informe a cidade na primeira etapa."
+              : `Em ${city}, para ${guestCount} convidados.`}
             {extraCities.length > 0
               ? ` Também buscaremos fornecedores em ${extraCities.map((m) => `${m.name} – ${m.uf}`).join(", ")}.`
               : null}
@@ -230,17 +250,26 @@ export function EventInterview({
           </p>
           <ul className="mt-4 divide-y divide-line-subtle rounded-xl border border-line-subtle bg-white/60">
             {requirements.map((r) => (
-              <li key={r.itemCode} className="flex items-center justify-between gap-4 px-4 py-3 text-sm">
+              <li
+                key={r.itemCode}
+                className="flex items-center justify-between gap-4 px-4 py-3 text-sm"
+              >
                 <span>
                   <span className="font-medium text-vinho">{r.label}</span>
-                  <span className="block text-caption text-vinho/70">{CATEGORY_LABELS[r.category]}</span>
+                  <span className="block text-caption text-vinho/70">
+                    {CATEGORY_LABELS[r.category]}
+                  </span>
                   {r.notes !== undefined ? (
-                    <span className="mt-1 block whitespace-pre-wrap text-caption italic text-vinho/80">“{r.notes}”</span>
+                    <span className="mt-1 block whitespace-pre-wrap text-caption italic text-vinho/80">
+                      “{r.notes}”
+                    </span>
                   ) : null}
                 </span>
                 <span className="text-right text-caption text-vinho/75">
                   {r.quantity} {UNIT_LABELS[r.unit]}
-                  {r.mandatory ? <span className="ml-2 rounded-pill bg-champagne/40 px-2 py-0.5">essencial</span> : null}
+                  {r.mandatory ? (
+                    <span className="ml-2 rounded-pill bg-champagne/40 px-2 py-0.5">essencial</span>
+                  ) : null}
                 </span>
               </li>
             ))}
@@ -264,7 +293,10 @@ export function EventInterview({
       ) : null}
 
       {state.error !== undefined ? (
-        <p role="alert" className="mt-4 rounded-xl bg-semantic-error/10 px-4 py-3 text-sm text-semantic-error">
+        <p
+          role="alert"
+          className="mt-4 rounded-xl bg-semantic-error/10 px-4 py-3 text-sm text-semantic-error"
+        >
           {state.error}
         </p>
       ) : null}
@@ -272,9 +304,18 @@ export function EventInterview({
       <form action={formAction} className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <input type="hidden" name="eventId" value={eventId} />
         <input type="hidden" name="cityCode" value={eventCity?.code ?? ""} />
-        <input type="hidden" name="searchCityCodes" value={extraCities.map((m) => m.code).join(",")} />
+        <input
+          type="hidden"
+          name="searchCityCodes"
+          value={extraCities.map((m) => m.code).join(",")}
+        />
         <input type="hidden" name="answers" value={JSON.stringify(answers)} />
-        <Button type="button" variant="secondary" disabled={step === 0} onClick={() => setStep((s) => s - 1)}>
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={step === 0}
+          onClick={() => setStep((s) => s - 1)}
+        >
           Voltar
         </Button>
         {isReview ? (

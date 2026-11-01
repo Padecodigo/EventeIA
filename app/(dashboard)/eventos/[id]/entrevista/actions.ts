@@ -5,15 +5,34 @@ import { redirect } from "next/navigation";
 
 import { z } from "zod";
 
+import { getRouter } from "@/lib/ai/runtime";
 import { requireUser } from "@/lib/auth";
 import { parseAnswers, resolveRequirements } from "@/lib/catalog/rules";
 import { ALL_EVENT_TYPES, CATALOG_VERSION } from "@/lib/catalog/v1";
-import { isEventStarted, STARTED_EVENT_LOCK_MESSAGE } from "@/lib/events/edit-lock";
+import {
+  interpretFreeRequirements,
+  resolveRequirementsWithRules,
+} from "@/lib/discovery/free-item-interpret";
 import { kickoffDiscovery } from "@/lib/discovery/kickoff-runtime";
 import type { EventType } from "@/lib/engine/types";
+import { isEventStarted, STARTED_EVENT_LOCK_MESSAGE } from "@/lib/events/edit-lock";
 import { findMunicipioByCode, parseSearchCityCodes } from "@/lib/geo/municipios";
 import { logger } from "@/lib/logger";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+const INTERPRET_TIMEOUT_MS = 8_000;
+
+async function withTimeout<T>(work: Promise<T>, ms: number, fallback: () => T): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<T>((resolve) => {
+    timer = setTimeout(() => resolve(fallback()), ms);
+  });
+  try {
+    return await Promise.race([work.catch(() => fallback()), timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 export interface InterviewState {
   error?: string;
@@ -80,7 +99,16 @@ export async function saveInterviewAction(
     return { error: answers.error };
   }
 
-  const requirements = resolveRequirements(eventType.data, event.guest_count, answers.data);
+  // Itens livres (separados por vírgula) viram necessidades pesquisáveis.
+  const requirements = await withTimeout(
+    interpretFreeRequirements(
+      getRouter(),
+      resolveRequirements(eventType.data, event.guest_count, answers.data),
+      { eventId: event.id },
+    ),
+    INTERPRET_TIMEOUT_MS,
+    () => resolveRequirementsWithRules(eventType.data, event.guest_count, answers.data),
+  );
   const now = new Date().toISOString();
 
   const { error: upsertError } = await supabase.from("event_requirements").upsert(
@@ -111,7 +139,9 @@ export async function saveInterviewAction(
     .update({ selected: false, updated_at: now })
     .eq("event_id", event.id);
   const { error: deselectError } =
-    codes.length > 0 ? await deselect.not("item_code", "in", `(${codes.join(",")})`) : await deselect;
+    codes.length > 0
+      ? await deselect.not("item_code", "in", `(${codes.join(",")})`)
+      : await deselect;
   if (deselectError !== null) {
     logger.error({ code: deselectError.code }, "falha ao desmarcar requisitos");
     return { error: "Não foi possível salvar a entrevista. Tente novamente." };
@@ -124,7 +154,8 @@ export async function saveInterviewAction(
       city_uf: municipio.uf,
       city_ibge_code: municipio.code,
       search_city_codes: searchCityCodes.length > 0 ? searchCityCodes : null,
-      interview_answers: answers.data, interview_completed_at: now,
+      interview_answers: answers.data,
+      interview_completed_at: now,
     })
     .eq("id", event.id);
   if (eventError !== null) {

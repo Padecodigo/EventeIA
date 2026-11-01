@@ -9,7 +9,7 @@ export interface DiscoveryQuery {
   /** Código IBGE do município (quando conhecido). */
   ibgeCode?: number;
   eventTypeLabel: string;
-  /** Texto livre (demanda específica) quando category = "outros". */
+  /** Necessidade pesquisável de um item livre (palavras-chave do intérprete) ou demanda específica legada. */
   freeText?: string;
   limit: number;
   /** Telefones/nomes já conhecidos — o provedor deve trazer fornecedores NOVOS. */
@@ -35,4 +35,10 @@ export class ProviderQuotaError extends Error {
     super(`${provider} sem cota (HTTP ${String(status)})`);
     this.name = "ProviderQuotaError";
   }
+}
+
+/** O que buscar: o item livre (quando houver) em vez do rótulo genérico da categoria. */
+export function queryWhat(q: Pick<DiscoveryQuery, "categoryLabel" | "freeText">): string {
+  const free = q.freeText?.trim();
+  return free !== undefined && free.length > 0 ? free : q.categoryLabel;
 }

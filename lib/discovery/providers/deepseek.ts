@@ -4,7 +4,13 @@ import { parseBrazilPhone } from "@/lib/phone";
 
 import type { SupplierCandidate } from "../pure";
 import { cityLabel, extractJsonBlock } from "./grok";
-import { ProviderQuotaError, type DiscoveryProvider, type DiscoveryQuery, type FetchLike } from "./types";
+import {
+  ProviderQuotaError,
+  queryWhat,
+  type DiscoveryProvider,
+  type DiscoveryQuery,
+  type FetchLike,
+} from "./types";
 
 /**
  * Pós-processamento DeepSeek sobre fontes reais (OpenStreetMap). O modelo NÃO busca nem
@@ -28,14 +34,19 @@ const payloadSchema = z.object({
     .max(80),
 });
 const chatSchema = z.object({
-  choices: z.array(z.object({ message: z.object({ content: z.string().nullable().optional() }) })).min(1),
+  choices: z
+    .array(z.object({ message: z.object({ content: z.string().nullable().optional() }) }))
+    .min(1),
 });
 
 export function buildDeepseekPrompt(q: DiscoveryQuery, raw: readonly SupplierCandidate[]): string {
   const list = raw
-    .map((c, i) => `${String(i)}. ${c.name}${c.hint !== undefined ? ` [${c.hint}]` : ""}${c.websiteUrl !== undefined ? ` (${c.websiteUrl})` : ""}`)
+    .map(
+      (c, i) =>
+        `${String(i)}. ${c.name}${c.hint !== undefined ? ` [${c.hint}]` : ""}${c.websiteUrl !== undefined ? ` (${c.websiteUrl})` : ""}`,
+    )
     .join("\n");
-  const what = q.category === "outros" && q.freeText !== undefined ? q.freeText : q.categoryLabel;
+  const what = queryWhat(q);
   return [
     `Lista de estabelecimentos reais do OpenStreetMap em ${cityLabel(q)}.`,
     `Selecione SOMENTE os que provavelmente prestam o serviço "${what}" para festas/eventos (${q.eventTypeLabel}).`,
@@ -46,7 +57,11 @@ export function buildDeepseekPrompt(q: DiscoveryQuery, raw: readonly SupplierCan
   ].join("\n");
 }
 
-export function applyDeepseekSelection(content: string, raw: readonly SupplierCandidate[], limit: number): SupplierCandidate[] {
+export function applyDeepseekSelection(
+  content: string,
+  raw: readonly SupplierCandidate[],
+  limit: number,
+): SupplierCandidate[] {
   const parsed = payloadSchema.safeParse(extractJsonBlock(content));
   if (!parsed.success) return [];
   const out: SupplierCandidate[] = [];
@@ -95,7 +110,8 @@ export function createDeepseekRefinedProvider(options: {
         signal: AbortSignal.timeout(60_000),
       });
       if (!res.ok) {
-        if (res.status === 429 || res.status === 402) throw new ProviderQuotaError("deepseek", res.status);
+        if (res.status === 429 || res.status === 402)
+          throw new ProviderQuotaError("deepseek", res.status);
         throw new Error(`DeepSeek HTTP ${String(res.status)}`);
       }
       const body = chatSchema.safeParse(await res.json());

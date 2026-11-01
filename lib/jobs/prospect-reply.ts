@@ -1,10 +1,15 @@
 import "server-only";
 
+import { isFreeItemCode } from "@/lib/catalog/free-items";
 import { getDeepSeekClient } from "@/lib/deepseek/client";
 import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { assertBusinessHours } from "@/lib/outreach/business-defer";
-import { createSupabaseSupplierConversationStore, mirrorOutboundMessage } from "@/lib/outreach/supplier-conversations";
+import {
+  createSupabaseSupplierConversationStore,
+  mirrorOutboundMessage,
+} from "@/lib/outreach/supplier-conversations";
+import type { FreeCoverageItem } from "@/lib/prospecting/coverage-loop";
 import { createCoveragePorts } from "@/lib/prospecting/coverage-store";
 import { withCoverageLoop, type CoveragePorts } from "@/lib/prospecting/coverage-turn";
 import type { ConversationStatus } from "@/lib/prospecting/inbound";
@@ -61,10 +66,17 @@ export interface ProspectReplyJobDeps {
   getClient: typeof getDeepSeekClient;
   buildPorts: typeof createSupabaseRespondPorts;
   /** P3: espelha a resposta do agente no chat do evento (só grava). */
-  mirror?: (input: { channel: "instagram" | "messenger"; externalUserId: string; body: string; externalId: string | null }) => Promise<void>;
+  mirror?: (input: {
+    channel: "instagram" | "messenger";
+    externalUserId: string;
+    body: string;
+    externalId: string | null;
+  }) => Promise<void>;
   maxRepliesPerHour?: number;
   /** Loop de cobertura item a item (0078). Ausente = desligado. */
   coverage?: (client: ReturnType<typeof getDeepSeekClient>, category: string) => CoveragePorts;
+  /** Itens livres do evento ligado à DM, nesta categoria (perguntados como "oferecem exatamente?"). */
+  freeItems?: (data: ProspectReplyJobData) => Promise<FreeCoverageItem[]>;
   now?: () => Date;
 }
 
@@ -96,7 +108,10 @@ export function defaultProspectReplyJobDeps(): ProspectReplyJobDeps {
       const admin = getSupabaseAdmin() as unknown as {
         from(table: "prospect_conversations"): {
           select(columns: string): {
-            eq(column: string, value: string): {
+            eq(
+              column: string,
+              value: string,
+            ): {
               maybeSingle(): Promise<{ data: { status: ConversationStatus } | null }>;
             };
           };
@@ -114,15 +129,107 @@ export function defaultProspectReplyJobDeps(): ProspectReplyJobDeps {
     getClient: getDeepSeekClient,
     buildPorts: createSupabaseRespondPorts,
     mirror: async (input) => {
-      await mirrorOutboundMessage(createSupabaseSupplierConversationStore(), { ...input, author: "agent" });
+      await mirrorOutboundMessage(createSupabaseSupplierConversationStore(), {
+        ...input,
+        author: "agent",
+      });
     },
     coverage: (client, category) => createCoveragePorts({ client, category }),
+    freeItems: loadFreeItems,
   };
 }
 
-export function messageConfig(data: ProspectReplyJobData, env: ProspectReplyJobDeps["env"]): MetaSendConfig {
+interface FreeItemsDb {
+  from(table: "supplier_conversations"): {
+    select(columns: string): {
+      eq(
+        column: string,
+        value: string,
+      ): {
+        eq(
+          column: string,
+          value: string,
+        ): {
+          not(
+            column: string,
+            op: string,
+            value: null,
+          ): {
+            order(
+              column: string,
+              options: { ascending: boolean },
+            ): {
+              limit(count: number): Promise<{ data: { event_id: string }[] | null }>;
+            };
+          };
+        };
+      };
+    };
+  };
+  from(table: "event_requirements"): {
+    select(columns: string): {
+      eq(
+        column: string,
+        value: string | boolean,
+      ): {
+        eq(
+          column: string,
+          value: string | boolean,
+        ): {
+          eq(
+            column: string,
+            value: string | boolean,
+          ): {
+            like(
+              column: string,
+              pattern: string,
+            ): Promise<{ data: { item_code: string; label: string }[] | null }>;
+          };
+        };
+      };
+    };
+  };
+}
+
+/** DM → evento (supplier_conversations.event_id) → itens livres da categoria. */
+export async function loadFreeItems(
+  data: ProspectReplyJobData,
+  db?: FreeItemsDb,
+): Promise<FreeCoverageItem[]> {
+  const admin = db ?? (getSupabaseAdmin() as unknown as FreeItemsDb);
+  const { data: convs } = await admin
+    .from("supplier_conversations")
+    .select("event_id")
+    .eq("channel", data.channel)
+    .eq("external_user_id", data.recipientId)
+    .not("event_id", "is", null)
+    .order("updated_at", { ascending: false })
+    .limit(1);
+  const eventId = convs?.[0]?.event_id;
+  if (eventId === undefined) return [];
+  const { data: reqs } = await admin
+    .from("event_requirements")
+    .select("item_code,label")
+    .eq("event_id", eventId)
+    .eq("selected", true)
+    .eq("category", data.category)
+    .like("item_code", "livre\\_%");
+  return (reqs ?? [])
+    .filter((r) => isFreeItemCode(r.item_code))
+    .slice(0, 10)
+    .map((r) => ({ code: r.item_code, label: r.label.slice(0, 80) }));
+}
+
+export function messageConfig(
+  data: ProspectReplyJobData,
+  env: ProspectReplyJobDeps["env"],
+): MetaSendConfig {
   return data.channel === "messenger"
-    ? { channel: "messenger", pageId: env.pageId ?? "", accessToken: env.pageAccessToken || env.accessToken || "" }
+    ? {
+        channel: "messenger",
+        pageId: env.pageId ?? "",
+        accessToken: env.pageAccessToken || env.accessToken || "",
+      }
     : {
         channel: "instagram",
         instagramBusinessId: env.igBusinessId ?? "",
@@ -139,7 +246,10 @@ export async function handleProspectReplyJob(
   const status = await deps.loadConversationStatus(data.conversationId);
   if (status === null) return;
   if (status === "opted_out") {
-    logger.info({ conversationId: data.conversationId }, "prospecção: conversa optada-fora — resposta ignorada");
+    logger.info(
+      { conversationId: data.conversationId },
+      "prospecção: conversa optada-fora — resposta ignorada",
+    );
     return;
   }
 
@@ -147,7 +257,10 @@ export async function handleProspectReplyJob(
   const lockKey = `eventeia:prospect-reply:lock:${data.conversationId}`;
   const acquired = await redis.set(lockKey, "1", LOCK_TTL_MS);
   if (acquired !== "OK") {
-    logger.info({ conversationId: data.conversationId }, "prospecção: resposta já em andamento — ignorando");
+    logger.info(
+      { conversationId: data.conversationId },
+      "prospecção: resposta já em andamento — ignorando",
+    );
     return;
   }
 
@@ -163,7 +276,12 @@ export async function handleProspectReplyJob(
       ...(deps.mirror !== undefined
         ? {
             mirror: (text: string, messageId: string | null) =>
-              deps.mirror!({ channel: data.channel, externalUserId: data.recipientId, body: text, externalId: messageId }),
+              deps.mirror!({
+                channel: data.channel,
+                externalUserId: data.recipientId,
+                body: text,
+                externalId: messageId,
+              }),
           }
         : {}),
     });
@@ -185,6 +303,7 @@ export async function handleProspectReplyJob(
             conversationId: data.conversationId,
             category: data.category,
             history,
+            freeItems: await (deps.freeItems?.(data) ?? Promise.resolve([])).catch(() => []),
           });
     await deps.respond({
       client,

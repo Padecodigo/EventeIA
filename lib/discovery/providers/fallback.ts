@@ -10,7 +10,12 @@ export interface LlmUsageStore {
 }
 
 /** Troca para o fallback quando o uso do dia passa de `switchPct`% do orçamento, ou a cota acabou. */
-export function shouldUseFallback(input: { callsToday: number; dailyBudget: number; switchPct: number; exhausted: boolean }): boolean {
+export function shouldUseFallback(input: {
+  callsToday: number;
+  dailyBudget: number;
+  switchPct: number;
+  exhausted: boolean;
+}): boolean {
   if (input.exhausted) return true;
   return input.callsToday >= (input.dailyBudget * input.switchPct) / 100;
 }

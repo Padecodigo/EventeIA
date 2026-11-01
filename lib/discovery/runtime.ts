@@ -23,17 +23,34 @@ export function discoveryJobId(eventId: string, round: number): string {
 export async function startDiscovery(eventId: string, now: Date = new Date()): Promise<boolean> {
   // Respeita a data agendada pelo cliente + dia útil 9h–18h: o job nasce atrasado até lá
   // (o worker re-checa na execução) e o prazo da coleta conta a partir do início real.
-  const { data } = await getSupabaseAdmin().from("events").select("search_start_date").eq("id", eventId).maybeSingle();
-  const startDelay = isBusinessHoursBypassed(eventId) ? 0 : msUntilSearchStart(now, data?.search_start_date ?? null);
-  return enqueue(QUEUE_NAMES.supplierDiscovery, "discover", { eventId, round: 0 }, { jobId: discoveryJobId(eventId, 0), delayMs: startDelay });
+  const { data } = await getSupabaseAdmin()
+    .from("events")
+    .select("search_start_date")
+    .eq("id", eventId)
+    .maybeSingle();
+  const startDelay = isBusinessHoursBypassed(eventId)
+    ? 0
+    : msUntilSearchStart(now, data?.search_start_date ?? null);
+  return enqueue(
+    QUEUE_NAMES.supplierDiscovery,
+    "discover",
+    { eventId, round: 0 },
+    { jobId: discoveryJobId(eventId, 0), delayMs: startDelay },
+  );
 }
 
 /**
  * Cliente mudou a data agendada: realinha o job da 1ª rodada (se ainda estiver atrasado) e o prazo da coleta.
  * Sem job pendente não faz nada — a próxima ativação/entrevista enfileira já com a data nova.
  */
-export async function rescheduleDiscovery(eventId: string, searchStartDate: string | null, now: Date = new Date()): Promise<boolean> {
-  const startDelay = isBusinessHoursBypassed(eventId) ? 0 : msUntilSearchStart(now, searchStartDate);
+export async function rescheduleDiscovery(
+  eventId: string,
+  searchStartDate: string | null,
+  now: Date = new Date(),
+): Promise<boolean> {
+  const startDelay = isBusinessHoursBypassed(eventId)
+    ? 0
+    : msUntilSearchStart(now, searchStartDate);
   const queue = getQueue(QUEUE_NAMES.supplierDiscovery);
   const job = await queue.getJob(discoveryJobId(eventId, 0));
   if (job === undefined || !(await job.isDelayed())) return false;
@@ -53,16 +70,20 @@ export function createDiscoveryDeps(): DiscoveryDeps {
     async loadEvent(eventId) {
       const { data: e } = await admin
         .from("events")
-        .select("id,title,event_type,event_date,guest_count,budget_limit_cents,city,city_uf,search_city_codes,region_code,status,owner_profile_id,workspace_id,interview_completed_at,discovery_started_at")
+        .select(
+          "id,title,event_type,event_date,guest_count,budget_limit_cents,city,city_uf,search_city_codes,region_code,status,owner_profile_id,workspace_id,interview_completed_at,discovery_started_at",
+        )
         .eq("id", eventId)
         .maybeSingle();
       if (e === null) return null;
       const { data: reqs } = await admin
         .from("event_requirements")
-        .select("category,label,quantity,unit,notes")
+        .select("item_code,category,label,quantity,unit,notes")
         .eq("event_id", eventId)
         .eq("selected", true);
-      const eventType = (ALL_EVENT_TYPES as string[]).includes(e.event_type) ? (e.event_type as EventType) : "aniversario";
+      const eventType = (ALL_EVENT_TYPES as string[]).includes(e.event_type)
+        ? (e.event_type as EventType)
+        : "aniversario";
       return {
         id: e.id,
         title: e.title,
@@ -81,8 +102,10 @@ export function createDiscoveryDeps(): DiscoveryDeps {
         ownerId: e.owner_profile_id,
         workspaceId: e.workspace_id,
         interviewCompleted: e.interview_completed_at !== null,
-        discoveryStartedAt: e.discovery_started_at === null ? null : new Date(e.discovery_started_at),
+        discoveryStartedAt:
+          e.discovery_started_at === null ? null : new Date(e.discovery_started_at),
         requirements: (reqs ?? []).map((r) => ({
+          itemCode: r.item_code,
           category: r.category,
           label: r.label,
           quantity: r.quantity,
@@ -101,10 +124,18 @@ export function createDiscoveryDeps(): DiscoveryDeps {
 
     async eventProspects(eventId) {
       // Fora do modo dry-run, prospects fictícios (dry_run) não contam para as metas nem bloqueiam números.
-      let q = admin.from("vendor_prospects").select("phone_e164,vendor_category,vendor_name").eq("event_id", eventId).is("hidden_at", null);
+      let q = admin
+        .from("vendor_prospects")
+        .select("phone_e164,vendor_category,vendor_name")
+        .eq("event_id", eventId)
+        .is("hidden_at", null);
       if (!env.DISCOVERY_DRY_RUN) q = q.eq("dry_run", false);
       const { data } = await q;
-      return (data ?? []).map((p) => ({ phone: p.phone_e164, category: p.vendor_category, name: p.vendor_name }));
+      return (data ?? []).map((p) => ({
+        phone: p.phone_e164,
+        category: p.vendor_category,
+        name: p.vendor_name,
+      }));
     },
 
     async isPhoneOptedOut(phone) {
@@ -141,7 +172,8 @@ export function createDiscoveryDeps(): DiscoveryDeps {
         )
         .select("id,opt_out_at,last_contacted_at,deleted_at")
         .single();
-      if (error !== null || data === null) throw new Error(`falha ao gravar fornecedor (${error?.code ?? "?"})`);
+      if (error !== null || data === null)
+        throw new Error(`falha ao gravar fornecedor (${error?.code ?? "?"})`);
       const blockedAt = supplierBlockedAt(data);
       return {
         id: data.id,
@@ -209,7 +241,12 @@ export function createDiscoveryDeps(): DiscoveryDeps {
     },
 
     async enqueueProspect(job) {
-      return enqueue(QUEUE_NAMES.quotationProspecting, "prospect", { ...job }, { jobId: `prospect-${job.prospectId}` });
+      return enqueue(
+        QUEUE_NAMES.quotationProspecting,
+        "prospect",
+        { ...job },
+        { jobId: `prospect-${job.prospectId}` },
+      );
     },
 
     async reserveProviderCall(eventId, provider) {
@@ -218,7 +255,10 @@ export function createDiscoveryDeps(): DiscoveryDeps {
       const perEvent = `eventeia:discovery-calls:${eventId}`;
       const daily = `eventeia:discovery-calls-day:${day}`;
       const [ev, dy] = await Promise.all([redis.incr(perEvent), redis.incr(daily)]);
-      await Promise.all([redis.expire(perEvent, 7 * 24 * 3600), redis.expire(daily, 2 * 24 * 3600)]);
+      await Promise.all([
+        redis.expire(perEvent, 7 * 24 * 3600),
+        redis.expire(daily, 2 * 24 * 3600),
+      ]);
       return ev <= env.DISCOVERY_MAX_CALLS_PER_EVENT && dy <= env.DISCOVERY_DAILY_CALL_CAP;
     },
 
@@ -241,14 +281,21 @@ export function createDiscoveryDeps(): DiscoveryDeps {
         .from("events")
         .update({
           discovery_status: patch.status,
-          ...(patch.startedAt !== undefined ? { discovery_started_at: patch.startedAt.toISOString() } : {}),
+          ...(patch.startedAt !== undefined
+            ? { discovery_started_at: patch.startedAt.toISOString() }
+            : {}),
           ...(patch.endsAt !== undefined ? { discovery_ends_at: patch.endsAt.toISOString() } : {}),
         })
         .eq("id", eventId);
     },
 
     async scheduleRound(eventId, round, delayMs) {
-      await enqueue(QUEUE_NAMES.supplierDiscovery, "discover", { eventId, round }, { jobId: discoveryJobId(eventId, round), delayMs });
+      await enqueue(
+        QUEUE_NAMES.supplierDiscovery,
+        "discover",
+        { eventId, round },
+        { jobId: discoveryJobId(eventId, round), delayMs },
+      );
     },
   };
 }
