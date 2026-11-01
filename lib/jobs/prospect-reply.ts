@@ -45,6 +45,8 @@ export interface ProspectReplyRedis {
 export interface ProspectReplyJobDeps {
   env: {
     accessToken?: string;
+    /** Page token para Messenger; cai para accessToken se ausente. */
+    pageAccessToken?: string;
     igBusinessId?: string;
     pageId?: string;
   };
@@ -77,6 +79,7 @@ export function defaultProspectReplyJobDeps(): ProspectReplyJobDeps {
   return {
     env: {
       accessToken: env.META_ACCESS_TOKEN,
+      pageAccessToken: env.META_PAGE_ACCESS_TOKEN,
       igBusinessId: env.META_INSTAGRAM_BUSINESS_ID,
       pageId: env.META_PAGE_ID,
     },
@@ -106,9 +109,9 @@ export function defaultProspectReplyJobDeps(): ProspectReplyJobDeps {
   };
 }
 
-function messageConfig(data: ProspectReplyJobData, env: ProspectReplyJobDeps["env"]): MetaSendConfig {
+export function messageConfig(data: ProspectReplyJobData, env: ProspectReplyJobDeps["env"]): MetaSendConfig {
   return data.channel === "messenger"
-    ? { channel: "messenger", pageId: env.pageId ?? "", accessToken: env.accessToken ?? "" }
+    ? { channel: "messenger", pageId: env.pageId ?? "", accessToken: env.pageAccessToken || env.accessToken || "" }
     : {
         channel: "instagram",
         instagramBusinessId: env.igBusinessId ?? "",

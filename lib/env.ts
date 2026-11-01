@@ -31,6 +31,8 @@ const serverSchema = z.object({
   ASAAS_WEBHOOK_TOKEN: z.string().min(16).optional(),
   // Meta — Instagram Direct + Messenger (respostas, janela 24h; não há abordagem fria).
   META_ACCESS_TOKEN: z.string().optional(),
+  // Page access token (Messenger Send API exige token de Página). Só servidor.
+  META_PAGE_ACCESS_TOKEN: z.string().optional(),
   META_APP_SECRET: z.string().optional(),
   META_VERIFY_TOKEN: z.string().optional(),
   META_PAGE_ID: z.string().optional(),
