@@ -10,6 +10,7 @@ import {
   type MetaSupplierLookup,
 } from "@/lib/meta/resolve";
 import type { MetaCommentEvent, MetaInboundMessage } from "@/lib/meta/webhook";
+import { assertBusinessHours } from "@/lib/outreach/business-defer";
 import {
   createSupabaseSupplierConversationStore,
   ingestSupplierMessage,
@@ -281,6 +282,9 @@ async function processComment(comment: MetaCommentEvent, deps: MetaWebhookJobDep
   const { env } = deps;
   const supplier = await deps.resolveSupplierByHandle(deps.lookup, comment.senderUsername);
   if (supplier !== null) {
+    // A private reply (abertura) só sai em dia útil 09–18 BRT: adia o job inteiro
+    // ANTES de gravar, para que o reprocessamento ainda envie a abertura.
+    assertBusinessHours(deps.now());
     const outcome = await deps.inbound(
       deps.store,
       {

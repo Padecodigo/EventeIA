@@ -190,6 +190,20 @@ describe("handleMetaWebhookJob", () => {
     expect(sendReply.mock.calls[0]?.[0]).toMatchObject({ commentId: "c1", igUserId: "ig-1" });
   });
 
+  it("regressão: comentário no domingo é adiado antes de gravar/enviar (horário comercial)", async () => {
+    const { OutsideBusinessHoursError } = await import("@/lib/outreach/business-defer");
+    const { deps, sendReply, inbound, webhookEvents } = makeDeps({
+      now: () => new Date("2026-11-01T14:00:00Z"),
+      resolveSupplierByHandle: vi.fn(async () => ({ id: "s1", name: "Buffet da Ana", category: "buffet" })),
+    });
+    await expect(
+      handleMetaWebhookJob({ kind: "comment", webhookEventId: "wh1", event: comment("c9", "quero cotação") }, deps),
+    ).rejects.toBeInstanceOf(OutsideBusinessHoursError);
+    expect(inbound).not.toHaveBeenCalled();
+    expect(sendReply).not.toHaveBeenCalled();
+    expect(webhookEvents.updates).toHaveLength(0);
+  });
+
   it("comentário fora da janela de 7 dias não envia private reply", async () => {
     const { deps, sendReply } = makeDeps({
       resolveSupplierByHandle: vi.fn(async () => ({ id: "s1", name: "Buffet da Ana", category: "buffet" })),

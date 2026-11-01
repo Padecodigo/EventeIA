@@ -3,6 +3,7 @@ import "server-only";
 import { getDeepSeekClient } from "@/lib/deepseek/client";
 import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { assertBusinessHours } from "@/lib/outreach/business-defer";
 import type { ConversationStatus } from "@/lib/prospecting/inbound";
 import { respondToInbound } from "@/lib/prospecting/respond";
 import {
@@ -55,6 +56,7 @@ export interface ProspectReplyJobDeps {
   getClient: typeof getDeepSeekClient;
   buildPorts: typeof createSupabaseRespondPorts;
   maxRepliesPerHour?: number;
+  now?: () => Date;
 }
 
 const LOCK_TTL_MS = 10_000;
@@ -118,6 +120,8 @@ export async function handleProspectReplyJob(
   data: ProspectReplyJobData,
   deps: ProspectReplyJobDeps = defaultProspectReplyJobDeps(),
 ): Promise<void> {
+  // Antes de qualquer efeito: fora de dia útil 09–18 BRT o job é adiado.
+  assertBusinessHours((deps.now ?? (() => new Date()))());
   const status = await deps.loadConversationStatus(data.conversationId);
   if (status === null) return;
   if (status === "opted_out") {
