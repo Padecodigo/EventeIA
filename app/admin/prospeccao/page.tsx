@@ -6,8 +6,13 @@ import { getDeepSeekClient } from "@/lib/deepseek/client";
 import { serverEnv } from "@/lib/env";
 import { buildPostContent } from "@/lib/prospecting/content";
 import { generatePlanContent, type PlanContentEvent } from "@/lib/prospecting/content-llm";
-import { eventCoverageGaps, parseCoverageSummary, type CoverageGap } from "@/lib/prospecting/coverage-gaps";
+import {
+  eventCoverageGaps,
+  parseCoverageSummary,
+  type CoverageGap,
+} from "@/lib/prospecting/coverage-gaps";
 import { buildEventPostContent } from "@/lib/prospecting/event-post";
+import { loadLookingFor } from "@/lib/prospecting/looking-for";
 import { normalizeNeeds, planNeedPosts } from "@/lib/prospecting/plan-needs";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
@@ -78,7 +83,9 @@ export default async function ProspeccaoPage({
     // Lacunas de cobertura (0079): itens que nenhuma cotação inclui viram
     // necessidade própria no plano. Só sugere posts — publicar continua manual.
     const { data: coverageData } = await (
-      admin as unknown as { rpc(fn: string, args: Record<string, unknown>): Promise<{ data: unknown }> }
+      admin as unknown as {
+        rpc(fn: string, args: Record<string, unknown>): Promise<{ data: unknown }>;
+      }
     ).rpc("event_coverage_summary", { p_event_id: eventId });
     coverageGaps = eventCoverageGaps(selectedCategories, parseCoverageSummary(coverageData));
     needs = normalizeNeeds([...selectedCategories, ...coverageGaps.map((gap) => gap.needCategory)]);
@@ -87,7 +94,9 @@ export default async function ProspeccaoPage({
     if (selected !== null) {
       eventInfo = {
         title: selected.title,
-        typeLabel: EVENT_TYPE_LABELS[selected.event_type as keyof typeof EVENT_TYPE_LABELS] ?? selected.event_type,
+        typeLabel:
+          EVENT_TYPE_LABELS[selected.event_type as keyof typeof EVENT_TYPE_LABELS] ??
+          selected.event_type,
         guestCount: selected.guest_count,
       };
       eventPost = buildEventPostContent({
@@ -96,6 +105,7 @@ export default async function ProspeccaoPage({
         eventDate: selected.event_date,
         city: selected.city,
         region: selected.city_uf ?? selected.region_code,
+        lookingFor: await loadLookingFor(admin, selected.id),
       });
     }
     const needSet = new Set(needs);
@@ -149,7 +159,10 @@ export default async function ProspeccaoPage({
         {coverageGaps.length > 0 ? (
           <p className="mt-1 text-caption text-vinho/70" data-testid="coverage-gaps">
             Lacunas de cobertura no plano:{" "}
-            {coverageGaps.map((gap) => `${gap.needCategory} (não incluso em ${gap.fromCategory})`).join(", ")}.
+            {coverageGaps
+              .map((gap) => `${gap.needCategory} (não incluso em ${gap.fromCategory})`)
+              .join(", ")}
+            .
           </p>
         ) : null}
       </header>

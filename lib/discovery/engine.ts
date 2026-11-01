@@ -9,7 +9,7 @@ import { CATEGORY_LABELS, EVENT_TYPE_LABELS } from "@/lib/catalog/v1";
 import type { EventType } from "@/lib/engine/types";
 import { parseBrazilPhone } from "@/lib/phone";
 
-import { freeNeedsFrom } from "./free-item-interpret";
+import { freeNeedsFrom, searchQueryFor } from "./free-item-interpret";
 import type { DiscoveryProvider } from "./providers/types";
 import {
   canRecontact,
@@ -271,7 +271,7 @@ export function categoryQueries(
     );
   }
   for (const n of freeNeedsFrom(free)) {
-    const q = n.keywords.slice(0, 2).join(" ").slice(0, 80);
+    const q = searchQueryFor(n);
     if (!out.includes(q)) out.push(q);
   }
   return out.length > 0 ? out : [undefined];

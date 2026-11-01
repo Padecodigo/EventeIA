@@ -183,7 +183,9 @@ interface FreeItemsDb {
             like(
               column: string,
               pattern: string,
-            ): Promise<{ data: { item_code: string; label: string }[] | null }>;
+            ): Promise<{
+              data: { item_code: string; label: string; notes: string | null }[] | null;
+            }>;
           };
         };
       };
@@ -209,7 +211,7 @@ export async function loadFreeItems(
   if (eventId === undefined) return [];
   const { data: reqs } = await admin
     .from("event_requirements")
-    .select("item_code,label")
+    .select("item_code,label,notes")
     .eq("event_id", eventId)
     .eq("selected", true)
     .eq("category", data.category)
@@ -217,7 +219,15 @@ export async function loadFreeItems(
   return (reqs ?? [])
     .filter((r) => isFreeItemCode(r.item_code))
     .slice(0, 10)
-    .map((r) => ({ code: r.item_code, label: r.label.slice(0, 80) }));
+    .map((r) => ({
+      code: r.item_code,
+      label: r.label.slice(0, 80),
+      terms: (r.notes ?? "")
+        .split(",")
+        .map((t) => t.trim())
+        .filter((t) => t.length >= 2)
+        .slice(0, 10),
+    }));
 }
 
 export function messageConfig(

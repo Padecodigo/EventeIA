@@ -235,9 +235,12 @@ describe("itens livres na rodada de descoberta (integração)", () => {
     expect(queries).toContainEqual({ category: "buffet" });
     expect(queries).toContainEqual({
       category: "recreacao",
-      freeText: "brinquedos infláveis pula pula",
+      freeText: '"brinquedos infláveis" OR "pula pula"',
     });
-    expect(queries).toContainEqual({ category: "recreacao", freeText: "mágico infantil" });
+    expect(queries).toContainEqual({
+      category: "recreacao",
+      freeText: '"mágico para crianças" OR "mágico infantil"',
+    });
     const rec = jobs.find((j) => j.category === "recreacao");
     expect(rec?.dryRun).toBe(true);
     expect(rec?.messageText).toContain(
