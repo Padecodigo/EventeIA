@@ -63,7 +63,11 @@ export function createCoveragePorts(input: {
   client: DeepSeekClient;
   db?: CoverageDb;
   now?: () => Date;
+  /** Categoria da cotação; gravada para o cálculo de lacunas por evento (0079). */
+  category?: string;
 }): CoveragePorts {
+  const category =
+    input.category !== undefined && /^[a-z_]{2,40}$/.test(input.category) ? input.category : null;
   const db = input.db ?? (getSupabaseAdmin() as unknown as CoverageDb);
   const now = input.now ?? (() => new Date());
 
@@ -94,6 +98,7 @@ export function createCoveragePorts(input: {
           prospect_quote_id: quoteId,
           conversation_id: conversationId,
           item_code: r.itemCode,
+          category,
           coverage: r.coverage,
           extra_price_cents: r.extraPriceCents,
           quantity_covered: r.quantityCovered,

@@ -7,8 +7,9 @@ import { ActivateWithCredit } from "@/components/domain/activate-with-credit";
 import { BudgetTable } from "@/components/domain/budget-table";
 import { BuyTicketForm } from "@/components/domain/buy-ticket-form";
 import { ChoicesPanel } from "@/components/domain/choices-panel";
-import { EventChat } from "@/components/domain/event-chat";
+import { CoveragePanel } from "@/components/domain/coverage-panel";
 import { EventBudgetLimitEditor } from "@/components/domain/event-budget-limit-editor";
+import { EventChat } from "@/components/domain/event-chat";
 import { EventDetailsEditor } from "@/components/domain/event-details-editor";
 import { EventLifecycleActions } from "@/components/domain/event-lifecycle-actions";
 import { EventSupportChat } from "@/components/domain/event-support-chat";
@@ -24,14 +25,15 @@ import { calculate } from "@/lib/engine";
 import type { EngineItemSelection, EventType, RegionCode } from "@/lib/engine/types";
 import { serverEnv } from "@/lib/env";
 import { isAboveBudgetLimit } from "@/lib/events/budget-limit";
+import { isEventStarted, STARTED_EVENT_LOCK_MESSAGE } from "@/lib/events/edit-lock";
 import { canCancelEvent, canCompleteEvent } from "@/lib/events/lifecycle";
 import { luckyDiscountCents } from "@/lib/lucky/pure";
 import { lookupLuckyCoupon } from "@/lib/lucky/server";
-import { isEventStarted, STARTED_EVENT_LOCK_MESSAGE } from "@/lib/events/edit-lock";
 import { formatBRL } from "@/lib/money";
 import { offerDiscountCents } from "@/lib/offers/pure";
 import { activeUserOffer } from "@/lib/offers/server";
 import { listEventChatConversations } from "@/lib/outreach/chat-read";
+import { parseCoverageSummary } from "@/lib/prospecting/coverage-gaps";
 import { parseQuotationOptions } from "@/lib/quotes/choices";
 import { categoryLabel } from "@/lib/quotes/labels";
 import { latestScenarios } from "@/lib/quotes/scenarios";
@@ -270,6 +272,12 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     ? await listEventChatConversations(event.id)
     : [];
 
+  // Cobertura das DMs ligadas ao evento (0079): RPC checa dono/workspace.
+  const { data: coverageData } = await (
+    supabase as unknown as { rpc(fn: string, args: Record<string, unknown>): Promise<{ data: unknown }> }
+  ).rpc("event_coverage_summary", { p_event_id: event.id });
+  const coverageRows = parseCoverageSummary(coverageData);
+
   return (
     <div className="flex scroll-mt-24 flex-col gap-8">
       <header id="evento-topo" className="scroll-mt-24 flex flex-wrap items-end justify-between gap-4">
@@ -388,6 +396,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           ) : null}
           <ScenariosPanel eventId={event.id} scenarios={scenarios} />
           <QuotationsPanel eventId={event.id} quotations={quotationsResult.data ?? []} />
+          <CoveragePanel rows={coverageRows} />
           <ChoicesPanel eventId={event.id} rows={choiceViews} />
           <SupplierOptionsPanel eventId={event.id} rows={selectionViews} />
           <EventChat eventId={event.id} conversations={chatConversations} />
