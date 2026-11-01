@@ -40,6 +40,7 @@ function truncate(text: string): string {
 const textMessage = z.object({
   mid: z.string().min(1),
   text: z.string(),
+  is_echo: z.boolean().optional(),
 });
 
 const referralSchema = z.object({
@@ -89,6 +90,7 @@ function parseInstagramMessages(root: Record<string, unknown>): MetaInboundMessa
       const parsed = igValue.safeParse(change.value);
       if (!parsed.success) continue;
       const { sender, recipient, message } = parsed.data;
+      if (message.is_echo === true) continue;
       const text = truncate(message.text);
       if (text.length === 0) continue;
       const rawMessage = isRecord(change.value) && isRecord(change.value.message) ? change.value.message : undefined;
@@ -106,10 +108,23 @@ function parseInstagramMessages(root: Record<string, unknown>): MetaInboundMessa
       });
     }
   }
+  // Formato real da Instagram API (Instagram Login / Messenger API for Instagram):
+  // `entry[].messaging[]`, igual ao Messenger. O formato `changes[]` acima é o do
+  // botão "Testar" do painel Meta. Dedupe por mid caso ambos venham.
+  const seen = new Set(out.map((m) => m.eventId));
+  for (const m of parseMessagingArray(root, "instagram")) {
+    if (seen.has(m.eventId)) continue;
+    seen.add(m.eventId);
+    out.push(m);
+  }
   return out;
 }
 
 function parseMessengerMessages(root: Record<string, unknown>): MetaInboundMessage[] {
+  return parseMessagingArray(root, "messenger");
+}
+
+function parseMessagingArray(root: Record<string, unknown>, source: MetaInboundSource): MetaInboundMessage[] {
   if (!isArray(root.entry)) return [];
   const out: MetaInboundMessage[] = [];
   for (const entry of root.entry) {
@@ -118,6 +133,8 @@ function parseMessengerMessages(root: Record<string, unknown>): MetaInboundMessa
       const parsed = messengerValue.safeParse(item);
       if (!parsed.success) continue;
       const { sender, recipient, message } = parsed.data;
+      // Eco das nossas próprias mensagens enviadas: nunca tratar como inbound.
+      if (message.is_echo === true) continue;
       const text = truncate(message.text);
       if (text.length === 0) continue;
       const rawItem = isRecord(item) ? item : undefined;
@@ -127,7 +144,7 @@ function parseMessengerMessages(root: Record<string, unknown>): MetaInboundMessa
         rawMessage !== undefined ? rawMessage.referral : undefined,
       ]);
       out.push({
-        source: "messenger",
+        source,
         eventId: message.mid,
         senderId: sender.id,
         recipientId: recipient.id,
