@@ -1,4 +1,5 @@
-import { Worker } from "bullmq";
+import { DelayedError, Worker } from "bullmq";
+
 
 import { serverEnv } from "@/lib/env";
 import { runBalanceCheck } from "@/lib/finance/balance-monitor";
@@ -18,15 +19,16 @@ import {
   type ProspectReplyJobData,
 } from "@/lib/jobs/prospect-reply";
 import { logger } from "@/lib/logger";
+import { publishAutopilotPost } from "@/lib/marketing/autopilot";
+import { isAutopilotEnabled } from "@/lib/marketing/settings";
 import { runMetaTokenHealthCheck } from "@/lib/meta/token-health-monitor";
+import { OutsideBusinessHoursError } from "@/lib/outreach/business-defer";
 import { runSupplierWindowSweep } from "@/lib/outreach/supplier-conversations";
+import { purgeExpiredArt } from "@/lib/prospecting/art-cache";
+import { deleteFinishedProspectPosts } from "@/lib/prospecting/delete-posts";
 import { QUEUE_NAMES, getQueue, getRedisConnection } from "@/lib/queue";
 import { createDiscoveryWorker } from "@/lib/queue/discovery-worker";
 import { createQuoteExtractionWorker } from "@/lib/queue/quote-extraction-worker";
-import { purgeExpiredArt } from "@/lib/prospecting/art-cache";
-import { deleteFinishedProspectPosts } from "@/lib/prospecting/delete-posts";
-import { publishAutopilotPost } from "@/lib/marketing/autopilot";
-import { isAutopilotEnabled } from "@/lib/marketing/settings";
 
 /**
  * Processo de workers (BullMQ) — separado do runtime do Next.
@@ -44,8 +46,16 @@ const asaasWorker = new Worker<AsaasWebhookJob>(
 
 const metaWebhooksWorker = new Worker<MetaWebhookJobData>(
   QUEUE_NAMES.metaWebhooks,
-  async (job) => {
-    await handleMetaWebhookJob(job.data);
+  async (job, token) => {
+    try {
+      await handleMetaWebhookJob(job.data);
+    } catch (error) {
+      if (error instanceof OutsideBusinessHoursError) {
+        await job.moveToDelayed(error.until.getTime(), token);
+        throw new DelayedError();
+      }
+      throw error;
+    }
   },
   { connection, concurrency: 2 },
 );
@@ -64,8 +74,16 @@ metaWebhooksWorker.on("failed", (job, error) => {
 
 const prospectReplyWorker = new Worker<ProspectReplyJobData>(
   QUEUE_NAMES.prospectReply,
-  async (job) => {
-    await handleProspectReplyJob(job.data);
+  async (job, token) => {
+    try {
+      await handleProspectReplyJob(job.data);
+    } catch (error) {
+      if (error instanceof OutsideBusinessHoursError) {
+        await job.moveToDelayed(error.until.getTime(), token);
+        throw new DelayedError();
+      }
+      throw error;
+    }
   },
   { connection, concurrency: 2 },
 );

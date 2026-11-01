@@ -46,6 +46,8 @@ function makeDeps(overrides: Partial<ProspectReplyJobDeps> = {}, state: FakeStat
   const redis = fakeRedis();
   const deps: ProspectReplyJobDeps = {
     env: { accessToken: "tok", igBusinessId: "ig-1", pageId: "pg-1" },
+    // Terça 03/11/2026 10:00 BRT — dentro do horário comercial.
+    now: () => new Date("2026-11-03T13:00:00Z"),
     redis: () => redis,
     respondDb: {} as RespondDb,
     loadConversationStatus: async () => "awaiting_human",
@@ -126,5 +128,22 @@ describe("handleProspectReplyJob", () => {
     await handleProspectReplyJob(data, deps);
     expect(state.replies).toHaveLength(0);
     expect(state.escalations).toHaveLength(1);
+  });
+});
+
+describe("regressão: horário comercial no prospect-reply", () => {
+  it("domingo: lança OutsideBusinessHoursError e não responde nem lê a conversa", async () => {
+    const { OutsideBusinessHoursError } = await import("@/lib/outreach/business-defer");
+    let loaded = false;
+    const { deps, state } = makeDeps({
+      now: () => new Date("2026-11-01T14:00:00Z"),
+      loadConversationStatus: async () => {
+        loaded = true;
+        return "awaiting_human";
+      },
+    });
+    await expect(handleProspectReplyJob(data, deps)).rejects.toBeInstanceOf(OutsideBusinessHoursError);
+    expect(state.replies).toHaveLength(0);
+    expect(loaded).toBe(false);
   });
 });
