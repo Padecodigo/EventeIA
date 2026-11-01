@@ -161,6 +161,28 @@ describe("POST /api/meta/webhook", () => {
     expect((state.enqueued[0]?.data.event as Record<string, unknown>).eventId).toBe("mid-1");
   });
 
+  it("regressão P0: DM real do Instagram (entry[].messaging[]) é persistida e enfileirada", async () => {
+    const { POST } = await import("@/app/api/meta/webhook/route");
+    const body = {
+      object: "instagram",
+      entry: [{ id: "1784", time: 1, messaging: [{ sender: { id: "111" }, recipient: { id: "1784" }, timestamp: 1, message: { mid: "mid-real", text: "quero cotar" } }] }],
+    };
+    const res = await POST(call(body));
+    expect(res.status).toBe(200);
+    expect(state.rows.get("mid-real")).toBeDefined();
+    expect(state.enqueued.map((j) => j.jobId)).toEqual(["meta_mid-real"]);
+  });
+
+  it("eco da própria conta (is_echo) não é enfileirado", async () => {
+    const { POST } = await import("@/app/api/meta/webhook/route");
+    const body = {
+      object: "instagram",
+      entry: [{ id: "1784", messaging: [{ sender: { id: "1784" }, recipient: { id: "111" }, message: { mid: "mid-echo", text: "olá", is_echo: true } }] }],
+    };
+    await POST(call(body));
+    expect(state.enqueued).toHaveLength(0);
+  });
+
   it("duplicado já processado (status processed) não enfileira de novo", async () => {
     state.rows.set("mid-1", { id: "wh-mid-1", status: "processed" });
     const { POST } = await import("@/app/api/meta/webhook/route");
