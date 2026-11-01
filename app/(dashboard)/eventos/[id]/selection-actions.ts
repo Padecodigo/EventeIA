@@ -9,6 +9,7 @@ import { serverEnv } from "@/lib/env";
 import { emitFeed } from "@/lib/feeds";
 import { logger } from "@/lib/logger";
 import { sendInstagramText, sendMessengerText } from "@/lib/meta/client";
+import { messengerAccessToken } from "@/lib/meta/page-token";
 import { formatBRL } from "@/lib/money";
 import { buildSelectionMessage, relayDecision } from "@/lib/selection/relay";
 import type { SelectionStatus } from "@/lib/selection/state";
@@ -37,7 +38,7 @@ async function sendToSupplier(
   const result =
     channel === "messenger"
       ? await sendMessengerText({
-          accessToken: env.META_ACCESS_TOKEN ?? "",
+          accessToken: messengerAccessToken(env),
           pageId: env.META_PAGE_ID ?? "",
           recipientId,
           text,
