@@ -5,11 +5,25 @@ import { createMockProvider } from "./mock";
 import { createNimProvider } from "./nim";
 import { createOverpassProvider } from "./overpass";
 import { createGooglePlacesProvider, createSerperProvider } from "./paid-places";
-import { createDeepseekSearchProvider, createMemorySearchStatusStore, createSearchFallbackProvider, type SearchStatus, type SearchStatusStore } from "./search-fallback";
+import {
+  createDeepseekSearchProvider,
+  createMemorySearchStatusStore,
+  createSearchFallbackProvider,
+  type SearchStatus,
+  type SearchStatusStore,
+} from "./search-fallback";
 import { createSocialProvider } from "./social";
 import type { DiscoveryProvider, FetchLike } from "./types";
 
-export const KNOWN_PROVIDERS = ["grok", "social", "nim", "overpass", "serper", "google_places", "mock"] as const;
+export const KNOWN_PROVIDERS = [
+  "grok",
+  "social",
+  "nim",
+  "overpass",
+  "serper",
+  "google_places",
+  "mock",
+] as const;
 
 export interface ProviderEnv {
   DISCOVERY_PROVIDERS?: string;
@@ -57,26 +71,49 @@ export function resolveProviders(
         ? ["grok", "social", "overpass", "mock"]
         : hasNim
           ? ["grok", "overpass", "mock"]
-        : ["mock"];
+          : ["mock"];
   const rawOverpass = createOverpassProvider(fetchImpl);
   // Com DEEPSEEK_API_KEY, o OSM passa pelo DeepSeek (relevância/categoria/nome); sem chave, OSM puro.
   const overpass =
     env.DEEPSEEK_API_KEY !== undefined && env.DEEPSEEK_API_KEY.length > 0
-      ? createDeepseekRefinedProvider({ apiKey: env.DEEPSEEK_API_KEY, baseUrl: env.DEEPSEEK_BASE_URL, model: env.DEEPSEEK_MODEL, source: rawOverpass, fetchImpl })
+      ? createDeepseekRefinedProvider({
+          apiKey: env.DEEPSEEK_API_KEY,
+          baseUrl: env.DEEPSEEK_BASE_URL,
+          model: env.DEEPSEEK_MODEL,
+          source: rawOverpass,
+          fetchImpl,
+        })
       : rawOverpass;
   const nim =
     hasNim && env.NVIDIA_NIM_API_KEY !== undefined
-      ? createNimProvider({ apiKey: env.NVIDIA_NIM_API_KEY, model: env.NIM_MODEL, sources: [rawOverpass], fetchImpl })
+      ? createNimProvider({
+          apiKey: env.NVIDIA_NIM_API_KEY,
+          model: env.NIM_MODEL,
+          sources: [rawOverpass],
+          fetchImpl,
+        })
       : null;
   const refine = (p: DiscoveryProvider): DiscoveryProvider =>
     env.DEEPSEEK_API_KEY !== undefined && env.DEEPSEEK_API_KEY.length > 0
-      ? createDeepseekRefinedProvider({ apiKey: env.DEEPSEEK_API_KEY, baseUrl: env.DEEPSEEK_BASE_URL, model: env.DEEPSEEK_MODEL, source: p, fetchImpl })
+      ? createDeepseekRefinedProvider({
+          apiKey: env.DEEPSEEK_API_KEY,
+          baseUrl: env.DEEPSEEK_BASE_URL,
+          model: env.DEEPSEEK_MODEL,
+          source: p,
+          fetchImpl,
+        })
       : p;
   // Serper com fallback automático para a DeepSeek Search API (quando há DEEPSEEK_API_KEY).
   const serperSearch = (apiKey: string): DiscoveryProvider => {
     const serper = createSerperProvider({ apiKey, fetchImpl, onRequest: onPaidRequest });
-    if (env.DEEPSEEK_API_KEY === undefined || env.DEEPSEEK_API_KEY.length === 0) return refine(serper);
-    const deepseek = createDeepseekSearchProvider({ apiKey: env.DEEPSEEK_API_KEY, baseUrl: env.DEEPSEEK_BASE_URL, fetchImpl, onRequest: () => onPaidRequest?.("search") });
+    if (env.DEEPSEEK_API_KEY === undefined || env.DEEPSEEK_API_KEY.length === 0)
+      return refine(serper);
+    const deepseek = createDeepseekSearchProvider({
+      apiKey: env.DEEPSEEK_API_KEY,
+      baseUrl: env.DEEPSEEK_BASE_URL,
+      fetchImpl,
+      onRequest: () => onPaidRequest?.("search"),
+    });
     return refine(
       createSearchFallbackProvider({
         serper,
@@ -116,19 +153,41 @@ export function resolveProviders(
     else if (name === "overpass") add(overpass);
     else if (name === "serper" && env.SERPER_API_KEY) add(serperSearch(env.SERPER_API_KEY));
     else if (name === "google_places" && env.GOOGLE_PLACES_API_KEY)
-      add(refine(createGooglePlacesProvider({ apiKey: env.GOOGLE_PLACES_API_KEY, fetchImpl, onRequest: onPaidRequest })));
+      add(
+        refine(
+          createGooglePlacesProvider({
+            apiKey: env.GOOGLE_PLACES_API_KEY,
+            fetchImpl,
+            onRequest: onPaidRequest,
+          }),
+        ),
+      );
     else if (name === "mock") add(createMockProvider());
   }
   // Sem DISCOVERY_PROVIDERS explícito: provedores pagos com chave entram após o OSM (antes do mock).
   if (env.DISCOVERY_PROVIDERS === undefined || env.DISCOVERY_PROVIDERS.trim().length === 0) {
     const paid: DiscoveryProvider[] = [];
     if (env.SERPER_API_KEY) paid.push(serperSearch(env.SERPER_API_KEY));
-    if (env.GOOGLE_PLACES_API_KEY) paid.push(refine(createGooglePlacesProvider({ apiKey: env.GOOGLE_PLACES_API_KEY, fetchImpl, onRequest: onPaidRequest })));
+    if (env.GOOGLE_PLACES_API_KEY)
+      paid.push(
+        refine(
+          createGooglePlacesProvider({
+            apiKey: env.GOOGLE_PLACES_API_KEY,
+            fetchImpl,
+            onRequest: onPaidRequest,
+          }),
+        ),
+      );
     const mockIdx = out.findIndex((p) => p.name === "mock");
     for (const p of paid) {
       if (added.has(p.name)) continue;
       added.add(p.name);
-      if (mockIdx >= 0) out.splice(out.findIndex((x) => x.name === "mock"), 0, p);
+      if (mockIdx >= 0)
+        out.splice(
+          out.findIndex((x) => x.name === "mock"),
+          0,
+          p,
+        );
       else out.push(p);
     }
   }

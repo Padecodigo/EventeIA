@@ -2,7 +2,13 @@ import { z } from "zod";
 
 import type { SupplierCandidate } from "../pure";
 import { cityLabel, extractJsonBlock, XAI_BASE_URL, XAI_DEFAULT_MODEL } from "./grok";
-import { ProviderQuotaError, type DiscoveryProvider, type DiscoveryQuery, type FetchLike } from "./types";
+import {
+  ProviderQuotaError,
+  queryWhat,
+  type DiscoveryProvider,
+  type DiscoveryQuery,
+  type FetchLike,
+} from "./types";
 
 /**
  * Provedor "social": perfis comerciais PÚBLICOS em Instagram, Facebook e TikTok,
@@ -21,10 +27,13 @@ const PLATFORM_HOSTS: Record<SocialPlatform, RegExp> = {
   tiktok: /^(www\.)?tiktok\.com$/i,
 };
 /** Caminhos que não são perfil (posts, buscas, login…) — descartados. */
-const NON_PROFILE = /^\/(p|reel|reels|explore|stories|accounts|login|share|search|hashtag|tag|watch|groups|events|video)(\/|$)/i;
+const NON_PROFILE =
+  /^\/(p|reel|reels|explore|stories|accounts|login|share|search|hashtag|tag|watch|groups|events|video)(\/|$)/i;
 
 /** Normaliza a URL do perfil e extrai plataforma + @handle; null se não for um perfil público válido. */
-export function parseSocialProfile(raw: string): { platform: SocialPlatform; handle: string; url: string } | null {
+export function parseSocialProfile(
+  raw: string,
+): { platform: SocialPlatform; handle: string; url: string } | null {
   let u: URL;
   try {
     u = new URL(raw);
@@ -53,18 +62,25 @@ const payloadSchema = z.object({ suppliers: z.array(socialSupplierSchema).max(30
 const responseSchema = z.object({
   output_text: z.string().optional(),
   output: z
-    .array(z.object({ type: z.string(), content: z.array(z.object({ type: z.string(), text: z.string().optional() })).optional() }))
+    .array(
+      z.object({
+        type: z.string(),
+        content: z.array(z.object({ type: z.string(), text: z.string().optional() })).optional(),
+      }),
+    )
     .optional(),
 });
 
 export function buildSocialPrompt(q: DiscoveryQuery): string {
-  const what = q.category === "outros" && q.freeText !== undefined ? q.freeText : q.categoryLabel;
+  const what = queryWhat(q);
   return [
     `Encontre até ${String(q.limit)} perfis COMERCIAIS públicos de "${what}" que atendem ${cityLabel(q)},`,
     `para um evento do tipo ${q.eventTypeLabel}, no Instagram, Facebook (páginas) e TikTok.`,
     `Use apenas busca na web (ex.: site:instagram.com "${what}" "${q.city}", site:facebook.com, site:tiktok.com); não faça login nem acesse conteúdo restrito.`,
     `Regras: só perfis de empresas/profissionais; profile_url = link do perfil (não de post); telefone SOMENTE se aparecer literalmente na bio/página pública; nunca invente.`,
-    q.exclude.length > 0 ? `Ignore estes contatos já conhecidos: ${q.exclude.slice(0, 40).join(", ")}.` : "",
+    q.exclude.length > 0
+      ? `Ignore estes contatos já conhecidos: ${q.exclude.slice(0, 40).join(", ")}.`
+      : "",
     `Responda SOMENTE com JSON: {"suppliers":[{"name":"","profile_url":"","phone":"","website_url":""}]}.`,
   ]
     .filter((l) => l.length > 0)
@@ -104,7 +120,11 @@ export function parseSocialResponse(body: unknown, query: DiscoveryQuery): Suppl
   return out;
 }
 
-export function createSocialProvider(options: { apiKey: string; model?: string; fetchImpl?: FetchLike }): DiscoveryProvider {
+export function createSocialProvider(options: {
+  apiKey: string;
+  model?: string;
+  fetchImpl?: FetchLike;
+}): DiscoveryProvider {
   const fetchImpl = options.fetchImpl ?? fetch;
   return {
     name: "social",
@@ -121,7 +141,8 @@ export function createSocialProvider(options: { apiKey: string; model?: string; 
         signal: AbortSignal.timeout(120_000),
       });
       if (!res.ok) {
-        if (res.status === 429 || res.status === 402 || res.status === 403) throw new ProviderQuotaError("social", res.status);
+        if (res.status === 429 || res.status === 402 || res.status === 403)
+          throw new ProviderQuotaError("social", res.status);
         throw new Error(`xAI HTTP ${String(res.status)}`);
       }
       return parseSocialResponse(await res.json(), query);

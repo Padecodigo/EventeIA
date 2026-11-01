@@ -1,7 +1,13 @@
 import { extractBrazilPhones } from "@/lib/phone";
 
 import { dedupeKey, type SupplierCandidate } from "../pure";
-import { ProviderQuotaError, type DiscoveryProvider, type DiscoveryQuery, type FetchLike } from "./types";
+import {
+  ProviderQuotaError,
+  queryWhat,
+  type DiscoveryProvider,
+  type DiscoveryQuery,
+  type FetchLike,
+} from "./types";
 
 /**
  * Provedores PAGOS de locais (opcionais, atrás de env): Serper (/places) e Google Places
@@ -21,7 +27,7 @@ export interface PaidPlacesOptions {
 }
 
 function queryText(q: DiscoveryQuery): string {
-  const what = q.category === "outros" && q.freeText ? q.freeText : q.categoryLabel;
+  const what = queryWhat(q);
   return `${what} em ${q.city}${q.uf ? ` ${q.uf}` : ""}`;
 }
 
@@ -61,7 +67,8 @@ function cached(
 }
 
 function checkStatus(provider: string, res: Response): void {
-  if (res.status === 429 || res.status === 402 || res.status === 403) throw new ProviderQuotaError(provider, res.status);
+  if (res.status === 429 || res.status === 402 || res.status === 403)
+    throw new ProviderQuotaError(provider, res.status);
   if (!res.ok) throw new Error(`${provider} HTTP ${String(res.status)}`);
 }
 
@@ -81,19 +88,36 @@ interface SerperOrganic {
 
 /** Perfil público de Instagram/Facebook (ignora posts/reels/grupos genéricos). */
 export function isSocialProfileUrl(url: string): boolean {
-  return /^https:\/\/(www\.)?(instagram\.com\/(?!p\/|reel\/|explore\/)[A-Za-z0-9_.]+\/?$|facebook\.com\/(?!groups\/|events\/|watch)[A-Za-z0-9.\-]+\/?$)/.test(url);
+  return /^https:\/\/(www\.)?(instagram\.com\/(?!p\/|reel\/|explore\/)[A-Za-z0-9_.]+\/?$|facebook\.com\/(?!groups\/|events\/|watch)[A-Za-z0-9.\-]+\/?$)/.test(
+    url,
+  );
 }
 
 /** Converte resultados orgânicos do Google (Instagram/Facebook) em candidatos; telefone extraído do snippet. */
-export function socialCandidates(q: DiscoveryQuery, organic: readonly SerperOrganic[]): SupplierCandidate[] {
+export function socialCandidates(
+  q: DiscoveryQuery,
+  organic: readonly SerperOrganic[],
+): SupplierCandidate[] {
   const out: SupplierCandidate[] = [];
   for (const o of organic) {
     const link = (o.link ?? "").split("?")[0] ?? "";
     if (!isSocialProfileUrl(link)) continue;
-    const name = (o.title ?? "").split(/[|•(@]| - | – /)[0]?.trim().slice(0, 120) ?? "";
+    const name =
+      (o.title ?? "")
+        .split(/[|•(@]| - | – /)[0]
+        ?.trim()
+        .slice(0, 120) ?? "";
     if (name.length < 2) continue;
     const phone = extractBrazilPhones(`${o.title ?? ""} ${o.snippet ?? ""}`)[0]?.phone.e164;
-    out.push({ name, category: q.category, phone, sourceUrl: link.slice(0, 500), externalId: `serper:${link.slice(0, 100)}`, city: q.city, hint: (o.snippet ?? "").slice(0, 120) || undefined });
+    out.push({
+      name,
+      category: q.category,
+      phone,
+      sourceUrl: link.slice(0, 500),
+      externalId: `serper:${link.slice(0, 100)}`,
+      city: q.city,
+      hint: (o.snippet ?? "").slice(0, 120) || undefined,
+    });
   }
   return out;
 }
@@ -119,11 +143,19 @@ export function createSerperProvider(opts: PaidPlacesOptions): DiscoveryProvider
       const webRes = await f("https://google.serper.dev/search", {
         method: "POST",
         headers,
-        body: JSON.stringify({ q: `${queryText(q)} (site:instagram.com OR site:facebook.com)`, gl: "br", hl: "pt-br", num: 10 }),
+        body: JSON.stringify({
+          q: `${queryText(q)} (site:instagram.com OR site:facebook.com)`,
+          gl: "br",
+          hl: "pt-br",
+          num: 10,
+        }),
         signal: AbortSignal.timeout(15_000),
       });
       checkStatus("serper", webRes);
-      social = socialCandidates(q, ((await webRes.json()) as { organic?: SerperOrganic[] }).organic ?? []);
+      social = socialCandidates(
+        q,
+        ((await webRes.json()) as { organic?: SerperOrganic[] }).organic ?? [],
+      );
     } catch (e) {
       if (e instanceof ProviderQuotaError) throw e;
     }
@@ -133,7 +165,9 @@ export function createSerperProvider(opts: PaidPlacesOptions): DiscoveryProvider
         name: (p.title ?? "").trim().slice(0, 120),
         category: q.category,
         phone: p.phoneNumber?.trim().slice(0, 40) || undefined,
-        sourceUrl: p.cid ? `https://maps.google.com/?cid=${p.cid}` : `https://www.google.com/maps/search/${encodeURIComponent(p.title ?? "")}`,
+        sourceUrl: p.cid
+          ? `https://maps.google.com/?cid=${p.cid}`
+          : `https://www.google.com/maps/search/${encodeURIComponent(p.title ?? "")}`,
         websiteUrl: p.website?.startsWith("http") ? p.website.slice(0, 500) : undefined,
         externalId: p.cid ? `serper:${p.cid}` : undefined,
         city: q.city,
@@ -164,7 +198,12 @@ export function createGooglePlacesProvider(opts: PaidPlacesOptions): DiscoveryPr
         "X-Goog-FieldMask":
           "places.id,places.displayName,places.internationalPhoneNumber,places.nationalPhoneNumber,places.websiteUri,places.googleMapsUri,places.formattedAddress,places.rating",
       },
-      body: JSON.stringify({ textQuery: queryText(q), languageCode: "pt-BR", regionCode: "BR", pageSize: Math.min(20, Math.max(5, q.limit)) }),
+      body: JSON.stringify({
+        textQuery: queryText(q),
+        languageCode: "pt-BR",
+        regionCode: "BR",
+        pageSize: Math.min(20, Math.max(5, q.limit)),
+      }),
       signal: AbortSignal.timeout(15_000),
     });
     checkStatus("google_places", res);
@@ -174,7 +213,8 @@ export function createGooglePlacesProvider(opts: PaidPlacesOptions): DiscoveryPr
       .map((p) => ({
         name: (p.displayName?.text ?? "").trim().slice(0, 120),
         category: q.category,
-        phone: (p.internationalPhoneNumber ?? p.nationalPhoneNumber)?.trim().slice(0, 40) || undefined,
+        phone:
+          (p.internationalPhoneNumber ?? p.nationalPhoneNumber)?.trim().slice(0, 40) || undefined,
         sourceUrl: p.googleMapsUri ?? `https://www.google.com/maps/place/?q=place_id:${p.id ?? ""}`,
         websiteUrl: p.websiteUri?.startsWith("http") ? p.websiteUri.slice(0, 500) : undefined,
         externalId: p.id ? `gplaces:${p.id}` : undefined,

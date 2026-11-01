@@ -4,6 +4,7 @@ import { dedupeKey, type SupplierCandidate } from "../pure";
 import { isSocialProfileUrl, socialCandidates } from "./paid-places";
 import {
   ProviderQuotaError,
+  queryWhat,
   type DiscoveryProvider,
   type DiscoveryQuery,
   type FetchLike,
@@ -146,7 +147,7 @@ export interface DeepseekSearchOptions {
 }
 
 function queryText(q: DiscoveryQuery): string {
-  const what = q.category === "outros" && q.freeText ? q.freeText : q.categoryLabel;
+  const what = queryWhat(q);
   return `${what} em ${q.city}${q.uf ? ` ${q.uf}` : ""}`;
 }
 

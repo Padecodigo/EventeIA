@@ -24,7 +24,9 @@ export interface CoverageGap {
 const MAX_ROUNDS = 2;
 
 function covers(r: EventCoverageRow): boolean {
-  return r.coverage === "included" || (r.coverage === "optional_extra" && r.extraPriceCents !== null);
+  return (
+    r.coverage === "included" || (r.coverage === "optional_extra" && r.extraPriceCents !== null)
+  );
 }
 
 /** Resolvido sem cobrir: excluído, ou sem resposta firme após as rodadas. */
@@ -39,7 +41,10 @@ function resolvedUncovered(r: EventCoverageRow): boolean {
  * negociação não vira lacuna — evita prospectar antes da hora.
  * Categorias já selecionadas no evento não são duplicadas.
  */
-export function eventCoverageGaps(selected: readonly string[], rows: readonly EventCoverageRow[]): CoverageGap[] {
+export function eventCoverageGaps(
+  selected: readonly string[],
+  rows: readonly EventCoverageRow[],
+): CoverageGap[] {
   const selectedSet = new Set(selected.map((c) => normalizeCategoryCode(c) ?? c));
   const byCategory = new Map<string, EventCoverageRow[]>();
   for (const r of rows) {
@@ -54,7 +59,8 @@ export function eventCoverageGaps(selected: readonly string[], rows: readonly Ev
     const quotes = new Set(list.map((r) => r.quoteLabel));
     for (const item of expectedCoverageItems(category)) {
       const need = SCOPE_COVERS[item];
-      if (need === undefined || need === category || selectedSet.has(need) || seen.has(need)) continue;
+      if (need === undefined || need === category || selectedSet.has(need) || seen.has(need))
+        continue;
       const itemRows = list.filter((r) => r.itemCode === item);
       if (itemRows.some(covers)) continue;
       const answered = new Set(itemRows.filter(resolvedUncovered).map((r) => r.quoteLabel));
@@ -71,7 +77,9 @@ export function parseCoverageSummary(data: unknown): EventCoverageRow[] {
   return data.flatMap((raw) => {
     const r = raw as Record<string, unknown>;
     if (typeof r.item_code !== "string" || typeof r.quote_label !== "string") return [];
-    const coverage = ["included", "excluded", "optional_extra", "unknown"].includes(String(r.coverage))
+    const coverage = ["included", "excluded", "optional_extra", "unknown"].includes(
+      String(r.coverage),
+    )
       ? (r.coverage as EventCoverageRow["coverage"])
       : "unknown";
     return [
@@ -80,10 +88,44 @@ export function parseCoverageSummary(data: unknown): EventCoverageRow[] {
         category: typeof r.category === "string" ? r.category : null,
         itemCode: r.item_code,
         coverage,
-        extraPriceCents: r.extra_price_cents === null || r.extra_price_cents === undefined ? null : Number(r.extra_price_cents),
+        extraPriceCents:
+          r.extra_price_cents === null || r.extra_price_cents === undefined
+            ? null
+            : Number(r.extra_price_cents),
         roundsAsked: Number(r.rounds_asked ?? 0),
         aConfirmar: r.a_confirmar === true,
       },
     ];
+  });
+}
+
+export interface FreeItemStatus {
+  code: string;
+  label: string;
+  /** Alguma cotação confirmou que oferece o item (incluso ou extra com preço). */
+  covered: boolean;
+  /** Todas as cotações da categoria já responderam e nenhuma oferece. */
+  missing: boolean;
+}
+
+/**
+ * Item livre do cliente × cotações: coberto quando ALGUMA cotação confirma que
+ * oferece exatamente esse item. Sem cotação na categoria ⇒ ainda procurando.
+ */
+export function freeItemStatus(
+  free: readonly { code: string; label: string; category: string }[],
+  rows: readonly EventCoverageRow[],
+): FreeItemStatus[] {
+  return free.map((f) => {
+    const itemRows = rows.filter((r) => r.itemCode === f.code);
+    const quotes = new Set(rows.filter((r) => r.category === f.category).map((r) => r.quoteLabel));
+    const covered = itemRows.some(covers);
+    const answered = new Set(itemRows.filter(resolvedUncovered).map((r) => r.quoteLabel));
+    return {
+      code: f.code,
+      label: f.label,
+      covered,
+      missing: !covered && quotes.size > 0 && answered.size >= quotes.size,
+    };
   });
 }

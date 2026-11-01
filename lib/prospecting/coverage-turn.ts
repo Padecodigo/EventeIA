@@ -1,5 +1,4 @@
 import { logger } from "@/lib/logger";
-import type { ScopeItem } from "@/lib/quotes/scope-items";
 
 import type { AgentMessage } from "./agent";
 import {
@@ -11,7 +10,9 @@ import {
   needsAsking,
   parseClassification,
   seedCoverage,
+  type CoverageItemCode,
   type CoverageRow,
+  type FreeCoverageItem,
 } from "./coverage-loop";
 import type { RespondPorts } from "./respond";
 
@@ -40,15 +41,19 @@ function lastSupplierTurn(history: readonly AgentMessage[]): string {
 async function classifyInto(
   ports: CoveragePorts,
   rows: CoverageRow[],
-  items: readonly ScopeItem[],
+  items: readonly CoverageItemCode[],
   text: string,
+  free: readonly FreeCoverageItem[] = [],
 ): Promise<CoverageRow[]> {
   if (items.length === 0 || text.trim() === "") return rows;
   try {
-    const raw = await ports.classify(buildClassifierMessages(items, text));
+    const raw = await ports.classify(buildClassifierMessages(items, text, free));
     return applyClassification(rows, parseClassification(raw, items), ports.now().toISOString());
   } catch (error) {
-    logger.warn({ err: error instanceof Error ? error.message : "?" }, "cobertura: classificador falhou — itens seguem unknown");
+    logger.warn(
+      { err: error instanceof Error ? error.message : "?" },
+      "cobertura: classificador falhou — itens seguem unknown",
+    );
     return rows;
   }
 }
@@ -64,18 +69,29 @@ export async function withCoverageLoop(input: {
   conversationId: string;
   category: string;
   history: readonly AgentMessage[];
+  /** Itens livres do cliente nesta categoria (perguntados como "oferecem exatamente?"). */
+  freeItems?: readonly FreeCoverageItem[];
 }): Promise<RespondPorts> {
   const { coverage, conversationId } = input;
+  const free = input.freeItems ?? [];
   let state = await coverage.load(conversationId);
   let answeredNow = false;
 
   if (state !== null) {
     const pending = awaitingAnswer(state.rows);
     if (pending.length > 0) {
-      const rows = await classifyInto(coverage, state.rows, pending, lastSupplierTurn(input.history));
+      const rows = await classifyInto(
+        coverage,
+        state.rows,
+        pending,
+        lastSupplierTurn(input.history),
+        free,
+      );
       // Resposta recebida (mesmo vaga): registra para a próxima rodada.
       const nowIso = coverage.now().toISOString();
-      const final = rows.map((r) => (pending.includes(r.itemCode) ? { ...r, answeredAt: nowIso } : r));
+      const final = rows.map((r) =>
+        pending.includes(r.itemCode) ? { ...r, answeredAt: nowIso } : r,
+      );
       await coverage.save(state.quoteId, conversationId, final);
       state = { quoteId: state.quoteId, rows: final };
       answeredNow = true;
@@ -98,11 +114,20 @@ export async function withCoverageLoop(input: {
           // Nova cotação na mesma conversa herda o que já foi perguntado/respondido
           // (evita reiniciar as 2 rodadas a cada re-cotação).
           const previous = target?.rows ?? [];
-          const seeded = seedCoverage(input.category).map(
+          const seeded = seedCoverage(input.category, free).map(
             (r) => previous.find((p) => p.itemCode === r.itemCode) ?? r,
           );
-          const supplierText = input.history.filter((m) => m.role === "user").map((m) => m.content).join("\n");
-          const rows = await classifyInto(coverage, seeded, seeded.filter(needsAsking).map((r) => r.itemCode), supplierText);
+          const supplierText = input.history
+            .filter((m) => m.role === "user")
+            .map((m) => m.content)
+            .join("\n");
+          const rows = await classifyInto(
+            coverage,
+            seeded,
+            seeded.filter(needsAsking).map((r) => r.itemCode),
+            supplierText,
+            free,
+          );
           target = { quoteId, rows };
           await coverage.save(quoteId, conversationId, rows);
         }
@@ -113,8 +138,13 @@ export async function withCoverageLoop(input: {
       const ask = target === null ? [] : target.rows.filter(needsAsking).map((r) => r.itemCode);
       if (target === null || ask.length === 0) return input.ports.sendReply(id, text);
 
-      const round = Math.max(...target.rows.filter((r) => ask.includes(r.itemCode)).map((r) => r.roundsAsked)) + 1;
-      const sent = await input.ports.sendReply(id, `${text}\n\n${buildCoverageQuestion(ask, round)}`);
+      const round =
+        Math.max(...target.rows.filter((r) => ask.includes(r.itemCode)).map((r) => r.roundsAsked)) +
+        1;
+      const sent = await input.ports.sendReply(
+        id,
+        `${text}\n\n${buildCoverageQuestion(ask, round, free)}`,
+      );
       if (sent) {
         const rows = markAsked(target.rows, ask, coverage.now().toISOString());
         await coverage.save(target.quoteId, conversationId, rows);

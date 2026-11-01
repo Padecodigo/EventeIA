@@ -3,11 +3,13 @@
  * dedupe → grava → enfileira prospecção IMEDIATAMENTE, candidato a candidato.
  * Sem I/O direto: tudo via `DiscoveryDeps` (Supabase/Redis em runtime, fakes em testes).
  */
+import { isFreeItemCode } from "@/lib/catalog/free-items";
 import type { Unit } from "@/lib/catalog/v1";
 import { CATEGORY_LABELS, EVENT_TYPE_LABELS } from "@/lib/catalog/v1";
 import type { EventType } from "@/lib/engine/types";
 import { parseBrazilPhone } from "@/lib/phone";
 
+import { freeNeedsFrom } from "./free-item-interpret";
 import type { DiscoveryProvider } from "./providers/types";
 import {
   canRecontact,
@@ -45,7 +47,14 @@ export interface DiscoveryEvent {
   workspaceId: string | null;
   interviewCompleted: boolean;
   discoveryStartedAt: Date | null;
-  requirements: { category: string; label: string; quantity: number; unit: Unit; notes: string | null }[];
+  requirements: {
+    itemCode?: string;
+    category: string;
+    label: string;
+    quantity: number;
+    unit: Unit;
+    notes: string | null;
+  }[];
 }
 
 export interface SupplierRecord {
@@ -90,9 +99,12 @@ export interface DiscoveryDeps {
     city: string;
     regionCode: string;
   }): Promise<SupplierRecord>;
-  cachedSuppliers(q: { city: string; category: string; excludePhones: string[]; limit: number }): Promise<
-    (SupplierCandidate & { provider: string })[]
-  >;
+  cachedSuppliers(q: {
+    city: string;
+    category: string;
+    excludePhones: string[];
+    limit: number;
+  }): Promise<(SupplierCandidate & { provider: string })[]>;
   ensureInstance(ownerId: string, eventId: string): Promise<string>;
   insertProspect(p: {
     eventId: string;
@@ -118,7 +130,10 @@ export interface DiscoveryDeps {
     status: "ok" | "error" | "skipped";
     error?: string;
   }): Promise<void>;
-  markDiscovery(eventId: string, patch: { startedAt?: Date; endsAt?: Date; status: "running" | "completed" | "paused" }): Promise<void>;
+  markDiscovery(
+    eventId: string,
+    patch: { startedAt?: Date; endsAt?: Date; status: "running" | "completed" | "paused" },
+  ): Promise<void>;
   scheduleRound(eventId: string, round: number, delayMs: number): Promise<void>;
   dryRunAll: boolean;
 }
@@ -126,17 +141,16 @@ export interface DiscoveryDeps {
 const EMOJI_OR_URL = /(https?:\/\/\S+|www\.\S+|[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}])/gu;
 
 export function sanitizeVendorName(name: string): string {
-  return name.replace(EMOJI_OR_URL, "").replace(/!{2,}/g, "!").replace(/\s+/g, " ").trim().slice(0, 80);
+  return name
+    .replace(EMOJI_OR_URL, "")
+    .replace(/!{2,}/g, "!")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80);
 }
 
 export type IngestOutcome =
-  | "enqueued"
-  | "invalid"
-  | "no_phone"
-  | "duplicate"
-  | "opted_out"
-  | "recent_contact"
-  | "queue_down";
+  "enqueued" | "invalid" | "no_phone" | "duplicate" | "opted_out" | "recent_contact" | "queue_down";
 
 export interface IngestContext {
   event: DiscoveryEvent;
@@ -195,8 +209,15 @@ export async function ingestCandidate(
   ctx.knownPhones.add(phone);
   if (prospectId === null) return "duplicate";
 
-  const items = ctx.event.requirements.filter((r) => r.category === category);
-  const special = ctx.event.requirements.find((r) => r.category === "outros")?.notes ?? undefined;
+  const items = ctx.event.requirements.filter(
+    (r) => r.category === category && !isFreeItemCode(r.itemCode ?? ""),
+  );
+  const special =
+    ctx.event.requirements.find((r) => r.category === "outros" && !isFreeItemCode(r.itemCode ?? ""))
+      ?.notes ?? undefined;
+  const askItems = ctx.event.requirements
+    .filter((r) => r.category === category && isFreeItemCode(r.itemCode ?? ""))
+    .map((r) => r.label);
   const messageText = renderDiscoveryFirstContact({
     vendorName: name,
     category,
@@ -206,6 +227,7 @@ export async function ingestCandidate(
     guestCount: ctx.event.guestCount,
     items,
     specialRequest: category === "outros" ? special : undefined,
+    freeItems: askItems,
     sourceProvider: ctx.provider,
   });
 
@@ -229,6 +251,32 @@ export async function ingestCandidate(
   return ok ? "enqueued" : "queue_down";
 }
 
+/**
+ * Buscas da categoria: uma genérica (se houver item do catálogo ou demanda
+ * legada) + uma por item livre interpretado (palavras-chave), sem repetir.
+ */
+export function categoryQueries(
+  reqs: readonly { itemCode?: string; category: string; label: string; notes: string | null }[],
+  category: string,
+): (string | undefined)[] {
+  const mine = reqs.filter((r) => r.category === category);
+  const free = mine.filter((r) => isFreeItemCode(r.itemCode ?? ""));
+  const catalog = mine.filter((r) => !isFreeItemCode(r.itemCode ?? ""));
+  const out: (string | undefined)[] = [];
+  if (catalog.length > 0) {
+    out.push(
+      category === "outros"
+        ? (catalog.find((r) => r.notes !== null)?.notes ?? undefined)
+        : undefined,
+    );
+  }
+  for (const n of freeNeedsFrom(free)) {
+    const q = n.keywords.slice(0, 2).join(" ").slice(0, 80);
+    if (!out.includes(q)) out.push(q);
+  }
+  return out.length > 0 ? out : [undefined];
+}
+
 export interface RoundSummary {
   status: "not_ready" | "ended" | "running";
   reason?: string;
@@ -243,18 +291,32 @@ export async function runDiscoveryRound(
 ): Promise<RoundSummary> {
   const event = await deps.loadEvent(input.eventId);
   const summary: RoundSummary = { status: "running", perCategory: {} };
-  if (event === null || event.status !== "active" || !event.interviewCompleted || event.city.length < 2) {
+  if (
+    event === null ||
+    event.status !== "active" ||
+    !event.interviewCompleted ||
+    event.city.length < 2
+  ) {
     return { ...summary, status: "not_ready" };
   }
   const now = deps.now();
   const startedAt = event.discoveryStartedAt ?? now;
   if (event.discoveryStartedAt === null) {
-    await deps.markDiscovery(event.id, { startedAt, endsAt: new Date(startedAt.getTime() + COLLECTION_WINDOW_MS), status: "running" });
+    await deps.markDiscovery(event.id, {
+      startedAt,
+      endsAt: new Date(startedAt.getTime() + COLLECTION_WINDOW_MS),
+      status: "running",
+    });
   }
 
   const categories = [...new Set(event.requirements.map((r) => r.category))];
   const quotes = await deps.quotesByCategory(event.id);
-  const end = collectionEnded({ startedAt, now, categories: categories.filter((c) => c !== "outros"), quotesByCategory: quotes });
+  const end = collectionEnded({
+    startedAt,
+    now,
+    categories: categories.filter((c) => c !== "outros"),
+    quotesByCategory: quotes,
+  });
   if (end.ended) {
     await deps.markDiscovery(event.id, { status: "completed" });
     return { ...summary, status: "ended", reason: end.reason };
@@ -299,40 +361,74 @@ export async function runDiscoveryRound(
     const cities = searchCitiesFor(event);
     for (const sc of cities) {
       if (need <= 0) break;
-      const cached = await deps.cachedSuppliers({ city: sc.city, category, excludePhones: [...knownPhones], limit: need });
+      const cached = await deps.cachedSuppliers({
+        city: sc.city,
+        category,
+        excludePhones: [...knownPhones],
+        limit: need,
+      });
       for (const c of cached) await consume(c.provider, [c]);
     }
 
     // 2) Provedores ao vivo, em ordem de prioridade.
     const label = isCategoryCode(category) ? CATEGORY_LABELS[category] : category;
-    const freeText = category === "outros" ? event.requirements.find((r) => r.category === "outros")?.notes ?? undefined : undefined;
+    const queries = categoryQueries(event.requirements, category);
     for (const sc of cities) {
       if (need <= 0) break;
-      for (const provider of providers) {
+      for (const freeText of queries) {
         if (need <= 0) break;
-        if (!(await deps.reserveProviderCall(event.id, provider.name))) {
-          await deps.recordRun({ eventId: event.id, provider: provider.name, category, round: input.round, found: 0, inserted: 0, enqueued: 0, status: "skipped", error: "cap" });
-          continue;
-        }
-        try {
-          const results = await provider.search({
-            category,
-            categoryLabel: label,
-            city: sc.city,
-            uf: sc.uf,
-            eventTypeLabel: EVENT_TYPE_LABELS[event.eventType],
-            freeText,
-            limit: need,
-            exclude: [...knownPhones],
-          });
-          const used = provider.lastUsed ?? provider.name;
-          const r = await consume(used, results);
-          await deps.recordRun({ eventId: event.id, provider: used, category, round: input.round, found: results.length, inserted: r.inserted, enqueued: r.enqueued, status: "ok" });
-        } catch (error) {
-          await deps.recordRun({
-            eventId: event.id, provider: provider.lastUsed ?? provider.name, category, round: input.round, found: 0, inserted: 0, enqueued: 0,
-            status: "error", error: error instanceof Error ? error.message.slice(0, 200) : "erro",
-          });
+        for (const provider of providers) {
+          if (need <= 0) break;
+          if (!(await deps.reserveProviderCall(event.id, provider.name))) {
+            await deps.recordRun({
+              eventId: event.id,
+              provider: provider.name,
+              category,
+              round: input.round,
+              found: 0,
+              inserted: 0,
+              enqueued: 0,
+              status: "skipped",
+              error: "cap",
+            });
+            continue;
+          }
+          try {
+            const results = await provider.search({
+              category,
+              categoryLabel: label,
+              city: sc.city,
+              uf: sc.uf,
+              eventTypeLabel: EVENT_TYPE_LABELS[event.eventType],
+              freeText,
+              limit: need,
+              exclude: [...knownPhones],
+            });
+            const used = provider.lastUsed ?? provider.name;
+            const r = await consume(used, results);
+            await deps.recordRun({
+              eventId: event.id,
+              provider: used,
+              category,
+              round: input.round,
+              found: results.length,
+              inserted: r.inserted,
+              enqueued: r.enqueued,
+              status: "ok",
+            });
+          } catch (error) {
+            await deps.recordRun({
+              eventId: event.id,
+              provider: provider.lastUsed ?? provider.name,
+              category,
+              round: input.round,
+              found: 0,
+              inserted: 0,
+              enqueued: 0,
+              status: "error",
+              error: error instanceof Error ? error.message.slice(0, 200) : "erro",
+            });
+          }
         }
       }
     }
@@ -344,8 +440,7 @@ export async function runDiscoveryRound(
 }
 
 export type IngestBatchResult =
-  | { ok: false; reason: "not_ready" }
-  | { ok: true; outcomes: Record<IngestOutcome, number> };
+  { ok: false; reason: "not_ready" } | { ok: true; outcomes: Record<IngestOutcome, number> };
 
 /** Ingestão externa (agente/DeepSeek/etc.): mesmas regras da descoberta automática. */
 export async function ingestBatch(
@@ -353,7 +448,12 @@ export async function ingestBatch(
   input: { eventId: string; provider: string; suppliers: readonly unknown[] },
 ): Promise<IngestBatchResult> {
   const event = await deps.loadEvent(input.eventId);
-  if (event === null || event.status !== "active" || !event.interviewCompleted || event.city.length < 2) {
+  if (
+    event === null ||
+    event.status !== "active" ||
+    !event.interviewCompleted ||
+    event.city.length < 2
+  ) {
     return { ok: false, reason: "not_ready" };
   }
   const instance = await deps.ensureInstance(event.ownerId, event.id);

@@ -17,7 +17,11 @@ export function createMockProvider(): DiscoveryProvider {
     search(query: DiscoveryQuery): Promise<SupplierCandidate[]> {
       const out: SupplierCandidate[] = [];
       const base = hash(`${query.city}|${query.category}`) % 9000;
-      for (let i = 0; out.length < query.limit && i < query.limit + query.exclude.length + 5; i += 1) {
+      for (
+        let i = 0;
+        out.length < query.limit && i < query.limit + query.exclude.length + 5;
+        i += 1
+      ) {
         const suffix = String((base + i * 37) % 10000).padStart(4, "0");
         const phone = `+55129${"0000"}${suffix}`;
         const name = `${query.categoryLabel} Exemplo ${String(i + 1)} (${query.city})`;

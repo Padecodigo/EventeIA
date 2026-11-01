@@ -2,7 +2,13 @@ import { z } from "zod";
 
 import type { SupplierCandidate } from "../pure";
 import { cityLabel, extractJsonBlock } from "./grok";
-import { ProviderQuotaError, type DiscoveryProvider, type DiscoveryQuery, type FetchLike } from "./types";
+import {
+  ProviderQuotaError,
+  queryWhat,
+  type DiscoveryProvider,
+  type DiscoveryQuery,
+  type FetchLike,
+} from "./types";
 
 /**
  * Fallback NVIDIA NIM (OpenAI-compatível). LIMITAÇÃO: o NIM NÃO tem busca ao vivo.
@@ -15,16 +21,24 @@ export const NIM_DEFAULT_MODEL = "nvidia/nemotron-3.5-lightning-30b-a3b";
 
 const nimPayloadSchema = z.object({
   keep: z
-    .array(z.object({ i: z.number().int().min(0), name: z.string().trim().min(2).max(120).optional() }))
+    .array(
+      z.object({ i: z.number().int().min(0), name: z.string().trim().min(2).max(120).optional() }),
+    )
     .max(60),
 });
 const chatSchema = z.object({
-  choices: z.array(z.object({ message: z.object({ content: z.string().nullable().optional() }) })).min(1),
+  choices: z
+    .array(z.object({ message: z.object({ content: z.string().nullable().optional() }) }))
+    .min(1),
 });
 
 export function buildNimPrompt(q: DiscoveryQuery, raw: readonly SupplierCandidate[]): string {
-  const list = raw.map((c, i) => `${String(i)}. ${c.name}${c.websiteUrl !== undefined ? ` (${c.websiteUrl})` : ""}`).join("\n");
-  const what = q.category === "outros" && q.freeText !== undefined ? q.freeText : q.categoryLabel;
+  const list = raw
+    .map(
+      (c, i) => `${String(i)}. ${c.name}${c.websiteUrl !== undefined ? ` (${c.websiteUrl})` : ""}`,
+    )
+    .join("\n");
+  const what = queryWhat(q);
   return [
     `Classifique quais destes estabelecimentos de ${cityLabel(q)} provavelmente oferecem "${what}" para um evento (${q.eventTypeLabel}).`,
     `Não invente nada; use apenas os índices da lista. Limpe o nome comercial se necessário.`,
@@ -34,7 +48,11 @@ export function buildNimPrompt(q: DiscoveryQuery, raw: readonly SupplierCandidat
 }
 
 /** Aplica a resposta do modelo sobre os candidatos (só índices válidos ⇒ zero alucinação de contato). */
-export function applyNimSelection(content: string, raw: readonly SupplierCandidate[], limit: number): SupplierCandidate[] {
+export function applyNimSelection(
+  content: string,
+  raw: readonly SupplierCandidate[],
+  limit: number,
+): SupplierCandidate[] {
   const parsed = nimPayloadSchema.safeParse(extractJsonBlock(content));
   if (!parsed.success) return [];
   const out: SupplierCandidate[] = [];
@@ -68,7 +86,9 @@ export function createNimProvider(options: {
           // fonte indisponível: segue com as demais
         }
       }
-      const fresh = raw.filter((c) => c.phone === undefined || !query.exclude.includes(c.phone)).slice(0, 60);
+      const fresh = raw
+        .filter((c) => c.phone === undefined || !query.exclude.includes(c.phone))
+        .slice(0, 60);
       if (fresh.length === 0) return [];
       const res = await fetchImpl(`${NIM_BASE_URL}/chat/completions`, {
         method: "POST",
@@ -82,7 +102,8 @@ export function createNimProvider(options: {
         signal: AbortSignal.timeout(60_000),
       });
       if (!res.ok) {
-        if (res.status === 429 || res.status === 402) throw new ProviderQuotaError("nim", res.status);
+        if (res.status === 429 || res.status === 402)
+          throw new ProviderQuotaError("nim", res.status);
         throw new Error(`NIM HTTP ${String(res.status)}`);
       }
       const body = chatSchema.safeParse(await res.json());

@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import type { EventType } from "@/lib/engine/types";
 
+import { cleanFreeItem, splitFreeItems } from "./free-items";
 import { DEFAULT_START, DURATION_KEY, TIME_RE, addHours, durationHours } from "./time";
 import {
   CATALOG_VERSION,
@@ -58,7 +59,9 @@ export function defaultAnswers(eventType: EventType): Answers {
 
 /** Perguntas aplicáveis ao tipo e com showIf satisfeito, na ordem do catálogo. */
 export function visibleQuestions(eventType: EventType, answers: Answers): Question[] {
-  return QUESTIONS.filter((q) => applies(q.appliesTo, eventType) && conditionsMet(q.showIf, answers));
+  return QUESTIONS.filter(
+    (q) => applies(q.appliesTo, eventType) && conditionsMet(q.showIf, answers),
+  );
 }
 
 function questionValueSchema(q: Question): z.ZodType<AnswerValue> {
@@ -84,12 +87,21 @@ export function parseAnswers(
   eventType: EventType,
   raw: unknown,
 ): { success: true; data: Answers } | { success: false; error: string } {
-  const base = z.record(z.string().max(64), z.union([z.boolean(), z.string().max(MAX_SPECIAL_REQUEST * 2), z.number()])).safeParse(raw);
+  const base = z
+    .record(
+      z.string().max(64),
+      z.union([z.boolean(), z.string().max(MAX_SPECIAL_REQUEST * 2), z.number()]),
+    )
+    .safeParse(raw);
   if (!base.success) return { success: false, error: "Formato de respostas inválido." };
 
   const input: Answers = { ...base.data };
   // Compatibilidade: evento antigo só com duracao_horas ⇒ início padrão + duração.
-  if (input.horario_inicio === undefined && input.horario_fim === undefined && typeof input[DURATION_KEY] === "number") {
+  if (
+    input.horario_inicio === undefined &&
+    input.horario_fim === undefined &&
+    typeof input[DURATION_KEY] === "number"
+  ) {
     const hours = Math.min(16, Math.max(1, Math.round(input[DURATION_KEY])));
     input.horario_inicio = DEFAULT_START;
     input.horario_fim = addHours(DEFAULT_START, hours);
@@ -106,7 +118,8 @@ export function parseAnswers(
   if (!stable) return { success: false, error: "Respostas inconsistentes." };
   if (typeof result.horario_inicio === "string" && typeof result.horario_fim === "string") {
     const hours = durationHours(result.horario_inicio, result.horario_fim);
-    if (hours === null) return { success: false, error: "O horário de fim precisa ser diferente do início." };
+    if (hours === null)
+      return { success: false, error: "O horário de fim precisa ser diferente do início." };
     if (hours > 16) return { success: false, error: "A festa pode ter no máximo 16 horas." };
     // Derivado (horas cheias, arredonda p/ cima): é o que os itens "por hora" usam.
     result[DURATION_KEY] = Math.max(1, Math.ceil(hours));
@@ -153,7 +166,11 @@ export function interviewWarnings(answers: Answers): string[] {
 }
 
 /** Itens que o agente vai cotar para este evento. */
-export function resolveRequirements(eventType: EventType, guestCount: number, answers: Answers): Requirement[] {
+export function resolveRequirements(
+  eventType: EventType,
+  guestCount: number,
+  answers: Answers,
+): Requirement[] {
   const seen = new Set<string>();
   const out: Requirement[] = [];
   const pushItem = (item: CatalogItem) => {
@@ -181,15 +198,33 @@ export function resolveRequirements(eventType: EventType, guestCount: number, an
   }
   const special = answers[SPECIAL_REQUEST_QUESTION];
   if (typeof special === "string" && special.trim().length > 0) {
-    out.push({
-      itemCode: SPECIAL_REQUEST_ITEM,
-      category: "outros",
-      label: "Demanda específica do cliente",
-      unit: "pacote",
-      quantity: 1,
-      mandatory: false,
-      notes: special.trim().slice(0, MAX_SPECIAL_REQUEST),
-    });
+    // Um requisito por item (separado por vírgula); a categoria real vem do
+    // intérprete (lib/discovery/free-item-interpret) antes de salvar.
+    const items = splitFreeItems(special);
+    for (const item of items) {
+      if (seen.has(item.code)) continue;
+      seen.add(item.code);
+      out.push({
+        itemCode: item.code,
+        category: "outros",
+        label: item.label,
+        unit: "pacote",
+        quantity: 1,
+        mandatory: false,
+        notes: item.label,
+      });
+    }
+    if (items.length === 0 && cleanFreeItem(special.slice(0, MAX_SPECIAL_REQUEST)) !== null) {
+      out.push({
+        itemCode: SPECIAL_REQUEST_ITEM,
+        category: "outros",
+        label: "Demanda específica do cliente",
+        unit: "pacote",
+        quantity: 1,
+        mandatory: false,
+        notes: special.trim().slice(0, MAX_SPECIAL_REQUEST),
+      });
+    }
   }
   return out;
 }
@@ -200,7 +235,10 @@ export function requiredCategories(reqs: Requirement[]): CategoryCode[] {
 
 export { CATALOG_VERSION };
 
-const conditionSchema = z.object({ question: z.string(), equals: z.union([z.boolean(), z.string(), z.number()]) });
+const conditionSchema = z.object({
+  question: z.string(),
+  equals: z.union([z.boolean(), z.string(), z.number()]),
+});
 const itemSchema = z.object({
   code: z.string().regex(/^[a-z0-9_]+$/),
   category: z.string(),
@@ -221,23 +259,28 @@ export function validateCatalog(): string[] {
   const checkCond = (where: string, c: Condition) => {
     const q = qById.get(c.question);
     if (q === undefined) return errors.push(`${where}: pergunta inexistente ${c.question}`);
-    if (q.kind === "boolean" && typeof c.equals !== "boolean") errors.push(`${where}: tipo inválido`);
-    if (q.kind === "single" && !q.options.some((o) => o.value === c.equals)) errors.push(`${where}: opção inexistente`);
+    if (q.kind === "boolean" && typeof c.equals !== "boolean")
+      errors.push(`${where}: tipo inválido`);
+    if (q.kind === "single" && !q.options.some((o) => o.value === c.equals))
+      errors.push(`${where}: opção inexistente`);
     if (q.kind === "number" && typeof c.equals !== "number") errors.push(`${where}: tipo inválido`);
     return undefined;
   };
   for (const item of ITEMS) {
     if (!itemSchema.safeParse(item).success) errors.push(`item inválido ${item.code}`);
-    if (!item.mandatory && item.when === undefined) errors.push(`${item.code}: opcional sem condição`);
+    if (!item.mandatory && item.when === undefined)
+      errors.push(`${item.code}: opcional sem condição`);
     item.when?.forEach((c) => checkCond(item.code, c));
-    if (item.quantity.kind === "answer" && !qById.has(item.quantity.question)) errors.push(`${item.code}: quantidade sem pergunta`);
+    if (item.quantity.kind === "answer" && !qById.has(item.quantity.question))
+      errors.push(`${item.code}: quantidade sem pergunta`);
   }
   for (const q of QUESTIONS) q.showIf?.forEach((c) => checkCond(q.id, c));
   for (const [type, overrides] of Object.entries(DEFAULT_OVERRIDES)) {
     for (const [id, value] of Object.entries(overrides ?? {})) {
       const q = qById.get(id);
       if (q === undefined) errors.push(`override ${type}.${id} inexistente`);
-      else if (!questionValueSchema(q).safeParse(value).success) errors.push(`override ${type}.${id} inválido`);
+      else if (!questionValueSchema(q).safeParse(value).success)
+        errors.push(`override ${type}.${id} inválido`);
     }
   }
   return errors;

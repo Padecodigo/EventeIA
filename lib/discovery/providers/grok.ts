@@ -1,7 +1,13 @@
 import { z } from "zod";
 
 import type { SupplierCandidate } from "../pure";
-import { ProviderQuotaError, type DiscoveryProvider, type DiscoveryQuery, type FetchLike } from "./types";
+import {
+  ProviderQuotaError,
+  queryWhat,
+  type DiscoveryProvider,
+  type DiscoveryQuery,
+  type FetchLike,
+} from "./types";
 
 /**
  * Provedor Grok (xAI Responses API) com busca ao vivo na web e no X.
@@ -33,17 +39,21 @@ const responseSchema = z.object({
 
 /** "Taubaté (SP, Brasil)" — nunca assume SP: usa a UF do município ou só "Brasil". */
 export function cityLabel(q: Pick<DiscoveryQuery, "city" | "uf">): string {
-  return q.uf !== undefined && /^[A-Z]{2}$/.test(q.uf) ? `${q.city} (${q.uf}, Brasil)` : `${q.city} (Brasil)`;
+  return q.uf !== undefined && /^[A-Z]{2}$/.test(q.uf)
+    ? `${q.city} (${q.uf}, Brasil)`
+    : `${q.city} (Brasil)`;
 }
 
 export function buildGrokPrompt(q: DiscoveryQuery): string {
-  const what = q.category === "outros" && q.freeText !== undefined ? q.freeText : q.categoryLabel;
+  const what = queryWhat(q);
   return [
     `Encontre até ${String(q.limit)} fornecedores REAIS de "${what}" que atendem a cidade de ${cityLabel(q)},`,
     `para um evento do tipo ${q.eventTypeLabel}. Use busca na web e no X (perfis públicos de empresas, sites, Google Maps, Instagram públicos via resultados de busca).`,
     `Regras: somente empresas/profissionais com contato comercial PÚBLICO; nunca invente telefones;`,
     `inclua apenas telefones que aparecem literalmente na fonte; source_url deve ser a página onde o contato aparece.`,
-    q.exclude.length > 0 ? `Ignore estes contatos já conhecidos: ${q.exclude.slice(0, 40).join(", ")}.` : "",
+    q.exclude.length > 0
+      ? `Ignore estes contatos já conhecidos: ${q.exclude.slice(0, 40).join(", ")}.`
+      : "",
     `Responda SOMENTE com JSON: {"suppliers":[{"name":"","phone":"","source_url":"","website_url":""}]}.`,
   ]
     .filter((l) => l.length > 0)
@@ -103,7 +113,8 @@ export function createGrokProvider(options: {
         signal: AbortSignal.timeout(120_000),
       });
       if (!res.ok) {
-        if (res.status === 429 || res.status === 402 || res.status === 403) throw new ProviderQuotaError("grok", res.status);
+        if (res.status === 429 || res.status === 402 || res.status === 403)
+          throw new ProviderQuotaError("grok", res.status);
         throw new Error(`xAI HTTP ${String(res.status)}`);
       }
       return parseGrokResponse(await res.json(), query);

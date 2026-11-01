@@ -20,6 +20,7 @@ import { ScenariosPanel } from "@/components/domain/scenarios-panel";
 import { SearchStartEditor } from "@/components/domain/search-start-editor";
 import { SupplierOptionsPanel } from "@/components/domain/supplier-options-panel";
 import { TestimonialInvite } from "@/components/domain/testimonial-invite";
+import { isFreeItemCode } from "@/lib/catalog/free-items";
 import { CATEGORY_LABELS, UNIT_LABELS, type CategoryCode } from "@/lib/catalog/v1";
 import { calculate } from "@/lib/engine";
 import type { EngineItemSelection, EventType, RegionCode } from "@/lib/engine/types";
@@ -124,20 +125,19 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     notFound();
   }
 
-  const [ticketResult, profileResult, quotationsResult] =
-    await Promise.all([
-      supabase.from("event_tickets").select("status").eq("event_id", event.id).maybeSingle(),
-      supabase
-        .from("profiles")
-        .select("display_name,document_number")
-        .eq("id", event.owner_profile_id)
-        .maybeSingle(),
-      supabase
-        .from("quotations")
-        .select("id,category,vendor_name,vendor_contact,amount_cents,status,created_at,extraction")
-        .eq("event_id", event.id)
-        .order("created_at", { ascending: true }),
-    ]);
+  const [ticketResult, profileResult, quotationsResult] = await Promise.all([
+    supabase.from("event_tickets").select("status").eq("event_id", event.id).maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("display_name,document_number")
+      .eq("id", event.owner_profile_id)
+      .maybeSingle(),
+    supabase
+      .from("quotations")
+      .select("id,category,vendor_name,vendor_contact,amount_cents,status,created_at,extraction")
+      .eq("event_id", event.id)
+      .order("created_at", { ascending: true }),
+  ]);
 
   const eventType: EventType = eventTypeSchema.safeParse(event.event_type).data ?? "casamento";
   const region: RegionCode = regionSchema.safeParse(event.region_code).data ?? "outros";
@@ -176,10 +176,18 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     .eq("event_id", event.id)
     .order("changed_at", { ascending: false })
     .limit(20);
-  const budgetSourceLabels: Record<string, string> = { owner: "você", admin: "equipe EventeIA", system: "sistema" };
+  const budgetSourceLabels: Record<string, string> = {
+    owner: "você",
+    admin: "equipe EventeIA",
+    system: "sistema",
+  };
   const budgetHistory = (budgetHistoryRows ?? []).map((h) => ({
     id: h.id,
-    changedAtLabel: new Date(h.changed_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" }),
+    changedAtLabel: new Date(h.changed_at).toLocaleString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      dateStyle: "short",
+      timeStyle: "short",
+    }),
     oldLabel: h.old_cents === null ? "sem limite" : formatBRL(h.old_cents),
     newLabel: h.new_cents === null ? "sem limite" : formatBRL(h.new_cents),
     sourceLabel: budgetSourceLabels[h.source] ?? h.source,
@@ -268,22 +276,27 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   const aboveLimitCount =
     selectionViews.reduce((n, row) => n + row.options.filter((o) => o.aboveLimit).length, 0) +
     choiceViews.reduce((n, row) => n + row.options.filter((o) => o.aboveLimit).length, 0);
-  const chatConversations = unlocked
-    ? await listEventChatConversations(event.id)
-    : [];
+  const chatConversations = unlocked ? await listEventChatConversations(event.id) : [];
 
   // Cobertura das DMs ligadas ao evento (0079): RPC checa dono/workspace.
   const { data: coverageData } = await (
-    supabase as unknown as { rpc(fn: string, args: Record<string, unknown>): Promise<{ data: unknown }> }
+    supabase as unknown as {
+      rpc(fn: string, args: Record<string, unknown>): Promise<{ data: unknown }>;
+    }
   ).rpc("event_coverage_summary", { p_event_id: event.id });
   const coverageRows = parseCoverageSummary(coverageData);
 
   return (
     <div className="flex scroll-mt-24 flex-col gap-8">
-      <header id="evento-topo" className="scroll-mt-24 flex flex-wrap items-end justify-between gap-4">
+      <header
+        id="evento-topo"
+        className="scroll-mt-24 flex flex-wrap items-end justify-between gap-4"
+      >
         <div className="min-w-0">
           <p className="text-overline uppercase tracking-[0.14em] text-vinho/75">Evento</p>
-          <h1 className="mt-2 break-words font-serif text-title-1 font-display [overflow-wrap:anywhere] sm:text-display-2">{event.title}</h1>
+          <h1 className="mt-2 break-words font-serif text-title-1 font-display [overflow-wrap:anywhere] sm:text-display-2">
+            {event.title}
+          </h1>
           <p className="mt-2 text-sm text-vinho/75">
             {event.event_type} · {event.guest_count} convidados ·{" "}
             {new Date(`${event.event_date}T12:00:00Z`).toLocaleDateString("pt-BR")} ·{" "}
@@ -343,7 +356,9 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           </p>
         </div>
         {editLocked ? (
-          <span className="text-caption text-vinho/70">Entrevista travada: o evento já começou.</span>
+          <span className="text-caption text-vinho/70">
+            Entrevista travada: o evento já começou.
+          </span>
         ) : (
           <Link
             href={`/eventos/${event.id}/entrevista`}
@@ -396,7 +411,12 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           ) : null}
           <ScenariosPanel eventId={event.id} scenarios={scenarios} />
           <QuotationsPanel eventId={event.id} quotations={quotationsResult.data ?? []} />
-          <CoveragePanel rows={coverageRows} />
+          <CoveragePanel
+            rows={coverageRows}
+            freeItems={(requirementRows ?? [])
+              .filter((r) => isFreeItemCode(r.item_code))
+              .map((r) => ({ code: r.item_code, label: r.label, category: r.category }))}
+          />
           <ChoicesPanel eventId={event.id} rows={choiceViews} />
           <SupplierOptionsPanel eventId={event.id} rows={selectionViews} />
           <EventChat eventId={event.id} conversations={chatConversations} />
