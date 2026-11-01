@@ -6,6 +6,7 @@ import { getDeepSeekClient } from "@/lib/deepseek/client";
 import { serverEnv } from "@/lib/env";
 import { buildPostContent } from "@/lib/prospecting/content";
 import { generatePlanContent, type PlanContentEvent } from "@/lib/prospecting/content-llm";
+import { eventCoverageGaps, parseCoverageSummary, type CoverageGap } from "@/lib/prospecting/coverage-gaps";
 import { buildEventPostContent } from "@/lib/prospecting/event-post";
 import { normalizeNeeds, planNeedPosts } from "@/lib/prospecting/plan-needs";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -64,6 +65,7 @@ export default async function ProspeccaoPage({
   }
 
   let needs: string[];
+  let coverageGaps: CoverageGap[] = [];
   let eventInfo: PlanContentEvent | null = null;
   let eventPost: ReturnType<typeof buildEventPostContent> | null = null;
   if (eventId !== undefined) {
@@ -72,7 +74,14 @@ export default async function ProspeccaoPage({
       .select("category")
       .eq("event_id", eventId)
       .eq("selected", true);
-    needs = normalizeNeeds((requirements ?? []).map((row) => row.category));
+    const selectedCategories = (requirements ?? []).map((row) => row.category);
+    // Lacunas de cobertura (0079): itens que nenhuma cotação inclui viram
+    // necessidade própria no plano. Só sugere posts — publicar continua manual.
+    const { data: coverageData } = await (
+      admin as unknown as { rpc(fn: string, args: Record<string, unknown>): Promise<{ data: unknown }> }
+    ).rpc("event_coverage_summary", { p_event_id: eventId });
+    coverageGaps = eventCoverageGaps(selectedCategories, parseCoverageSummary(coverageData));
+    needs = normalizeNeeds([...selectedCategories, ...coverageGaps.map((gap) => gap.needCategory)]);
 
     const selected = eventsResult.data?.find((event) => event.id === eventId) ?? null;
     if (selected !== null) {
@@ -137,6 +146,12 @@ export default async function ProspeccaoPage({
           {env.MAX_POSTS_PER_DAY} por dia, no máximo {env.MAX_TAGS_PER_POST} marcações por post.
           {eventInfo !== null ? ` · Evento: ${eventInfo.title}` : ""}
         </p>
+        {coverageGaps.length > 0 ? (
+          <p className="mt-1 text-caption text-vinho/70" data-testid="coverage-gaps">
+            Lacunas de cobertura no plano:{" "}
+            {coverageGaps.map((gap) => `${gap.needCategory} (não incluso em ${gap.fromCategory})`).join(", ")}.
+          </p>
+        ) : null}
       </header>
 
       <nav className="flex flex-wrap gap-2 text-caption" aria-label="Escolher evento">

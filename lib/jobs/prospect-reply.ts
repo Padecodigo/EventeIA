@@ -61,7 +61,7 @@ export interface ProspectReplyJobDeps {
   buildPorts: typeof createSupabaseRespondPorts;
   maxRepliesPerHour?: number;
   /** Loop de cobertura item a item (0078). Ausente = desligado. */
-  coverage?: (client: ReturnType<typeof getDeepSeekClient>) => CoveragePorts;
+  coverage?: (client: ReturnType<typeof getDeepSeekClient>, category: string) => CoveragePorts;
   now?: () => Date;
 }
 
@@ -110,7 +110,7 @@ export function defaultProspectReplyJobDeps(): ProspectReplyJobDeps {
     respond: respondToInbound,
     getClient: getDeepSeekClient,
     buildPorts: createSupabaseRespondPorts,
-    coverage: (client) => createCoveragePorts({ client }),
+    coverage: (client, category) => createCoveragePorts({ client, category }),
   };
 }
 
@@ -169,7 +169,7 @@ export async function handleProspectReplyJob(
         ? ports
         : await withCoverageLoop({
             ports,
-            coverage: deps.coverage(client),
+            coverage: deps.coverage(client, data.category),
             conversationId: data.conversationId,
             category: data.category,
             history,
