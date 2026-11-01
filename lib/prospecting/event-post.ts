@@ -30,6 +30,11 @@ export interface EventPostSource {
   city?: string | null;
   /** UF ou região pública do evento (ex.: `SP`). */
   region?: string | null;
+  /**
+   * Itens livres que procuramos: nome canônico + termos (sinônimos/regionais).
+   * Já limpos na entrevista (sem URL/e-mail/telefone); não carregam PII.
+   */
+  lookingFor?: readonly { canonical: string; terms: readonly string[] }[] | null;
 }
 
 export interface EventPostImageParams {
@@ -62,7 +67,9 @@ export function eventCodeFromId(eventId: string): string {
  * ao menos um dígito. A resolução final é feita contra `prospecting_posts`.
  */
 export function eventCodesFromText(text: string): string[] {
-  const prefixed = [...text.matchAll(EVENT_CODE_PREFIXED_RE)].map((match) => match[0].toUpperCase());
+  const prefixed = [...text.matchAll(EVENT_CODE_PREFIXED_RE)].map((match) =>
+    match[0].toUpperCase(),
+  );
   if (prefixed.length > 0) return [...new Set(prefixed)];
   const bare = [...text.matchAll(EVENT_CODE_BARE_RE)].map((match) => match[0].toUpperCase());
   return [...new Set(bare)];
@@ -124,12 +131,49 @@ export function buildEventPostImagePrompt(input: EventPostSource): string {
 }
 
 /** Legenda exata da prospecção por evento + dados públicos + código. */
+const MAX_HASHTAGS = 30;
+const MAX_CAPTION = 2200;
+
+/** `pula-pula` → `#pulapula`; `cama elástica` → `#camaelastica`. */
+export function hashtagFor(term: string): string | null {
+  const body = term
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "")
+    .slice(0, 30);
+  return body.length >= 3 && !/^\d+$/.test(body) ? `#${body}` : null;
+}
+
+function safeTerm(term: string): string {
+  return term
+    .replace(/[#@<>\n\r]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 40);
+}
+
 export function buildEventPostCaption(input: EventPostSource): string {
   const typeLabel = eventTypeLabel(input.eventType);
   const date = formatEventDate(input.eventDate);
   const location = eventLocationLabel(input);
   const code = eventCodeFromId(input.eventId);
-  return `${EVENT_POST_CTA}.\n\n${typeLabel} · ${date} · ${location}\nCódigo do evento: ${code}`;
+  const base = `${EVENT_POST_CTA}.\n\n${typeLabel} · ${date} · ${location}\nCódigo do evento: ${code}`;
+  const items = (input.lookingFor ?? []).slice(0, 10);
+  if (items.length === 0) return base;
+  const names = items.map((i) => safeTerm(i.canonical)).filter((n) => n.length > 0);
+  const tags: string[] = [];
+  for (const term of items.flatMap((i) => [i.canonical, ...i.terms])) {
+    const tag = hashtagFor(term);
+    if (tag !== null && !tags.includes(tag) && tags.length < MAX_HASHTAGS) tags.push(tag);
+  }
+  let caption = names.length > 0 ? `${base}\n\nProcuramos: ${names.join(", ")}` : base;
+  for (let n = tags.length; n > 0; n--) {
+    const withTags = `${caption}\n\n${tags.slice(0, n).join(" ")}`;
+    if (withTags.length <= MAX_CAPTION) return withTags;
+  }
+  if (caption.length > MAX_CAPTION) caption = base;
+  return caption;
 }
 
 export function buildEventPostContent(input: EventPostSource): EventPostContent {

@@ -42,7 +42,9 @@ describe("loadFreeItems (DM → evento → itens livres)", () => {
       { item_code: "livre_magico", label: "mágico" },
       { item_code: "buffet_jantar", label: "Buffet" },
     ]);
-    expect(await loadFreeItems(data, db)).toEqual([{ code: "livre_magico", label: "mágico" }]);
+    expect(await loadFreeItems(data, db)).toEqual([
+      { code: "livre_magico", label: "mágico", terms: [] },
+    ]);
     expect(calls).toContain("eq:category,recreacao");
   });
   it("DM sem evento ligado ⇒ nenhum item", async () => {

@@ -160,12 +160,11 @@ describe("intérprete (DeepSeek Flash via roteador)", () => {
       ],
     });
     expect(out).toHaveLength(3);
-    expect(out[0]).toMatchObject({
-      category: "recreacao",
-      keywords: ["brinquedos infláveis", "pula pula"],
-    });
+    expect(out[0]?.category).toBe("recreacao");
+    expect(out[0]?.keywords).toEqual(expect.arrayContaining(["brinquedos infláveis", "pula pula"]));
+    expect(out[0]?.keywords.join(" ")).not.toMatch(/ignore|<x>/);
     expect(out[1]).toMatchObject({ category: "mobiliario" });
-    expect(out[1]?.keywords).toEqual(["pista de dança ao ar livre"]);
+    expect(out[1]?.keywords).toContain("pista de dança ao ar livre");
     expect(out[2]).toMatchObject({ category: "recreacao" });
   });
   it("integração: roteador real com cliente fake", async () => {
@@ -181,10 +180,10 @@ describe("intérprete (DeepSeek Flash via roteador)", () => {
       }),
     );
     const needs = await interpretFreeItems(router, items);
-    expect(needs[2]).toMatchObject({
-      category: "recreacao",
-      keywords: ["mágico infantil", "show de mágica"],
-    });
+    expect(needs[2]?.category).toBe("recreacao");
+    expect(needs[2]?.keywords).toEqual(
+      expect.arrayContaining(["mágico infantil", "show de mágica"]),
+    );
     expect(needs[0]?.category).toBe("recreacao");
   });
   it("provedor fora do ar ⇒ contingência determinística, nunca trava", async () => {
@@ -240,8 +239,8 @@ describe("plano de prospecção e buscas", () => {
   });
   it("uma busca por item livre na categoria interpretada", () => {
     expect(categoryQueries(reqs, "recreacao")).toEqual([
-      "brinquedos infláveis pula pula",
-      "mágico infantil",
+      '"brinquedos infláveis" OR "pula pula"',
+      '"mágico para crianças" OR "mágico infantil"',
     ]);
   });
   it("regressão: demanda legada em outros continua usando o texto", () => {

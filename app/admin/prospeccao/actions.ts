@@ -11,6 +11,7 @@ import {
   createSupabaseProspectingPostStore,
   type ProspectingPostRecord,
 } from "@/lib/prospecting/event-post-store";
+import { loadLookingFor } from "@/lib/prospecting/looking-for";
 import { artForEventType } from "@/lib/prospecting/photos";
 import { createSupabasePostStore, findImageFor } from "@/lib/prospecting/posts-store";
 import { publishEventPost } from "@/lib/prospecting/publish-event-post";
@@ -28,10 +29,7 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
   const env = serverEnv();
   // Provedor graph exige token/ID da Graph API; o browser usa a sessão logada.
   if (env.INSTAGRAM_PROVIDER === "graph") {
-    if (
-      env.META_ACCESS_TOKEN === undefined ||
-      env.META_INSTAGRAM_BUSINESS_ID === undefined
-    ) {
+    if (env.META_ACCESS_TOKEN === undefined || env.META_INSTAGRAM_BUSINESS_ID === undefined) {
       return { ok: false, error: "Configure META_ACCESS_TOKEN e META_INSTAGRAM_BUSINESS_ID." };
     }
   }
@@ -40,7 +38,11 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
   const imagePrompt = form.get("imagePrompt");
   const category = form.get("category");
   const handlesRaw = form.get("handles");
-  if (typeof caption !== "string" || typeof imagePrompt !== "string" || typeof category !== "string") {
+  if (
+    typeof caption !== "string" ||
+    typeof imagePrompt !== "string" ||
+    typeof category !== "string"
+  ) {
     return { ok: false, error: "Post inválido." };
   }
 
@@ -62,19 +64,29 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
   // Arte com a identidade da EventeIA, por tipo de evento (sem valores no post).
   let eventType: string | null = null;
   if (eventId !== undefined) {
-    const { data } = await getSupabaseAdmin().from("events").select("event_type").eq("id", eventId).maybeSingle();
+    const { data } = await getSupabaseAdmin()
+      .from("events")
+      .select("event_type")
+      .eq("id", eventId)
+      .maybeSingle();
     eventType = data?.event_type ?? null;
   }
   const brandedArt =
     eventId !== undefined
-      ? { url: `${env.NEXT_PUBLIC_APP_URL}${artForEventType(eventType)}`, expiresAt: new Date(Date.now() + 365 * 86_400_000) }
+      ? {
+          url: `${env.NEXT_PUBLIC_APP_URL}${artForEventType(eventType)}`,
+          expiresAt: new Date(Date.now() + 365 * 86_400_000),
+        }
       : null;
 
   // Provedor browser (grokbot-style): o worker (imagem Playwright) publica; o app enfileira.
   if (env.INSTAGRAM_PROVIDER === "browser") {
     const imageUrl = cachedArt?.url ?? brandedArt?.url ?? null;
     if (imageUrl === null) {
-      return { ok: false, error: "Sem imagem para publicar no navegador (use um evento com arte da marca)." };
+      return {
+        ok: false,
+        error: "Sem imagem para publicar no navegador (use um evento com arte da marca).",
+      };
     }
     const queued = await enqueue(QUEUE_NAMES.instagramPublish, "publish", {
       imageUrl,
@@ -95,7 +107,13 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
   }
 
   const outcome = await publishPlannedPost({
-    planned: { dayIndex: Number.isFinite(dayIndex) ? dayIndex : 0, category, handles, imagePrompt, caption },
+    planned: {
+      dayIndex: Number.isFinite(dayIndex) ? dayIndex : 0,
+      category,
+      handles,
+      imagePrompt,
+      caption,
+    },
     approved: true,
     modelslabKey: env.MODELSLAB_API_KEY,
     meta: {
@@ -156,6 +174,7 @@ export async function approveEventPostAction(
     eventDate: event.event_date,
     city: event.city,
     region: event.city_uf ?? event.region_code,
+    lookingFor: await loadLookingFor(admin, event.id),
   };
   const content = buildEventPostContent(source);
   const imageUrl = `${env.NEXT_PUBLIC_APP_URL}${artForEventType(event.event_type)}`;
@@ -202,7 +221,10 @@ export async function approveEventPostAction(
   });
 
   if (!outcome.ok) {
-    logger.warn({ reason: outcome.reason, error: outcome.error }, "falha ao publicar post de prospecção");
+    logger.warn(
+      { reason: outcome.reason, error: outcome.error },
+      "falha ao publicar post de prospecção",
+    );
     return { ok: false, error: `Falha ao publicar (${outcome.reason}).` };
   }
 
