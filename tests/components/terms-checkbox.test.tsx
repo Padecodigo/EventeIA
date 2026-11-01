@@ -15,6 +15,17 @@ vi.mock("@/app/(dashboard)/creditos/actions", () => ({
   applyPackCouponAction: vi.fn(),
 }));
 
+// Script do Google indisponível → fluxo OAuth antigo (fallback) com o botão próprio.
+vi.mock("@/components/auth/google-gis-button", async () => {
+  const { useEffect } = await import("react");
+  return {
+    GoogleGisButton: ({ onUnavailable }: { onUnavailable: () => void }) => {
+      useEffect(() => onUnavailable(), [onUnavailable]);
+      return null;
+    },
+  };
+});
+
 import { AuthForm } from "@/components/auth/auth-form";
 import { SubscribePlanForm } from "@/components/domain/subscribe-plan-form";
 import { SiteFooter } from "@/components/site-footer";
@@ -38,7 +49,7 @@ describe("checkbox de aceite no /registrar", () => {
 
     fireEvent.click(terms());
     fireEvent.click(screen.getByRole("checkbox", { name: /Já sigo @eventeia/ }));
-    expect(google).toBeEnabled();
+    expect(screen.getByRole("button", { name: /Criar conta com Google/ })).toBeEnabled();
     expect(email).toBeEnabled();
     // o aceite segue para o servidor nos dois formulários
     expect(document.querySelectorAll('input[type=hidden][name="acceptTerms"]')).toHaveLength(2);
