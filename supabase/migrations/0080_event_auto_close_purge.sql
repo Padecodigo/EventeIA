@@ -229,3 +229,30 @@ grant execute on function public.event_ready_to_close(uuid) to service_role;
 grant execute on function public.purge_closed_event_content(uuid) to service_role;
 grant execute on function public.auto_close_ready_events() to service_role;
 grant execute on function public.purge_closed_event_reports(timestamptz) to service_role;
+
+-- O lock de edição pós-busca deve permitir os campos de encerramento
+-- preenchidos pelo trigger events_on_closed (regressão: encerrar evento).
+create or replace function public.guard_events_started_lock()
+returns trigger
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  v_allowed text[] := array['status', 'budget_limit_cents', 'closed_at', 'close_reason',
+                            'content_purged_at', 'report_purged_at'];
+begin
+  if current_user not in ('authenticated', 'anon') or public.is_admin() then
+    return new;
+  end if;
+  if not public.event_edit_locked(old.status, old.discovery_started_at, old.search_start_date) then
+    return new;
+  end if;
+  if (to_jsonb(new) - v_allowed) is distinct from (to_jsonb(old) - v_allowed) then
+    raise exception 'busca iniciada: só o orçamento limite pode ser alterado'
+      using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.guard_events_started_lock() from public, anon, authenticated;
