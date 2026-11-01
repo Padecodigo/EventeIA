@@ -8,6 +8,7 @@ import {
   resolveInstagramSupplierByHandle,
   type MetaSupplier,
   type MetaSupplierLookup,
+  instagramHandleFromSid,
 } from "@/lib/meta/resolve";
 import type { MetaCommentEvent, MetaInboundMessage } from "@/lib/meta/webhook";
 import { assertBusinessHours } from "@/lib/outreach/business-defer";
@@ -99,6 +100,10 @@ export interface MetaWebhookJobDeps {
   enqueueReply: (data: ProspectReplyJobData) => Promise<boolean>;
   sendReply: typeof sendPrivateReply;
   now: () => Date;
+  /** 0077: registra que o @ marcado já contatou (exclusão antecipada do post). */
+  markPostContact?: (handle: string) => Promise<void>;
+  /** @ do remetente de uma DM do Instagram (Graph API); null se não resolver. */
+  handleFromSid?: (igSid: string, accessToken: string) => Promise<string | null>;
 }
 
 function configured(value: string | undefined): value is string {
@@ -136,6 +141,14 @@ export function defaultMetaWebhookJobDeps(): MetaWebhookJobDeps {
       }),
     sendReply: sendPrivateReply,
     now: () => new Date(),
+    markPostContact: async (handle) => {
+      const rpc = admin as unknown as {
+        rpc(fn: "mark_prospect_post_contact", args: { p_handle: string }): Promise<{ error: { code?: string } | null }>;
+      };
+      const { error } = await rpc.rpc("mark_prospect_post_contact", { p_handle: handle });
+      if (error !== null) logger.warn({ code: error.code }, "falha ao marcar contato do post");
+    },
+    handleFromSid: (igSid, accessToken) => instagramHandleFromSid(igSid, accessToken),
   };
 }
 
@@ -182,6 +195,10 @@ async function processMessage(message: MetaInboundMessage, deps: MetaWebhookJobD
 
   if (message.source === "instagram" && configured(env.accessToken)) {
     supplier = await deps.resolveSupplier(deps.lookup, message.senderId, env.accessToken);
+    if (supplier !== null && deps.markPostContact !== undefined && deps.handleFromSid !== undefined) {
+      const handle = await deps.handleFromSid(message.senderId, env.accessToken);
+      if (handle !== null) await deps.markPostContact(handle);
+    }
     if (supplier !== null) {
       const outcome = await deps.inbound(
         deps.store,
@@ -280,6 +297,10 @@ async function processMessage(message: MetaInboundMessage, deps: MetaWebhookJobD
 
 async function processComment(comment: MetaCommentEvent, deps: MetaWebhookJobDeps): Promise<void> {
   const { env } = deps;
+  // Qualquer @ marcado que comente conta como contato (idempotente).
+  if (deps.markPostContact !== undefined && comment.senderUsername.length > 0) {
+    await deps.markPostContact(comment.senderUsername);
+  }
   const supplier = await deps.resolveSupplierByHandle(deps.lookup, comment.senderUsername);
   if (supplier !== null) {
     // A private reply (abertura) só sai em dia útil 09–18 BRT: adia o job inteiro

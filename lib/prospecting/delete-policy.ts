@@ -2,6 +2,7 @@
  * Política de exclusão dos posts de isca (pura, sem I/O).
  *
  * Um post é excluído quando:
+ * - todos os @ marcados já contataram (comentário/DM), ou
  * - tem evento e o evento saiu do ciclo de prospecção (completed/canceled), ou
  * - não tem evento ("acervo geral") e já passou o TTL de órfão.
  */
@@ -21,9 +22,25 @@ export interface ShouldDeleteInput {
   createdAt: Date;
   now: Date;
   orphanTtlMs?: number;
+  /** @ marcados no post (0077). */
+  taggedHandles?: readonly string[];
+  /** @ marcados que já contataram (0077). */
+  contactedHandles?: readonly string[];
+}
+
+/** Todos os marcados já contataram? (lista de marcados vazia = não). */
+export function allTaggedContacted(
+  tagged: readonly string[] | undefined,
+  contacted: readonly string[] | undefined,
+): boolean {
+  if (tagged === undefined || tagged.length === 0) return false;
+  const done = new Set((contacted ?? []).map((h) => h.toLowerCase()));
+  return tagged.every((h) => done.has(h.toLowerCase()));
 }
 
 export function shouldDeletePost(input: ShouldDeleteInput): boolean {
+  // Exclusão antecipada: todos os marcados já falaram com a EventeIA.
+  if (allTaggedContacted(input.taggedHandles, input.contactedHandles)) return true;
   if (input.eventStatus !== null) {
     return isEventProspectingDone(input.eventStatus);
   }

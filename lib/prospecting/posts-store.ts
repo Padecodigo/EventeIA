@@ -34,6 +34,16 @@ interface PostDb {
   };
 }
 
+/** @ marcados normalizados (minúsculos, sem @, sem duplicata). */
+export function normalizeHandles(handles: readonly string[] | undefined): string[] {
+  const out = new Set<string>();
+  for (const h of handles ?? []) {
+    const n = h.trim().replace(/^@+/, "").toLowerCase();
+    if (n.length > 0) out.add(n);
+  }
+  return [...out];
+}
+
 export function createSupabasePostStore(
   db: PostDb = getSupabaseAdmin() as unknown as PostDb,
 ): PostStore {
@@ -49,6 +59,7 @@ export function createSupabasePostStore(
         error: input.error ?? null,
         event_id: input.eventId ?? null,
         image_expires_at: input.imageExpiresAt?.toISOString() ?? null,
+        tagged_handles: normalizeHandles(input.planned.handles),
       });
       if (error !== null) throw new Error(`falha ao registrar post (${error.code ?? "?"})`);
     },

@@ -190,6 +190,24 @@ describe("handleMetaWebhookJob", () => {
     expect(sendReply.mock.calls[0]?.[0]).toMatchObject({ commentId: "c1", igUserId: "ig-1" });
   });
 
+  it("P1: comentário de @ marcado registra contato do post (mesmo no domingo)", async () => {
+    const markPostContact = vi.fn(async (_h: string) => undefined);
+    const { deps } = makeDeps({ markPostContact, now: () => new Date("2026-11-01T14:00:00Z") });
+    await handleMetaWebhookJob({ kind: "comment", webhookEventId: "wh1", event: comment("c7", "oi") }, deps);
+    expect(markPostContact).toHaveBeenCalledTimes(1);
+  });
+
+  it("P1: DM de fornecedor conhecido registra contato pelo @ resolvido", async () => {
+    const markPostContact = vi.fn(async (_h: string) => undefined);
+    const handleFromSid = vi.fn(async () => "buffet_ana");
+    const { deps } = makeDeps({ markPostContact, handleFromSid });
+    await handleMetaWebhookJob(
+      { kind: "message", webhookEventId: "wh1", event: { source: "instagram", eventId: "m77", senderId: "111", recipientId: "ig-1", text: "oi" } },
+      deps,
+    );
+    expect(markPostContact).toHaveBeenCalledWith("buffet_ana");
+  });
+
   it("regressão: comentário no domingo é adiado antes de gravar/enviar (horário comercial)", async () => {
     const { OutsideBusinessHoursError } = await import("@/lib/outreach/business-defer");
     const { deps, sendReply, inbound, webhookEvents } = makeDeps({
