@@ -84,7 +84,7 @@ export default async function ParaPlannersPage() {
               sizes="(max-width: 1024px) 100vw, 480px"
             />
           </div>
-          <div className="absolute bottom-5 left-5 right-5 rounded-2xl border border-line-subtle bg-white/95 p-4 text-vinho backdrop-blur">
+          <div className="absolute bottom-5 left-5 right-5 rounded-2xl border border-line-subtle bg-white/95 p-4 text-vinho md:backdrop-blur">
             <p className="font-serif text-lg">A festa é sua. A organização é nossa.</p>
             <p className="mt-1 text-xs text-vinho/70">
               Você cuida do sonho. A EventeIA cuida de encontrar o caminho.

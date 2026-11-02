@@ -89,6 +89,7 @@ function VariantA() {
                   width={320}
                   height={320}
                   className="h-32 w-full object-cover sm:h-40"
+                  sizes="(max-width: 640px) 45vw, 320px"
                 />
                 <figcaption className="px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-vinho/60">
                   {photo.label}
@@ -128,7 +129,7 @@ function VariantB() {
             <div className="mt-8 flex gap-3">
               {PHOTOS.slice(0, 3).map((photo) => (
                 <div key={photo.src} className="h-16 w-16 overflow-hidden rounded-2xl ring-1 ring-white/15">
-                  <Image src={photo.src} alt="" width={120} height={120} className="h-full w-full object-cover" />
+                  <Image src={photo.src} alt="" width={120} height={120} className="h-full w-full object-cover" sizes="64px" />
                 </div>
               ))}
               <div className="flex h-16 items-center rounded-2xl bg-white/5 px-4 text-sm text-ink-inverse/70 ring-1 ring-white/10">
@@ -145,11 +146,12 @@ function VariantB() {
                 width={720}
                 height={480}
                 className="h-48 w-full object-cover sm:h-56"
+                sizes="(max-width: 1024px) calc(100vw - 40px), 600px"
               />
             </div>
             {PHOTOS.slice(1, 5).map((photo) => (
               <div key={photo.src} className="overflow-hidden rounded-2xl ring-1 ring-white/10">
-                <Image src={photo.src} alt={photo.label} width={360} height={240} className="h-24 w-full object-cover sm:h-28" />
+                <Image src={photo.src} alt={photo.label} width={360} height={240} className="h-24 w-full object-cover sm:h-28" sizes="(max-width: 1024px) 45vw, 300px" />
               </div>
             ))}
             <div className="col-span-2 rounded-2xl bg-white/5 p-4 text-sm text-ink-inverse/75 ring-1 ring-white/10">
@@ -190,7 +192,7 @@ function VariantC() {
         <div className="grid grid-cols-3 gap-3">
           {PHOTOS.slice(0, 6).map((photo) => (
             <figure key={photo.src} className="overflow-hidden rounded-2xl bg-white shadow-soft">
-              <Image src={photo.src} alt={photo.label} width={320} height={320} className="h-28 w-full object-cover sm:h-36" />
+              <Image src={photo.src} alt={photo.label} width={320} height={320} className="h-28 w-full object-cover sm:h-36" sizes="(max-width: 640px) 45vw, 320px" />
             </figure>
           ))}
         </div>

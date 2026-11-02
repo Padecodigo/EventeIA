@@ -160,7 +160,7 @@ export default async function LandingPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 overflow-hidden rounded-3xl ring-1 ring-vinho/10">
-              <Image src="/img/eventos/festa-infantil-velas.jpg" alt="Festa infantil" width={720} height={480} className="h-48 w-full object-cover sm:h-56" priority />
+              <Image src="/img/eventos/festa-infantil-velas.jpg" alt="Festa infantil" width={720} height={480} className="h-48 w-full object-cover sm:h-56" sizes="(max-width: 1024px) calc(100vw - 40px), 600px" priority />
             </div>
             {[
               { src: "/img/eventos/casamento.jpg", label: "Casamento" },
@@ -169,7 +169,7 @@ export default async function LandingPage() {
               { src: "/img/eventos/corporativo.webp", label: "Corporativo" },
             ].map((photo) => (
               <div key={photo.src} className="hidden overflow-hidden rounded-2xl ring-1 ring-vinho/10 sm:block">
-                <Image src={photo.src} alt={photo.label} width={360} height={240} className="h-24 w-full object-cover sm:h-28" />
+                <Image src={photo.src} alt={photo.label} width={360} height={240} className="h-24 w-full object-cover sm:h-28" sizes="(max-width: 1024px) 45vw, 300px" />
               </div>
             ))}
             <div className="col-span-2 flex items-center justify-between gap-3 rounded-2xl border border-line-subtle bg-white/70 px-4 py-3">
@@ -204,7 +204,9 @@ export default async function LandingPage() {
           <p className="eyebrow">Como funciona · 3 passos</p>
           <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-[1.1fr_1fr]">
             <h2 id="como-funciona-titulo" className={`mt-4 max-w-2xl ${sectionTitle}`}>Como funciona para você, que está organizando o evento</h2>
-            <HowItWorksAnimation />
+            <div className="ev-skip-offscreen">
+              <HowItWorksAnimation />
+            </div>
           </div>
           <ol className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
             {STEPS.map((s) => (
@@ -259,9 +261,9 @@ export default async function LandingPage() {
             {OPTIONS.map((o, i) => (
               <article
                 key={o.title}
-                className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] p-7 backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-champagne/30"
+                className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] p-7 transition md:backdrop-blur duration-300 hover:-translate-y-1 hover:border-champagne/30"
               >
-                <div aria-hidden="true" className={`absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br ${o.dot} opacity-10 blur-2xl transition duration-500 group-hover:opacity-25`} />
+                <div aria-hidden="true" className={`absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br ${o.dot} hidden opacity-10 blur-2xl transition md:block duration-500 group-hover:opacity-25`} />
                 <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${o.dot} text-sm font-bold text-on-primary`}>
                   {i + 1}
                 </span>
@@ -320,7 +322,7 @@ export default async function LandingPage() {
             {PLANS.map((plan) => (
               <article
                 key={plan.code}
-                className={`flex flex-col rounded-3xl p-7 backdrop-blur transition duration-300 hover:-translate-y-1 ${
+                className={`flex flex-col rounded-3xl p-7 transition duration-300 hover:-translate-y-1 ${
                   plan.featured ? "bg-white ring-1 ring-champagne shadow-[0_24px_50px_-30px_rgba(43,39,36,0.45)]" : "bg-off-white ring-1 ring-champagne-claro"
                 }`}
               >

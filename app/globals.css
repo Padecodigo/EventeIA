@@ -98,7 +98,7 @@
 
   /* Eyebrow em chip acessível: champagne como fundo (nunca como texto sobre claro) */
   .eyebrow {
-    @apply inline-flex w-fit items-center gap-2 rounded-full border border-vinho/10 bg-white/70 px-3 py-1 text-xs font-semibold text-vinho/80 shadow-sm backdrop-blur;
+    @apply inline-flex w-fit items-center gap-2 rounded-full border border-vinho/10 bg-white/80 px-3 py-1 text-xs font-semibold text-vinho/80 shadow-sm md:backdrop-blur;
   }
 
   /* Wordmark: Fraunces 600 (var fornecida por next/font) */
@@ -174,19 +174,24 @@
 .ev-how-c2, .ev-how-c3 { animation-name: ev-how-up; }
 @keyframes ev-how-c1 { 0%, 12% { transform: none; } 20%, 100% { transform: translateY(128px); } }
 @keyframes ev-how-up { 0%, 12% { transform: none; } 20%, 100% { transform: translateY(-64px); } }
-.ev-how-check { stroke-dasharray: 30; stroke-dashoffset: 30; animation: ev-how-check 9s ease-out 6s infinite both; }
-@keyframes ev-how-check { 0%, 8% { stroke-dashoffset: 30; } 16%, 100% { stroke-dashoffset: 0; } }
-.ev-how-label { animation: 9s ease-in-out infinite both; }
-.ev-how-l1 { animation-name: ev-how-l1; }
-.ev-how-l2 { animation-name: ev-how-l2; }
-.ev-how-l3 { animation-name: ev-how-l3; }
-@keyframes ev-how-l1 { 0%, 32% { background: #FBE3D3; color: #A4481F; } 35%, 100% { background: transparent; color: #2B2724; } }
-@keyframes ev-how-l2 { 0%, 32% { background: transparent; color: #2B2724; } 35%, 65% { background: #FBE3D3; color: #A4481F; } 68%, 100% { background: transparent; color: #2B2724; } }
-@keyframes ev-how-l3 { 0%, 65% { background: transparent; color: #2B2724; } 68%, 98% { background: #FBE3D3; color: #A4481F; } 100% { background: transparent; color: #2B2724; } }
+/* Só opacity/transform (composited): nada de stroke-dashoffset/color/background em loop — evita repaint a cada frame no mobile. */
+.ev-how-check { opacity: 0; animation: ev-how-check 9s ease-out 6s infinite both; }
+@keyframes ev-how-check { 0%, 8% { opacity: 0; } 16%, 100% { opacity: 1; } }
+.ev-how-label { position: relative; isolation: isolate; color: #2B2724; }
+.ev-how-label::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: #FBE3D3; opacity: 0; animation: 9s ease-in-out infinite both; }
+.ev-how-l1::before { animation-name: ev-how-l1; }
+.ev-how-l2::before { animation-name: ev-how-l2; }
+.ev-how-l3::before { animation-name: ev-how-l3; }
+@keyframes ev-how-l1 { 0%, 32% { opacity: 1; } 35%, 100% { opacity: 0; } }
+@keyframes ev-how-l2 { 0%, 32% { opacity: 0; } 35%, 65% { opacity: 1; } 68%, 100% { opacity: 0; } }
+@keyframes ev-how-l3 { 0%, 65% { opacity: 0; } 68%, 98% { opacity: 1; } 100% { opacity: 0; } }
+/* Blocos animados abaixo da dobra: o navegador pula render/pintura enquanto estão fora da viewport. */
+.ev-skip-offscreen { content-visibility: auto; contain-intrinsic-size: auto 360px; }
 @media (prefers-reduced-motion: reduce) {
   .ev-how-scene, .ev-how-msg, .ev-how-card, .ev-how-check, .ev-how-label { animation: none !important; }
   .ev-how-s1, .ev-how-s2 { opacity: 0; }
   .ev-how-s3 { opacity: 1; }
-  .ev-how-check { stroke-dashoffset: 0; }
-  .ev-how-l3 { background: #FBE3D3; color: #A4481F; }
+  .ev-how-check { opacity: 1; }
+  .ev-how-label::before { animation: none !important; }
+  .ev-how-l3::before { opacity: 1; }
 }
