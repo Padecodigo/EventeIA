@@ -7,7 +7,7 @@ export const PRIVACY_SECTIONS: readonly LegalSection[] = [
     id: "o-que-fazemos",
     title: "O que o EventeIA faz",
     paragraphs: [
-      "Você descreve o seu evento (tipo, data, cidade, número de convidados e o que precisa). O EventeIA busca fornecedores compatíveis, pede orçamentos a eles por Instagram, Messenger e e-mail em dias úteis, das 9h às 18h, e organiza as respostas para você comparar.",
+      "O EventeIA é um serviço autônomo de prospecção de fornecedores para eventos. Você descreve o seu evento (tipo, data, cidade, número de convidados e o que precisa). O EventeIA busca fornecedores compatíveis, pede orçamentos a eles por Instagram, Messenger e e-mail em dias úteis, das 9h às 18h, e organiza as respostas para você comparar.",
       "O serviço é vendido por créditos, avulsos ou em pacotes. Os créditos não vencem. Há também a opção de renovação mensal. O pagamento é feito por Pix ou cartão de crédito, processado pelo Asaas.",
     ],
   },
@@ -41,12 +41,20 @@ export const PRIVACY_SECTIONS: readonly LegalSection[] = [
     items: [
       "Asaas: processamento de pagamentos (Pix e cartão).",
       "OpenStreetMap, Serper e Google Places: busca de fornecedores.",
-      "DeepSeek: organização das informações e das respostas por processamento automatizado.",
+      "DeepSeek: processamento automatizado de texto para organizar as informações e redigir as mensagens.",
       "Resend: envio de e-mails.",
       "Meta (Instagram e Messenger): envio e recebimento de mensagens com fornecedores e com você.",
       "Supabase: hospedagem do banco de dados e autenticação.",
       "Google: login com conta Google, quando você escolhe essa opção.",
       "Fornecedores: os dados do evento necessários para que eles enviem o orçamento.",
+    ],
+  },
+  {
+    id: "processamento-automatizado",
+    title: "Processamento automatizado",
+    paragraphs: [
+      "As mensagens enviadas pelo EventeIA no Instagram, no Messenger e por e-mail são geradas e enviadas por um sistema automatizado, que também lê as respostas recebidas para extrair preços e condições e organizar os orçamentos. Quando o caso foge do padrão, a conversa é encaminhada para uma pessoa da equipe.",
+      "Você pode pedir a revisão de decisões tomadas apenas com base em processamento automatizado (art. 20 da LGPD) pela página de contato (/contato).",
     ],
   },
   {
@@ -151,7 +159,7 @@ export const TERMS_SECTIONS: readonly LegalSection[] = [
       "O EventeIA intermedeia o contato e organiza os orçamentos. O EventeIA não é parte do contrato entre você e o fornecedor.",
       "Preços, disponibilidade, qualidade, prazos e a execução do serviço são de responsabilidade do fornecedor que você escolher.",
       "Não garantimos que todos os fornecedores respondam nem que respondam em um prazo específico.",
-      "As estimativas e a organização feitas pelo sistema (inclusive por processamento automatizado) ajudam na decisão, mas a decisão final é sua. Confira os dados com o fornecedor antes de fechar.",
+      "As estimativas e a organização feitas pelo sistema (inclusive com inteligência artificial) ajudam na decisão, mas a decisão final é sua. Confira os dados com o fornecedor antes de fechar.",
       "Nada nestes Termos limita os direitos que o Código de Defesa do Consumidor garante a você.",
     ],
   },
