@@ -18,6 +18,7 @@ describe("publicação com fallback de arte da marca", () => {
     let chamouModelsLab = false;
     const fetchImpl = fakeFetch((url) => {
       if (url.includes("modelslab.com")) chamouModelsLab = true;
+      if (url.includes("fields=status_code")) return { status_code: "FINISHED" };
       if (url.includes("/media?")) return { id: "container-1" };
       if (url.includes("/media_publish")) return { id: "media-1" };
       return {};
@@ -38,6 +39,7 @@ describe("publicação com fallback de arte da marca", () => {
   it("geração falhando cai para a arte da marca", async () => {
     const fetchImpl = fakeFetch((url) => {
       if (url.includes("modelslab.com")) return { status: "error", message: "sem crédito" };
+      if (url.includes("fields=status_code")) return { status_code: "FINISHED" };
       if (url.includes("/media?")) return { id: "container-1" };
       if (url.includes("/media_publish")) return { id: "media-1" };
       return {};

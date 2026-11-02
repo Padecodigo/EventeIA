@@ -51,6 +51,7 @@ describe("publicação do post de prospecção", () => {
     const calls: string[] = [];
     const fetchImpl = fakeFetch((url) => {
       calls.push(url);
+      if (url.includes("fields=status_code")) return { status_code: "FINISHED" };
       if (url.includes("/media?")) return { id: "container-1" };
       if (url.includes("/media_publish")) return { id: "media-1" };
       return {};

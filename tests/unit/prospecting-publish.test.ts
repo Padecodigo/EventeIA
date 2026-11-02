@@ -60,6 +60,7 @@ describe("runtime de publicação", () => {
     const fetchImpl = fakeFetch((url) => {
       calls.push(url);
       if (url.includes("modelslab.com")) return { status: "success", output: ["https://cdn/img.jpg"], id: 1 };
+      if (url.includes("fields=status_code")) return { status_code: "FINISHED" };
       if (url.includes("/media?")) return { id: "container-1" };
       if (url.includes("/media_publish")) return { id: "media-1" };
       return {};
@@ -111,6 +112,7 @@ describe("persistência do post", () => {
     const { store, statuses } = fakeStore();
     const fetchImpl = fakeFetch((url) => {
       if (url.includes("modelslab.com")) return { status: "success", output: ["https://cdn/img.jpg"] };
+      if (url.includes("fields=status_code")) return { status_code: "FINISHED" };
       if (url.includes("/media?")) return { id: "container-1" };
       if (url.includes("/media_publish")) return { id: "media-1" };
       return {};
@@ -150,6 +152,7 @@ describe("cache de imagem por necessidade", () => {
     let chamouModelsLab = false;
     const fetchImpl = fakeFetch((url) => {
       if (url.includes("modelslab.com")) chamouModelsLab = true;
+      if (url.includes("fields=status_code")) return { status_code: "FINISHED" };
       if (url.includes("/media?")) return { id: "container-1" };
       if (url.includes("/media_publish")) return { id: "media-1" };
       return {};
@@ -173,6 +176,7 @@ describe("cache de imagem por necessidade", () => {
         chamouModelsLab = true;
         return { status: "success", output: ["https://cdn/nova.jpg"] };
       }
+      if (url.includes("fields=status_code")) return { status_code: "FINISHED" };
       if (url.includes("/media?")) return { id: "c" };
       if (url.includes("/media_publish")) return { id: "m" };
       return {};

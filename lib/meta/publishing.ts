@@ -94,10 +94,87 @@ export async function createMediaContainer(
   return postJson(`${baseUrl(input)}/media?${params.toString()}`, input.accessToken, {}, input.fetchImpl);
 }
 
-/** Publica o container criado. */
+type ContainerStatus = "FINISHED" | "IN_PROGRESS" | "ERROR" | "EXPIRED" | "PUBLISHED" | "UNKNOWN";
+
+interface ContainerWaitOptions {
+  /** Tentativas de leitura do status antes de desistir (padrão 10). */
+  maxAttempts?: number;
+  /** Intervalo entre leituras em ms (padrão 3000). */
+  intervalMs?: number;
+  /** Injetável nos testes. */
+  sleep?: (ms: number) => Promise<void>;
+}
+
+const defaultSleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Lê `GET /{container-id}?fields=status_code`. A Meta processa a imagem de forma
+ * assíncrona; publicar antes de `FINISHED` devolve "Media ID is not available".
+ */
+async function getContainerStatus(
+  input: MetaPublishConfig & { containerId: string; fetchImpl?: typeof fetch },
+): Promise<{ ok: true; status: ContainerStatus } | { ok: false; error: string; status: number | null }> {
+  const host = input.apiHost ?? "graph.facebook.com";
+  const version = input.apiVersion ?? GRAPH_API_VERSION;
+  const url = `https://${host}/${version}/${input.containerId}?fields=status_code`;
+  const fetcher = input.fetchImpl ?? fetch;
+  let response: Response;
+  try {
+    response = await fetcher(url, { method: "GET", headers: { Authorization: `Bearer ${input.accessToken}` } });
+  } catch (error) {
+    return { ok: false, error: String(error), status: null };
+  }
+  const payload = (await response.json().catch(() => null)) as
+    | { status_code?: string; error?: { message?: string } }
+    | null;
+  if (!response.ok) {
+    return { ok: false, error: payload?.error?.message ?? `HTTP ${String(response.status)}`, status: response.status };
+  }
+  const known: ContainerStatus[] = ["FINISHED", "IN_PROGRESS", "ERROR", "EXPIRED", "PUBLISHED"];
+  const code = payload?.status_code;
+  return { ok: true, status: known.find((k) => k === code) ?? "UNKNOWN" };
+}
+
+/** Espera o container ficar `FINISHED` (ou falha em ERROR/EXPIRED/timeout). */
+async function waitForContainerReady(
+  input: MetaPublishConfig & { containerId: string; fetchImpl?: typeof fetch } & ContainerWaitOptions,
+): Promise<{ ok: true } | { ok: false; error: string; status: number | null }> {
+  const maxAttempts = input.maxAttempts ?? 10;
+  const intervalMs = input.intervalMs ?? 3000;
+  const sleep = input.sleep ?? defaultSleep;
+  let last = "sem leitura";
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const read = await getContainerStatus(input);
+    if (read.ok) {
+      if (read.status === "FINISHED") return { ok: true };
+      if (read.status === "ERROR" || read.status === "EXPIRED" || read.status === "PUBLISHED") {
+        return { ok: false, error: `container ${read.status}`, status: null };
+      }
+      last = read.status;
+    } else {
+      last = read.error;
+    }
+    if (attempt < maxAttempts) await sleep(intervalMs);
+  }
+  return { ok: false, error: `container não ficou pronto (${last})`, status: null };
+}
+
+/**
+ * Publica o container criado. Por padrão espera o `status_code` FINISHED antes
+ * do `media_publish` (sem isso a Meta responde "Media ID is not available").
+ */
 export async function publishContainer(
-  input: MetaPublishConfig & { creationId: string; fetchImpl?: typeof fetch },
+  input: MetaPublishConfig & {
+    creationId: string;
+    fetchImpl?: typeof fetch;
+    /** `false` pula a espera (só para quem já confirmou FINISHED). */
+    waitForReady?: boolean;
+  } & ContainerWaitOptions,
 ): Promise<PublishResult> {
+  if (input.waitForReady !== false) {
+    const ready = await waitForContainerReady({ ...input, containerId: input.creationId });
+    if (!ready.ok) return ready;
+  }
   const params = new URLSearchParams({ creation_id: input.creationId });
   return postJson(`${baseUrl(input)}/media_publish?${params.toString()}`, input.accessToken, {}, input.fetchImpl);
 }
