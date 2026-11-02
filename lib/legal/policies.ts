@@ -121,3 +121,40 @@ export const RETENTION_SECTIONS: readonly LegalSection[] = [
     ],
   },
 ];
+
+/** Instruções de Exclusão de Dados (/exclusao-de-dados) — URL exigida pela Meta (App Review). */
+export const DATA_DELETION_SECTIONS: readonly LegalSection[] = [
+  {
+    id: "objetivo",
+    title: "Como pedir a exclusão dos seus dados",
+    paragraphs: [
+      "Você pode pedir a exclusão de todos os dados que o EventeIA guarda sobre você, inclusive os recebidos pelo Instagram e pelo Facebook Messenger (Meta), como o seu nome de usuário, o identificador da conta e o conteúdo das mensagens e comentários trocados com a gente. Esse direito é garantido pela LGPD (Lei 13.709/2018, art. 18).",
+    ],
+  },
+  {
+    id: "passos",
+    title: "Passo a passo",
+    items: [
+      "Acesse a página de contato (/contato) e escolha o assunto \"Privacidade / exclusão de dados\", ou mande uma mensagem direta para o perfil oficial do EventeIA no Instagram ou na Página do Facebook com o texto \"EXCLUIR MEUS DADOS\".",
+      "Informe o e-mail da sua conta EventeIA ou o seu @ do Instagram / nome no Messenger, para localizarmos os seus registros.",
+      "Confirmamos o pedido no e-mail ou na conversa em até 2 dias úteis e concluímos a exclusão em até 15 dias, conforme a LGPD.",
+      "Ao final, enviamos a confirmação da exclusão com um código de protocolo.",
+    ],
+  },
+  {
+    id: "meta",
+    title: "Remover o acesso do EventeIA pelo Facebook ou Instagram",
+    items: [
+      "No Facebook: Configurações e privacidade > Configurações > Aplicativos e sites > EventeIA > Remover.",
+      "No Instagram: Configurações > Apps e sites > EventeIA > Remover.",
+      "Remover o app interrompe novas trocas de mensagens; para apagar o histórico já guardado, faça também o pedido descrito acima.",
+    ],
+  },
+  {
+    id: "o-que-e-excluido",
+    title: "O que é excluído e o que pode ser mantido",
+    paragraphs: [
+      "Excluímos ou anonimizamos dados da conta, mensagens, comentários, identificadores do Instagram/Messenger e arquivos de eventos. Registros que a lei obriga a guardar (por exemplo, dados fiscais e de pagamento) são mantidos apenas pelo prazo legal, como descrito na Política de Retenção de Dados (/retencao-de-dados) e na Política de Privacidade (/privacidade).",
+    ],
+  },
+];
