@@ -159,7 +159,7 @@ export const TERMS_SECTIONS: readonly LegalSection[] = [
       "O EventeIA intermedeia o contato e organiza os orçamentos. O EventeIA não é parte do contrato entre você e o fornecedor.",
       "Preços, disponibilidade, qualidade, prazos e a execução do serviço são de responsabilidade do fornecedor que você escolher.",
       "Não garantimos que todos os fornecedores respondam nem que respondam em um prazo específico.",
-      "As estimativas e a organização feitas pelo sistema (inclusive com inteligência artificial) ajudam na decisão, mas a decisão final é sua. Confira os dados com o fornecedor antes de fechar.",
+      "As estimativas e a organização feitas pelo sistema (inclusive por processamento automatizado) ajudam na decisão, mas a decisão final é sua. Confira os dados com o fornecedor antes de fechar.",
       "Nada nestes Termos limita os direitos que o Código de Defesa do Consumidor garante a você.",
     ],
   },

@@ -13,6 +13,7 @@ import type { FreeCoverageItem } from "@/lib/prospecting/coverage-loop";
 import { createCoveragePorts } from "@/lib/prospecting/coverage-store";
 import { withCoverageLoop, type CoveragePorts } from "@/lib/prospecting/coverage-turn";
 import type { ConversationStatus } from "@/lib/prospecting/inbound";
+import type { AgentContext } from "@/lib/prospecting/agent";
 import { respondToInbound } from "@/lib/prospecting/respond";
 import {
   createSupabaseRespondPorts,
