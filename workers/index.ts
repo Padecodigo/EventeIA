@@ -27,6 +27,7 @@ import type { MetaPublishConfig } from "@/lib/meta/publishing";
 import { runMetaTokenHealthCheck } from "@/lib/meta/token-health-monitor";
 import { OutsideBusinessHoursError } from "@/lib/outreach/business-defer";
 import { runSupplierWindowSweep } from "@/lib/outreach/supplier-conversations";
+import { runProspectWindowReminders } from "@/lib/outreach/window-reminder-supabase";
 import { purgeExpiredArt } from "@/lib/prospecting/art-cache";
 import { deleteFinishedProspectPosts } from "@/lib/prospecting/delete-posts";
 import { QUEUE_NAMES, getQueue, getRedisConnection } from "@/lib/queue";
@@ -129,6 +130,16 @@ const metaWindowSweepWorker = new Worker(
   async () => {
     const closed = await runSupplierWindowSweep();
     if (closed > 0) logger.info({ closed }, "janelas de mensagem do Meta expiradas — canal_fechado");
+  },
+  { connection, concurrency: 1 },
+);
+
+// Lembrete da janela de 24h (Instagram/Messenger): idempotente, 1x por janela.
+const prospectWindowReminderWorker = new Worker(
+  QUEUE_NAMES.prospectWindowReminder,
+  async () => {
+    const result = await runProspectWindowReminders();
+    if (result.sent > 0) logger.info({ sent: result.sent }, "lembretes de janela 24h enviados");
   },
   { connection, concurrency: 1 },
 );
@@ -253,6 +264,11 @@ void getQueue(QUEUE_NAMES.metaWindowSweep).add(
   {},
   { repeat: { pattern: "*/15 * * * *", tz: "America/Sao_Paulo" }, attempts: 3 },
 );
+void getQueue(QUEUE_NAMES.prospectWindowReminder).add(
+  "sweep",
+  {},
+  { repeat: { pattern: "*/15 * * * *", tz: "America/Sao_Paulo" }, attempts: 1 },
+);
 void getQueue(QUEUE_NAMES.eventHistoryPurge).add(
   "purge",
   {},
@@ -272,7 +288,7 @@ void getQueue(QUEUE_NAMES.creditsExpireLegacy)
   })
   .catch(() => undefined);
 
-const workers = [asaasWorker, metaWebhooksWorker, prospectReplyWorker, reconcileWorker, balanceWorker, metaTokenHealthWorker, metaWindowSweepWorker, artCleanupWorker, prospectPostDeleteWorker, instagramPublishWorker, marketingAutopilotWorker, eventHistoryPurgeWorker, costArchivePurgeWorker, discoveryWorker, quoteExtractionWorker];
+const workers = [asaasWorker, metaWebhooksWorker, prospectReplyWorker, reconcileWorker, balanceWorker, metaTokenHealthWorker, metaWindowSweepWorker, prospectWindowReminderWorker, artCleanupWorker, prospectPostDeleteWorker, instagramPublishWorker, marketingAutopilotWorker, eventHistoryPurgeWorker, costArchivePurgeWorker, discoveryWorker, quoteExtractionWorker];
 
 for (const worker of workers) {
   worker.on("error", (error) => {
