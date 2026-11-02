@@ -2,6 +2,7 @@ import "server-only";
 
 import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { pageOrGeneralToken } from "@/lib/meta/page-token";
 import { sendPrivateReply } from "@/lib/meta/publishing";
 import {
   resolveInstagramSupplier,
@@ -79,6 +80,8 @@ export interface MetaWebhookJobDeps {
   env: {
     keyword: string;
     accessToken?: string;
+    /** Page token: usado para resolver o @ do remetente do Instagram (fallback: accessToken). */
+    pageAccessToken?: string;
     igBusinessId?: string;
     pageId?: string;
     appId?: string;
@@ -125,6 +128,7 @@ export function defaultMetaWebhookJobDeps(): MetaWebhookJobDeps {
     env: {
       keyword: env.META_PROSPECT_KEYWORD,
       accessToken: env.META_ACCESS_TOKEN,
+      pageAccessToken: env.META_PAGE_ACCESS_TOKEN,
       igBusinessId: env.META_INSTAGRAM_BUSINESS_ID,
       pageId: env.META_PAGE_ID,
       appId: env.META_APP_ID,
@@ -213,9 +217,16 @@ async function processMessage(message: MetaInboundMessage, deps: MetaWebhookJobD
   let supplier: MetaSupplier = null;
 
   if (message.source === "instagram" && configured(env.accessToken)) {
-    supplier = await deps.resolveSupplier(deps.lookup, message.senderId, env.accessToken);
+    const igToken = pageOrGeneralToken(env.pageAccessToken, env.accessToken);
+    supplier = await deps.resolveSupplier(deps.lookup, message.senderId, igToken);
+    if (supplier === null) {
+      logger.warn(
+        { channel: "instagram", senderId: message.senderId },
+        "instagram: remetente não resolvido para fornecedor (@ não obtido ou sem match) — sem resposta automática",
+      );
+    }
     if (supplier !== null && deps.markPostContact !== undefined && deps.handleFromSid !== undefined) {
-      const handle = await deps.handleFromSid(message.senderId, env.accessToken);
+      const handle = await deps.handleFromSid(message.senderId, igToken);
       if (handle !== null) await deps.markPostContact(handle);
     }
     if (supplier !== null) {

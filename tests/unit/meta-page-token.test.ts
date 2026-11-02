@@ -24,9 +24,13 @@ describe("messageConfig (regressão: Messenger exige Page token)", () => {
     const cfg = messageConfig({ ...base, channel: "messenger" } as never, env);
     expect(cfg).toMatchObject({ channel: "messenger", pageId: "pg-1", accessToken: "page" });
   });
-  it("Instagram continua com o token geral", () => {
+  it("Instagram usa o Page token quando configurado (regressão: system user dá #100)", () => {
     const cfg = messageConfig({ ...base, channel: "instagram" } as never, env);
-    expect(cfg).toMatchObject({ channel: "instagram", accessToken: "su" });
+    expect(cfg).toMatchObject({ channel: "instagram", accessToken: "page" });
+  });
+  it("Instagram sem Page token cai para o token geral", () => {
+    const cfg = messageConfig({ ...base, channel: "instagram" } as never, { ...env, pageAccessToken: "" });
+    expect(cfg.accessToken).toBe("su");
   });
   it("Messenger sem Page token usa o token geral", () => {
     const cfg = messageConfig({ ...base, channel: "messenger" } as never, { ...env, pageAccessToken: undefined });

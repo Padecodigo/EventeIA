@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { logger } from "@/lib/logger";
+
 /**
  * Resolve o remetente de uma DM do Instagram (IGSID) para um fornecedor
  * conhecido. Fundação do "interpretar + responder": o webhook recebe apenas o
@@ -36,12 +38,25 @@ export async function instagramHandleFromSid(
     response = await fetchImpl(`https://graph.facebook.com/v21.0/${igSid}?fields=username`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-  } catch {
+  } catch (error) {
+    logger.warn({ igSid, error: String(error) }, "instagram: falha de rede ao resolver @ do remetente");
     return null;
   }
-  if (!response.ok) return null;
-  const parsed = usernameSchema.safeParse(await response.json().catch(() => null));
-  return parsed.success ? parsed.data.username.toLowerCase() : null;
+  const body: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    const err = (body as { error?: { code?: unknown; message?: unknown } } | null)?.error;
+    logger.warn(
+      { igSid, status: response.status, code: err?.code, message: err?.message },
+      "instagram: Graph API recusou resolver @ do remetente",
+    );
+    return null;
+  }
+  const parsed = usernameSchema.safeParse(body);
+  if (!parsed.success) {
+    logger.warn({ igSid }, "instagram: resposta da Graph API sem username");
+    return null;
+  }
+  return parsed.data.username.toLowerCase();
 }
 
 /** Fornecedor pelo @handle (usado em comentários, onde o username já vem no payload). */
