@@ -99,6 +99,11 @@ const serverSchema = z.object({
   AI_USE_DEEPSEEK: z.enum(["true", "false", ""]).default("true").transform((v) => v !== "false"),
   // Central de atendimento: destino dos alertas imediatos (problema/urgente). Vazio = sem alerta.
   SUPPORT_ADMIN_EMAIL: z.string().email().optional().or(z.literal("")),
+  // Aviso por e-mail ao dono quando um fornecedor responde no IG/Messenger.
+  // Vazio = usa SUPPORT_ADMIN_EMAIL; ambos vazios = sem aviso.
+  SUPPLIER_REPLY_NOTIFY_EMAIL: z.string().email().optional().or(z.literal("")),
+  // No máximo 1 e-mail por conversa nesta janela (anti-spam); o e-mail resume as pendentes.
+  SUPPLIER_REPLY_NOTIFY_THROTTLE_MINUTES: z.coerce.number().int().min(1).default(30),
 });
 
 /** Chave de API presente e não vazia (vazio = não configurado). Type guard. */
