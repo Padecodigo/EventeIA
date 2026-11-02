@@ -30,7 +30,7 @@ function makeDeps(overrides: Partial<DiscoveryDeps> = {}, event: Partial<Discove
         status: "active",
         ownerId: "22222222-2222-4222-8222-222222222222",
         workspaceId: null,
-        interviewCompleted: true,
+        interviewCompleted: true, confirmed: true,
         discoveryStartedAt: null,
         requirements: [
           { category: "buffet", label: "Buffet", quantity: 100, unit: "por_pessoa", notes: null },
@@ -104,6 +104,15 @@ describe("runDiscoveryRound", () => {
   });
   it("não roda sem entrevista concluída", async () => {
     const { deps, jobs } = makeDeps({}, { interviewCompleted: false });
+    const s = await runDiscoveryRound(deps, [fixed("grok", ["(12) 99111-0001"])], {
+      eventId: "x",
+      round: 0,
+    });
+    expect(s.status).toBe("not_ready");
+    expect(jobs).toHaveLength(0);
+  });
+  it("regressão 0082: data agendada chegou mas evento SEM código confirmado ⇒ não roda", async () => {
+    const { deps, jobs } = makeDeps({}, { confirmed: false });
     const s = await runDiscoveryRound(deps, [fixed("grok", ["(12) 99111-0001"])], {
       eventId: "x",
       round: 0,

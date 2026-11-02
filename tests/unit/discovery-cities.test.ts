@@ -76,7 +76,7 @@ describe("runDiscoveryRound multi-cidade", () => {
         Promise.resolve({
           id: "e1", title: "T", eventType: "casamento", eventDateIso: "2026-12-12", guestCount: 100,
           city: "Taubaté", cityUf: "SP", regionCode: "sp", status: "active", ownerId: "o", workspaceId: null,
-          interviewCompleted: true, discoveryStartedAt: null,
+          interviewCompleted: true, confirmed: true, discoveryStartedAt: null,
           requirements: [{ category: "buffet", label: "Buffet", quantity: 100, unit: "por_pessoa", notes: null }],
           ...event,
         }),

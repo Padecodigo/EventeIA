@@ -1,8 +1,11 @@
 import "server-only";
 
+import { confirmEventByDm, type ConfirmByDmResult } from "@/lib/events/confirm-by-dm";
+import { createConfirmByDmPorts } from "@/lib/events/confirm-by-dm-runtime";
 import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { pageOrGeneralToken } from "@/lib/meta/page-token";
+import { sendInstagramText } from "@/lib/meta/client";
+import { instagramSendTarget, pageOrGeneralToken } from "@/lib/meta/page-token";
 import { sendPrivateReply } from "@/lib/meta/publishing";
 import {
   resolveInstagramSupplier,
@@ -114,6 +117,11 @@ export interface MetaWebhookJobDeps {
   handleFromSid?: (igSid: string, accessToken: string) => Promise<string | null>;
   /** Aviso ao dono (e-mail com anti-spam) quando uma mensagem do fornecedor é gravada. */
   notifyOwner?: (notice: SupplierReplyNotice) => Promise<unknown>;
+  /**
+   * 0082: DM com código de confirmação do evento (qualquer remetente) confirma e
+   * publica o evento. `handled` interrompe o fluxo de fornecedor para essa mensagem.
+   */
+  confirmByDm?: (input: { senderId: string; text: string }) => Promise<ConfirmByDmResult>;
 }
 
 function configured(value: string | undefined): value is string {
@@ -172,6 +180,19 @@ export function defaultMetaWebhookJobDeps(): MetaWebhookJobDeps {
         },
         notice,
       ),
+    confirmByDm: (input) =>
+      confirmEventByDm(
+        createConfirmByDmPorts(async (text) => {
+          const sent = await sendInstagramText({
+            ...instagramSendTarget(env),
+            recipientId: input.senderId,
+            text,
+            apiVersion: env.META_API_VERSION,
+          });
+          if (!sent.ok) logger.warn({ error: sent.error }, "falha ao responder confirmação de evento por DM");
+        }),
+        input,
+      ),
   };
 }
 
@@ -215,6 +236,15 @@ async function processMessage(message: MetaInboundMessage, deps: MetaWebhookJobD
   const { env } = deps;
 
   let supplier: MetaSupplier = null;
+
+  // Código de confirmação do evento: antes e independente do casamento com fornecedor.
+  if (message.source === "instagram" && deps.confirmByDm !== undefined) {
+    const confirmation = await deps.confirmByDm({ senderId: message.senderId, text: message.text });
+    if (confirmation.handled) {
+      logger.info({ outcome: confirmation.outcome, eventId: confirmation.eventId }, "DM de confirmação de evento tratada");
+      return;
+    }
+  }
 
   if (message.source === "instagram" && configured(env.accessToken)) {
     const igToken = pageOrGeneralToken(env.pageAccessToken, env.accessToken);

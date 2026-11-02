@@ -71,7 +71,7 @@ export function createDiscoveryDeps(): DiscoveryDeps {
       const { data: e } = await admin
         .from("events")
         .select(
-          "id,title,event_type,event_date,guest_count,budget_limit_cents,city,city_uf,search_city_codes,region_code,status,owner_profile_id,workspace_id,interview_completed_at,discovery_started_at",
+          "id,title,event_type,event_date,guest_count,budget_limit_cents,city,city_uf,search_city_codes,region_code,status,owner_profile_id,workspace_id,interview_completed_at,discovery_started_at,confirmed_at",
         )
         .eq("id", eventId)
         .maybeSingle();
@@ -102,6 +102,7 @@ export function createDiscoveryDeps(): DiscoveryDeps {
         ownerId: e.owner_profile_id,
         workspaceId: e.workspace_id,
         interviewCompleted: e.interview_completed_at !== null,
+        confirmed: e.confirmed_at !== null,
         discoveryStartedAt:
           e.discovery_started_at === null ? null : new Date(e.discovery_started_at),
         requirements: (reqs ?? []).map((r) => ({

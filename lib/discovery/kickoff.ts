@@ -8,7 +8,9 @@
  * o evento ficava eternamente "preparando" sem nunca cotar.
  */
 export interface KickoffDeps {
-  loadEvent(eventId: string): Promise<{ status: string; interviewCompleted: boolean } | null>;
+  loadEvent(
+    eventId: string,
+  ): Promise<{ status: string; interviewCompleted: boolean; confirmed: boolean } | null>;
   startDiscovery(eventId: string): Promise<boolean>;
   warn(message: string, context: Record<string, unknown>): void;
 }
@@ -21,7 +23,8 @@ export async function kickoffDiscoveryIfReady(
 ): Promise<KickoffResult> {
   try {
     const event = await deps.loadEvent(eventId);
-    if (event === null || event.status !== "active" || !event.interviewCompleted)
+    // Sem o código de confirmação enviado por DM o evento não sai (0082).
+    if (event === null || event.status !== "active" || !event.interviewCompleted || !event.confirmed)
       return "not_ready";
     const queued = await deps.startDiscovery(eventId);
     if (!queued) {

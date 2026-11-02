@@ -134,10 +134,11 @@ async function triggerDiscoveryForWebhook(
     if (eventId === null) return;
     const { data: ev } = await admin
       .from("events")
-      .select("status,interview_completed_at")
+      .select("status,interview_completed_at,confirmed_at")
       .eq("id", eventId)
       .maybeSingle();
-    if (ev?.status === "active" && ev.interview_completed_at !== null) {
+    // Ativação sem o código de confirmação (DM no Instagram) não inicia a busca (0082).
+    if (ev?.status === "active" && ev.interview_completed_at !== null && ev.confirmed_at !== null) {
       await startDiscovery(eventId);
     }
   } catch {
