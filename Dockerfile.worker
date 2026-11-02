@@ -8,7 +8,8 @@ FROM mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN corepack enable
+# Node >= 25 (imagem Playwright) não traz mais o corepack embutido: instala via npm (--force: a imagem já tem /usr/bin/yarn).
+RUN (command -v corepack >/dev/null || npm install -g --force corepack@latest) && corepack enable
 
 # Só manifests → cache de camada estável (mesmo padrão do Dockerfile principal).
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
