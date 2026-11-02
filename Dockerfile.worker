@@ -8,7 +8,9 @@ FROM mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN corepack enable
+# A imagem do Playwright passou a vir com Node 26, que não traz mais o corepack;
+# instala o pnpm fixo na versão do `packageManager` do package.json.
+RUN npm install -g pnpm@12.14.0
 
 # Só manifests → cache de camada estável (mesmo padrão do Dockerfile principal).
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
