@@ -28,6 +28,14 @@ describe("messageConfig (regressão: Messenger exige Page token)", () => {
     const cfg = messageConfig({ ...base, channel: "instagram" } as never, env);
     expect(cfg).toMatchObject({ channel: "instagram", accessToken: "page" });
   });
+  it("Instagram com Page token envia pelo nó da Página (regressão: /{ig-id}/messages dá 400 subcode 33)", () => {
+    const cfg = messageConfig({ ...base, channel: "instagram" } as never, env);
+    expect(cfg).toMatchObject({ channel: "instagram", instagramBusinessId: "pg-1" });
+  });
+  it("Instagram sem Page token mantém o nó do IG business", () => {
+    const cfg = messageConfig({ ...base, channel: "instagram" } as never, { ...env, pageAccessToken: undefined });
+    expect(cfg).toMatchObject({ instagramBusinessId: "ig-1", accessToken: "su" });
+  });
   it("Instagram sem Page token cai para o token geral", () => {
     const cfg = messageConfig({ ...base, channel: "instagram" } as never, { ...env, pageAccessToken: "" });
     expect(cfg.accessToken).toBe("su");

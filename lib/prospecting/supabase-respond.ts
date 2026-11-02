@@ -170,7 +170,7 @@ export function createSupabaseRespondPorts(deps: RespondPortsDeps): RespondPorts
       const send = deps.send ?? defaultSend;
       const result = await send(deps.message, deps.recipientId, text);
       if (!result.ok) {
-        logger.warn({ status: result.status }, "falha ao responder DM do fornecedor");
+        logger.warn({ status: result.status, error: result.error }, "falha ao responder DM do fornecedor");
         return false;
       }
       const { error } = await deps.db.from("prospect_messages").insert({
