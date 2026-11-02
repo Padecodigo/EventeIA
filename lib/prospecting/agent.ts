@@ -117,7 +117,7 @@ export function buildSystemPrompt(context: AgentContext): string {
       : "",
     "Responda SOMENTE com um objeto JSON (em TODOS os turnos, inclusive os seguintes):",
     '{"reply":"texto da resposta","quote":null,"escalate":false,"done":false,"opt_out":false,"referrals":[]}',
-    "Quando houver cotação, preencha quote com: product, specifications, volume, moq, priceCents, deadlineDays, shippingCents, paymentTerms, validUntil (números inteiros; valores monetários em centavos inteiros, ex.: R$ 3.800 = 380000; campos desconhecidos = null).",
+    "Quando houver cotação, preencha quote com: product, specifications, volume, moq, priceCents, unitPriceCents, deadlineDays, shippingCents, paymentTerms, validUntil (números inteiros; valores monetários em centavos inteiros, ex.: R$ 3.800 = 380000; campos desconhecidos = null). Preço por convidado/pessoa (ex.: R$ 85 por convidado) vai em unitPriceCents (8500) e volume = número de convidados; priceCents é o total do evento (null se não souber).",
     describeEventContext(context),
   ]
     .filter((line) => line !== "")

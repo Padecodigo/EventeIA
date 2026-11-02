@@ -12,6 +12,8 @@ export const structuredQuoteSchema = z.object({
   volume: z.number().int().nonnegative().nullable(),
   moq: z.number().int().positive().nullable(),
   priceCents: z.number().int().nonnegative().nullable(),
+  /** Preço unitário por convidado/pessoa (ex.: "R$ 85 por convidado"), em centavos. */
+  unitPriceCents: z.number().int().nonnegative().nullish(),
   deadlineDays: z.number().int().nonnegative().nullable(),
   shippingCents: z.number().int().nonnegative().nullable(),
   paymentTerms: z.string().trim().max(300).nullable(),
@@ -27,7 +29,7 @@ export function parseStructuredQuote(raw: unknown): StructuredQuote | null {
 }
 
 const INT_FIELDS = ["volume", "moq", "deadlineDays"] as const;
-const CENTS_FIELDS = ["priceCents", "shippingCents"] as const;
+const CENTS_FIELDS = ["priceCents", "unitPriceCents", "shippingCents"] as const;
 const TEXT_FIELDS = ["specifications", "paymentTerms", "validUntil"] as const;
 
 /** "60 pessoas" → 60; "1.200" → 1200; texto sem número → null. */
@@ -45,6 +47,19 @@ function toInt(value: unknown): number | null {
  * (null) só os campos opcionais inválidos. Sem `product` válido → null.
  * Strings monetárias só são aceitas quando são número puro em centavos.
  */
+/**
+ * Preço por convidado: com o número de convidados conhecido, o total é
+ * unitário × convidados. Corrige o caso em que o modelo pôs o unitário em
+ * priceCents (priceCents === unitPriceCents).
+ */
+function withPerGuestTotal(quote: StructuredQuote): StructuredQuote {
+  const unit = quote.unitPriceCents;
+  if (unit === null || unit === undefined || quote.volume === null || quote.volume <= 0)
+    return quote;
+  if (quote.priceCents !== null && quote.priceCents !== unit) return quote;
+  return { ...quote, priceCents: unit * quote.volume };
+}
+
 export function coerceStructuredQuote(raw: unknown): StructuredQuote | null {
   if (raw === null || typeof raw !== "object") return null;
   const input = raw as Record<string, unknown>;
@@ -69,5 +84,5 @@ export function coerceStructuredQuote(raw: unknown): StructuredQuote | null {
     else if (key === "product") return null;
     else out[key] = null;
   }
-  return out as StructuredQuote;
+  return withPerGuestTotal(out as StructuredQuote);
 }

@@ -6,7 +6,7 @@
 
 /** Fallback fixo, usado só quando a guarda detecta oferta de outro canal. */
 export const CHANNEL_POLICY_REPLY =
-  "Por aqui a gente atende só pelas redes sociais, Instagram e Messenger (o Instagram é o nosso preferido, siga a @eventeia por lá). " +
+  "Por aqui a gente atende só pelas redes sociais, Instagram e Messenger (o Instagram é o nosso preferido, siga a @eventeia). " +
   "Pode mandar aqui mesmo o valor que você cobra pelo serviço?";
 
 export const CHANNEL_POLICY_PROMPT = [
@@ -14,6 +14,8 @@ export const CHANNEL_POLICY_PROMPT = [
   "Se o contato pedir WhatsApp, telefone, ligação, SMS, e-mail, Telegram ou outro canal, reconheça o pedido com naturalidade,",
   "explique que o atendimento é só pelas redes sociais (Instagram e Messenger), reforce com gentileza o Instagram como canal preferido",
   "(convide a seguir a @eventeia) e peça o orçamento ali mesmo, com o valor que cobra pelo serviço.",
+  'A conversa JÁ acontece no Direct da @eventeia (ou no Messenger da página): nunca diga "chama a gente no @eventeia", "fala com a gente por lá" nem "fechar por lá"; no máximo convide a seguir a página.',
+  "Se o contato disser que vai ligar, passar o número comercial ou mandar no WhatsApp, responda com naturalidade que preferimos seguir por aqui mesmo e peça o valor.",
   "NUNCA ofereça, peça para migrar nem compartilhe número de WhatsApp, telefone, e-mail ou outro contato fora das redes sociais.",
 ].join(" ");
 
