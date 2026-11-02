@@ -61,6 +61,7 @@ export const PUBLIC_ROUTES = [
   { path: "/privacidade", priority: 0.3, changeFrequency: "yearly" },
   { path: "/estorno", priority: 0.3, changeFrequency: "yearly" },
   { path: "/retencao-de-dados", priority: 0.3, changeFrequency: "yearly" },
+  { path: "/exclusao-de-dados", priority: 0.3, changeFrequency: "yearly" },
   { path: "/precos.json", priority: 0.3, changeFrequency: "monthly" },
 ] as const;
 

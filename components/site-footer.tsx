@@ -56,6 +56,9 @@ export function SiteFooter() {
           <Link prefetch={false} href="/retencao-de-dados" className="text-ink-inverse/70 transition hover:text-ink-inverse">
             Retenção de Dados
           </Link>
+          <Link prefetch={false} href="/exclusao-de-dados" className="text-ink-inverse/70 transition hover:text-ink-inverse">
+            Exclusão de Dados
+          </Link>
         </div>
       </nav>
     </div>
