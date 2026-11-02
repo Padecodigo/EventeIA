@@ -16,6 +16,7 @@ import {
   markMetaWebhookFailed,
   type MetaWebhookJobData,
 } from "@/lib/jobs/meta-webhook";
+import { requeueStaleMetaWebhooks } from "@/lib/jobs/meta-webhook-requeue";
 import {
   handleProspectReplyJob,
   type ProspectReplyJobData,
@@ -120,6 +121,43 @@ const metaTokenHealthWorker = new Worker(
   QUEUE_NAMES.metaTokenHealth,
   async () => {
     await runMetaTokenHealthCheck();
+  },
+  { connection, concurrency: 1 },
+);
+
+// Eventos do Meta presos em 'received' (job perdido no Redis) → reenfileira.
+const metaWebhookRequeueWorker = new Worker(
+  QUEUE_NAMES.metaWebhookRequeue,
+  async () => {
+    const admin = getSupabaseAdmin();
+    const result = await requeueStaleMetaWebhooks({
+      now: () => new Date(),
+      listStale: async (olderThan, newerThan, limit) => {
+        const { data, error } = await admin
+          .from("webhook_events")
+          .select("id,external_event_id,payload")
+          .eq("source", "meta" as unknown as "whatsapp_cloud")
+          .eq("status", "received")
+          .lt("received_at", olderThan)
+          .gt("received_at", newerThan)
+          .order("received_at", { ascending: true })
+          .limit(limit);
+        if (error !== null) throw new Error(`falha ao listar webhook_events (${error.code})`);
+        return data ?? [];
+      },
+      enqueue: async (jobId, data) => {
+        await getQueue(QUEUE_NAMES.metaWebhooks).add("process", data, {
+          jobId,
+          attempts: 5,
+          backoff: { type: "exponential", delay: 5_000 },
+          removeOnComplete: 1000,
+          removeOnFail: false,
+        });
+      },
+    });
+    if (result.requeued > 0 || result.skipped > 0) {
+      logger.warn(result, "webhooks meta presos em received reenfileirados");
+    }
   },
   { connection, concurrency: 1 },
 );
@@ -259,6 +297,11 @@ void getQueue(QUEUE_NAMES.metaTokenHealth).add(
   {},
   { repeat: { pattern: "10 8 * * *", tz: "America/Sao_Paulo" }, attempts: 3 },
 );
+void getQueue(QUEUE_NAMES.metaWebhookRequeue).add(
+  "sweep",
+  {},
+  { repeat: { pattern: "*/10 * * * *", tz: "America/Sao_Paulo" }, attempts: 3 },
+);
 void getQueue(QUEUE_NAMES.metaWindowSweep).add(
   "sweep",
   {},
@@ -288,7 +331,7 @@ void getQueue(QUEUE_NAMES.creditsExpireLegacy)
   })
   .catch(() => undefined);
 
-const workers = [asaasWorker, metaWebhooksWorker, prospectReplyWorker, reconcileWorker, balanceWorker, metaTokenHealthWorker, metaWindowSweepWorker, prospectWindowReminderWorker, artCleanupWorker, prospectPostDeleteWorker, instagramPublishWorker, marketingAutopilotWorker, eventHistoryPurgeWorker, costArchivePurgeWorker, discoveryWorker, quoteExtractionWorker];
+const workers = [asaasWorker, metaWebhooksWorker, metaWebhookRequeueWorker, prospectReplyWorker, reconcileWorker, balanceWorker, metaTokenHealthWorker, metaWindowSweepWorker, prospectWindowReminderWorker, artCleanupWorker, prospectPostDeleteWorker, instagramPublishWorker, marketingAutopilotWorker, eventHistoryPurgeWorker, costArchivePurgeWorker, discoveryWorker, quoteExtractionWorker];
 
 for (const worker of workers) {
   worker.on("error", (error) => {
