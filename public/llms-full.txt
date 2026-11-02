@@ -1,4 +1,4 @@
-# EventeIA — descrição completa para assistentes de IA
+# EventeIA — descrição completa para buscadores e assistentes automatizados
 
 ## O que é
 A EventeIA é um serviço brasileiro de orçamento de festa e eventos. A pessoa descreve o evento (tipo, data, cidade, número de convidados, estilo e orçamento). A EventeIA encontra fornecedores da região, pede cotações por Instagram e Messenger, organiza as respostas e entrega 3 cenários comparados:

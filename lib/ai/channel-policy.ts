@@ -18,12 +18,12 @@ export const CHANNEL_POLICY_PROMPT = [
 ].join(" ");
 
 /**
- * Identidade em TODA resposta automática: a EventeIA, serviço de prospecção
- * autônomo. "somos a EventeIA" só na primeira resposta ou quando perguntarem
+ * Identidade em TODA resposta automática: a EventeIA, um serviço autônomo de prospecção
+ * de fornecedores. "somos a EventeIA" só na primeira resposta ou quando perguntarem
  * quem somos. Nunca diz por conta própria que é IA; não mente se perguntado.
  */
 export const IDENTITY_POLICY_PROMPT = [
-  "Identidade (obrigatória): fale como a própria empresa, a EventeIA, um serviço de prospecção autônomo de fornecedores para eventos,",
+  "Identidade (obrigatória): fale como a própria empresa, a EventeIA, um serviço autônomo de prospecção de fornecedores para eventos,",
   "em nome da empresa, na primeira pessoa do plural (nós, a EventeIA).",
   'Use a frase "somos a EventeIA" SOMENTE na primeira resposta da conversa ou quando perguntarem quem somos; nas demais, não se reapresente.',
   "Nunca mencione nem sugira por conta própria que é uma IA, inteligência artificial, modelo de linguagem, chatbot ou assistente virtual.",
@@ -96,10 +96,42 @@ export function offersOffChannel(text: string): boolean {
     .some((sentence) => CHANNEL_MENTION.test(sentence) && !RESTRICTION.test(sentence));
 }
 
+/** Termos proibidos em texto público ("EventeIA" é permitido). */
+export const BANNED_PUBLIC_TERMS =
+  /(?<![\p{L}\p{N}_])(?:IA|I\.A\.|intelig[eê]ncia artificial|assistente virtual)(?![\p{L}\p{N}_])/iu;
+
+/** true quando o texto contém "IA" isolado, "inteligência artificial" ou "assistente virtual". */
+export function containsBannedTerms(text: string): boolean {
+  return BANNED_PUBLIC_TERMS.test(text);
+}
+
+const BANNED_REWRITES: readonly [RegExp, string][] = [
+  [
+    /(?<![\p{L}\p{N}_])(?:uma|um)\s+(?:IA|I\.A\.|intelig[eê]ncia artificial|assistente virtual)(?![\p{L}\p{N}_])/giu,
+    "um serviço autônomo de prospecção de fornecedores",
+  ],
+  [
+    /(?<![\p{L}\p{N}_])(?:a|o)\s+(?:IA|I\.A\.|intelig[eê]ncia artificial|assistente virtual)(?![\p{L}\p{N}_])/giu,
+    "o serviço autônomo de prospecção de fornecedores",
+  ],
+  [
+    /(?<![\p{L}\p{N}_])(?:IA|I\.A\.|intelig[eê]ncia artificial|assistente virtual)(?![\p{L}\p{N}_])/giu,
+    "serviço autônomo de prospecção de fornecedores",
+  ],
+];
+
+/** Reescreve os termos proibidos para a persona "um serviço autônomo de prospecção de fornecedores". */
+export function rewriteBannedTerms(text: string): string {
+  return BANNED_REWRITES.reduce(
+    (acc, [pattern, replacement]) => acc.replace(pattern, replacement),
+    text,
+  );
+}
+
 /**
  * Guarda determinística: a resposta gerada só é trocada pelo fallback fixo
  * quando oferece outro canal; uma recusa natural do modelo é preservada.
  */
 export function enforceSocialOnlyReply(reply: string): string {
-  return offersOffChannel(reply) ? CHANNEL_POLICY_REPLY : reply;
+  return offersOffChannel(reply) ? CHANNEL_POLICY_REPLY : rewriteBannedTerms(reply);
 }

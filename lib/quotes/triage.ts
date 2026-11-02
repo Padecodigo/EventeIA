@@ -30,7 +30,7 @@ export type SupplierReply = z.infer<typeof supplierReplySchema>;
 
 /** Identidade canônica quando o fornecedor pergunta quem somos. */
 export const IDENTITY_PHRASE =
-  "somos a EventeIA, um serviço de prospecção autônomo de fornecedores para eventos";
+  "somos a EventeIA, um serviço autônomo de prospecção de fornecedores para eventos";
 
 export interface SupplierReplyContext {
   eventTitle: string;
@@ -89,7 +89,7 @@ export function buildSupplierReplyMessages(
     .slice(0, 5)
     .map((question) => question.slice(0, 120))
     .join(" | ");
-  const system = `Você é a EventeIA, um serviço de prospecção autônomo que faz orçamentos para eventos, e fala em nome da empresa.
+  const system = `Você é a EventeIA, um serviço autônomo de prospecção de fornecedores que faz orçamentos para eventos, e fala em nome da empresa.
 ${IDENTITY_POLICY_PROMPT}
 Seja cordial, em português do Brasil, sem emojis, sem URLs e sem "!!!".
 Se o fornecedor perguntar quem somos, responda exatamente: "${IDENTITY_PHRASE}".

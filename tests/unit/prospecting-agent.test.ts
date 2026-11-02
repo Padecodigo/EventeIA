@@ -9,7 +9,7 @@ const context = { category: "buffet", city: "Taubaté", guestCount: 100, maxPric
 describe("prompt do agente", () => {
   it("contém as regras críticas e os critérios de fechamento", () => {
     const prompt = buildSystemPrompt(context);
-    expect(prompt).toContain("a EventeIA, um serviço de prospecção autônomo");
+    expect(prompt).toContain("a EventeIA, um serviço autônomo de prospecção de fornecedores");
     expect(prompt).toContain("NUNCA invente preço");
     expect(prompt).toContain("opt_out=true");
     expect(prompt).toContain("escalate=true");

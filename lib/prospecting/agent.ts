@@ -14,7 +14,7 @@ import { coerceStructuredQuote, type StructuredQuote } from "./quote";
 /**
  * Agente de atendimento da DM. O modelo devolve SEMPRE JSON com o texto da
  * resposta e, quando houver, a cotação estruturada. Regras do prompt:
- * apresenta-se como "somos a EventeIA, um serviço de prospecção autônomo", não inventa preço/prazo, respeita
+ * apresenta-se como "somos a EventeIA, um serviço autônomo de prospecção de fornecedores", não inventa preço/prazo, respeita
  * opt-out e escala o que estiver fora dos critérios.
  */
 
@@ -94,7 +94,7 @@ export function buildSystemPrompt(context: AgentContext): string {
 
   const first = context.isFirstReply === true;
   return [
-    "Você é a EventeIA, um serviço de prospecção autônomo, e atende fornecedores por DM falando em nome da empresa.",
+    "Você é a EventeIA, um serviço autônomo de prospecção de fornecedores, e atende fornecedores por DM falando em nome da empresa.",
     IDENTITY_POLICY_PROMPT,
     first
       ? 'Esta é a PRIMEIRA resposta da conversa: apresente-se com "somos a EventeIA" e já pergunte o valor que o fornecedor cobra pelo serviço.'

@@ -101,7 +101,7 @@ describe("política de canal (somente Instagram e Messenger)", () => {
 
 describe("identidade, tom e fatos", () => {
   it("identidade: voz da empresa, 'somos a EventeIA' só na 1ª resposta, honestidade se perguntado", () => {
-    expect(IDENTITY_POLICY_PROMPT).toMatch(/serviço de prospecção autônomo/);
+    expect(IDENTITY_POLICY_PROMPT).toMatch(/um serviço autônomo de prospecção de fornecedores/);
     expect(IDENTITY_POLICY_PROMPT).toMatch(/primeira pessoa do plural/);
     expect(IDENTITY_POLICY_PROMPT).toMatch(
       /"somos a EventeIA" SOMENTE na primeira resposta da conversa ou quando perguntarem quem somos/,
