@@ -13,6 +13,7 @@ import type { FreeCoverageItem } from "@/lib/prospecting/coverage-loop";
 import { createCoveragePorts } from "@/lib/prospecting/coverage-store";
 import { withCoverageLoop, type CoveragePorts } from "@/lib/prospecting/coverage-turn";
 import type { ConversationStatus } from "@/lib/prospecting/inbound";
+import type { AgentContext } from "@/lib/prospecting/agent";
 import { respondToInbound } from "@/lib/prospecting/respond";
 import {
   createSupabaseRespondPorts,
@@ -77,6 +78,8 @@ export interface ProspectReplyJobDeps {
   coverage?: (client: ReturnType<typeof getDeepSeekClient>, category: string) => CoveragePorts;
   /** Itens livres do evento ligado à DM, nesta categoria (perguntados como "oferecem exatamente?"). */
   freeItems?: (data: ProspectReplyJobData) => Promise<FreeCoverageItem[]>;
+  /** Contexto real do evento vinculado à DM (data, cidade, convidados…). */
+  eventContext?: (data: ProspectReplyJobData) => Promise<EventPromptContext>;
   now?: () => Date;
 }
 
@@ -136,6 +139,7 @@ export function defaultProspectReplyJobDeps(): ProspectReplyJobDeps {
     },
     coverage: (client, category) => createCoveragePorts({ client, category }),
     freeItems: loadFreeItems,
+    eventContext: loadEventContext,
   };
 }
 
@@ -191,6 +195,68 @@ interface FreeItemsDb {
       };
     };
   };
+}
+
+export type EventPromptContext = Partial<
+  Pick<AgentContext, "eventTitle" | "eventType" | "eventDateIso" | "city" | "guestCount">
+>;
+
+interface EventContextQuery {
+  select(columns: string): EventContextQuery;
+  eq(column: string, value: unknown): EventContextQuery;
+  not(column: string, op: string, value: unknown): EventContextQuery;
+  order(column: string, opts: { ascending: boolean }): EventContextQuery;
+  limit(n: number): PromiseLike<{ data: unknown }>;
+  maybeSingle(): PromiseLike<{ data: unknown }>;
+}
+
+interface EventContextDb {
+  from(table: string): EventContextQuery;
+}
+
+interface EventRow {
+  title: string | null;
+  event_type: string | null;
+  event_date: string | null;
+  city: string | null;
+  city_uf: string | null;
+  guest_count: number | null;
+}
+
+/** Converte a linha de `events` em contexto do prompt; omite campos vazios. */
+export function toEventPromptContext(row: EventRow | null | undefined): EventPromptContext {
+  if (row === null || row === undefined) return {};
+  const out: EventPromptContext = {};
+  if (row.title) out.eventTitle = row.title;
+  if (row.event_type) out.eventType = row.event_type;
+  if (row.event_date) out.eventDateIso = row.event_date;
+  if (row.city) out.city = row.city_uf ? `${row.city}/${row.city_uf}` : row.city;
+  if (typeof row.guest_count === "number") out.guestCount = row.guest_count;
+  return out;
+}
+
+/** DM → evento (supplier_conversations.event_id) → dados reais do evento. */
+async function loadEventContext(
+  data: ProspectReplyJobData,
+  db?: EventContextDb,
+): Promise<EventPromptContext> {
+  const admin = db ?? (getSupabaseAdmin() as unknown as EventContextDb);
+  const { data: convs } = await admin
+    .from("supplier_conversations")
+    .select("event_id")
+    .eq("channel", data.channel)
+    .eq("external_user_id", data.recipientId)
+    .not("event_id", "is", null)
+    .order("updated_at", { ascending: false })
+    .limit(1);
+  const eventId = (convs as { event_id?: string }[] | null)?.[0]?.event_id;
+  if (eventId === undefined) return {};
+  const { data: row } = await admin
+    .from("events")
+    .select("title,event_type,event_date,city,city_uf,guest_count")
+    .eq("id", eventId)
+    .maybeSingle();
+  return toEventPromptContext(row as EventRow | null);
 }
 
 /** DM → evento (supplier_conversations.event_id) → itens livres da categoria. */
@@ -318,6 +384,7 @@ export async function handleProspectReplyJob(
     await deps.respond({
       client,
       context: {
+        ...(await (deps.eventContext?.(data) ?? Promise.resolve({})).catch(() => ({}))),
         category: data.category,
         ...(data.supplierKnown !== undefined ? { supplierKnown: data.supplierKnown } : {}),
       },

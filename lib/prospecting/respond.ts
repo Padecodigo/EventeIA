@@ -14,9 +14,15 @@ import type { StructuredQuote } from "./quote";
 export interface RespondPorts {
   /** Retorna true quando a DM foi efetivamente enviada (false = falha de envio). */
   sendReply(conversationId: string, text: string): Promise<boolean>;
-  saveQuote(conversationId: string, supplierId: string | null, quote: StructuredQuote): Promise<void>;
+  saveQuote(
+    conversationId: string,
+    supplierId: string | null,
+    quote: StructuredQuote,
+  ): Promise<void>;
   markOptOut(conversationId: string, supplierId: string | null): Promise<void>;
   escalate(conversationId: string, reason: string): Promise<void>;
+  /** Opcional: guarda @ indicados como lead (sem port, só registra em log). */
+  saveReferrals?(conversationId: string, handles: readonly string[]): Promise<void>;
 }
 
 export type RespondAction = "opt_out" | "escalated" | "quoted" | "done" | "replied";
@@ -48,7 +54,8 @@ export function quoteOverLimitReason(
   }
   if (maxDeadlineDays !== undefined) {
     if (quote.deadlineDays === null || quote.deadlineDays > maxDeadlineDays) {
-      const value = quote.deadlineDays === null ? "não informado" : `${String(quote.deadlineDays)} dias`;
+      const value =
+        quote.deadlineDays === null ? "não informado" : `${String(quote.deadlineDays)} dias`;
       return `prazo ${value} acima de ${String(maxDeadlineDays)} dias`;
     }
   }
@@ -98,6 +105,12 @@ export async function applyAgentReply(
     }
   }
 
+  const referrals = reply.referrals ?? [];
+  if (referrals.length > 0) {
+    if (ports.saveReferrals !== undefined) await ports.saveReferrals(conversationId, referrals);
+    else logger.info({ conversationId, referrals }, "prospecção: fornecedores indicados");
+  }
+
   const quoted = reply.quote !== null;
   if (reply.quote !== null) {
     await ports.saveQuote(conversationId, supplierId, reply.quote);
@@ -126,9 +139,16 @@ export interface RespondInput {
 
 /** Roda o agente e aplica o resultado; escala ao humano quando a saída é inválida. */
 export async function respondToInbound(input: RespondInput): Promise<ApplyResult> {
-  const reply = await runAgent({ client: input.client, context: input.context, history: input.history });
+  const reply = await runAgent({
+    client: input.client,
+    context: input.context,
+    history: input.history,
+  });
   if (reply === null) {
-    logger.warn({ conversationId: input.conversationId }, "prospecção: saída inválida da IA — escalando");
+    logger.warn(
+      { conversationId: input.conversationId },
+      "prospecção: saída inválida da IA — escalando",
+    );
     await input.ports.escalate(input.conversationId, "saída inválida da IA");
     return { action: "escalated", sent: false };
   }

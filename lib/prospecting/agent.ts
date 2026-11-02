@@ -1,9 +1,15 @@
 import { z } from "zod";
 
-import { CHANNEL_POLICY_PROMPT, CONVERSATION_TONE_PROMPT, IDENTITY_POLICY_PROMPT, enforceSocialOnlyReply } from "@/lib/ai/channel-policy";
+import {
+  CHANNEL_POLICY_PROMPT,
+  COMPANY_FACTS_PROMPT,
+  CONVERSATION_TONE_PROMPT,
+  IDENTITY_POLICY_PROMPT,
+  enforceSocialOnlyReply,
+} from "@/lib/ai/channel-policy";
 import { parseFencedJson } from "@/lib/ai/fence-json";
 
-import { structuredQuoteSchema, type StructuredQuote } from "./quote";
+import { coerceStructuredQuote, type StructuredQuote } from "./quote";
 
 /**
  * Agente de atendimento da DM. O modelo devolve SEMPRE JSON com o texto da
@@ -14,10 +20,13 @@ import { structuredQuoteSchema, type StructuredQuote } from "./quote";
 
 export const agentReplySchema = z.object({
   reply: z.string().trim().min(1).max(1200),
-  quote: structuredQuoteSchema.nullable().optional(),
-  escalate: z.boolean().default(false),
-  done: z.boolean().default(false),
-  opt_out: z.boolean().default(false),
+  // A cotação é validada à parte (coerceStructuredQuote): um campo inválido
+  // não pode descartar a resposta inteira.
+  quote: z.unknown().optional(),
+  escalate: z.boolean().catch(false).default(false),
+  done: z.boolean().catch(false).default(false),
+  opt_out: z.boolean().catch(false).default(false),
+  referrals: z.array(z.unknown()).catch([]).optional(),
 });
 
 export type AgentReply = {
@@ -26,7 +35,20 @@ export type AgentReply = {
   escalate: boolean;
   done: boolean;
   optOut: boolean;
+  /** @ de fornecedores indicados pelo contato (sem o "@"). */
+  referrals?: string[];
 };
+
+/** Normaliza @ indicados: "@Confeitaria.X" → "confeitaria.x"; descarta lixo. */
+export function normalizeReferrals(raw: readonly unknown[] | undefined): string[] {
+  const out = new Set<string>();
+  for (const item of raw ?? []) {
+    if (typeof item !== "string") continue;
+    const handle = item.trim().replace(/^@/, "").toLowerCase();
+    if (/^[a-z0-9._]{2,30}$/.test(handle)) out.add(handle);
+  }
+  return [...out].slice(0, 10);
+}
 
 export interface AgentContext {
   category: string;
@@ -38,20 +60,50 @@ export interface AgentContext {
   maxDeadlineDays?: number;
   /** false quando o remetente ainda não foi identificado (Messenger). */
   supplierKnown?: boolean;
+  /** Título e data (AAAA-MM-DD) do evento, quando conhecidos. */
+  eventTitle?: string;
+  eventDateIso?: string;
+  /** true na primeira resposta da conversa (única em que se apresenta). */
+  isFirstReply?: boolean;
+}
+
+function formatDateBr(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  return m === null ? iso : `${m[3]}/${m[2]}/${m[1]}`;
+}
+
+/** Contexto factual do evento; só campos conhecidos (nada é inventado). */
+function describeEventContext(context: AgentContext): string {
+  const parts = [`categoria cotada: ${context.category}`];
+  if (context.eventType !== undefined) parts.push(`tipo: ${context.eventType}`);
+  if (context.eventTitle !== undefined) parts.push(`evento: "${context.eventTitle}"`);
+  if (context.eventDateIso !== undefined) parts.push(`data: ${formatDateBr(context.eventDateIso)}`);
+  if (context.city !== undefined) parts.push(`cidade: ${context.city}`);
+  if (context.guestCount !== undefined) parts.push(`${String(context.guestCount)} convidados`);
+  return `Contexto do evento (use só isto; o que não estiver aqui você não sabe): ${parts.join("; ")}.`;
 }
 
 export function buildSystemPrompt(context: AgentContext): string {
   const criteria: string[] = [];
-  if (context.maxPriceCents !== undefined) criteria.push(`preço máximo ${String(context.maxPriceCents)} centavos`);
-  if (context.maxDeadlineDays !== undefined) criteria.push(`prazo máximo ${String(context.maxDeadlineDays)} dias`);
-  const criteriaText = criteria.length > 0 ? criteria.join(" e ") : "sem teto configurado (escale qualquer proposta)";
+  if (context.maxPriceCents !== undefined)
+    criteria.push(`preço máximo ${String(context.maxPriceCents)} centavos`);
+  if (context.maxDeadlineDays !== undefined)
+    criteria.push(`prazo máximo ${String(context.maxDeadlineDays)} dias`);
+  const criteriaText =
+    criteria.length > 0 ? criteria.join(" e ") : "sem teto configurado (escale qualquer proposta)";
 
+  const first = context.isFirstReply === true;
   return [
     "Você é a EventeIA, um serviço de prospecção autônomo, e atende fornecedores por DM falando em nome da empresa.",
     IDENTITY_POLICY_PROMPT,
+    first
+      ? 'Esta é a PRIMEIRA resposta da conversa: apresente-se com "somos a EventeIA" e já pergunte o valor que o fornecedor cobra pelo serviço.'
+      : 'Esta NÃO é a primeira resposta: não se reapresente (não diga "somos a EventeIA"), a menos que perguntem quem somos.',
     "Objetivo: coletar orçamento para o evento do cliente.",
-    "Colete, uma pergunta por vez: produto, especificações, volume/MOQ, preço, prazo, frete, condições de pagamento e validade da proposta.",
+    "Primeiro peça o preço; depois colete, UMA pergunta por vez, só o que faltar: especificações, volume, prazo, frete, condições de pagamento e validade da proposta.",
     "NUNCA invente preço, prazo ou promessa em nome da empresa; use apenas o que o fornecedor informar.",
+    COMPANY_FACTS_PROMPT,
+    "Indicações: se o contato indicar outro fornecedor (ou não atender esta categoria mas conhecer alguém), agradeça e peça o @ do Instagram dele; coloque os @ informados em referrals.",
     "Critério de confirmação automática: " + criteriaText + ".",
     "Se a proposta estiver dentro do critério, confirme na DM (done=true).",
     "Se estiver fora, ou se a decisão final de compra for necessária, escale ao responsável humano (escalate=true).",
@@ -63,15 +115,13 @@ export function buildSystemPrompt(context: AgentContext): string {
     context.supplierKnown === false
       ? "Você ainda não sabe quem é este fornecedor: pergunte o nome do negócio e o @ do Instagram para vincular o atendimento."
       : "",
-    "Responda SOMENTE com um objeto JSON:",
-    '{"reply":"texto da resposta","quote":null,"escalate":false,"done":false,"opt_out":false}',
-    "Quando houver cotação, preencha quote com: product, specifications, volume, moq, priceCents, deadlineDays, shippingCents, paymentTerms, validUntil (valores monetários em centavos inteiros; campos desconhecidos = null).",
-    `Contexto do evento: categoria ${context.category}` +
-      (context.city !== undefined ? `, cidade ${context.city}` : "") +
-      (context.eventType !== undefined ? `, tipo ${context.eventType}` : "") +
-      (context.guestCount !== undefined ? `, ${String(context.guestCount)} convidados` : "") +
-      ".",
-  ].join("\n");
+    "Responda SOMENTE com um objeto JSON (em TODOS os turnos, inclusive os seguintes):",
+    '{"reply":"texto da resposta","quote":null,"escalate":false,"done":false,"opt_out":false,"referrals":[]}',
+    "Quando houver cotação, preencha quote com: product, specifications, volume, moq, priceCents, deadlineDays, shippingCents, paymentTerms, validUntil (números inteiros; valores monetários em centavos inteiros, ex.: R$ 3.800 = 380000; campos desconhecidos = null).",
+    describeEventContext(context),
+  ]
+    .filter((line) => line !== "")
+    .join("\n");
 }
 
 export interface AgentMessage {
@@ -98,19 +148,44 @@ export function buildAgentMessages(
       ? { role: "user" as const, content: wrapSupplierMessage(message.content) }
       : message,
   );
-  return [{ role: "system", content: buildSystemPrompt(context) }, ...messages];
+  const isFirstReply =
+    context.isFirstReply ?? !history.some((message) => message.role === "assistant");
+  return [
+    { role: "system", content: buildSystemPrompt({ ...context, isFirstReply }) },
+    ...messages,
+  ];
+}
+
+/**
+ * O modelo às vezes responde só com o texto (sem JSON) em turnos seguintes.
+ * Texto puro e curto vira uma resposta simples (sem cotação), ainda sob a
+ * guarda de canal; qualquer coisa com cara de JSON quebrado continua null.
+ */
+function plainTextReply(raw: string): AgentReply | null {
+  const text = raw.trim();
+  if (text.length < 15 || text.length > 600 || /[{}`]/.test(text) || text.split(/\s+/).length < 3)
+    return null;
+  return {
+    reply: enforceSocialOnlyReply(text),
+    quote: null,
+    escalate: false,
+    done: false,
+    optOut: false,
+    referrals: [],
+  };
 }
 
 export function parseAgentReply(raw: string): AgentReply | null {
   const json = parseFencedJson(raw);
-  if (json === undefined) return null;
+  if (json === undefined) return plainTextReply(raw);
   const parsed = agentReplySchema.safeParse(json);
   if (!parsed.success) return null;
   return {
     reply: enforceSocialOnlyReply(parsed.data.reply),
-    quote: parsed.data.quote ?? null,
+    quote: coerceStructuredQuote(parsed.data.quote),
     escalate: parsed.data.escalate,
     done: parsed.data.done,
     optOut: parsed.data.opt_out,
+    referrals: normalizeReferrals(parsed.data.referrals),
   };
 }

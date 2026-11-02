@@ -55,9 +55,10 @@ describe("parse da resposta do agente", () => {
   });
 
   it("rejeita JSON inválido ou fora do schema", () => {
-    expect(parseAgentReply("não é json")).toBeNull();
+    expect(parseAgentReply('{"reply": "quebrado"')).toBeNull();
     expect(parseAgentReply(JSON.stringify({ reply: "" }))).toBeNull();
-    expect(parseAgentReply(JSON.stringify({ reply: "ok", quote: { product: "x", priceCents: 1.5 } }))).toBeNull();
+    // campo opcional inválido não descarta mais a resposta: vira null
+    expect(parseAgentReply(JSON.stringify({ reply: "ok", quote: { product: "x", priceCents: 1.5 } }))?.quote?.priceCents).toBeNull();
   });
 
   it("aceita opt-out", () => {

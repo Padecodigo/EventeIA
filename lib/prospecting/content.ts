@@ -54,7 +54,7 @@ export function buildCaption(input: ContentInput): string {
     .map((handle) => `@${handle.replace(/^@/, "")}`)
     .slice(0, CAPTION.maxMentions - 1);
   const mentions = handles.length > 0 ? `\n\nFornecedores do lote: ${handles.join(" ")}` : "";
-  const cta = `\n\nComente ${keyword} e nosso assistente virtual envia o pedido por DM.${mentions}\n\n${DISCLOSURE}`;
+  const cta = `\n\nComente ${keyword} e a EventeIA te chama no Direct.${mentions}\n\n${DISCLOSURE}`;
   return `${opener}${cta}`;
 }
 
