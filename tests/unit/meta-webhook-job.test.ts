@@ -145,6 +145,30 @@ describe("handleMetaWebhookJob", () => {
     expect(webhookEvents.updates).toEqual([{ externalEventId: "m1", status: "processed" }]);
   });
 
+  it("regressão: resolve do remetente IG usa o Page token quando configurado", async () => {
+    const resolveSupplier = vi.fn(async () => ({ id: "s1", name: "Buffet da Ana", category: "buffet" }));
+    const { deps } = makeDeps({
+      env: { keyword: "cotação", accessToken: "tok", pageAccessToken: "page-tok", igBusinessId: "ig-1", pageId: "pg-1" },
+      resolveSupplier,
+    });
+    await handleMetaWebhookJob(
+      { kind: "message", webhookEventId: "wh1", event: msg("m1", "instagram", "oi") },
+      deps,
+    );
+    expect(resolveSupplier).toHaveBeenCalledWith(expect.anything(), "111", "page-tok");
+  });
+
+  it("regressão: sem Page token, resolve do remetente IG cai para o token geral", async () => {
+    const resolveSupplier = vi.fn(async () => null);
+    const { deps, enqueueReply } = makeDeps({ resolveSupplier });
+    await handleMetaWebhookJob(
+      { kind: "message", webhookEventId: "wh1", event: msg("m1", "instagram", "oi") },
+      deps,
+    );
+    expect(resolveSupplier).toHaveBeenCalledWith(expect.anything(), "111", "tok");
+    expect(enqueueReply).not.toHaveBeenCalled();
+  });
+
   it("opt-out determinístico: marca e NÃO enfileira resposta", async () => {
     const { deps, enqueueReply, markOptOut } = makeDeps({
       inbound: vi.fn(async () => ({

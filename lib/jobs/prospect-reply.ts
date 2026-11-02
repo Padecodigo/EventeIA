@@ -4,6 +4,7 @@ import { isFreeItemCode } from "@/lib/catalog/free-items";
 import { getDeepSeekClient } from "@/lib/deepseek/client";
 import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { pageOrGeneralToken } from "@/lib/meta/page-token";
 import { assertBusinessHours } from "@/lib/outreach/business-defer";
 import {
   createSupabaseSupplierConversationStore,
@@ -309,7 +310,7 @@ export function messageConfig(
     : {
         channel: "instagram",
         instagramBusinessId: env.igBusinessId ?? "",
-        accessToken: env.accessToken ?? "",
+        accessToken: pageOrGeneralToken(env.pageAccessToken, env.accessToken),
       };
 }
 
