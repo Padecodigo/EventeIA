@@ -2,7 +2,7 @@ import "server-only";
 
 import { serverEnv } from "@/lib/env";
 import { sendInstagramText, sendMessengerText } from "@/lib/meta/client";
-import { messengerAccessToken } from "@/lib/meta/page-token";
+import { instagramSendTarget, messengerAccessToken } from "@/lib/meta/page-token";
 
 import type { ChatSendFn } from "./chat";
 
@@ -18,8 +18,7 @@ export const sendChatToSupplier: ChatSendFn = async ({ channel, recipientId, tex
           text,
         })
       : await sendInstagramText({
-          accessToken: env.META_ACCESS_TOKEN ?? "",
-          instagramBusinessId: env.META_INSTAGRAM_BUSINESS_ID ?? "",
+          ...instagramSendTarget(env),
           recipientId,
           text,
         });

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 import { messageConfig } from "@/lib/jobs/prospect-reply";
-import { messengerAccessToken } from "@/lib/meta/page-token";
+import { instagramSendTarget, messengerAccessToken } from "@/lib/meta/page-token";
 
 describe("messengerAccessToken", () => {
   it("prefere o Page token quando configurado", () => {
@@ -43,5 +43,30 @@ describe("messageConfig (regressão: Messenger exige Page token)", () => {
   it("Messenger sem Page token usa o token geral", () => {
     const cfg = messageConfig({ ...base, channel: "messenger" } as never, { ...env, pageAccessToken: undefined });
     expect(cfg.accessToken).toBe("su");
+  });
+});
+
+describe("instagramSendTarget (regressão: /{ig-id}/messages com Page token dá 400 subcode 33)", () => {
+  const full = { META_PAGE_ACCESS_TOKEN: "page", META_ACCESS_TOKEN: "su", META_PAGE_ID: "pg-1", META_INSTAGRAM_BUSINESS_ID: "ig-1" };
+  it("com Page token envia pelo nó da Página com o Page token", () => {
+    expect(instagramSendTarget(full)).toEqual({ instagramBusinessId: "pg-1", accessToken: "page" });
+  });
+  it("sem Page token mantém /{ig-id} com o token geral", () => {
+    expect(instagramSendTarget({ ...full, META_PAGE_ACCESS_TOKEN: " " })).toEqual({ instagramBusinessId: "ig-1", accessToken: "su" });
+  });
+});
+
+describe("guarda: nenhum envio de DM do Instagram monta o nó /{ig-id} por conta própria", () => {
+  it("call sites usam instagramSendTarget", async () => {
+    const { readFileSync } = await import("node:fs");
+    for (const f of [
+      "lib/outreach/window-reminder-supabase.ts",
+      "lib/outreach/chat-runtime.ts",
+      "app/(dashboard)/eventos/[id]/selection-actions.ts",
+    ]) {
+      const src = readFileSync(f, "utf8");
+      expect(src, f).toContain("instagramSendTarget(env)");
+      expect(src, f).not.toMatch(/instagramBusinessId:\s*env\.META_INSTAGRAM_BUSINESS_ID/);
+    }
   });
 });
