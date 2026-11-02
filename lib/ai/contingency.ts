@@ -101,6 +101,6 @@ export function contingencyClassification(
 export function contingencySupplierReply(context: SupplierReplyContext): SupplierReply {
   const name = context.vendorName.trim().slice(0, 60) || "tudo bem";
   const where = context.city.trim().length > 0 ? ` em ${context.city.trim()}` : "";
-  const reply = `Olá, ${name}! Obrigado pelo retorno. Somos uma empresa que faz orçamentos para eventos — o evento "${context.eventTitle}" está previsto para ${formatEventDate(context.eventDateIso)}${where}, para ${context.guestCount} convidados (${context.categoryLabel}). Pode me confirmar os valores e o que está incluso?`;
+  const reply = `Olá, ${name}! Obrigado pelo retorno. Somos a EventeIA, um serviço de prospecção autônomo de fornecedores para eventos — o evento "${context.eventTitle}" está previsto para ${formatEventDate(context.eventDateIso)}${where}, para ${context.guestCount} convidados (${context.categoryLabel}). Pode me confirmar os valores e o que está incluso?`;
   return { kind: "question", reply: reply.slice(0, 600), confidence_score: 0.5 };
 }

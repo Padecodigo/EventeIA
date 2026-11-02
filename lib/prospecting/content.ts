@@ -72,4 +72,4 @@ export function buildPostContent(input: ContentInput): PostContent {
 
 /** Texto de abertura da DM enviada como private reply a um comentário. */
 export const PRIVATE_REPLY_OPENER =
-  "Olá! Vi seu comentário. Já te chamo por aqui para entender o pedido.";
+  "Oi! Somos a EventeIA, um serviço de prospecção autônomo. Vimos seu comentário e já te chamamos por aqui para entender o pedido.";
