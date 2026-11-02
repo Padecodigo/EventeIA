@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   CHANNEL_POLICY_PROMPT,
   CHANNEL_POLICY_REPLY,
+  COMPANY_FACTS_PROMPT,
   CONVERSATION_TONE_PROMPT,
   IDENTITY_POLICY_PROMPT,
   enforceSocialOnlyReply,
@@ -10,8 +11,11 @@ import {
 } from "@/lib/ai/channel-policy";
 import { buildSystemPrompt, parseAgentReply } from "@/lib/prospecting/agent";
 import { PRIVATE_REPLY_OPENER } from "@/lib/prospecting/content";
-import { IDENTITY_PHRASE } from "@/lib/quotes/triage";
-import { buildSupplierReplyMessages, sanitizeSupplierReply } from "@/lib/quotes/triage";
+import {
+  buildSupplierReplyMessages,
+  IDENTITY_PHRASE,
+  sanitizeSupplierReply,
+} from "@/lib/quotes/triage";
 
 const ctx = {
   eventTitle: "Festa",
@@ -23,29 +27,42 @@ const ctx = {
   vendorName: "Buffet X",
 };
 
+const prompts = () => [
+  buildSystemPrompt({ category: "buffet" }),
+  buildSupplierReplyMessages("oi", ctx)[0]?.content ?? "",
+];
+
 describe("política de canal (somente Instagram e Messenger)", () => {
-  it("prompt da regra cita Instagram, Messenger e proíbe WhatsApp/telefone/e-mail", () => {
+  it("regra cita Instagram/Messenger, @eventeia, pede orçamento e proíbe outros canais", () => {
     expect(CHANNEL_POLICY_PROMPT).toContain("Instagram e Messenger");
     expect(CHANNEL_POLICY_PROMPT).toMatch(/WhatsApp/);
+    expect(CHANNEL_POLICY_PROMPT).toMatch(/reconheça o pedido com naturalidade/);
+    expect(CHANNEL_POLICY_PROMPT).toMatch(/@eventeia/);
+    expect(CHANNEL_POLICY_PROMPT).toMatch(/valor que cobra pelo serviço/);
     expect(CHANNEL_POLICY_PROMPT).toMatch(/NUNCA ofereça/);
-    expect(CHANNEL_POLICY_PROMPT).toMatch(/a EventeIA, um serviço de prospecção autônomo/);
-    expect(CHANNEL_POLICY_PROMPT).toMatch(/prospecção autônomo de fornecedores/);
-    expect(CHANNEL_POLICY_PROMPT).toMatch(/orçamento ali mesmo, com o valor que cobra/);
-    expect(CHANNEL_POLICY_PROMPT).toMatch(/seguir a página da EventeIA no Instagram/);
   });
 
-  it("a regra está no prompt do agente de DM (isca) e da triagem de fornecedor", () => {
-    expect(buildSystemPrompt({ category: "buffet" })).toContain(CHANNEL_POLICY_PROMPT);
-    const system = buildSupplierReplyMessages("tem whats?", ctx)[0]?.content ?? "";
-    expect(system).toContain(CHANNEL_POLICY_PROMPT);
+  it("todas as regras estão nos dois prompts de resposta (DM isca e triagem)", () => {
+    for (const prompt of prompts()) {
+      for (const rule of [
+        CHANNEL_POLICY_PROMPT,
+        IDENTITY_POLICY_PROMPT,
+        CONVERSATION_TONE_PROMPT,
+        COMPANY_FACTS_PROMPT,
+      ]) {
+        expect(prompt).toContain(rule);
+      }
+      expect(prompt).not.toMatch(/Você é o assistente/);
+    }
   });
 
-  it("resposta padrão reforça Instagram e não contém canal externo", () => {
+  it("fallback fixo: curto, Instagram preferido, pede o valor, sem canal externo", () => {
     expect(CHANNEL_POLICY_REPLY).toMatch(/Instagram/);
     expect(CHANNEL_POLICY_REPLY).toMatch(/Messenger/);
-    expect(CHANNEL_POLICY_REPLY).toMatch(/Somos a EventeIA, um serviço de prospecção autônomo/);
-    expect(CHANNEL_POLICY_REPLY).toMatch(/Atendemos/);
-    expect(CHANNEL_POLICY_REPLY).toMatch(/orçamento aqui mesmo, com o valor que você cobra/);
+    expect(CHANNEL_POLICY_REPLY).toMatch(/@eventeia/);
+    expect(CHANNEL_POLICY_REPLY).toMatch(/valor que você cobra pelo serviço/);
+    expect(CHANNEL_POLICY_REPLY.length).toBeLessThanOrEqual(250);
+    expect(CHANNEL_POLICY_REPLY.toLowerCase()).not.toContain("somos a eventeia");
     expect(offersOffChannel(CHANNEL_POLICY_REPLY)).toBe(false);
   });
 
@@ -56,7 +73,8 @@ describe("política de canal (somente Instagram e Messenger)", () => {
     "Posso te ligar amanhã?",
     "Nosso telefone é +55 12 98888 7777",
     "Fala comigo no Telegram",
-  ])("detecta oferta fora do canal: %s", (text) => {
+    "Chama a gente em wa.me/5512999998888",
+  ])("guarda troca oferta de outro canal: %s", (text) => {
     expect(offersOffChannel(text)).toBe(true);
     expect(enforceSocialOnlyReply(text)).toBe(CHANNEL_POLICY_REPLY);
   });
@@ -64,55 +82,64 @@ describe("política de canal (somente Instagram e Messenger)", () => {
   it.each([
     "Qual o valor para 80 convidados?",
     "Perfeito, o orçamento fica R$ 12.000,00 com prazo de 15 dias.",
-  ])("mantém resposta normal: %s", (text) => {
+    "Entendo que prefere pelo WhatsApp, mas a gente atende só por aqui, no Instagram e no Messenger. Qual o valor do serviço?",
+    "Não usamos telefone, só as redes sociais. Pode mandar o valor por aqui?",
+    "Vocês ligam o som às 20h? E qual o valor?",
+    "O valor inclui carregador de celular para os convidados?",
+  ])("guarda preserva resposta sem oferta (sem falso positivo): %s", (text) => {
+    expect(offersOffChannel(text)).toBe(false);
     expect(enforceSocialOnlyReply(text)).toBe(text);
   });
 
   it("guarda aplicada no caminho do agente e da triagem", () => {
-    const parsed = parseAgentReply('{"reply":"Me chama no whatsapp 12999998888"}');
-    expect(parsed?.reply).toBe(CHANNEL_POLICY_REPLY);
+    expect(parseAgentReply('{"reply":"Me chama no whatsapp 12999998888"}')?.reply).toBe(
+      CHANNEL_POLICY_REPLY,
+    );
     expect(sanitizeSupplierReply("Manda no email fulano@x.com")).toBe(CHANNEL_POLICY_REPLY);
   });
+});
 
-  it("identidade global: serviço autônomo, sem citar IA, sem mentir se perguntado", () => {
-    expect(IDENTITY_POLICY_PROMPT).toMatch(/"a EventeIA, um serviço de prospecção autônomo"/);
-    expect(IDENTITY_POLICY_PROMPT).toMatch(/em nome da empresa, na primeira pessoa do plural/);
-    expect(IDENTITY_POLICY_PROMPT).toMatch(/no roteiro ou fora dele/);
-    expect(IDENTITY_POLICY_PROMPT).toContain('literalmente a frase "somos a EventeIA"');
+describe("identidade, tom e fatos", () => {
+  it("identidade: voz da empresa, 'somos a EventeIA' só na 1ª resposta, honestidade se perguntado", () => {
+    expect(IDENTITY_POLICY_PROMPT).toMatch(/um serviço autônomo de prospecção de fornecedores/);
+    expect(IDENTITY_POLICY_PROMPT).toMatch(/primeira pessoa do plural/);
+    expect(IDENTITY_POLICY_PROMPT).toMatch(
+      /"somos a EventeIA" SOMENTE na primeira resposta da conversa ou quando perguntarem quem somos/,
+    );
     expect(IDENTITY_POLICY_PROMPT).toMatch(
       /Nunca mencione nem sugira por conta própria que é uma IA/,
     );
-    expect(IDENTITY_POLICY_PROMPT).toMatch(/não minta/);
     expect(IDENTITY_POLICY_PROMPT).toMatch(/nunca diga que é humano/);
-    expect(IDENTITY_POLICY_PROMPT).toMatch(/não use "serviço autônomo" como resposta a essa pergunta/);
     expect(IDENTITY_POLICY_PROMPT).toMatch(/sistema de prospecção da EventeIA/);
-    expect(IDENTITY_POLICY_PROMPT).toMatch(/retome o pedido de orçamento/);
-    const prompts = [
-      buildSystemPrompt({ category: "buffet" }),
-      buildSupplierReplyMessages("oi", ctx)[0]?.content ?? "",
-    ];
-    for (const prompt of prompts) {
-      expect(prompt).toContain(IDENTITY_POLICY_PROMPT);
-      expect(prompt).toContain(CONVERSATION_TONE_PROMPT);
-      expect(prompt).not.toMatch(/Você é o assistente/);
-      expect(prompt).not.toMatch(/NUNCA negue ser um assistente virtual/);
-    }
-    expect(CHANNEL_POLICY_REPLY).not.toMatch(/\bIA\b|intelig[eê]ncia artificial|rob[oô]|chatbot/i);
   });
 
-  it("tom: perguntas fora do roteiro com resposta natural e curta, voltando ao orçamento", () => {
-    expect(CONVERSATION_TONE_PROMPT).toMatch(/Instagram e no Messenger/);
+  it("tom: no máximo 2 frases / ~250 caracteres, sem repetir contexto", () => {
+    expect(CONVERSATION_TONE_PROMPT).toMatch(/no máximo 2 frases \(cerca de 250 caracteres\)/);
     expect(CONVERSATION_TONE_PROMPT).toMatch(/fora do roteiro/);
-    expect(CONVERSATION_TONE_PROMPT).toMatch(/natural, humana e nada robótica/);
-    expect(CONVERSATION_TONE_PROMPT).toMatch(/curta e conversacional/);
-    expect(CONVERSATION_TONE_PROMPT).toMatch(/redirecione para o orçamento/);
+    expect(CONVERSATION_TONE_PROMPT).toMatch(
+      /Não repita cidade, número de convidados ou categoria/,
+    );
+  });
+
+  it("fatos: sem custo, quem paga, canais, retorno, privacidade, 'não sei'; sem CNPJ", () => {
+    expect(COMPANY_FACTS_PROMPT).toMatch(/nenhum custo para o fornecedor/);
+    expect(COMPANY_FACTS_PROMPT).toMatch(
+      /quem organiza o evento é quem usa a EventeIA para cotar e comparar/,
+    );
+    expect(COMPANY_FACTS_PROMPT).toMatch(/@eventeia/);
+    expect(COMPANY_FACTS_PROMPT).toMatch(/eventeia\.com\.br/);
+    expect(COMPANY_FACTS_PROMPT).toMatch(/sempre damos retorno/);
+    expect(COMPANY_FACTS_PROMPT).toMatch(
+      /nunca compartilhe nome, contato ou qualquer dado do cliente/,
+    );
+    expect(COMPANY_FACTS_PROMPT).toMatch(/Se não souber algo, diga que não sabe/);
+    expect(COMPANY_FACTS_PROMPT).not.toMatch(/CNPJ/);
   });
 
   it('abertura e autoidentificação contêm literalmente "somos a EventeIA"', () => {
-    for (const text of [PRIVATE_REPLY_OPENER, CHANNEL_POLICY_REPLY, IDENTITY_PHRASE]) {
+    for (const text of [PRIVATE_REPLY_OPENER, IDENTITY_PHRASE]) {
       expect(text.toLowerCase()).toContain("somos a eventeia");
     }
-    expect(PRIVATE_REPLY_OPENER).toMatch(/^Oi! Somos a EventeIA, um serviço de prospecção autônomo/);
     expect(offersOffChannel(PRIVATE_REPLY_OPENER)).toBe(false);
   });
 });

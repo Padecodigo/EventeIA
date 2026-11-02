@@ -9,7 +9,7 @@ const context = { category: "buffet", city: "Taubaté", guestCount: 100, maxPric
 describe("prompt do agente", () => {
   it("contém as regras críticas e os critérios de fechamento", () => {
     const prompt = buildSystemPrompt(context);
-    expect(prompt).toContain("a EventeIA, um serviço de prospecção autônomo");
+    expect(prompt).toContain("a EventeIA, um serviço autônomo de prospecção de fornecedores");
     expect(prompt).toContain("NUNCA invente preço");
     expect(prompt).toContain("opt_out=true");
     expect(prompt).toContain("escalate=true");
@@ -55,9 +55,10 @@ describe("parse da resposta do agente", () => {
   });
 
   it("rejeita JSON inválido ou fora do schema", () => {
-    expect(parseAgentReply("não é json")).toBeNull();
+    expect(parseAgentReply('{"reply": "quebrado"')).toBeNull();
     expect(parseAgentReply(JSON.stringify({ reply: "" }))).toBeNull();
-    expect(parseAgentReply(JSON.stringify({ reply: "ok", quote: { product: "x", priceCents: 1.5 } }))).toBeNull();
+    // campo opcional inválido não descarta mais a resposta: vira null
+    expect(parseAgentReply(JSON.stringify({ reply: "ok", quote: { product: "x", priceCents: 1.5 } }))?.quote?.priceCents).toBeNull();
   });
 
   it("aceita opt-out", () => {

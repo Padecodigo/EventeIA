@@ -54,7 +54,7 @@ export function buildCaption(input: ContentInput): string {
     .map((handle) => `@${handle.replace(/^@/, "")}`)
     .slice(0, CAPTION.maxMentions - 1);
   const mentions = handles.length > 0 ? `\n\nFornecedores do lote: ${handles.join(" ")}` : "";
-  const cta = `\n\nComente ${keyword} e nosso assistente virtual envia o pedido por DM.${mentions}\n\n${DISCLOSURE}`;
+  const cta = `\n\nComente ${keyword} e a EventeIA te chama no Direct.${mentions}\n\n${DISCLOSURE}`;
   return `${opener}${cta}`;
 }
 
@@ -72,4 +72,4 @@ export function buildPostContent(input: ContentInput): PostContent {
 
 /** Texto de abertura da DM enviada como private reply a um comentário. */
 export const PRIVATE_REPLY_OPENER =
-  "Oi! Somos a EventeIA, um serviço de prospecção autônomo. Vimos seu comentário e já te chamamos por aqui para entender o pedido.";
+  "Oi! Somos a EventeIA, um serviço autônomo de prospecção de fornecedores. Vimos seu comentário e já te chamamos por aqui para entender o pedido.";

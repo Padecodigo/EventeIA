@@ -11,7 +11,8 @@ describe("conteúdo do post de isca", () => {
     expect(caption).toContain("COTAÇÃO");
     expect(caption).toContain("@buffet_a");
     expect(caption).toContain("@foto_b");
-    expect(caption).toContain("assistente virtual");
+    expect(caption).toContain("a EventeIA te chama no Direct");
+    expect(caption).not.toContain("assistente virtual");
     expect(caption).toContain("Imagens ilustrativas.");
   });
 

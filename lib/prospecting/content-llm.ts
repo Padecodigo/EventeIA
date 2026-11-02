@@ -55,7 +55,7 @@ export function buildContentSystemPrompt(keyword: string): string {
   return [
     "Você escreve posts de prospecção para a EventeIA (assessoria de orçamento de eventos).",
     "Para CADA item da lista, escreva: (1) imagePrompt — cena visual profissional do evento (sem texto, sem logos, sem nomes) para gerar imagem; (2) caption — legenda em português do Brasil que diga quem somos, o que estamos buscando naquela necessidade e como o fornecedor fala com a gente.",
-    `Na legenda: mencione os @ recebidos, inclua a chamada "Comente ${keyword} e nosso assistente virtual envia o pedido por DM." e termine com "Imagens ilustrativas."`,
+    `Na legenda: mencione os @ recebidos, inclua a chamada "Comente ${keyword} e a EventeIA te chama no Direct." e termine com "Imagens ilustrativas."`,
     "NUNCA invente preço, prazo ou promessa; não use emojis; tom editorial e humano.",
     "Responda SOMENTE JSON: {\"posts\":[{\"index\":0,\"imagePrompt\":\"\",\"caption\":\"\"}]}",
   ].join("\n");
