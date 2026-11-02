@@ -169,6 +169,29 @@ describe("handleMetaWebhookJob", () => {
     expect(enqueueReply).not.toHaveBeenCalled();
   });
 
+  it("0082: DM com código de confirmação (remetente desconhecido) confirma e NÃO entra no fluxo de fornecedor", async () => {
+    const confirmByDm = vi.fn(async () => ({ handled: true as const, outcome: "confirmed" as const, eventId: "e1" }));
+    const resolveSupplier = vi.fn(async () => null);
+    const { deps, enqueueReply, inbound } = makeDeps({ confirmByDm, resolveSupplier });
+    await handleMetaWebhookJob(
+      { kind: "message", webhookEventId: "wh-c1", event: msg("mc1", "instagram", "oi! evt-7k3q9a") },
+      deps,
+    );
+    expect(confirmByDm).toHaveBeenCalledWith({ senderId: "111", text: "oi! evt-7k3q9a" });
+    expect(resolveSupplier).not.toHaveBeenCalled();
+    expect(inbound).not.toHaveBeenCalled();
+    expect(enqueueReply).not.toHaveBeenCalled();
+  });
+  it("0082: DM sem código segue o fluxo normal de fornecedor", async () => {
+    const confirmByDm = vi.fn(async () => ({ handled: false as const }));
+    const { deps, enqueueReply } = makeDeps({ confirmByDm });
+    await handleMetaWebhookJob(
+      { kind: "message", webhookEventId: "wh-c2", event: msg("mc2", "instagram", "tem buffet para 100?") },
+      deps,
+    );
+    expect(confirmByDm).toHaveBeenCalledTimes(1);
+    expect(enqueueReply).toHaveBeenCalledTimes(1);
+  });
   it("opt-out determinístico: marca e NÃO enfileira resposta", async () => {
     const { deps, enqueueReply, markOptOut } = makeDeps({
       inbound: vi.fn(async () => ({

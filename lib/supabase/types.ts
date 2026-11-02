@@ -91,6 +91,8 @@ export interface Database {
         collection_ended_at: string | null;
         quotes_delivered_at: string | null;
         search_start_date: string | null;
+        confirmation_code: string;
+        confirmed_at: string | null;
         created_at: string;
         whatsapp_channel: "cloud" | "evolution" | null;
       }>;

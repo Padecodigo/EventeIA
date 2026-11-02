@@ -46,6 +46,8 @@ export interface DiscoveryEvent {
   ownerId: string;
   workspaceId: string | null;
   interviewCompleted: boolean;
+  /** Código de confirmação recebido por DM (0082). Sem isso não publica nem prospecta. */
+  confirmed: boolean;
   discoveryStartedAt: Date | null;
   requirements: {
     itemCode?: string;
@@ -295,6 +297,7 @@ export async function runDiscoveryRound(
     event === null ||
     event.status !== "active" ||
     !event.interviewCompleted ||
+    !event.confirmed ||
     event.city.length < 2
   ) {
     return { ...summary, status: "not_ready" };
@@ -452,6 +455,7 @@ export async function ingestBatch(
     event === null ||
     event.status !== "active" ||
     !event.interviewCompleted ||
+    !event.confirmed ||
     event.city.length < 2
   ) {
     return { ok: false, reason: "not_ready" };

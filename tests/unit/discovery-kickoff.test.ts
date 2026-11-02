@@ -3,10 +3,11 @@ import { describe, expect, it, vi } from "vitest";
 import { kickoffDiscoveryIfReady, type KickoffDeps } from "@/lib/discovery/kickoff";
 
 function deps(
-  event: { status: string; interviewCompleted: boolean } | null,
+  event: { status: string; interviewCompleted: boolean; confirmed?: boolean } | null,
   queued = true,
 ): KickoffDeps & { startDiscovery: ReturnType<typeof vi.fn> } {
-  return { loadEvent: async () => event, startDiscovery: vi.fn(async () => queued), warn: vi.fn() };
+  return {
+    loadEvent: async () => (event === null ? null : { confirmed: true, ...event }), startDiscovery: vi.fn(async () => queued), warn: vi.fn() };
 }
 
 describe("kickoffDiscoveryIfReady", () => {
@@ -23,6 +24,11 @@ describe("kickoffDiscoveryIfReady", () => {
   it("não ativo ⇒ não inicia", async () => {
     const d = deps({ status: "draft", interviewCompleted: true });
     expect(await kickoffDiscoveryIfReady(d, "e1")).toBe("not_ready");
+  });
+  it("regressão 0082: ativo + entrevista mas SEM código confirmado ⇒ não inicia", async () => {
+    const d = deps({ status: "active", interviewCompleted: true, confirmed: false });
+    expect(await kickoffDiscoveryIfReady(d, "e1")).toBe("not_ready");
+    expect(d.startDiscovery).not.toHaveBeenCalled();
   });
   it("evento inexistente ⇒ not_ready", async () => {
     expect(await kickoffDiscoveryIfReady(deps(null), "e1")).toBe("not_ready");

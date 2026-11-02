@@ -160,11 +160,14 @@ export async function approveEventPostAction(
   const admin = getSupabaseAdmin();
   const { data: event } = await admin
     .from("events")
-    .select("id,event_type,event_date,city,city_uf,region_code")
+    .select("id,event_type,event_date,city,city_uf,region_code,confirmed_at")
     .eq("id", eventId)
     .maybeSingle();
   if (event === null) {
     return { ok: false, error: "Evento não encontrado." };
+  }
+  if (event.confirmed_at === null) {
+    return { ok: false, error: "Evento ainda não confirmado pelo contratante (código por DM)." };
   }
 
   const env = serverEnv();

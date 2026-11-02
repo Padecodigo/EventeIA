@@ -63,7 +63,7 @@ describe("integração com a ingestão (dedupe com outros provedores)", () => {
     const deps = {
       now: () => new Date("2026-10-24T13:00:00Z"),
       dryRunAll: true,
-      loadEvent: () => Promise.resolve({ id: "e", title: "T", eventType: "casamento", eventDateIso: "2026-12-12", guestCount: 100, city: "Taubaté", regionCode: "sp", status: "active", ownerId: "o", workspaceId: null, interviewCompleted: true, discoveryStartedAt: null, requirements: [{ category: "buffet", label: "Buffet", quantity: 1, unit: "por_pessoa", notes: null }] }),
+      loadEvent: () => Promise.resolve({ id: "e", title: "T", eventType: "casamento", eventDateIso: "2026-12-12", guestCount: 100, city: "Taubaté", regionCode: "sp", status: "active", ownerId: "o", workspaceId: null, interviewCompleted: true, confirmed: true, discoveryStartedAt: null, requirements: [{ category: "buffet", label: "Buffet", quantity: 1, unit: "por_pessoa", notes: null }] }),
       eventProspects: () => Promise.resolve([{ phone: "+5512991234567", category: "buffet", name: "Buffet Sabor (site)" }]),
       isPhoneOptedOut: () => Promise.resolve(false),
       upsertSupplier: () => Promise.resolve({ id: "s", optOutAt: null, lastContactedAt: null }),

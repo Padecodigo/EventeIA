@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EventConfirmationCodeCard } from "@/components/events/event-confirmation-code-card";
 import { notFound } from "next/navigation";
 
 import { z } from "zod";
@@ -314,6 +315,10 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           />
         </div>
       </header>
+
+      {event.confirmed_at === null ? (
+        <EventConfirmationCodeCard code={event.confirmation_code} />
+      ) : null}
 
       <FollowInstagramCard />
 

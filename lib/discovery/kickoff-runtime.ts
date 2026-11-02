@@ -14,12 +14,16 @@ export function kickoffDiscovery(eventId: string): Promise<KickoffResult> {
       async loadEvent(id) {
         const { data } = await admin
           .from("events")
-          .select("status,interview_completed_at")
+          .select("status,interview_completed_at,confirmed_at")
           .eq("id", id)
           .maybeSingle();
         return data === null
           ? null
-          : { status: data.status, interviewCompleted: data.interview_completed_at !== null };
+          : {
+              status: data.status,
+              interviewCompleted: data.interview_completed_at !== null,
+              confirmed: data.confirmed_at !== null,
+            };
       },
       startDiscovery,
       warn: (message, context) => logger.warn(context, message),
