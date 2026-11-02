@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { serverEnv } from "@/lib/env";
 import type { MetaWebhookJobData } from "@/lib/jobs/meta-webhook";
+import { metaJobId } from "@/lib/jobs/meta-webhook-requeue";
 import { logger } from "@/lib/logger";
 import { verifyChallenge, verifyHubSignature } from "@/lib/meta/signature";
 import { parseMetaComments, parseMetaEchoes, parseMetaWebhook } from "@/lib/meta/webhook";
@@ -34,10 +35,6 @@ export function GET(request: Request): NextResponse {
   return new NextResponse(challenge, { status: 200, headers: { "Content-Type": "text/plain" } });
 }
 
-/** JobId do BullMQ deduplica por chave; ':' é reservado internamente pelo BullMQ. */
-function metaJobId(externalEventId: string): string {
-  return `meta_${externalEventId.replaceAll(":", "_")}`;
-}
 
 /**
  * Persiste o evento e enfileira o processamento. Retorna true quando um job foi

@@ -23,6 +23,7 @@ export const QUEUE_NAMES = {
   prospectPostDelete: "prospect-post-delete",
   instagramPublish: "instagram-publish",
   metaWebhooks: "meta-webhooks",
+  metaWebhookRequeue: "meta-webhook-requeue",
   prospectReply: "prospect-reply",
   metaWindowSweep: "meta-window-sweep",
   prospectWindowReminder: "prospect-window-reminder",
