@@ -9,7 +9,7 @@ import { serverEnv } from "@/lib/env";
 import { emitFeed } from "@/lib/feeds";
 import { logger } from "@/lib/logger";
 import { sendInstagramText, sendMessengerText } from "@/lib/meta/client";
-import { messengerAccessToken } from "@/lib/meta/page-token";
+import { instagramSendTarget, messengerAccessToken } from "@/lib/meta/page-token";
 import { formatBRL } from "@/lib/money";
 import { buildSelectionMessage, relayDecision } from "@/lib/selection/relay";
 import type { SelectionStatus } from "@/lib/selection/state";
@@ -44,8 +44,7 @@ async function sendToSupplier(
           text,
         })
       : await sendInstagramText({
-          accessToken: env.META_ACCESS_TOKEN ?? "",
-          instagramBusinessId: env.META_INSTAGRAM_BUSINESS_ID ?? "",
+          ...instagramSendTarget(env),
           recipientId,
           text,
         });

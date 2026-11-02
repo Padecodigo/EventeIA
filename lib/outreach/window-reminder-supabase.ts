@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { serverEnv } from "@/lib/env";
 import { sendInstagramText, sendMessengerText } from "@/lib/meta/client";
+import { instagramSendTarget } from "@/lib/meta/page-token";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 import {
@@ -116,8 +117,7 @@ function createSupabaseReminderPorts(db: Db = getSupabaseAdmin()): ReminderPorts
               apiVersion: env.META_API_VERSION,
             })
           : await sendInstagramText({
-              instagramBusinessId: env.META_INSTAGRAM_BUSINESS_ID ?? "",
-              accessToken: env.META_ACCESS_TOKEN ?? "",
+              ...instagramSendTarget(env),
               recipientId: candidate.externalUserId,
               text,
               apiVersion: env.META_API_VERSION,
