@@ -4,7 +4,9 @@
  */
 
 const OPT_OUT_WORDS = new Set([
+  "pare",
   "parar",
+  "nao quero",
   "sair",
   "cancelar",
   "descadastrar",

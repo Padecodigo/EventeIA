@@ -25,6 +25,7 @@ export const QUEUE_NAMES = {
   metaWebhooks: "meta-webhooks",
   prospectReply: "prospect-reply",
   metaWindowSweep: "meta-window-sweep",
+  prospectWindowReminder: "prospect-window-reminder",
   eventHistoryPurge: "event-history-purge",
   costArchivePurge: "cost-archive-purge",
 } as const;
