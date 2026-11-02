@@ -9,7 +9,7 @@ const navItems = [
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-line-subtle bg-areia-quente/90 backdrop-blur-xl backdrop-saturate-150">
+    <header className="sticky top-0 z-50 w-full border-b border-line-subtle bg-areia-quente md:bg-areia-quente/90 md:backdrop-blur-xl md:backdrop-saturate-150">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-8">
         <Link prefetch={false} href="/" className="flex cursor-pointer items-center gap-3">
           <Image
