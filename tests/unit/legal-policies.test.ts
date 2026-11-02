@@ -65,3 +65,16 @@ describe("políticas de estorno e retenção", () => {
     expect(priv).toContain("5 anos");
   });
 });
+
+describe("vocabulário das páginas legais públicas", () => {
+  it("não usa 'assistente virtual' nem 'IA' isolado e declara processamento automatizado", async () => {
+    const { PRIVACY_SECTIONS, TERMS_SECTIONS } = await import("@/lib/legal/content");
+    const { DATA_DELETION_SECTIONS, RETENTION_SECTIONS: R } = await import("@/lib/legal/policies");
+    const all = JSON.stringify([PRIVACY_SECTIONS, TERMS_SECTIONS, DATA_DELETION_SECTIONS, R]);
+    expect(all).not.toMatch(/assistente virtual/i);
+    expect(all.replace(/EventeIA/g, "")).not.toMatch(/\bIA\b/);
+    const priv = JSON.stringify(PRIVACY_SECTIONS);
+    expect(priv).toContain("serviço autônomo de prospecção de fornecedores");
+    expect(priv).toContain("processamento automatizado");
+  });
+});
