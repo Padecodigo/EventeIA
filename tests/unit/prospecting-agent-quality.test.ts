@@ -82,7 +82,7 @@ describe("primeira resposta x demais", () => {
   it("isFirstReply é derivado do histórico e vai para o prompt", () => {
     const first = buildAgentMessages(base, [{ role: "user", content: "oi" }])[0]?.content ?? "";
     expect(first).toMatch(/PRIMEIRA resposta/);
-    expect(first).toMatch(/já pergunte o valor/);
+    expect(first).toMatch(/peça o valor que ele cobra/);
     const later =
       buildAgentMessages(base, [
         { role: "user", content: "oi" },

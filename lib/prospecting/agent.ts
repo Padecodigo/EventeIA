@@ -83,6 +83,39 @@ function describeEventContext(context: AgentContext): string {
   return `Contexto do evento (use só isto; o que não estiver aqui você não sabe): ${parts.join("; ")}.`;
 }
 
+/**
+ * Primeira resposta: direta. Responde o ponto do fornecedor em poucas palavras e
+ * pede o preço; a apresentação é só "Somos a EventeIA", uma vez, sem explicar o
+ * serviço nem repetir os dados do evento.
+ */
+export const FIRST_REPLY_PROMPT = [
+  "Esta é a PRIMEIRA resposta da conversa e deve ser DIRETA: no máximo 2 frases curtas (até ~160 caracteres).",
+  'Apresente-se uma única vez, só com "Somos a EventeIA" (no máximo "Somos a EventeIA, um serviço autônomo de prospecção de fornecedores"), sem explicar o que fazemos, como funciona ou quem usa, a menos que perguntem.',
+  "Responda o ponto do fornecedor em poucas palavras e peça o valor que ele cobra pelo serviço.",
+  "Não repita cidade, data, número de convidados nem detalhes do evento, a menos que o fornecedor pergunte exatamente isso.",
+  'Mesmo se a mensagem for só "oi" ou "COTAÇÃO", não descreva o evento: só peça o valor.',
+  "Se pedirem WhatsApp, telefone ou outro canal, recuse em meia frase (seguimos por aqui) e peça o valor; sem explicar a política de canais.",
+  "Se indicarem alguém, peça o @ e também o valor, caso atendam a categoria.",
+].join(" ");
+
+const PERSONA_INTRO =
+  /somos a eventeia(,\s*(um|o) serviço autônomo de prospecção de fornecedores( para eventos)?)?[.!,:;—–-]?\s*/gi;
+
+/** Mantém só a primeira apresentação ("Somos a EventeIA…"); remove repetições. */
+export function dedupePersonaIntro(text: string): string {
+  let seen = false;
+  return text
+    .replace(PERSONA_INTRO, (match) => {
+      if (!seen) {
+        seen = true;
+        return match;
+      }
+      return "";
+    })
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 export function buildSystemPrompt(context: AgentContext): string {
   const criteria: string[] = [];
   if (context.maxPriceCents !== undefined)
@@ -97,7 +130,7 @@ export function buildSystemPrompt(context: AgentContext): string {
     "Você é a EventeIA, um serviço autônomo de prospecção de fornecedores, e atende fornecedores por DM falando em nome da empresa.",
     IDENTITY_POLICY_PROMPT,
     first
-      ? 'Esta é a PRIMEIRA resposta da conversa: apresente-se com "somos a EventeIA" e já pergunte o valor que o fornecedor cobra pelo serviço.'
+      ? FIRST_REPLY_PROMPT
       : 'Esta NÃO é a primeira resposta: não se reapresente (não diga "somos a EventeIA"), a menos que perguntem quem somos.',
     "Objetivo: coletar orçamento para o evento do cliente.",
     "Primeiro peça o preço; depois colete, UMA pergunta por vez, só o que faltar: especificações, volume, prazo, frete, condições de pagamento e validade da proposta.",
@@ -166,7 +199,7 @@ function plainTextReply(raw: string): AgentReply | null {
   if (text.length < 15 || text.length > 600 || /[{}`]/.test(text) || text.split(/\s+/).length < 3)
     return null;
   return {
-    reply: enforceSocialOnlyReply(text),
+    reply: dedupePersonaIntro(enforceSocialOnlyReply(text)),
     quote: null,
     escalate: false,
     done: false,
@@ -181,7 +214,7 @@ export function parseAgentReply(raw: string): AgentReply | null {
   const parsed = agentReplySchema.safeParse(json);
   if (!parsed.success) return null;
   return {
-    reply: enforceSocialOnlyReply(parsed.data.reply),
+    reply: dedupePersonaIntro(enforceSocialOnlyReply(parsed.data.reply)),
     quote: coerceStructuredQuote(parsed.data.quote),
     escalate: parsed.data.escalate,
     done: parsed.data.done,
