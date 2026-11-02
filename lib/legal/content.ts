@@ -53,7 +53,7 @@ export const PRIVACY_SECTIONS: readonly LegalSection[] = [
     id: "processamento-automatizado",
     title: "Processamento automatizado",
     paragraphs: [
-      "As mensagens enviadas pelo EventeIA no Instagram, no Messenger e por e-mail são geradas e enviadas por um sistema automatizado, que também lê as respostas recebidas para extrair preços e condições e organizar os orçamentos. Quando o caso foge do padrão, a conversa é encaminhada para uma pessoa da equipe.",
+      "As mensagens enviadas pelo EventeIA no Instagram, no Messenger e por e-mail são mensagens automáticas, geradas e enviadas por um serviço automatizado, que também lê as respostas recebidas para extrair preços e condições e organizar os orçamentos. Quando o caso foge do padrão, a conversa é encaminhada para uma pessoa da equipe.",
       "Você pode pedir a revisão de decisões tomadas apenas com base em processamento automatizado (art. 20 da LGPD) pela página de contato (/contato).",
     ],
   },
