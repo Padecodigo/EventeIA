@@ -297,6 +297,10 @@ export async function loadFreeItems(
     }));
 }
 
+function hasPageToken(env: ProspectReplyJobDeps["env"]): boolean {
+  return (env.pageAccessToken?.trim() ?? "") !== "";
+}
+
 export function messageConfig(
   data: ProspectReplyJobData,
   env: ProspectReplyJobDeps["env"],
@@ -309,7 +313,9 @@ export function messageConfig(
       }
     : {
         channel: "instagram",
-        instagramBusinessId: env.igBusinessId ?? "",
+        // Com Page token (Facebook Login) o envio de DM do Instagram é POST
+        // /{page-id}/messages; /{ig-id}/messages devolve 400 (#100, subcode 33).
+        instagramBusinessId: hasPageToken(env) && env.pageId ? env.pageId : (env.igBusinessId ?? ""),
         accessToken: pageOrGeneralToken(env.pageAccessToken, env.accessToken),
       };
 }
