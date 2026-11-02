@@ -70,3 +70,12 @@ describe("home: animação 'como funciona' fora da viewport", () => {
     expect(css).toMatch(/\.ev-skip-offscreen\s*\{[^}]*content-visibility:\s*auto/);
   });
 });
+
+describe("home: CLS do hero", () => {
+  it("blob decorativo do hero não ancora no bottom no mobile (render parcial em streaming movia-o: CLS 0,6)", () => {
+    const page = readFileSync(join(ROOT, "app", "(marketing)", "page.tsx"), "utf8");
+    for (const m of page.matchAll(/className="[^"]*(?:^|\s)bottom-\[-25%\][^"]*"/g))
+      expect(m[0]).toMatch(/lg:bottom-\[-25%\]/);
+    expect(page).toMatch(/-left-40 top-\[600px\]/);
+  });
+});

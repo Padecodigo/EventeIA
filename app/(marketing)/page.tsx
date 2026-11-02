@@ -88,7 +88,7 @@ export default async function LandingPage() {
       <section className="relative isolate overflow-hidden bg-areia-quente">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
           <div className="absolute -top-40 right-[-10%] h-[620px] w-[620px] rounded-full bg-[radial-gradient(closest-side,rgba(215,231,227,0.7),transparent)]" />
-          <div className="absolute -left-40 bottom-[-25%] h-[540px] w-[540px] rounded-full bg-[radial-gradient(closest-side,rgba(240,160,112,0.3),transparent)]" />
+          <div className="absolute -left-40 top-[600px] h-[540px] lg:bottom-[-25%] lg:top-auto w-[540px] rounded-full bg-[radial-gradient(closest-side,rgba(240,160,112,0.3),transparent)]" />
         </div>
 
         <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-10 px-5 pb-14 pt-8 sm:px-8 sm:pt-14 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-14 lg:pb-20 lg:pt-20">
