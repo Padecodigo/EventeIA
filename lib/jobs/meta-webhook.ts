@@ -11,8 +11,10 @@ import {
   instagramHandleFromSid,
 } from "@/lib/meta/resolve";
 import type { MetaCommentEvent, MetaEchoMessage, MetaInboundMessage } from "@/lib/meta/webhook";
+import { getEmailAdapter } from "@/lib/notifications/email";
 import { assertBusinessHours } from "@/lib/outreach/business-defer";
 import { isOwnAppEcho } from "@/lib/outreach/echo";
+import { createRedisThrottle, notifyOwnerOfSupplierReply, type SupplierReplyNotice } from "@/lib/outreach/owner-notify";
 import {
   createSupabaseSupplierConversationStore,
   ingestSupplierMessage,
@@ -32,7 +34,7 @@ import {
 } from "@/lib/prospecting/supabase-respond";
 import { createSupabaseProspectStore } from "@/lib/prospecting/supabase-store";
 import { isWithinPrivateReplyWindow } from "@/lib/prospecting/window";
-import { enqueue, QUEUE_NAMES } from "@/lib/queue";
+import { enqueue, getRedisConnection, QUEUE_NAMES } from "@/lib/queue";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 import type { ProspectReplyJobData } from "./prospect-reply";
@@ -107,6 +109,8 @@ export interface MetaWebhookJobDeps {
   markPostContact?: (handle: string) => Promise<void>;
   /** @ do remetente de uma DM do Instagram (Graph API); null se não resolver. */
   handleFromSid?: (igSid: string, accessToken: string) => Promise<string | null>;
+  /** Aviso ao dono (e-mail com anti-spam) quando uma mensagem do fornecedor é gravada. */
+  notifyOwner?: (notice: SupplierReplyNotice) => Promise<unknown>;
 }
 
 function configured(value: string | undefined): value is string {
@@ -153,6 +157,17 @@ export function defaultMetaWebhookJobDeps(): MetaWebhookJobDeps {
       if (error !== null) logger.warn({ code: error.code }, "falha ao marcar contato do post");
     },
     handleFromSid: (igSid, accessToken) => instagramHandleFromSid(igSid, accessToken),
+    notifyOwner: (notice) =>
+      notifyOwnerOfSupplierReply(
+        {
+          to: env.SUPPLIER_REPLY_NOTIFY_EMAIL || env.SUPPORT_ADMIN_EMAIL || null,
+          throttleMinutes: env.SUPPLIER_REPLY_NOTIFY_THROTTLE_MINUTES,
+          email: getEmailAdapter(),
+          throttle: createRedisThrottle(getRedisConnection()),
+          appUrl: env.NEXT_PUBLIC_APP_URL,
+        },
+        notice,
+      ),
   };
 }
 
@@ -286,7 +301,7 @@ async function processMessage(message: MetaInboundMessage, deps: MetaWebhookJobD
     }
   }
 
-  await ingestSupplierMessage(deps.supplierConversations, {
+  const ingested = await ingestSupplierMessage(deps.supplierConversations, {
     channel: message.source,
     externalUserId: message.senderId,
     ref: message.referral?.ref ?? null,
@@ -297,6 +312,22 @@ async function processMessage(message: MetaInboundMessage, deps: MetaWebhookJobD
     supplierId: supplier?.id ?? null,
     now: deps.now(),
   });
+
+  // Só avisa mensagem nova (reentrega do webhook não duplica o e-mail).
+  if (ingested.recorded && deps.notifyOwner !== undefined) {
+    try {
+      await deps.notifyOwner({
+        conversationId: ingested.conversationId,
+        channel: message.source,
+        eventId: linkedEventId,
+        supplierKnown: supplier !== null,
+        text: message.text,
+        at: deps.now(),
+      });
+    } catch (error) {
+      logger.warn({ error: String(error) }, "falha ao avisar o dono sobre resposta de fornecedor");
+    }
+  }
 }
 
 /**
