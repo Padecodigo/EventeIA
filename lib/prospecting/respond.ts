@@ -5,6 +5,7 @@ import type { AgentContext, AgentMessage, AgentReply } from "./agent";
 import { runAgent } from "./agent-runtime";
 import type { HandleInboundResult } from "./inbound";
 import type { StructuredQuote } from "./quote";
+import { guardAgentReply } from "./reply-guard";
 
 /**
  * Aplica a resposta do agente aos efeitos de domínio: responde na DM, salva a
@@ -144,7 +145,17 @@ export async function respondToInbound(input: RespondInput): Promise<ApplyResult
     context: input.context,
     history: input.history,
   });
-  if (reply === null) {
+  const guarded = guardAgentReply({
+    reply,
+    history: input.history,
+    category: input.context.category,
+  });
+  if (guarded !== null && "skip" in guarded) {
+    logger.info({ conversationId: input.conversationId }, `prospecção: ${guarded.skip}`);
+    await input.ports.escalate(input.conversationId, guarded.skip);
+    return { action: "escalated", sent: false };
+  }
+  if (guarded === null) {
     logger.warn(
       { conversationId: input.conversationId },
       "prospecção: saída inválida da IA — escalando",
@@ -155,7 +166,7 @@ export async function respondToInbound(input: RespondInput): Promise<ApplyResult
   return applyAgentReply(input.ports, {
     conversationId: input.conversationId,
     supplierId: input.supplierId,
-    reply,
+    reply: guarded.reply,
     maxPriceCents: input.context.maxPriceCents,
     maxDeadlineDays: input.context.maxDeadlineDays,
   });

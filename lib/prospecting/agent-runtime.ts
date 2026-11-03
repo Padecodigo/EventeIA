@@ -1,7 +1,6 @@
 import { enforceSocialOnlyReply } from "@/lib/ai/channel-policy";
 import type { DeepSeekClient } from "@/lib/deepseek/client";
 
-
 import {
   buildAgentMessages,
   parseAgentReply,
@@ -9,6 +8,7 @@ import {
   type AgentMessage,
   type AgentReply,
 } from "./agent";
+import { spokenCategoryLabel } from "./reply-guard";
 
 /**
  * Executa o agente sobre o histórico da conversa e devolve a resposta já
@@ -34,7 +34,7 @@ export async function runAgent(input: {
 export function emptyOutputFallback(context: Pick<AgentContext, "category">): AgentReply {
   return {
     reply: enforceSocialOnlyReply(
-      `Pode ser por aqui mesmo, tá? Me manda o valor que você cobra pelo serviço de ${context.category}.`,
+      `Pode ser por aqui mesmo, tá? Me manda o valor que você cobra pelo serviço de ${spokenCategoryLabel(context.category)}.`,
     ),
     quote: null,
     escalate: false,
