@@ -15,6 +15,7 @@ import { loadLookingFor } from "@/lib/prospecting/looking-for";
 import { artForEventType } from "@/lib/prospecting/photos";
 import { createSupabasePostStore, findImageFor } from "@/lib/prospecting/posts-store";
 import { publishEventPost } from "@/lib/prospecting/publish-event-post";
+import { choosePublishPath } from "@/lib/prospecting/publish-path";
 import { publishPlannedPost } from "@/lib/prospecting/publish-runtime";
 import { QUEUE_NAMES, enqueue } from "@/lib/queue";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -27,11 +28,9 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
   await requireAdmin();
 
   const env = serverEnv();
-  // Provedor graph exige token/ID da Graph API; o browser usa a sessão logada.
-  if (env.INSTAGRAM_PROVIDER === "graph") {
-    if (env.META_ACCESS_TOKEN === undefined || env.META_INSTAGRAM_BUSINESS_ID === undefined) {
-      return { ok: false, error: "Configure META_ACCESS_TOKEN e META_INSTAGRAM_BUSINESS_ID." };
-    }
+  const path = choosePublishPath(env);
+  if (path === "unconfigured") {
+    return { ok: false, error: "Configure META_ACCESS_TOKEN e META_INSTAGRAM_BUSINESS_ID." };
   }
 
   const caption = form.get("caption");
@@ -80,7 +79,7 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
       : null;
 
   // Provedor browser (grokbot-style): o worker (imagem Playwright) publica; o app enfileira.
-  if (env.INSTAGRAM_PROVIDER === "browser") {
+  if (path === "browser") {
     const imageUrl = cachedArt?.url ?? brandedArt?.url ?? null;
     if (imageUrl === null) {
       return {
@@ -180,6 +179,7 @@ export async function approveEventPostAction(
     lookingFor: await loadLookingFor(admin, event.id),
   };
   const content = buildEventPostContent(source);
+  const path = choosePublishPath(env);
   const imageUrl = `${env.NEXT_PUBLIC_APP_URL}${artForEventType(event.event_type)}`;
   const store = createSupabaseProspectingPostStore();
 
@@ -191,7 +191,7 @@ export async function approveEventPostAction(
   }
 
   // Provedor browser: o worker publica; aqui apenas enfileiramos o post aprovado.
-  if (env.INSTAGRAM_PROVIDER === "browser") {
+  if (path === "browser") {
     const queued = await enqueue(QUEUE_NAMES.instagramPublish, "publish", {
       imageUrl,
       caption: content.caption,
