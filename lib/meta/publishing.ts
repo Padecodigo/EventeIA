@@ -178,6 +178,8 @@ async function postJson(
 export async function createMediaContainer(
   input: MetaPublishConfig & {
     imageUrl: string;
+    /** URL do vídeo para REELS. */
+    videoUrl?: string;
     caption: string;
     /** IMAGE (feed), STORIES ou REELS. Default: IMAGE. */
     mediaType?: "IMAGE" | "STORIES" | "REELS";
@@ -193,10 +195,14 @@ export async function createMediaContainer(
   if (!check.ok) return { ok: false, error: check.reason, status: null };
 
   const params = new URLSearchParams({
-    image_url: input.imageUrl,
     caption: input.caption,
     media_type: input.mediaType ?? "IMAGE",
   });
+  if (input.mediaType === "REELS" && input.videoUrl !== undefined && input.videoUrl.length > 0) {
+    params.set("video_url", input.videoUrl);
+  } else {
+    params.set("image_url", input.imageUrl);
+  }
   const tags = limitUserTags(input.userTags ?? []);
   if (tags.length > 0) params.set("user_tags", JSON.stringify(tags));
 
