@@ -6,7 +6,7 @@ const base = {
   customerId: "cus_1",
   amountCents: 9700,
   externalReference: "evt-1",
-  description: "EventeIA — tíquete",
+  description: "EventeIA — ticket",
   dueDate: "2026-10-25",
 };
 
@@ -17,7 +17,7 @@ describe("buildPaymentPayload", () => {
       billingType: "PIX",
       value: 97,
       dueDate: "2026-10-25",
-      description: "EventeIA — tíquete",
+      description: "EventeIA — ticket",
       externalReference: "evt-1",
     });
   });

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 const sql = readFileSync(join(process.cwd(), "supabase/migrations/0029_payment_state_guards.sql"), "utf8").toLowerCase();
 
-describe("migração 0029 (cliente não ativa evento/tíquete nem grava pagamento pago)", () => {
+describe("migração 0029 (cliente não ativa evento/ticket nem grava pagamento pago)", () => {
   it("cria os três triggers BEFORE", () => {
     expect(sql).toContain("before insert or update on public.events");
     expect(sql).toContain("before insert or update on public.event_tickets");
@@ -16,7 +16,7 @@ describe("migração 0029 (cliente não ativa evento/tíquete nem grava pagament
     expect(sql).not.toMatch(/^\s*security definer/m);
     expect(sql.match(/^\s*security invoker/gm)?.length).toBe(3);
   });
-  it("cliente só move draft -> awaiting_payment e só cria tíquete/pagamento pendente", () => {
+  it("cliente só move draft -> awaiting_payment e só cria ticket/pagamento pendente", () => {
     expect(sql).toContain("old.status = 'draft' and new.status = 'awaiting_payment'");
     expect(sql).toContain("new.status <> 'pending' or new.activated_at is not null");
     expect(sql).toContain("pagamento só nasce pendente");

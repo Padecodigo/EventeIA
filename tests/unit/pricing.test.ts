@@ -59,7 +59,7 @@ describe("pacotes de créditos avulsos", () => {
   });
 });
 
-describe("tíquete B2C", () => {
+describe("ticket B2C", () => {
   it("é viável com R$ 97 por evento (Pix e cartão)", () => {
     for (const method of ["pix", "card"] as const) {
       const economics = calculatePlanEconomics(B2C_TICKET_CENTS, 1, method);

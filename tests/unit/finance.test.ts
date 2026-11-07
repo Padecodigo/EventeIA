@@ -64,7 +64,7 @@ describe("relatório financeiro", () => {
     costMicroUsd: 1000, costBrlCents: 100, inputTokens: 0, outputTokens: 0, detail: "", ...p,
   });
   const pay = (p: Partial<RevenueRow>): RevenueRow => ({
-    at: "2026-10-20T12:00:00Z", paymentId: "p", clientId: "c1", clientLabel: "Ana", plan: "Tíquete avulso",
+    at: "2026-10-20T12:00:00Z", paymentId: "p", clientId: "c1", clientLabel: "Ana", plan: "Ticket avulso",
     eventId: "e1", grossCents: 4990, feeCents: 199, netCents: 4791, status: "confirmed", refunded: false, ...p,
   });
 

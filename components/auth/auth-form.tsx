@@ -52,7 +52,7 @@ export function AuthForm({ mode, oauthError }: { mode: AuthMode; oauthError?: st
       </h1>
       <p className="mt-2 text-sm text-vinho/70">
         {isSignUp
-          ? "Um tíquete por evento, sem mensalidade — você paga quando for ativar."
+          ? "Um ticket por evento, sem mensalidade — você paga quando for ativar."
           : "Continue de onde parou e acompanhe os seus eventos."}
       </p>
 

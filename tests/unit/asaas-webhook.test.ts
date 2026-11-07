@@ -43,7 +43,7 @@ describe("máquina de estados de pagamento", () => {
 });
 
 describe("cartão de crédito", () => {
-  it("PAYMENT_CONFIRMED (cartão) ativa o tíquete como paid", () => {
+  it("PAYMENT_CONFIRMED (cartão) ativa o ticket como paid", () => {
     expect(classifyAsaasEvent("PAYMENT_CONFIRMED")).toEqual({
       status: "paid",
       activatesTicket: true,

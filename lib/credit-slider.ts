@@ -9,7 +9,7 @@
  */
 import { roundHalfUpDiv } from "@/lib/money";
 
-/** Preço do tíquete avulso B2C (referência da economia exibida). */
+/** Preço do ticket avulso B2C (referência da economia exibida). */
 export const SINGLE_TICKET_CENTS = 9_700;
 
 export const CUSTOM_CREDITS_MIN = 3;

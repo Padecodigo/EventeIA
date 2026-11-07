@@ -76,7 +76,7 @@ describe("cálculo do desconto", () => {
     ).toBe(5000);
   });
 
-  it("REGRA DE OURO (CI): cupom nunca derruba o tíquete abaixo do piso (R$ 47)", () => {
+  it("REGRA DE OURO (CI): cupom nunca derruba o ticket abaixo do piso (R$ 47)", () => {
     const aggressive = [
       coupon({ value: 100 }), // percent > teto
       coupon({ value: 30 }), // percent no teto

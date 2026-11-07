@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createFakeDb, fakeClient, type FakeDb } from "./helpers/fake-supabase";
 
 /**
- * Checkout do tíquete com Asaas mockado (fetch): Pix e cartão (crédito
+ * Checkout do ticket com Asaas mockado (fetch): Pix e cartão (crédito
  * na Fatura hospedada). Garante que nenhum dado de cartão trafega por nós.
  */
 let db: FakeDb;

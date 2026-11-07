@@ -2,7 +2,7 @@ import { createHmac } from "node:crypto";
 
 /**
  * Oferta de boas-vindas (novo visitante) — regras puras.
- * Preço final fixo do tíquete único com a oferta; o desconto é calculado no servidor.
+ * Preço final fixo do ticket único com a oferta; o desconto é calculado no servidor.
  */
 export const WELCOME_FINAL_PRICE_CENTS = 4700;
 export const WELCOME_CODE_PREFIX = "BEMVINDO-";
@@ -46,7 +46,7 @@ export function clientIpFrom(headers: { get(name: string): string | null }): str
   return headers.get("x-real-ip")?.trim() ?? "unknown";
 }
 
-/** Desconto para levar o tíquete a R$ 47 (nunca negativo). */
+/** Desconto para levar o ticket a R$ 47 (nunca negativo). */
 export function welcomeDiscountCents(priceCents: number): number {
   if (!Number.isInteger(priceCents) || priceCents <= 0) {
     throw new Error("priceCents deve ser inteiro positivo");

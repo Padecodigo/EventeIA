@@ -9,7 +9,7 @@ export interface AsaasWebhookJob {
 
 /**
  * Processa um webhook Asaas registrado em `webhook_events`.
- * A atomicidade (pagamento + tíquete + créditos + feeds) vive na função SQL
+ * A atomicidade (pagamento + ticket + créditos + feeds) vive na função SQL
  * `process_payment_webhook` — ver supabase/migrations/0003_functions.sql.
  */
 export async function handleAsaasWebhookJob(data: AsaasWebhookJob): Promise<void> {

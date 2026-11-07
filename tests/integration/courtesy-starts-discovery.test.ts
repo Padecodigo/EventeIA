@@ -72,7 +72,7 @@ beforeEach(() => {
   });
   db.rpc = async (fn) => {
     if (fn === "redeem_courtesy_coupon") {
-      // A RPC real ativa evento + tíquete numa transação (0030).
+      // A RPC real ativa evento + ticket numa transação (0030).
       const ev = db.tables.events?.[0];
       if (ev !== undefined) ev.status = "active";
       return { data: "activated", error: null };

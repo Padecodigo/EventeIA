@@ -54,7 +54,7 @@ export default async function AdminCouponsPage() {
         <p className="eyebrow">Admin</p>
         <h1 className="mt-3 font-serif text-display-2 font-display">Cupons de desconto.</h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-vinho/75">
-          Cupons aplicam-se ao tíquete B2C (R$ 97). Redenção só conta quando o Pix é confirmado; o
+          Cupons aplicam-se ao ticket B2C (R$ 97). Redenção só conta quando o Pix é confirmado; o
           preço final nunca fica abaixo do piso de R$ 47 (exceto cortesia).
         </p>
         <p className="mt-2 text-caption text-vinho/60">Crie cupons, acompanhe quantas vezes foram usados e ative/desative. Os selos contam os cupons ativos e o total.</p>

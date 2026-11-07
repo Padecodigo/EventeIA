@@ -13,7 +13,7 @@ const KEYS = [
 
 /**
  * Regressão: o checkout (BuyTicketForm) chama serverEnv() para o preço do
- * tíquete. Em dev as chaves de API são "" — serverEnv() deve VALIDAR e
+ * ticket. Em dev as chaves de API são "" — serverEnv() deve VALIDAR e
  * degradar no uso (AsaasNotConfiguredError), nunca estourar na página.
  */
 describe("serverEnv", () => {

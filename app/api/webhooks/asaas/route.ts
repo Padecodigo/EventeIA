@@ -79,7 +79,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
 
     // Processamento atômico e idempotente em SQL (process_payment_webhook):
-    // pagamento → tíquete B2C ou crédito B2B na MESMA transação. Inline para
+    // pagamento → ticket B2C ou crédito B2B na MESMA transação. Inline para
     // não depender do Redis; a fila é só fallback se o banco falhar agora.
     const { data: result, error: rpcError } = await admin.rpc("process_payment_webhook", {
       p_webhook_event_id: inserted.id,

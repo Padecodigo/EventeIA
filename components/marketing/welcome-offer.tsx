@@ -69,7 +69,7 @@ export function WelcomeOffer() {
         className="relative bg-areia-secundaria text-vinho"
       >
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 py-2 text-sm">
-          <span data-lucky-teaser>Ainda dá tempo de economizar no seu tíquete.</span>
+          <span data-lucky-teaser>Ainda dá tempo de economizar no seu ticket.</span>
           <button
             type="button"
             data-lucky-draw
@@ -119,7 +119,7 @@ export function WelcomeOffer() {
               data-lucky-code
             />
             <p className="mt-4 rounded-xl bg-areia-secundaria px-4 py-3 text-sm">
-              Válido no tíquete único por{" "}
+              Válido no ticket único por{" "}
               <time data-lucky-countdown className="font-semibold tabular-nums">
                 --:--:--
               </time>
@@ -149,17 +149,5 @@ export function WelcomeOffer() {
 
       <Script src="/welcome-offer.js" strategy="lazyOnload" />
     </>
-  );
-}
-
-/** Selo no card do ticket: a oferta real, sem contagem para visitantes. */
-export function WelcomeTicketNote() {
-  return (
-    <div id="ev-welcome-ticket" className="mt-4 rounded-xl bg-vinho px-4 py-3 text-sm text-off-white">
-      <p>{WELCOME_COPY}</p>
-      <p className="mt-1 text-caption opacity-90">
-        O prazo de 48h começa no seu primeiro acesso e é controlado pelo servidor.
-      </p>
-    </div>
   );
 }

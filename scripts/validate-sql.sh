@@ -59,7 +59,7 @@ done
 echo "▸ aplicando seed…"
 docker exec -i "$CONTAINER" psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/seed.sql
 
-echo "▸ smoke test: pagamento → webhook → tíquete ativo → feed"
+echo "▸ smoke test: pagamento → webhook → ticket ativo → feed"
 docker exec -i "$CONTAINER" psql -v ON_ERROR_STOP=1 -U postgres -d postgres <<'SQL'
 insert into auth.users (id, email, raw_user_meta_data)
 values ('11111111-1111-1111-1111-111111111111', 'alice@teste.com', '{"full_name":"Alice"}');

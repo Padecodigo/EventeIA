@@ -307,7 +307,7 @@ export async function buyTicketAction(
 
     if (resolved.kind === "courtesy") {
       // Cortesia: total 0, SEM Asaas. Reserva + pagamento 'COURTESY' pago +
-      // tíquete ativo numa única transação no banco (0033), idempotente.
+      // ticket ativo numa única transação no banco (0033), idempotente.
       const { data: outcome, error: rpcError } = await admin.rpc("redeem_courtesy_coupon", {
         p_code: resolved.code,
         p_profile_id: user.id,
@@ -369,8 +369,8 @@ export async function buyTicketAction(
       externalReference: event.id,
       description:
         couponCode === null
-          ? `EventeIA — tíquete do evento "${event.title}"`
-          : `EventeIA — tíquete do evento "${event.title}" (cupom ${couponCode})`,
+          ? `EventeIA — ticket do evento "${event.title}"`
+          : `EventeIA — ticket do evento "${event.title}" (cupom ${couponCode})`,
       dueDate,
     };
     const pixPayment = billingType === "PIX" ? await createAsaasPixPayment(chargeInput) : null;
@@ -421,8 +421,8 @@ export async function buyTicketAction(
       );
 
     if (ticketError !== null) {
-      logger.error({ code: ticketError.code }, "falha ao registrar tíquete pendente");
-      return { error: "Não foi possível registrar o tíquete pendente. Tente novamente." };
+      logger.error({ code: ticketError.code }, "falha ao registrar ticket pendente");
+      return { error: "Não foi possível registrar o ticket pendente. Tente novamente." };
     }
 
     await supabase.from("events").update({ status: "awaiting_payment" }).eq("id", event.id);
@@ -480,7 +480,7 @@ export async function buyTicketAction(
     }
     logger.error(
       { reason: caught instanceof Error ? caught.message : "desconhecido" },
-      "falha no checkout do tíquete",
+      "falha no checkout do ticket",
     );
     return { error: "Não foi possível gerar o pagamento. Tente novamente em instantes." };
   }

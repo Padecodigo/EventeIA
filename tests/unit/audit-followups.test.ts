@@ -6,9 +6,9 @@ import { passwordSavedMessage, resolveHasPassword } from "@/lib/auth/password";
 import { welcomeVisitorCopy } from "@/lib/offers/pure";
 
 describe("welcomeVisitorCopy", () => {
-  it("matches the real offer (R$ 40 avulso / 30% pacotes / 48h)", () => {
+  it("matches the real offer (R$ 40 de desconto no ticket nas primeiras 48h)", () => {
     expect(welcomeVisitorCopy()).toBe(
-      "Crie sua conta e ganhe R$ 40 no evento avulso ou 30% nos pacotes por 48h.",
+      "R$ 40 de desconto no ticket nas primeiras 48h após o primeiro acesso.",
     );
   });
   it("public offer UI has no R$ 47 offer nor a visitor countdown", () => {
