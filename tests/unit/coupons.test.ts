@@ -59,9 +59,12 @@ describe("cálculo do desconto", () => {
     expect(discountCents(coupon({ value: 15 }), 9733)).toBe(1460);
   });
 
-  it("percentual alto esbarra no piso de R$ 47 no tíquete", () => {
-    expect(discountCents(coupon({ value: 100 }), B2C_TICKET_CENTS)).toBe(5000);
-    expect(finalPriceCents(B2C_TICKET_CENTS, 5000)).toBe(4700);
+  it("nenhum percentual passa do teto de 30% do produto", () => {
+    // 30% de 9700 = 2910, mesmo pedindo 100%
+    expect(discountCents(coupon({ value: 100 }), B2C_TICKET_CENTS)).toBe(2910);
+    expect(discountCents(coupon({ value: 90 }), B2C_TICKET_CENTS)).toBe(2910);
+    expect(discountCents(coupon({ value: 30 }), B2C_TICKET_CENTS)).toBe(2910);
+    expect(finalPriceCents(B2C_TICKET_CENTS, 2910)).toBe(6790);
   });
 
   it("valor fixo em centavos, limitado ao preço", () => {
@@ -75,8 +78,8 @@ describe("cálculo do desconto", () => {
 
   it("REGRA DE OURO (CI): cupom nunca derruba o tíquete abaixo do piso (R$ 47)", () => {
     const aggressive = [
-      coupon({ value: 100 }), // percent > 90
-      coupon({ value: 90 }), // percent no limite
+      coupon({ value: 100 }), // percent > teto
+      coupon({ value: 30 }), // percent no teto
       coupon({ discount_type: "fixed_cents", value: 99900 }),
       coupon({ discount_type: "fixed_cents", value: 8800 }),
     ];
@@ -108,8 +111,8 @@ describe("cortesia (discount_type free)", () => {
     expect(finalPriceCents(B2C_TICKET_CENTS, discountCents(c, B2C_TICKET_CENTS))).toBe(0);
   });
 
-  it("regressão: 100% (teto 90%) e fixo 9700 comuns nunca zeram (piso R$ 47)", () => {
-    expect(B2C_TICKET_CENTS - discountCents(coupon({ value: 100 }), B2C_TICKET_CENTS)).toBe(4700);
+  it("regressão: percentual no teto (30%) e fixo 9700 nunca zeram (piso R$ 47)", () => {
+    expect(B2C_TICKET_CENTS - discountCents(coupon({ value: 100 }), B2C_TICKET_CENTS)).toBe(6790);
     expect(
       B2C_TICKET_CENTS -
         discountCents(coupon({ discount_type: "fixed_cents", value: 9700 }), B2C_TICKET_CENTS),

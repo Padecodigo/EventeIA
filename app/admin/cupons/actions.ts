@@ -24,7 +24,7 @@ const createCouponSchema = z.object({
 });
 
 const VALUE_LIMITS: Record<"percent" | "fixed_cents" | "free", number> = {
-  percent: 90,
+  percent: 30, // teto do produto (campanhas sazonais)
   fixed_cents: 100_000,
   // Cortesia: valor é irrelevante (gratuidade total); gravado como 1.
   free: Number.MAX_SAFE_INTEGER,

@@ -55,7 +55,7 @@ describe("sitemap", () => {
       const { pathname } = new URL(url);
       expect(PRIVATE_PREFIXES.some((p) => pathname.startsWith(p))).toBe(false);
     }
-    expect(urls.map((u) => new URL(u).pathname)).toEqual(expect.arrayContaining(["/", "/planos", "/como-funciona", "/para-planners"]));
+    expect(urls.map((u) => new URL(u).pathname)).toEqual(expect.arrayContaining(["/", "/planos", "/como-funciona"]));
   });
 });
 

@@ -2,43 +2,39 @@ import Link from "next/link";
 
 import { WelcomePlanosNote } from "@/components/marketing/welcome-offer";
 import { formatBRL } from "@/lib/money";
-import { PLANS } from "@/lib/plans";
-import { calculatePlanEconomics } from "@/lib/pricing";
 import { pageMetadata } from "@/lib/seo/site";
 
 const ticketPriceCents = Number(process.env.B2C_TICKET_PRICE_CENTS ?? "9700");
 
 export const metadata = pageMetadata({
-  title: "Planos e preços",
-  description:
-    "Preços da EventeIA: ticket avulso por evento ou planos mensais com créditos para planners. Pix ou cartão, sem fidelidade.",
+  title: "Preço: um ticket por evento",
+  description: `Um ticket de ${formatBRL(ticketPriceCents)} por evento, sem mensalidade e sem assinatura. Pix ou cartão, com o orçamento completo da sua festa.`,
   path: "/planos",
-  keywords: ["preço orçamento de festa", "planos para cerimonialistas"],
+  keywords: ["preço orçamento de festa", "quanto custa orçamento de evento"],
 });
 
-export default function PlansPage() {
+export default function PricesPage() {
   return (
     <div className="bg-areia-quente text-vinho">
-      <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-8">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-coral-escuro">Planos</p>
-      <h1 className="mt-3 max-w-prose font-serif text-display-2 font-display text-vinho">
-        Planos para festas de todos os tamanhos.
-      </h1>
-      <p className="mt-4 max-w-prose text-vinho/85">
-        Anfitriões pagam por evento, sem mensalidade. Cada crédito equivale a um evento ativado.
-      </p>
+      <div className="mx-auto w-full max-w-5xl px-4 py-20 sm:px-8">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-coral-escuro">Preço</p>
+        <h1 className="mt-3 max-w-prose font-serif text-display-2 font-display text-vinho">
+          Um ticket por evento. Sem mensalidade.
+        </h1>
+        <p className="mt-4 max-w-prose text-vinho/85">
+          Você paga uma vez, quando decide ativar o evento. O orçamento completo, as cotações e o
+          contato com os fornecedores vêm juntos — e você só fecha com quem quiser.
+        </p>
 
-      <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-4">
-        {/* B2C */}
-        <article className="flex flex-col rounded-card border border-line-subtle bg-off-white p-8 shadow-soft">
+        <article className="mt-10 rounded-card border border-line-subtle bg-off-white p-8 shadow-soft sm:p-10">
           <p className="eyebrow">Anfitriões</p>
           <h2 className="mt-3 font-serif text-title-1">Tíquete por evento</h2>
           <p className="mt-6 font-serif text-display-2">{formatBRL(ticketPriceCents)}</p>
           <p className="text-caption text-vinho/75">pagamento único, por evento</p>
           <WelcomePlanosNote />
-          <ul className="mt-6 flex-1 space-y-2 text-sm text-vinho/75">
+          <ul className="mt-6 space-y-2 text-sm text-vinho/75">
             <li>Sem assinatura e sem renovação automática</li>
-            <li>Orçamento completo e explicado</li>
+            <li>Orçamento único no menor preço válido, com taxas incluídas</li>
             <li>Cotações ilimitadas do evento</li>
             <li>Contato com fornecedores pelas redes sociais</li>
             <li>Acesso permanente ao evento</li>
@@ -46,72 +42,19 @@ export default function PlansPage() {
           <Link
             prefetch={false}
             href="/registrar"
-            className="mt-8 rounded-full bg-primaria px-5 py-3 text-center text-sm font-semibold text-on-primary transition hover:bg-primaria-escura"
+            className="mt-8 inline-flex min-h-[48px] items-center justify-center rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-on-primary transition hover:bg-primaria-escura"
           >
-            Começar
+            Começar agora
           </Link>
         </article>
 
-        {/* B2B */}
-        {PLANS.map((plan) => {
-          const perCreditCents = calculatePlanEconomics(
-            plan.priceCents,
-            plan.credits,
-            "pix",
-          ).revenuePerCreditCents;
-
-          return (
-            <article
-              key={plan.code}
-              className={
-                plan.featured
-                  ? "flex flex-col rounded-card bg-white p-8 shadow-raised ring-2 ring-primaria"
-                  : "flex flex-col rounded-card border border-line-subtle bg-off-white p-8 shadow-soft"
-              }
-            >
-              <p
-                className={
-                  plan.featured
-                    ? "w-fit rounded-full bg-champagne-claro px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-coral-escuro"
-                    : "text-[10px] font-semibold uppercase tracking-[0.16em] opacity-70"
-                }
-              >
-                {plan.featured ? "✦ Mais escolhido" : "Planners"}
-              </p>
-              <h2 className="mt-3 font-serif text-title-1">{plan.name}</h2>
-              <p className="mt-6 font-serif text-display-2">{formatBRL(plan.priceCents)}</p>
-              <p className="text-caption opacity-70">por mês</p>
-              <p className="mt-4 text-sm font-medium">{plan.credits} créditos/mês</p>
-              <p className="text-caption opacity-70">≈ {formatBRL(perCreditCents)} por evento</p>
-              <p className="mt-2 flex-1 text-sm opacity-75">{plan.description}</p>
-              <Link
-                prefetch={false}
-                href="/registrar"
-                className={
-                  plan.featured
-                    ? "mt-8 rounded-full bg-primaria px-5 py-3 text-center text-sm font-semibold text-on-primary transition hover:bg-primaria-escura"
-                    : "mt-8 rounded-full border border-champagne px-5 py-3 text-center text-sm font-medium text-vinho transition hover:bg-champagne-claro/40"
-                }
-              >
-                Assinar {plan.name}
-              </Link>
-            </article>
-          );
-        })}
-      </div>
-
-      <div className="mt-10 flex flex-wrap items-center justify-between gap-4">
-        <p className="text-caption text-vinho/70">
-          Seus créditos não expiram: use quando quiser.
+        <p className="mt-8 text-sm text-vinho/70">
+          Dúvidas sobre o que está incluído?{" "}
+          <Link prefetch={false} href="/como-funciona" className="font-medium text-coral-escuro underline decoration-coral-escuro/50 underline-offset-4">
+            Veja o passo a passo
+          </Link>
+          .
         </p>
-        <Link
-          prefetch={false}
-          href="/para-planners"
-          className="text-sm font-medium text-coral-escuro underline decoration-coral-escuro/50 underline-offset-8"
-        >
-          Entender o plano de planners
-        </Link>
-      </div>
       </div>
     </div>
   );

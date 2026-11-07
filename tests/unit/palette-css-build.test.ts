@@ -21,6 +21,7 @@ function ruleBlock(css: string, selector: string): string {
 
 describe("app/globals.css compila com o Tailwind do projeto", () => {
   it("gera .btn-primary com texto charcoal (text-on-primary resolvido)", async () => {
+    // Compilar o Tailwind inteiro leva ~5 s; sob carga paralela o default de 5 s estoura.
     const css = readFileSync(resolve(process.cwd(), "app/globals.css"), "utf8");
     const result = await postcss([tailwindcss(config)]).process(css, {
       from: resolve(process.cwd(), "app/globals.css"),
@@ -34,5 +35,5 @@ describe("app/globals.css compila com o Tailwind do projeto", () => {
     const charcoalChannels = hexToRgb(PALETTE.onPrimary).join(" ");
     expect(button).toContain(`rgb(${charcoalChannels}`);
     expect(button).toContain("background-color: rgb(var(--tr-primaria)");
-  });
+  }, 30_000);
 });

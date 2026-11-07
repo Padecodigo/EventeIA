@@ -47,12 +47,9 @@ describe("SEO — foco Vale do Paraíba + São Paulo", () => {
     expect((m.openGraph as { description: string }).description).toContain("São Paulo");
   });
 
-  it("título padrão, hero, para-planners e imagem OG citam as regiões", () => {
+  it("título padrão, hero e imagem OG citam as regiões", () => {
     expect(read("app/layout.tsx")).toContain("no Vale do Paraíba e em São Paulo");
     expect(read("app/(marketing)/page.tsx")).toContain("com foco no Vale do Paraíba e em São Paulo");
-    const planners = read("app/(marketing)/para-planners/page.tsx");
-    expect(planners).toContain("Vale do Paraíba e de São Paulo");
-    expect(planners).toContain("Hoje atendemos com mais força o Vale do Paraíba e São Paulo.");
     expect(read("app/og/route.tsx")).toContain("Vale do Paraíba · São Paulo");
   });
 });

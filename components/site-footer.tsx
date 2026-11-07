@@ -24,9 +24,6 @@ export function SiteFooter() {
           <Link prefetch={false} href="/como-funciona" className="text-ink-inverse/70 transition hover:text-ink-inverse">
             Como funciona
           </Link>
-          <Link prefetch={false} href="/para-planners" className="text-ink-inverse/70 transition hover:text-ink-inverse">
-            Para planners
-          </Link>
           <Link prefetch={false} href="/planos" className="text-ink-inverse/70 transition hover:text-ink-inverse">
             Planos
           </Link>
