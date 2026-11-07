@@ -3,7 +3,7 @@ import Link from "next/link";
 
 const navItems = [
   { href: "/como-funciona", label: "Como funciona" },
-  { href: "/planos", label: "Planos" },
+  { href: "/planos", label: "Comprar" },
 ];
 
 export function SiteHeader() {
