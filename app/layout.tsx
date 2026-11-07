@@ -37,7 +37,7 @@ const body = localFont({
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
   title: {
-    default: "EventeIA — Fornecedores e orçamento pronto para o seu evento no Vale do Paraíba e em São Paulo",
+    default: "EventeIA — Fornecedores e orçamento pronto para o seu evento",
     template: "%s · EventeIA",
   },
   description: SITE_DESCRIPTION,

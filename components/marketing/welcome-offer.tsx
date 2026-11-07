@@ -152,10 +152,10 @@ export function WelcomeOffer() {
   );
 }
 
-/** Selo no card do tíquete em /planos: a oferta real, sem contagem para visitantes. */
-export function WelcomePlanosNote() {
+/** Selo no card do ticket: a oferta real, sem contagem para visitantes. */
+export function WelcomeTicketNote() {
   return (
-    <div id="ev-welcome-planos" className="mt-4 rounded-xl bg-vinho px-4 py-3 text-sm text-off-white">
+    <div id="ev-welcome-ticket" className="mt-4 rounded-xl bg-vinho px-4 py-3 text-sm text-off-white">
       <p>{WELCOME_COPY}</p>
       <p className="mt-1 text-caption opacity-90">
         O prazo de 48h começa no seu primeiro acesso e é controlado pelo servidor.

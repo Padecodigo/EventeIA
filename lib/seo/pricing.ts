@@ -24,7 +24,7 @@ export interface PricingDocument {
 export function pricingDocument(ticketPriceCents: number, base: string = siteUrl()): PricingDocument {
   return {
     service: "EventeIA",
-    url: absoluteUrl("/planos", base),
+    url: absoluteUrl("/comprar", base),
     currency: "BRL" as const,
     unit: "cents" as const,
     note: "1 crédito = 1 evento ativado. Preços em centavos de real (inteiros).",

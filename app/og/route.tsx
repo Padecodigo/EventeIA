@@ -28,7 +28,7 @@ export function GET(): ImageResponse {
           A gente encontra os fornecedores, compara os preços e entrega o orçamento pronto.
         </div>
         <div style={{ fontSize: 28, marginTop: 40, color: PALETTE.coralEscuro }}>
-          Vale do Paraíba · São Paulo
+          Orçamento pronto · menor preço válido
         </div>
       </div>
     ),

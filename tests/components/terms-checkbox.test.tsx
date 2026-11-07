@@ -35,7 +35,7 @@ afterEach(cleanup);
 const terms = () => screen.getByRole("checkbox", { name: /Li e aceito/ });
 
 describe("checkbox de aceite no /registrar", () => {
-  it("bloqueia Google e e-mail até marcar, com links para /termos e /privacidade", () => {
+  it("bloqueia Google e e-mail até aceitar os termos, com links para /termos e /privacidade", () => {
     render(<AuthForm mode="registrar" />);
     const google = screen.getByRole("button", { name: /Criar conta com Google/ });
     const email = screen.getByRole("button", { name: /Criar conta com e-mail/ });
@@ -48,7 +48,6 @@ describe("checkbox de aceite no /registrar", () => {
     );
 
     fireEvent.click(terms());
-    fireEvent.click(screen.getByRole("checkbox", { name: /Já sigo @eventeia/ }));
     expect(screen.getByRole("button", { name: /Criar conta com Google/ })).toBeEnabled();
     expect(email).toBeEnabled();
     // o aceite segue para o servidor nos dois formulários

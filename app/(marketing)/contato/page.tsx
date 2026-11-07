@@ -1,9 +1,11 @@
 import { SupportForm } from "@/components/support/support-form";
+import { pageMetadata } from "@/lib/seo/site";
 
-export const metadata = {
+export const metadata = pageMetadata({
   title: "Contato — sugestões, reclamações e suporte",
   description: "Fale com a equipe EventeIA: sugestões, reclamações, elogios ou relato de problemas.",
-};
+  path: "/contato",
+});
 
 export default function ContactPage() {
   return (

@@ -4,16 +4,16 @@ const TRUST_ITEMS = [
     text: "Cada número nasce de uma regra clara — o menor preço válido, com o que está incluído e o que ficou de fora.",
   },
   {
-    title: "Fornecedores prospectados",
-    text: "Nós entramos em contato e organizamos as propostas por categoria.",
+    title: "Fornecedores da sua região",
+    text: "Organizamos as propostas por categoria.",
   },
   {
     title: "Você aprova cada passo",
-    text: "Nenhum fornecedor é fechado sem o seu “sim”. Sem letras miúdas.",
+    text: "Nenhum fornecedor é fechado sem o seu “sim”.",
   },
   {
     title: "Pagamento sem surpresa",
-    text: "Pix ou cartão. Para anfitriões, um valor único por evento.",
+    text: "Pix ou cartão. Um valor único por evento.",
   },
 ];
 

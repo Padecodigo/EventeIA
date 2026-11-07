@@ -14,7 +14,7 @@ export function absoluteUrl(path: string, base: string = siteUrl()): string {
 export const SITE_NAME = "EventeIA";
 
 export const SITE_DESCRIPTION =
-  "Vai organizar um casamento, aniversário, 15 anos, formatura ou evento corporativo? Você conta como é o evento e a EventeIA encontra os fornecedores, compara os preços e entrega o orçamento pronto, com foco no Vale do Paraíba (São José dos Campos, Taubaté, Jacareí e região) e na cidade de São Paulo.";
+  "Vai organizar um casamento, aniversário, 15 anos, formatura ou evento corporativo? Você conta como é o evento e a EventeIA encontra os fornecedores da sua região, compara os preços e entrega o orçamento pronto.";
 
 export const SEO_KEYWORDS = [
   "orçamento de festa",
@@ -25,27 +25,10 @@ export const SEO_KEYWORDS = [
   "evento corporativo",
   "fornecedores de festa",
   "cotação de buffet",
-  "São José dos Campos",
-  "Taubaté",
-  "Vale do Paraíba",
-  "São Paulo",
-  "Grande São Paulo",
 ] as const;
 
-export const SERVICE_AREA = [
-  "São José dos Campos",
-  "Taubaté",
-  "Jacareí",
-  "Caçapava",
-  "Pindamonhangaba",
-  "Guaratinguetá",
-  "Vale do Paraíba",
-  "São Paulo",
-  "Grande São Paulo",
-] as const;
-
-/** Região de foco do marketing (não restringe onde o evento pode acontecer). */
-export const FOCUS_REGION_LABEL = "Vale do Paraíba e São Paulo";
+/** O serviço vale em qualquer cidade informada pelo cliente — sem recorte geográfico fixo. */
+export const SERVICE_AREA = ["Brasil"] as const;
 
 /** Imagem padrão de compartilhamento (Instagram, Facebook, X, LinkedIn). */
 export const OG_IMAGE = { url: "/og", width: 1200, height: 630, alt: "EventeIA — orçamentos de festa comparados" } as const;
@@ -54,8 +37,7 @@ export const OG_IMAGE = { url: "/og", width: 1200, height: 630, alt: "EventeIA �
 export const PUBLIC_ROUTES = [
   { path: "/", priority: 1, changeFrequency: "weekly" },
   { path: "/como-funciona", priority: 0.8, changeFrequency: "monthly" },
-  { path: "/planos", priority: 0.8, changeFrequency: "monthly" },
-  { path: "/seja-fornecedor", priority: 0.6, changeFrequency: "monthly" },
+  { path: "/comprar", priority: 0.9, changeFrequency: "monthly" },
   { path: "/termos", priority: 0.3, changeFrequency: "yearly" },
   { path: "/privacidade", priority: 0.3, changeFrequency: "yearly" },
   { path: "/estorno", priority: 0.3, changeFrequency: "yearly" },

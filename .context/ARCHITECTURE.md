@@ -1,5 +1,7 @@
 # ARCHITECTURE.md — Arquitetura da EventeIA
 
+> **Nota de estado (2026-11-07):** o produto vende **um tíquete por evento** e entrega **um único orçamento** no menor preço válido. Planos/franquia de créditos e `/para-planners` saíram; cupom só por campanha sazonal, com teto de 30%. Entrevista e código de confirmação do evento só existem com tíquete pago.
+
 > **Fonte da verdade arquitetural.** Última revisão: 2026-10-31.
 > Documentos irmãos: [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) · [PAYMENTS.md](PAYMENTS.md) · [DATABASE_RLS.md](DATABASE_RLS.md) · [COMMERCIAL_MODEL.md](COMMERCIAL_MODEL.md) · [FEEDS.md](FEEDS.md) · [SECURITY.md](SECURITY.md)
 

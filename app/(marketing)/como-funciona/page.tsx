@@ -20,11 +20,11 @@ const STEPS = [
   },
   {
     number: "02",
-    title: "A EventeIA prospecta",
-    text: "Nossa inteligência encontra fornecedores relevantes e entra em contato em seu nome, sem buscas intermináveis.",
+    title: "A EventeIA busca e compara",
+    text: "Encontramos fornecedores da sua região e pedimos os orçamentos por você, sem buscas intermináveis.",
     details: [
       "Fornecedores alinhados ao seu tipo de festa e região",
-      "Contato feito por nós, com o seu contexto",
+      "Os orçamentos são pedidos por nós, em seu nome",
       "Propostas organizadas por categoria, sem planilhas soltas",
     ],
   },
@@ -43,15 +43,11 @@ const STEPS = [
 const DELIVERABLES = [
   {
     title: "Orçamento explicado",
-    text: "Motor determinístico: os mesmos dados produzem o mesmo resultado, e cada linha tem uma regra clara.",
+    text: "Cada valor tem uma regra clara: os mesmos dados sempre geram o mesmo resultado.",
   },
   {
     title: "Propostas comparáveis",
-    text: "Fornecedores organizados por categoria, com valores e escopo na mesma estrutura de leitura.",
-  },
-  {
-    title: "Disparos com consentimento",
-    text: "Contato com as propostas pelas redes sociais apenas para quem autorizou — sem listas, sem spam.",
+    text: "Organizamos as propostas por categoria, com valores e escopo na mesma estrutura de leitura.",
   },
   {
     title: "Histórico do evento",
@@ -64,7 +60,7 @@ const testimonial = TESTIMONIALS.find((item) => item.id === "camila");
 export const metadata = pageMetadata({
   title: "Como funciona",
   description:
-    "Veja como a EventeIA monta o orçamento da sua festa: você conta o que imagina, cotamos fornecedores pelas redes sociais e entregamos o orçamento pronto no menor preço válido.",
+    "Veja como a EventeIA monta o orçamento da sua festa: você conta o que imagina, a EventeIA encontra fornecedores da sua região e entrega o orçamento pronto no menor preço válido.",
   path: "/como-funciona",
   keywords: ["como fazer orçamento de festa", "cotação de fornecedores"],
 });
