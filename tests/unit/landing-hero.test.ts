@@ -28,7 +28,7 @@ describe("landing — proposta inequívoca (beta 31/10: confundiram com B2B entr
     const afterHero = page.slice(page.indexOf("</section>", page.indexOf("HERO (acima da dobra)")));
     expect(afterHero.indexOf('id="como-funciona"')).toBeLessThan(afterHero.indexOf("Selos de confiança"));
     const steps = page.slice(page.indexOf("const STEPS"), page.indexOf("] as const;", page.indexOf("const STEPS")));
-    expect([...steps.matchAll(/title: "([^"]+)"/g)].map((m) => m[1])).toEqual(["Conte seu evento", "A EventeIA busca e compara", "Você recebe e escolhe"]);
+    expect([...steps.matchAll(/title: "([^"]+)"/g)].map((m) => m[1])).toEqual(["Conte seu evento", "A EventeIA busca e compara", "Você recebe e decide"]);
     expect(page).toContain("não é uma rede entre fornecedores");
   });
   it("link para fornecedores existe, separado e discreto (não é CTA)", () => {
@@ -69,13 +69,14 @@ describe("landing — hero", () => {
     for (const src of srcs) expect(readFileSync(join(process.cwd(), "public", src)).length).toBeLessThan(220_000);
   });
 
-  it("proposta de valor clara: redes sociais + 3 opções (preço, custo-benefício, comodidade)", () => {
+  it("proposta de valor clara: redes sociais + orçamento único no menor preço válido", () => {
     const h1End = source.indexOf("</h1>");
     const hero = source.slice(source.indexOf("<h1"), source.indexOf("</p>", h1End));
     expect(hero).toMatch(/redes sociais/);
-    expect(hero).toMatch(/3 opções/);
+    expect(hero).toMatch(/um orçamento pronto/);
     expect(hero).not.toMatch(/\bIA\b|fila/);
-    for (const word of ["preço", "custo-benefício", "comodidade"]) expect(hero).toContain(word);
+    expect(hero).toContain("menor preço válido");
+    expect(hero).not.toMatch(/3 opções|custo-benefício|comodidade/i);
   });
 
   it("CTA principal e planos (ticket avulso) visíveis", () => {

@@ -112,8 +112,6 @@ export interface SupplierQuote {
    */
   perGuestCents?: number | null;
   fees: QuoteFee[];
-  /** Qualidade/confiança 0..10000 bps (ex.: confidence_score × 10000, inteiro). */
-  qualityBps: number | null;
 }
 
 export interface UserAssets {
@@ -123,6 +121,7 @@ export interface UserAssets {
   unneededFeeCategories: QuoteFeeCategory[];
 }
 
+/** `quality_bps` permanece para ler snapshots antigos; o orçamento atual não usa score. */
 export type MissingField = "base_price_cents" | "fee_amount" | "quality_bps" | "quote";
 
 export interface MissingInfo {
@@ -141,7 +140,8 @@ export type EffectiveCostResult =
     }
   | { ok: false; missing: MissingField[] };
 
-export type ScenarioKind = "preco" | "custo_beneficio" | "comodidade";
+/** Único orçamento entregue pelo produto: o menor preço válido. */
+export type ScenarioKind = "preco";
 
 export interface ScenarioSelection {
   supplierId: string;
@@ -154,8 +154,6 @@ export interface Scenario {
   kind: ScenarioKind;
   totalCents: number;
   supplierCount: number;
-  /** Score determinístico (custo ajustado pela qualidade) — só em custo_beneficio. */
-  scoreCents: number | null;
   selections: ScenarioSelection[];
   ownedCategories: string[];
 }

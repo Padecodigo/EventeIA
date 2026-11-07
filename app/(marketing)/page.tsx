@@ -33,16 +33,10 @@ const EVENT_TYPES = [
   { label: "Celebrações", hint: "Bodas, despedidas, encontros" },
 ] as const;
 
-const OPTIONS = [
-  { title: "Preço", text: "A combinação mais barata entre as propostas que chegaram, já com taxas incluídas.", dot: "from-terracota to-primaria" },
-  { title: "Custo-benefício", text: "O melhor equilíbrio entre valor e qualidade — o que mais vale a pena.", dot: "from-champagne to-champagne" },
-  { title: "Comodidade", text: "Menos fornecedores, menos dor de cabeça: pacotes que resolvem mais coisas juntos.", dot: "from-terracota to-primaria" },
-] as const;
-
 const STEPS = [
   { n: "1", title: "Conte seu evento", text: "Tipo de festa, data, cidade, número de convidados e o que não pode faltar. Leva poucos minutos.", photo: "/img/eventos/passo-1-planejando-no-celular.webp", alt: "Mulher sorrindo no sofá enquanto conta pelo celular como vai ser a festa" },
   { n: "2", title: "A EventeIA busca e compara", text: "Encontramos fornecedores da sua região, pedimos orçamento a cada um pelas redes sociais e comparamos os preços — taxas escondidas incluídas.", photo: "/img/eventos/passo-2-buffet-orcamento.webp", alt: "Mesa de doces com brigadeiros, bolos e flores montada por um fornecedor de festa" },
-  { n: "3", title: "Você recebe e escolhe", text: "O orçamento chega pronto, em 3 opções: melhor preço, custo-benefício e comodidade. Você escolhe e só fecha com o seu “sim”.", photo: "/img/eventos/passo-3-festa-celebrando.webp", alt: "Amigos de diferentes origens brindando em uma festa de aniversário com balões" },
+  { n: "3", title: "Você recebe e decide", text: "O orçamento chega pronto, no menor preço válido entre as propostas comparáveis, com as taxas incluídas. Você só fecha com o seu “sim”.", photo: "/img/eventos/passo-3-festa-celebrando.webp", alt: "Amigos de diferentes origens brindando em uma festa de aniversário com balões" },
 ] as const;
 
 const TRUST = [
@@ -102,8 +96,8 @@ export default async function LandingPage() {
             </h1>
             <p className="mt-5 max-w-lg text-[17px] leading-relaxed text-vinho/85">
               Casamento, aniversário, 15 anos, formatura ou corporativo<span className="sm:hidden">.</span><span className="hidden sm:inline">: em vez de você ligar para um por um, a EventeIA pede orçamento aos fornecedores da sua região pelas redes sociais, com foco no Vale do Paraíba e em São Paulo, e compara tudo.</span> Você recebe{" "}
-              <strong className="font-semibold text-vinho">3 opções prontas</strong> — melhor preço, custo-benefício e
-              comodidade — e só escolhe.
+              <strong className="font-semibold text-vinho">um orçamento pronto</strong> — o menor preço válido
+              entre as propostas comparáveis — e só decide.
             </p>
 
             <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:items-center">
@@ -173,13 +167,9 @@ export default async function LandingPage() {
               </div>
             ))}
             <div className="col-span-2 flex items-center justify-between gap-3 rounded-2xl border border-line-subtle bg-white/70 px-4 py-3">
-              <span className="text-sm font-semibold text-vinho">Você recebe 3 opções prontas</span>
-              <span className="flex gap-2">
-                {OPTIONS.map((o) => (
-                  <span key={o.title} className="rounded-full bg-champagne-claro px-2.5 py-0.5 text-[11px] font-semibold text-vinho ring-1 ring-coral/30">
-                    {o.title}
-                  </span>
-                ))}
+              <span className="text-sm font-semibold text-vinho">Você recebe o orçamento pronto</span>
+              <span className="rounded-full bg-champagne-claro px-2.5 py-0.5 text-[11px] font-semibold text-vinho ring-1 ring-coral/30">
+                Menor preço
               </span>
             </div>
           </div>
@@ -252,25 +242,24 @@ export default async function LandingPage() {
         </ul>
       </section>
 
-      {/* ================= As 3 opções ================= */}
+      {/* ================= O orçamento único ================= */}
       <section className="bg-surface-dark">
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-28">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-champagne">O que você recebe</p>
-          <h2 className="mt-4 max-w-2xl font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.02em] text-ink-inverse">Três caminhos claros. Você só escolhe.</h2>
-          <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
-            {OPTIONS.map((o, i) => (
-              <article
-                key={o.title}
-                className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] p-7 transition md:backdrop-blur duration-300 hover:-translate-y-1 hover:border-champagne/30"
-              >
-                <div aria-hidden="true" className={`absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br ${o.dot} hidden opacity-10 blur-2xl transition md:block duration-500 group-hover:opacity-25`} />
-                <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${o.dot} text-sm font-bold text-on-primary`}>
-                  {i + 1}
-                </span>
-                <h3 className="mt-6 font-display text-2xl font-bold tracking-tight text-ink-inverse">{o.title}</h3>
-                <p className="mt-2 text-[15px] leading-relaxed text-ink-inverse/85">{o.text}</p>
-              </article>
-            ))}
+          <h2 className="mt-4 max-w-2xl font-display text-[clamp(1.9rem,4vw,3rem)] font-bold leading-[1.08] tracking-[-0.02em] text-ink-inverse">Um orçamento pronto. O menor preço válido.</h2>
+          <div className="mt-12 max-w-2xl">
+            <article className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] p-7 transition md:backdrop-blur duration-300 hover:-translate-y-1 hover:border-champagne/30">
+              <div aria-hidden="true" className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-terracota to-primaria hidden opacity-10 blur-2xl transition md:block duration-500 group-hover:opacity-25" />
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-terracota to-primaria text-sm font-bold text-on-primary">
+                1
+              </span>
+              <h3 className="mt-6 font-display text-2xl font-bold tracking-tight text-ink-inverse">Menor preço</h3>
+              <p className="mt-2 text-[15px] leading-relaxed text-ink-inverse/85">
+                A combinação mais barata entre as propostas comparáveis, já com as taxas obrigatórias
+                incluídas. Se faltar cotação válida para alguma necessidade, isso é mostrado com clareza —
+                sem estimativa e sem prometer o menor preço.
+              </p>
+            </article>
           </div>
         </div>
       </section>
@@ -311,7 +300,7 @@ export default async function LandingPage() {
               <ul className="mt-6 flex-1 space-y-2.5 text-sm text-vinho/80">
                 <li>✓ Sem mensalidade</li>
                 <li>✓ Cotações pelas redes sociais</li>
-                <li>✓ 3 opções comparadas</li>
+                <li>✓ Um orçamento pronto</li>
                 <li>✓ Pix ou cartão</li>
               </ul>
               <Link prefetch={false} href="/registrar" className="mt-7 inline-flex justify-center rounded-full bg-primaria px-5 py-3 text-sm font-bold text-on-primary transition hover:bg-primaria-escura">
@@ -371,7 +360,7 @@ export default async function LandingPage() {
             Seu evento merece ser curtido, não administrado.
           </h2>
           <p className="mx-auto mt-4 max-w-prose text-ink-inverse/85">
-            Conte o que você imagina. A EventeIA corre atrás dos orçamentos e te mostra as melhores opções.
+            Conte o que você imagina. A EventeIA corre atrás dos orçamentos e te entrega o menor preço válido.
           </p>
           <Link prefetch={false} href="/registrar" className="group mt-9 inline-flex items-center gap-2 rounded-full bg-champagne px-7 py-3.5 font-semibold text-on-primary transition hover:-translate-y-0.5 hover:bg-champagne-claro">
             Testar agora <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">→</span>

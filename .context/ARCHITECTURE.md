@@ -250,7 +250,7 @@ EngineInput
 
 ```
 Fornecedor responde (Instagram/Messenger) → inbound (Meta webhook → fila)
-  → interpretação da cotação (LLM) → rascunho em quotations → painel/cenários
+  → interpretação da cotação (LLM) → rascunho em quotations → painel/orçamento único
 ```
 
 ---

@@ -24,7 +24,7 @@
 - [x] Fase 1 — entrevista determinística (PR #9, mergeado).
 - [ ] Fase 2 — descoberta automática (PR aberto, aguardando revisão).
 - [ ] Fase 3 — mapeamento das respostas/cotações recebidas por categoria.
-- [ ] Fase 4 — 3 orçamentos (custo-benefício, mais barato, mais prático) + notificação.
+- [ ] Fase 4 — orçamento único de menor preço válido + notificação.
 - [ ] Fase 5 — PDF/download e histórico no dashboard.
 - [ ] Janela de coleta: 5 cotações/categoria ou 24h; entrega as cotações ao final.
 

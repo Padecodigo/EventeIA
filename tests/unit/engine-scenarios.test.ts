@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import { applyBps, effectiveCost } from "@/lib/engine/calculator";
-import { buildAllScenarios, buildScenario, valueScoreCents } from "@/lib/engine/scenarios";
+import { buildLowestPriceScenario } from "@/lib/engine/scenarios";
 import type { SupplierQuote, UserAssets } from "@/lib/engine/types";
+import { isAboveBudgetLimit } from "@/lib/events/budget-limit";
 
 const noAssets: UserAssets = { alreadyOwned: [], unneededFeeCategories: [] };
 
@@ -14,7 +15,6 @@ function quote(
     basePriceCents: 100_000,
     totalPriceCents: null,
     fees: [],
-    qualityBps: 8_000,
     ...partial,
   };
 }
@@ -131,59 +131,56 @@ describe("effectiveCost — taxas ocultas e deduções", () => {
   });
 });
 
-describe("cenários", () => {
+describe("orçamento único de menor preço", () => {
   const quotes: SupplierQuote[] = [
     quote({
       supplierId: "buffet-barato",
       covers: ["buffet"],
       basePriceCents: 200_000,
-      qualityBps: 5_000,
     }),
     quote({
       supplierId: "buffet-bom",
       covers: ["buffet"],
       basePriceCents: 230_000,
-      qualityBps: 10_000,
     }),
     quote({
       supplierId: "decor",
       covers: ["decoracao"],
       basePriceCents: 80_000,
-      qualityBps: 9_000,
     }),
     quote({
       supplierId: "pacote",
       covers: ["buffet", "decoracao"],
       basePriceCents: 320_000,
-      qualityBps: 9_000,
     }),
   ];
   const required = ["buffet", "decoracao"];
 
-  it("Preço escolhe o menor total", () => {
-    const { scenario } = buildScenario("preco", required, quotes, noAssets);
+  it("escolhe o menor total entre as cotações válidas", () => {
+    const { scenario } = buildLowestPriceScenario(required, quotes, noAssets);
     expect(scenario?.totalCents).toBe(280_000);
     expect(scenario?.selections.map((s) => s.supplierId).sort()).toEqual([
       "buffet-barato",
       "decor",
     ]);
+    expect(scenario?.kind).toBe("preco");
   });
 
-  it("Custo-Benefício usa score determinístico", () => {
-    expect(valueScoreCents(200_000, 5_000)).toBe(300_000);
-    const { scenario } = buildScenario("custo_beneficio", required, quotes, noAssets);
-    expect(scenario?.selections.map((s) => s.supplierId).sort()).toEqual(["buffet-bom", "decor"]);
-    expect(scenario?.scoreCents).toBe(230_000 + 88_000);
-  });
-
-  it("Comodidade minimiza fornecedores", () => {
-    const { scenario } = buildScenario("comodidade", required, quotes, noAssets);
-    expect(scenario?.supplierCount).toBe(1);
-    expect(scenario?.selections[0]?.supplierId).toBe("pacote");
+  it("empate no menor preço é determinístico pela ordem de supplierId", () => {
+    const tied = [
+      quote({ supplierId: "b", covers: ["buffet"], basePriceCents: 200_000 }),
+      quote({ supplierId: "a", covers: ["buffet"], basePriceCents: 200_000 }),
+    ];
+    const a = buildLowestPriceScenario(["buffet"], tied, noAssets);
+    const b = buildLowestPriceScenario(["buffet"], [...tied].reverse(), noAssets);
+    expect(a.scenario?.selections[0]?.supplierId).toBe("a");
+    expect(b.scenario?.selections[0]?.supplierId).toBe("a");
+    expect(a.scenario?.totalCents).toBe(200_000);
+    expect(b.scenario?.totalCents).toBe(200_000);
   });
 
   it("item já possuído custa 0 (categoria sai da exigência)", () => {
-    const { scenario } = buildScenario("preco", required, quotes, {
+    const { scenario } = buildLowestPriceScenario(required, quotes, {
       alreadyOwned: ["decoracao"],
       unneededFeeCategories: [],
     });
@@ -191,37 +188,46 @@ describe("cenários", () => {
     expect(scenario?.ownedCategories).toEqual(["decoracao"]);
   });
 
-  it("dados insuficientes ⇒ null + faltantes", () => {
-    const outcomes = buildAllScenarios(["buffet", "fotografia"], quotes, noAssets);
-    expect(outcomes.preco.scenario).toBeNull();
-    expect(outcomes.preco.missing).toContainEqual({
+  it("dados insuficientes ⇒ null + faltantes (não estima nem promete menor preço)", () => {
+    const outcome = buildLowestPriceScenario(["buffet", "fotografia"], quotes, noAssets);
+    expect(outcome.scenario).toBeNull();
+    expect(outcome.missing).toContainEqual({
       category: "fotografia",
       supplierId: null,
       field: "quote",
     });
   });
 
-  it("custo-benefício sem qualidade ⇒ null, não estima", () => {
-    const outcome = buildScenario(
-      "custo_beneficio",
+  it("cotação sem preço válido é ignorada e não vira estimativa", () => {
+    const outcome = buildLowestPriceScenario(
       ["buffet"],
-      [quote({ supplierId: "x", covers: ["buffet"], qualityBps: null })],
+      [quote({ supplierId: "x", covers: ["buffet"], basePriceCents: null, totalPriceCents: null })],
       noAssets,
     );
     expect(outcome.scenario).toBeNull();
-    expect(outcome.missing[0]?.field).toBe("quality_bps");
+    expect(outcome.missing).toContainEqual({
+      category: "buffet",
+      supplierId: "x",
+      field: "base_price_cents",
+    });
+  });
+
+  it("orçamento limite sinaliza, mas não esconde o menor preço (regra do produto)", () => {
+    const { scenario } = buildLowestPriceScenario(["buffet"], quotes, noAssets);
+    expect(scenario?.totalCents).toBe(200_000);
+    expect(isAboveBudgetLimit(scenario?.totalCents ?? null, "pacote", 0, 150_000)).toBe(true);
+    expect(isAboveBudgetLimit(scenario?.totalCents ?? null, "pacote", 0, 250_000)).toBe(false);
   });
 
   it("é determinístico (mesma entrada ⇒ mesma saída, independente da ordem)", () => {
-    const a = buildAllScenarios(required, quotes, noAssets);
-    const b = buildAllScenarios(required, [...quotes].reverse(), noAssets);
+    const a = buildLowestPriceScenario(required, quotes, noAssets);
+    const b = buildLowestPriceScenario(required, [...quotes].reverse(), noAssets);
     expect(a).toEqual(b);
   });
 });
 
 describe("cobertura exata (sem sobreposição)", () => {
-  it("exactCover impede pagar a mesma categoria duas vezes", async () => {
-    const { buildScenario } = await import("@/lib/engine/scenarios");
+  it("exactCover impede pagar a mesma categoria duas vezes", () => {
     const mk = (id: string, covers: string[], price: number) => ({
       supplierId: id,
       supplierName: id,
@@ -229,17 +235,16 @@ describe("cobertura exata (sem sobreposição)", () => {
       basePriceCents: price,
       totalPriceCents: null,
       fees: [],
-      qualityBps: 9000,
     });
     const quotes = [mk("a", ["x", "y"], 100), mk("b", ["y", "z"], 100), mk("c", ["z"], 150)];
     const assets = { alreadyOwned: [], unneededFeeCategories: [] };
     expect(
-      buildScenario("preco", ["x", "y", "z"], quotes, assets).scenario?.selections.map(
+      buildLowestPriceScenario(["x", "y", "z"], quotes, assets).scenario?.selections.map(
         (s) => s.supplierId,
       ),
     ).toEqual(["a", "b"]);
     expect(
-      buildScenario("preco", ["x", "y", "z"], quotes, assets, {
+      buildLowestPriceScenario(["x", "y", "z"], quotes, assets, {
         exactCover: true,
       }).scenario?.selections.map((s) => s.supplierId),
     ).toEqual(["a", "c"]);
@@ -282,7 +287,7 @@ describe("C_total = V_base + V_pessoa·N + T_extra", () => {
     ).toThrow();
   });
 
-  it("cenário 'preco' considera V_pessoa·N no total", () => {
+  it("orçamento de menor preço considera V_pessoa·N no total", () => {
     const mk = (id: string, covers: string[], base: number, perGuest: number | null) => ({
       supplierId: id,
       supplierName: id,
@@ -291,18 +296,17 @@ describe("C_total = V_base + V_pessoa·N + T_extra", () => {
       totalPriceCents: null,
       perGuestCents: perGuest,
       fees: [],
-      qualityBps: 9000,
     });
     const quotes = [mk("a", ["buffet"], 100_000, 5_000), mk("b", ["buffet"], 80_000, 8_000)];
     const assets = { alreadyOwned: [], unneededFeeCategories: [] };
 
     // 50 convidados: a = 100000+250000=350000; b = 80000+400000=480000 → a vence.
-    const cheap = buildScenario("preco", ["buffet"], quotes, assets, { guestCount: 50 });
+    const cheap = buildLowestPriceScenario(["buffet"], quotes, assets, { guestCount: 50 });
     expect(cheap.scenario?.selections[0]?.supplierId).toBe("a");
     expect(cheap.scenario?.totalCents).toBe(350_000);
 
     // 150 convidados: a = 100000+750000=850000; b = 80000+1200000=1280000 → a ainda vence.
-    const big = buildScenario("preco", ["buffet"], quotes, assets, { guestCount: 150 });
+    const big = buildLowestPriceScenario(["buffet"], quotes, assets, { guestCount: 150 });
     expect(big.scenario?.selections[0]?.supplierId).toBe("a");
     expect(big.scenario?.totalCents).toBe(850_000);
   });

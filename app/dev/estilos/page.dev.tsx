@@ -43,7 +43,7 @@ const STYLE_OPTIONS: readonly StyleOption[] = [
     body: { varName: "var(--f1b)", label: "DM Sans" },
     headline: "Seu evento perfeito começa",
     highlight: "sem correria.",
-    sub: "Você conta o que sonhou. A gente pede orçamentos aos fornecedores da sua região, compara proposta por proposta e te entrega as 3 melhores opções — preço, custo-benefício e comodidade.",
+    sub: "Você conta o que sonhou. A gente pede orçamentos aos fornecedores da sua região, compara proposta por proposta e te entrega o orçamento pronto, no menor preço válido.",
   },
   {
     id: 2,
@@ -54,7 +54,7 @@ const STYLE_OPTIONS: readonly StyleOption[] = [
     body: { varName: "var(--f2b)", label: "Manrope" },
     headline: "Você sonha a festa.",
     highlight: "A gente corre atrás dos orçamentos.",
-    sub: "Buffet, decoração, foto, som: pedimos as propostas, comparamos tudo e te mostramos 3 opções claras para decidir com o coração — e com a cabeça tranquila.",
+    sub: "Buffet, decoração, foto, som: pedimos as propostas, comparamos tudo e te mostramos o orçamento pronto no menor preço válido, para decidir com o coração — e com a cabeça tranquila.",
   },
   {
     id: 3,
@@ -65,7 +65,7 @@ const STYLE_OPTIONS: readonly StyleOption[] = [
     body: { varName: "var(--f3b)", label: "Figtree" },
     headline: "Menos ligações,",
     highlight: "mais memórias.",
-    sub: "A EventeIA cota com os fornecedores da sua região e compara cada proposta por você. Do aniversário à formatura, você escolhe entre 3 opções prontas — e aproveita o que importa.",
+    sub: "A EventeIA cota com os fornecedores da sua região e compara cada proposta por você. Do aniversário à formatura, você recebe um orçamento pronto no menor preço válido — e aproveita o que importa.",
   },
 ];
 

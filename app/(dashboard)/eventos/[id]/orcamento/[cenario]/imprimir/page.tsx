@@ -19,6 +19,7 @@ export default async function PrintScenarioPage({
   if (data === null) notFound();
   const lines = scenarioLines(data.snap);
   const total = data.snap.outcome.scenario?.totalCents ?? 0;
+  const complete = lines.length > 0 && data.snap.uncovered.length === 0;
 
   return (
     <article className="mx-auto max-w-3xl bg-off-white p-8 text-vinho print:p-0 print:shadow-none">
@@ -39,13 +40,15 @@ export default async function PrintScenarioPage({
       </p>
       <h1 className="mt-1 font-serif text-title-1">{data.title}</h1>
       <p className="text-sm text-vinho/75">
-        {data.snap.label}
+        {complete ? data.snap.label : "Orçamento incompleto"}
         {data.eventDate
           ? ` · ${new Date(`${data.eventDate}T12:00:00`).toLocaleDateString("pt-BR")}`
           : ""}
       </p>
       {lines.length === 0 ? (
-        <p className="mt-6">Cotações insuficientes para este cenário.</p>
+        <p className="mt-6">
+          Ainda não há cotações válidas para montar o orçamento. Não é possível afirmar o menor preço.
+        </p>
       ) : (
         <table className="mt-6 w-full border-collapse text-sm">
           <thead>
@@ -89,7 +92,7 @@ export default async function PrintScenarioPage({
           <tfoot>
             <tr>
               <td colSpan={3} className="py-3 font-semibold">
-                Total (com taxas obrigatórias)
+                {complete ? "Total (com taxas obrigatórias)" : "Total parcial (sem as categorias faltantes)"}
               </td>
               <td className="text-right font-semibold tabular-nums">{formatBRL(total)}</td>
             </tr>
@@ -98,7 +101,8 @@ export default async function PrintScenarioPage({
       )}
       {data.snap.uncovered.length > 0 ? (
         <p className="mt-4 text-caption text-vinho/70">
-          Não coberto (sem cotação): {data.snap.uncovered.map(categoryLabel).join(", ")}.
+          Não coberto (sem cotação): {data.snap.uncovered.map(categoryLabel).join(", ")}. O menor preço
+          só pode ser confirmado quando todas as necessidades tiverem cotações válidas.
         </p>
       ) : null}
       <p className="mt-8 text-caption text-vinho/60">

@@ -41,10 +41,8 @@ function offer(
   };
 }
 
-const ids = (
-  r: ReturnType<typeof composeWithCoverage>,
-  k: "preco" | "custo_beneficio" | "comodidade" = "preco",
-) => (r.outcomes[k].scenario?.selections ?? []).map((s) => s.supplierId.split("#")[0]).sort();
+const ids = (r: ReturnType<typeof composeWithCoverage>) =>
+  (r.outcomes.preco.scenario?.selections ?? []).map((s) => s.supplierId.split("#")[0]).sort();
 
 describe("redundância: nunca paga duas vezes o mesmo serviço", () => {
   it("buffet que inclui garçons dispensa a contratação de garçons à parte", () => {
@@ -60,8 +58,6 @@ describe("redundância: nunca paga duas vezes o mesmo serviço", () => {
     );
     expect(ids(r)).toEqual(["buf"]);
     expect(r.outcomes.preco.scenario?.totalCents).toBe(1_000_000);
-    for (const k of ["preco", "custo_beneficio", "comodidade"] as const)
-      expect(ids(r, k)).toEqual(["buf"]);
   });
 
   it("espaço com limpeza inclusa dispensa equipe de limpeza", () => {

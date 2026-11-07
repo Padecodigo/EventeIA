@@ -5,6 +5,7 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 import { getEmailAdapter } from "./email";
 import { recordQuotationsReady, type NotificationDeps, type QuotationsReadyReason } from "./quotations-ready";
+import type { QuotationsReadyReadiness } from "./readiness";
 
 /** Dependências reais (service_role — somente servidor/workers). */
 export function createNotificationDeps(): NotificationDeps {
@@ -73,7 +74,12 @@ export function createNotificationDeps(): NotificationDeps {
 export async function notifyQuotationsReady(
   eventId: string,
   reason: QuotationsReadyReason,
+  readiness: QuotationsReadyReadiness,
 ): Promise<void> {
-  const result = await recordQuotationsReady(createNotificationDeps(), { eventId, reason });
-  logger.info({ eventId, reason, result }, "notificação quotations_ready");
+  const result = await recordQuotationsReady(createNotificationDeps(), {
+    eventId,
+    reason,
+    readiness,
+  });
+  logger.info({ eventId, reason, readiness, result }, "notificação quotations_ready");
 }

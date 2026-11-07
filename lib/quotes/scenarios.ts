@@ -8,27 +8,28 @@ import { composeWithCoverage, type SelectionNote } from "./coverage";
 import { categoryLabel } from "./labels";
 
 /**
- * Fase 4 — adaptador quotations + event_requirements → buildAllScenarios → budget_snapshots.
+ * Fase 4 — adaptador quotations + event_requirements → orçamento único → budget_snapshots.
  * Puro e determinístico. Só cotações aproveitáveis (confiança ≥ 0,7, valor > 0, sem pendência).
  */
 
-export const SCENARIO_KINDS: readonly ScenarioKind[] = ["preco", "custo_beneficio", "comodidade"];
+export const SCENARIO_KINDS: readonly ScenarioKind[] = ["preco"];
 
 export const SCENARIO_LABELS: Record<ScenarioKind, string> = {
-  preco: "Mais barato",
-  custo_beneficio: "Melhor custo-benefício",
-  comodidade: "Mais prático",
+  preco: "Melhor preço",
 };
 
-/** Slugs de URL (/eventos/[id]/orcamento/[cenario]/imprimir). */
+/** Slug canônico de URL (/eventos/[id]/orcamento/[cenario]/imprimir). */
 export const SCENARIO_SLUGS: Record<ScenarioKind, string> = {
-  preco: "mais-barato",
-  custo_beneficio: "custo-beneficio",
-  comodidade: "mais-pratico",
+  preco: "melhor-preco",
 };
+
+/** URLs antigas continuam abrindo o orçamento único de menor preço. */
+const LEGACY_SCENARIO_SLUGS = ["mais-barato", "custo-beneficio", "mais-pratico"] as const;
 
 export function kindFromSlug(slug: string): ScenarioKind | null {
-  return SCENARIO_KINDS.find((k) => SCENARIO_SLUGS[k] === slug) ?? null;
+  if (slug === SCENARIO_SLUGS.preco) return "preco";
+  if ((LEGACY_SCENARIO_SLUGS as readonly string[]).includes(slug)) return "preco";
+  return null;
 }
 
 export interface QuotationRowForScenario {
@@ -76,7 +77,6 @@ export function toSupplierQuote(row: QuotationRowForScenario): SupplierQuote {
     totalPriceCents: row.amount_cents,
     fees: consistent ? fees : [],
     perGuestCents,
-    qualityBps: Math.round(Math.min(1, Math.max(0, row.confidence ?? 0)) * 10_000),
   };
 }
 
@@ -170,18 +170,17 @@ export function toSnapshotRows(
 
 const breakdownSchema = z.object({
   source: z.literal(SNAPSHOT_SOURCE),
-  kind: z.enum(["preco", "custo_beneficio", "comodidade"]),
+  kind: z.literal("preco"),
   label: z.string(),
   required: z.array(z.string()),
   uncovered: z.array(z.string()),
   outcome: z.object({
-    kind: z.enum(["preco", "custo_beneficio", "comodidade"]),
+    kind: z.literal("preco"),
     scenario: z
       .object({
-        kind: z.enum(["preco", "custo_beneficio", "comodidade"]),
+        kind: z.literal("preco"),
         totalCents: z.number().int(),
         supplierCount: z.number().int(),
-        scoreCents: z.number().int().nullable(),
         selections: z.array(
           z.object({
             supplierId: z.string(),
@@ -217,13 +216,16 @@ const breakdownSchema = z.object({
     .optional(),
 });
 
-/** Lê com zod (fronteira com o banco); null se não for um snapshot de cenário. */
+/**
+ * Lê com zod (fronteira com o banco); null se não for um snapshot do orçamento único.
+ * Snapshots antigos de custo_beneficio/comodidade são ignorados — nunca são reescritos.
+ */
 export function parseScenarioSnapshot(breakdown: unknown): ScenarioSnapshotBreakdown | null {
   const parsed = breakdownSchema.safeParse(breakdown);
   return parsed.success ? parsed.data : null;
 }
 
-/** Mais recente de cada cenário (linhas em ordem decrescente de created_at). */
+/** Mais recente do orçamento de menor preço (linhas em ordem decrescente de created_at). */
 export function latestScenarios(
   rows: readonly { breakdown: unknown; created_at: string }[],
 ): Partial<Record<ScenarioKind, ScenarioSnapshotBreakdown & { createdAt: string }>> {
@@ -231,7 +233,7 @@ export function latestScenarios(
   for (const row of rows) {
     const snap = parseScenarioSnapshot(row.breakdown);
     if (snap !== null && out[snap.kind] === undefined)
-      out[snap.kind] = { ...snap, createdAt: row.created_at };
+      out[snap.kind] = { ...snap, label: SCENARIO_LABELS[snap.kind], createdAt: row.created_at };
   }
   return out;
 }
