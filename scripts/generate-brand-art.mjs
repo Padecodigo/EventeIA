@@ -1,6 +1,7 @@
 /**
- * Gera as artes de prospecção da EventeIA: compõe a logo (monograma) sobre a
- * foto base de cada tipo de evento e grava em `public/brand/posts/{key}.jpg`.
+ * Gera as artes de prospecção da EventeIA com a logo:
+ *   - POST   (public/brand/posts/{key}.jpg)  — feed, proporção original (largura máx. 1200px)
+ *   - STORY  (public/brand/stories/{key}.jpg) — 9:16, 1080x1920 (cover)
  *
  * Determinístico: mesma entrada sempre produz a mesma saída — sem aleatoriedade.
  * Uso: `node scripts/generate-brand-art.mjs` (ou `pnpm brand:art`).
@@ -12,7 +13,8 @@ import sharp from "sharp";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const LOGO_PATH = path.join(ROOT, "public", "logo-e.png");
-const OUT_DIR = path.join(ROOT, "public", "brand", "posts");
+const POST_DIR = path.join(ROOT, "public", "brand", "posts");
+const STORY_DIR = path.join(ROOT, "public", "brand", "stories");
 
 /** Foto base por tipo de evento (relativa à raiz do projeto). */
 const BASE_PHOTOS = {
@@ -25,7 +27,9 @@ const BASE_PHOTOS = {
 };
 
 // Parâmetros visuais (determinísticos).
-const MAX_WIDTH = 1200; // largura máxima da foto base (não amplia imagens menores)
+const POST_MAX_WIDTH = 1200; // largura máxima da foto base (não amplia imagens menores)
+const STORY_WIDTH = 1080;
+const STORY_HEIGHT = 1920;
 const CORNER_PADDING = 24; // distância da logo ao canto inferior direito
 const LOGO_WIDTH_RATIO = 0.2; // largura da logo = 20% da largura da arte
 const BG_INNER_PAD = 16; // respiro interno do fundo branco atrás da logo
@@ -70,37 +74,17 @@ function roundedRectSvg(width, height, radius, opacity) {
   );
 }
 
-async function generateOne(key, baseRel) {
-  const basePath = resolve(baseRel);
-  const outPath = path.join(OUT_DIR, `${key}.jpg`);
-
-  // Redimensiona a base e lê as dimensões EXATAS do resultado (a largura máxima
-  // é respeitada, sem ampliar imagens menores que 1200px).
-  const resized = await sharp(basePath)
-    .resize({ width: MAX_WIDTH, withoutEnlargement: true })
-    .png()
-    .toBuffer({ resolveWithObject: true });
-  const baseBuf = resized.data;
-  const imgW = resized.info.width;
-  const imgH = resized.info.height;
-
+/** Overlays (fundo branco + logo) para compor no canto inferior direito. */
+async function logoOverlays(imgW, imgH) {
   const bounds = await logoBounds();
   const logoW = Math.max(1, Math.round(imgW * LOGO_WIDTH_RATIO));
   const logoH = Math.max(1, Math.round((logoW * bounds.height) / bounds.width));
-
-  // Logo recortada (sem borda transparente) e redimensionada.
   const logo = await sharp(LOGO_PATH)
-    .extract({
-      left: bounds.left,
-      top: bounds.top,
-      width: bounds.width,
-      height: bounds.height,
-    })
+    .extract({ left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height })
     .resize({ width: logoW })
     .png()
     .toBuffer();
 
-  // Fundo branco de alto contraste atrás da logo.
   const rectW = logoW + BG_INNER_PAD * 2;
   const rectH = logoH + BG_INNER_PAD * 2;
   const rect = roundedRectSvg(rectW, rectH, BG_RADIUS, BG_OPACITY);
@@ -110,30 +94,51 @@ async function generateOne(key, baseRel) {
   const logoLeft = rectLeft + BG_INNER_PAD;
   const logoTop = rectTop + BG_INNER_PAD;
 
-  await sharp(baseBuf)
-    .composite([
-      { input: rect, left: rectLeft, top: rectTop },
-      { input: logo, left: logoLeft, top: logoTop },
-    ])
-    .jpeg({ quality: JPEG_QUALITY })
-    .toFile(outPath);
+  return [
+    { input: rect, left: rectLeft, top: rectTop },
+    { input: logo, left: logoLeft, top: logoTop },
+  ];
+}
 
-  return { key, outPath, imgW, imgH, logoW, logoH };
+async function generatePost(key, baseRel) {
+  const resized = await sharp(resolve(baseRel))
+    .resize({ width: POST_MAX_WIDTH, withoutEnlargement: true })
+    .png()
+    .toBuffer({ resolveWithObject: true });
+  const overlays = await logoOverlays(resized.info.width, resized.info.height);
+  await sharp(resized.data)
+    .composite(overlays)
+    .jpeg({ quality: JPEG_QUALITY })
+    .toFile(path.join(POST_DIR, `${key}.jpg`));
+  return { key, w: resized.info.width, h: resized.info.height, kind: "post" };
+}
+
+async function generateStory(key, baseRel) {
+  const resized = await sharp(resolve(baseRel))
+    .resize(STORY_WIDTH, STORY_HEIGHT, { fit: "cover", position: "centre" })
+    .png()
+    .toBuffer({ resolveWithObject: true });
+  const overlays = await logoOverlays(STORY_WIDTH, STORY_HEIGHT);
+  await sharp(resized.data)
+    .composite(overlays)
+    .jpeg({ quality: JPEG_QUALITY })
+    .toFile(path.join(STORY_DIR, `${key}.jpg`));
+  return { key, w: STORY_WIDTH, h: STORY_HEIGHT, kind: "story" };
 }
 
 async function main() {
-  await mkdir(OUT_DIR, { recursive: true });
-  const entries = Object.entries(BASE_PHOTOS);
+  await mkdir(POST_DIR, { recursive: true });
+  await mkdir(STORY_DIR, { recursive: true });
   const results = [];
-  for (const [key, baseRel] of entries) {
-    results.push(await generateOne(key, baseRel));
+  for (const [key, baseRel] of Object.entries(BASE_PHOTOS)) {
+    results.push(await generatePost(key, baseRel));
+    results.push(await generateStory(key, baseRel));
   }
   for (const r of results) {
-    console.log(
-      `✓ ${r.key}: ${r.imgW}x${r.imgH} (logo ${r.logoW}x${r.logoH}) -> ${path.relative(ROOT, r.outPath)}`,
-    );
+    const dir = r.kind === "post" ? POST_DIR : STORY_DIR;
+    console.log(`✓ ${r.key} (${r.kind}): ${r.w}x${r.h} -> ${path.relative(ROOT, dir)}/${r.key}.jpg`);
   }
-  console.log(`\n${results.length} artes geradas em ${path.relative(ROOT, OUT_DIR)}.`);
+  console.log(`\n${results.length} artes geradas.`);
 }
 
 await main();

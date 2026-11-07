@@ -179,6 +179,8 @@ export async function createMediaContainer(
   input: MetaPublishConfig & {
     imageUrl: string;
     caption: string;
+    /** IMAGE (feed), STORIES ou REELS. Default: IMAGE. */
+    mediaType?: "IMAGE" | "STORIES" | "REELS";
     userTags?: readonly string[];
     fetchImpl?: typeof fetch;
   },
@@ -190,7 +192,11 @@ export async function createMediaContainer(
   const check = validateCaption(input.caption);
   if (!check.ok) return { ok: false, error: check.reason, status: null };
 
-  const params = new URLSearchParams({ image_url: input.imageUrl, caption: input.caption });
+  const params = new URLSearchParams({
+    image_url: input.imageUrl,
+    caption: input.caption,
+    media_type: input.mediaType ?? "IMAGE",
+  });
   const tags = limitUserTags(input.userTags ?? []);
   if (tags.length > 0) params.set("user_tags", JSON.stringify(tags));
 
