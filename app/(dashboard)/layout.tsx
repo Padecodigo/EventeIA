@@ -36,8 +36,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const offer = await activeUserOffer(user.id);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(60%_40%_at_100%_0%,var(--color-areia-secundaria),transparent)] bg-areia-quente text-vinho">
-      <header className="sticky top-0 z-40 border-b border-line-subtle bg-white/95 md:bg-white/80 md:backdrop-blur-xl">
+    <div className="min-h-screen bg-[radial-gradient(60%_40%_at_100%_0%,var(--color-areia-secundaria),transparent)] bg-areia-quente text-vinho print:bg-white">
+      <header className="sticky top-0 z-40 border-b border-line-subtle bg-white/95 md:bg-white/80 md:backdrop-blur-xl print:hidden">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3 sm:px-6 sm:py-4">
           <Link href="/painel" className="flex items-center gap-3">
             <Image
@@ -70,23 +70,27 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       </header>
 
       {offer !== null ? (
-        <div className="mx-auto w-full max-w-6xl px-6 pt-6">
+        <div className="mx-auto w-full max-w-6xl px-6 pt-6 print:hidden">
           <OfferBanner
             headline={offerHeadline(offer.kind, offer)}
             remainingMs={offer.remainingMs}
           />
         </div>
       ) : null}
-      <div className="mx-auto w-full max-w-6xl px-6 pt-4">
+      <div className="mx-auto w-full max-w-6xl px-6 pt-4 print:hidden">
         <InstagramReminderBanner />
       </div>
-      <main className="mx-auto w-full max-w-6xl px-6 py-10">{children}</main>
-      <footer className="border-t border-line-subtle py-6 text-center text-[11px] text-vinho/60">
+      <main className="mx-auto w-full max-w-6xl px-6 py-10 print:max-w-none print:px-0 print:py-0">
+        {children}
+      </main>
+      <footer className="border-t border-line-subtle py-6 text-center text-[11px] text-vinho/60 print:hidden">
         © {new Date().getFullYear()} EventeIA · Pagamentos via Pix e cartão · Dados protegidos
         (LGPD)
       </footer>
-      <NotificationsPoller />
-      <SupportButton />
+      <div className="print:hidden">
+        <NotificationsPoller />
+        <SupportButton />
+      </div>
     </div>
   );
 }

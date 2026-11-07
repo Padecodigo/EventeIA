@@ -195,3 +195,24 @@
   .ev-how-label::before { animation: none !important; }
   .ev-how-l3::before { opacity: 1; }
 }
+
+/* Impressão do orçamento: A4 sem cabeçalho/menu do painel; cores da marca preservadas. */
+@media print {
+  @page { size: A4; margin: 16mm; }
+  html, body { background: #fff !important; }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* Tema escuro não deve virar papel preto: força a paleta clara na impressão. */
+  :root, .dark, .theme-system {
+    --tr-vinho: 43 39 36;
+    --tr-areia-quente: 247 242 234;
+    --tr-areia-secundaria: 238 229 214;
+    --tr-off-white: 255 255 255;
+    --tr-champagne-claro: 251 227 211;
+    --tr-primaria: 240 160 112;
+    --tr-primaria-escura: 232 139 85;
+    --tr-line-rgb: 43 39 36;
+    color-scheme: light;
+  }
+  tr { break-inside: avoid; }
+  thead { display: table-header-group; }
+}
