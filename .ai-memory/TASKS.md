@@ -1,70 +1,60 @@
 # TASKS — handoff do agente
 
 > Atualize ao encerrar a sessão: o que ficou pronto, o que está travado, qual o próximo passo.
-> Última atualização: 2026-11-07 08h10 (America/Sao_Paulo).
+> Última atualização: 2026-11-07 15h55 (America/Sao_Paulo).
+
+## Produto hoje (decisões fechadas)
+
+- **Um produto: tíquete por evento.** R$ 97, pagamento único, Pix ou cartão. Sem assinatura, sem
+  franquia de créditos, sem planos para planners. `/para-planners` foi removida (301 → `/planos`).
+- **Um único orçamento**, no menor preço válido, com taxas incluídas (engine + painel + impressão + CSV).
+- **Cupom só por campanha sazonal**, com teto de **30%**. A faixa automática de "cupom sorteado" saiu
+  do site; a criação é pelo `/admin/cupons`.
+- **Funil:** descrever o evento → pagar o tíquete → entrevista/prospecção. Sem tíquete `active` a
+  entrevista redireciona e o código `EVT-…` não aparece.
+- **Home v2** (mobile-first): hero com foto de festa infantil, CTA fixo no rodapé, exemplo de
+  orçamento, festa infantil em destaque, os 4 depoimentos preservados.
 
 ## Estado do tronco
 
-- `main` = `78423c1` (`fix(print)` #207, sobre `ae1f120` #206, sobre `b294f71` #205) —
-  **é o que está em produção desde 07/11 11h09**.
-- Deploy do stack `eventeia-prod` (app + worker + Redis num só compose do Coolify) no commit
-  `78423c1`: app, worker e Redis `healthy`; `/api/health` 200; `/como-funciona` confirma o texto
-  novo e não contém mais "faixa mínima, sugestão e teto".
-- `/204` entregou o orçamento único de menor preço (engine, painel, impressão/CSV, marketing,
-  notificações). `/205` fechou o texto do passo 03 em `/como-funciona`.
-- **Migração `0083` já aplicada. NÃO reaplicar.** Duas exclusões auditadas de registros
-  redundantes já foram feitas. **NÃO repetir.**
+- `main` = `dba1018` (ver `git log -1`); produção roda o deploy do #219.
+- Deploy: `POST /api/v1/deploy?uuid=ozqnl541gzloqhsqvpjtqa8l` no Coolify (token em
+  `/root/.coolify_token` na VPS `root@200.141.28.13`, chave `~/.ssh/eventeia_vps`).
+  Um único compose sobe app + worker + Redis.
+- **Migração `0083` já aplicada. NÃO reaplicar.** Duas exclusões auditadas já feitas. **NÃO repetir.**
 
-## Entregue nesta sessão (07/11)
+## Verificado em produção (07/11)
 
-- [x] **#206** — `components/marketing/trust-strip.tsx` dizia "faixa mínima, sugestão e teto"
-      (mesma promessa de 3 opções corrigida no #205). Mergeado e no ar.
-- [x] **#207** — o `Imprimir / salvar PDF` herdava o chrome do painel (header, banners, rodapé,
-      radial-gradient). `print:hidden` no layout, `@page` A4 16mm, `tr` sem quebra, paleta clara
-      forçada. Mergeado e no ar.
-
-> Regra: merge só junto com deploy (app + worker). Mergear sem deploy deixa `main` à frente da
-> produção. Ver decisão 007 em `DECISIONS.md`.
+- `/api/health` 200; app, worker e Redis `healthy`.
+- Aba **Comprar**: mostra o checkout do evento pendente (Pix/cartão) ou "Criar meu evento".
+- Página do evento: checkout "Comprar ticket do evento"; entrevista e `EVT-…` só com tíquete pago.
+- Sessão real (Supabase magic link) usada para validar; **sessão revogada** ao final.
 
 ## Pendências (ordem definida pelo dono)
 
-- [ ] **Validar painel autenticado e impressão** — não podem prometer três orçamentos. A tentativa
-      anterior de login abortou; falta a validação visual real. `BudgetTable` (painel) ainda exibe
-      colunas Mínimo/Sugerido/Teto do motor estimado — decidir se é "faixa estimada" legítima ou
-      resíduo a remover.
-- [ ] **Diagnóstico do `permission_or_token`** na exclusão automática da Meta. `classifyDeleteFailure`
-      (`lib/meta/publishing.ts`) agrupa `401/403`, `190`, `10` e `200` no mesmo kind — e o ramo
-      `missing_permission` é **inalcançável**, porque qualquer 401/403 retorna antes.
+- [ ] **Diagnóstico `permission_or_token`** na exclusão automática da Meta. `classifyDeleteFailure`
+      (`lib/meta/publishing.ts`) agrupa `401/403`, `190`, `10` e `200` no mesmo kind; o ramo
+      `missing_permission` é inalcançável.
 - [ ] **Limpeza de publicações** — buffet `17875462215638458` sem confirmação; decor
-      `18026996645916620` e space `17971549067960951` não tocados. Instagram drinks/cake já
-      confirmados: não refazer. Não inferir remoção por ausência de registro.
-- [ ] **4 posts + 4 stories + 4 reels/dia por canal** (Facebook e Instagram), com logo, sem repetir
-      imagem. Avaliar geração gratuita; não contratar serviço pago.
-- [ ] **TikTok**: avaliar publicação e busca de fornecedores sem custo.
-- [ ] **Código de contratante vs. fornecedor** — hoje um código só confirma/publica; falta separar o
-      do fornecedor que registra interesse/disponibilidade.
+      `18026996645916620` e space `17971549067960951` não tocados. Drinks/cake confirmados: não refazer.
+- [ ] **4 posts + 4 stories + 4 reels/dia por canal**, sem repetir imagem, com logo. Avaliar geração gratuita.
+- [ ] **TikTok**: publicação e busca de fornecedores sem custo.
+- [ ] **Código de contratante vs. fornecedor** (hoje um código só confirma/publica).
 - [ ] **Pendências do App Review da Meta**.
 
-## Lixo limpo em 07/11 (não reabrir)
+## Armadilhas aprendidas (não repetir)
 
-- 49 branches remotas obsoletas excluídas (48 com PR mergeado + `feat/prospecting-messenger-agent`,
-  cujo #126 foi fechado sem merge e cuja funcionalidade entrou nos #178–#199). Restam 6.
-- `.xdg/` (store pnpm órfão, 873 MB), `.next/`, `dist/`, `tsconfig.tsbuildinfo`.
+- `search_start_date` do evento **precisa ser dia útil** (`addBusinessDays`), senão o banco recusa
+  com `22023` e a compra falha silenciosamente.
+- `next/image` com `quality` fora de `images.qualities` (70/75) devolve **400** e a imagem nasce
+  quebrada em produção. Guarda em `tests/unit/image-quality.test.ts`.
+- Coral `#E8575A` com texto branco dá **3,53:1** e reprova AA: o CTA usa `#C24145` (5,08:1).
+- Arquivos temporários de teste (`*.mjs`, cookies de sessão) **nunca** dentro do repo: ele é público.
+  Usar `os.tmpdir()` — um `.ck.json` foi commitado por engano e a sessão precisou ser revogada.
 
 ## Ambiente (Fedora do Allan)
 
-- GitHub CLI `2.103.3` autenticado em `Padecodigo` com escopo `repo`; token no **keyring**
-  (o `hosts.yml` não recebe o token neste sandbox — é esperado, não é falha).
-- Node `v22.23.4` · pnpm `12.14.0` · `node_modules` presente · `.pnpm-store/` ativo (não apagar).
+- GitHub CLI autenticado em `Padecodigo` (token no keyring).
+- Node `v22.23.4` · pnpm `12.14.0`. Supabase local **resetado** (83 migrações + seed); pgTAP `PASS`.
+- CLI do Supabase neste sandbox: `HOME=$PWD/.sbhome npm_config_cache=$PWD/.npm-cache npx -y supabase@latest …`.
 - `.env.local` existe e é ignorado pelo Git. Segredos nunca em prompt, log ou commit.
-- CodeGraph: `npx -y @sdsrs/code-graph` (índice em `.code-graph/`, fora do Git).
-- ai-memory: `npx -y ai-memory-mcp` (raiz `.ai-memory/`).
-- Guia: [`.context/AGENT_TOOLING.md`](../.context/AGENT_TOOLING.md).
-
-## Último estado de produção
-
-- Commit `78423c1` · app, worker e Redis `healthy` (Coolify `eventeia-prod`, 07/11 11h09).
-- `/api/health` 200 · `/como-funciona` com o texto novo.
-- Login/painel **não** validados visualmente. Não declarar validado sem prova.
-- Deploy: `POST /api/v1/deploy?uuid=ozqnl541gzloqhsqvpjtqa8l` no Coolify (token em
-  `/root/.coolify_token` na VPS). Um único compose sobe app + worker + Redis juntos.

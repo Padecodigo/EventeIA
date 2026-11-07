@@ -1,17 +1,24 @@
 # COMMERCIAL_MODEL.md — Regras de Negócio Comerciais da EventeIA
 
-> **Fonte da verdade comercial.** Última revisão: 2026-10-22.
+> **Fonte da verdade comercial.** Última revisão: 2026-11-07.
 > Irmãos: [PAYMENTS.md](PAYMENTS.md) (execução de cobranças) · [DATABASE_RLS.md](DATABASE_RLS.md) (DDL) · [FEEDS.md](FEEDS.md) (eventos).
 
 ---
 
 ## 1. Princípios
 
-1. **Dois produtos, um motor**: B2C compra um _tíquete por evento único_; B2B assina uma _franquia mensal de créditos_. Ambos desbloqueiam o mesmo núcleo de valor: orçamento determinístico + cotações + disparos.
+1. **Um produto, um motor**: o cliente compra **um tíquete por evento** (R$ 97, pagamento único). O núcleo de valor é sempre orçamento determinístico + cotações + disparos. A antiga _franquia mensal B2B_ (§3) está **fora do produto** desde 2026-11-07 — o código legado permanece no repositório, mas não há superfície comercial.
 2. **Preço nasce no servidor**: env `B2C_TICKET_PRICE_CENTS` (B2C) e tabela `plans` (B2B). Nunca hardcoded em componente; nunca aceito do cliente.
 3. **Crédito é livro-razão** (_ledger_): cada movimento é um lançamento imutável; saldo é consequência auditável. Proibido atualizar saldo sem lançamento.
 4. **Idempotência em tudo**: cada concessão/consumo tem `idempotency_key` UNIQUE.
 5. **Transparência**: todo débito é explicável ao usuário (o quê, quando, qual evento, qual documento de origem).
+
+### 1.1 Estado atual do funil (2026-11-07)
+
+1. **Descrever** o evento em `/eventos` (sem pagar).
+2. **Pagar** o tíquete na página do evento — checkout embutido, Pix ou cartão.
+3. **Entrevista e prospecção só começam com o tíquete `active`.** O código de confirmação do evento (`EVT-…`, migração 0082) também só aparece depois do pagamento.
+4. A aba **Comprar** (`/creditos`) mostra os eventos aguardando pagamento com o checkout; sem evento pendente, leva a criar o evento — ela não cria evento sozinha.
 
 ---
 
@@ -37,7 +44,7 @@ Antes da compra, o anfitrião vê um **preview deliberadamente limitado**: 3 ite
 
 ### 2.4 Cupons de desconto (B2C)
 
-- **Cupom aplica-se ao tíquete** (B2C). Regra: percentual (1–90%) ou valor fixo em centavos; validade opcional (`expires_at`); limite opcional de resgates (`max_redemptions`).
+- **Cupom aplica-se ao tíquete** (B2C). Regra: percentual (1–**30%**, teto do produto) ou valor fixo em centavos; validade opcional (`expires_at`); limite opcional de resgates (`max_redemptions`).
 - **Tudo no servidor**: o client envia apenas o código; validação e desconto vivem em `lib/coupons/pure.ts` (testado) e no `buyTicketAction`. **Regra de ouro: o preço final nunca fica abaixo do custo operacional (R$ 9/evento — §3.4); piso técnico de R$ 1,00 para a API do Asaas.** Validado no CI (`tests/unit/coupons.test.ts`).
 - **Redenção conta na confirmação do pagamento** (trigger `payments_coupon_redemption`, migração 0010) — Pix abandonado não queima cupom; replay não duplica.
 - **Auditoria**: `payments.coupon_code`/`discount_cents` + feed `coupon.redeemed`; cupons legíveis apenas via `service_role` (códigos não enumeráveis).
@@ -54,7 +61,7 @@ available ──checkout──► pending ──pagamento confirmado──► ac
 
 ---
 
-## 3. B2B — Franquia de créditos por assinatura (Planners/Cerimonialistas)
+## 3. B2B — Franquia de créditos por assinatura (LEGADO — fora do produto desde 2026-11-07)
 
 ### 3.1 Definição
 
