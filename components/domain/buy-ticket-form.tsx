@@ -2,13 +2,7 @@
 
 import { useActionState, useState } from "react";
 
-import {
-  applyCouponAction,
-  buyTicketAction,
-  type CheckoutState,
-  type CouponCheckState,
-} from "@/app/(dashboard)/eventos/actions";
-import { CouponToggle, type CouponPreviewState } from "@/components/domain/coupon-toggle";
+import { buyTicketAction, type CheckoutState } from "@/app/(dashboard)/eventos/actions";
 import { WelcomeCountdown } from "@/components/domain/welcome-countdown";
 import { TermsCheckbox } from "@/components/legal/terms-checkbox";
 import { Button } from "@/components/ui/button";
@@ -37,26 +31,8 @@ export function BuyTicketForm({
   defaultCpf,
   welcome = null,
 }: BuyTicketFormProps) {
-  const [couponState, setCouponState] = useState<CouponCheckState>({});
   const [state, formAction, pending] = useActionState(buyTicketAction, initialCheckout);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-
-  const couponApplied = couponState.ok === true;
-  const onApplied = (code: string | null, preview: CouponPreviewState | null): void => {
-    setCouponState(code !== null && preview !== null ? { ...preview, ok: true, code } : {});
-  };
-
-  if (state.courtesy !== undefined) {
-    return (
-      <section className="rounded-card border border-champagne/50 bg-off-white p-6 shadow-soft">
-        <h2 className="font-serif text-title-1">Cortesia aplicada — evento liberado.</h2>
-        <p className="mt-2 text-sm text-vinho/70">
-          Cupom <strong className="text-vinho">{state.applied?.code}</strong>: total{" "}
-          <strong className="text-vinho">{formatBRL(0)}</strong>. Nenhuma cobrança foi gerada.
-        </p>
-      </section>
-    );
-  }
 
   if (state.card !== undefined) {
     return (
@@ -65,8 +41,7 @@ export function BuyTicketForm({
 
         {state.applied !== undefined ? (
           <p className="mt-2 text-sm text-vinho/75">
-            Cupom <strong className="text-vinho">{state.applied.code}</strong> aplicado — desconto
-            de {formatBRL(state.applied.discountCents)}. Total:{" "}
+            Desconto de {formatBRL(state.applied.discountCents)} aplicado — total:{" "}
             <strong className="text-vinho">{formatBRL(state.applied.finalCents)}</strong>.
           </p>
         ) : null}
@@ -99,8 +74,7 @@ export function BuyTicketForm({
 
         {state.applied !== undefined ? (
           <p className="mt-2 text-sm text-vinho/75">
-            Cupom <strong className="text-vinho">{state.applied.code}</strong> aplicado — desconto
-            de {formatBRL(state.applied.discountCents)}. Total:{" "}
+            Desconto de {formatBRL(state.applied.discountCents)} aplicado — total:{" "}
             <strong className="text-vinho">{formatBRL(state.applied.finalCents)}</strong>.
           </p>
         ) : null}
@@ -147,7 +121,7 @@ export function BuyTicketForm({
         Pix ou cartão de crédito. Inclui orçamento completo e cotações ilimitadas.
       </p>
 
-      {welcome !== null && !couponApplied ? (
+      {welcome !== null ? (
         <div role="status" className="mt-5 rounded-xl bg-vinho px-4 py-3 text-sm text-off-white">
           <p>
             {welcome.label ?? "Oferta de boas-vindas aplicada"}:{" "}
@@ -166,14 +140,8 @@ export function BuyTicketForm({
         </div>
       ) : null}
 
-      {/* Cupom — feedback imediato antes de gerar o Pix (spec §3) */}
-      <CouponToggle action={applyCouponAction} onApplied={onApplied} idPrefix="ticket" />
-
       <form action={formAction} className="mt-5 flex flex-col gap-4">
         <input type="hidden" name="eventId" value={eventId} />
-        {couponApplied && couponState.code !== undefined ? (
-          <input type="hidden" name="coupon" value={couponState.code} />
-        ) : null}
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="cpf" className="text-sm font-medium text-vinho">
@@ -205,32 +173,26 @@ export function BuyTicketForm({
           </p>
         ) : null}
 
-        {couponApplied && couponState.finalCents === 0 ? (
-          <Button type="submit" variant="gold" disabled={pending || !acceptedTerms}>
-            {pending ? "Ativando…" : "Ativar evento com cortesia"}
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            type="submit"
+            name="method"
+            value="pix"
+            variant="gold"
+            disabled={pending || !acceptedTerms}
+          >
+            {pending ? "Gerando cobrança…" : "Pagar com Pix"}
           </Button>
-        ) : (
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Button
-              type="submit"
-              name="method"
-              value="pix"
-              variant="gold"
-              disabled={pending || !acceptedTerms}
-            >
-              {pending ? "Gerando cobrança…" : "Pagar com Pix"}
-            </Button>
-            <Button
-              type="submit"
-              name="method"
-              value="card"
-              variant="secondary"
-              disabled={pending || !acceptedTerms}
-            >
-              Pagar com cartão de crédito
-            </Button>
-          </div>
-        )}
+          <Button
+            type="submit"
+            name="method"
+            value="card"
+            variant="secondary"
+            disabled={pending || !acceptedTerms}
+          >
+            Pagar com cartão de crédito
+          </Button>
+        </div>
       </form>
     </section>
   );

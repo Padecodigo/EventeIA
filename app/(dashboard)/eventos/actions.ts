@@ -23,14 +23,8 @@ import { findMunicipioByCode, regionForUf } from "@/lib/geo/municipios";
 import { recordTermsAcceptance } from "@/lib/legal/acceptance-server";
 import { TERMS_ERROR, hasAcceptedTerms } from "@/lib/legal/terms";
 import { logger } from "@/lib/logger";
-import { luckyDiscountCents } from "@/lib/lucky/pure";
-import { reserveLuckyCoupon } from "@/lib/lucky/server";
 import { parseBRLToCents } from "@/lib/money";
-import {
-  COUPON_REFUSAL,
-  previewCheckoutDiscount,
-  resolveCheckoutDiscount,
-} from "@/lib/offers/checkout";
+import { COUPON_REFUSAL, resolveCheckoutDiscount } from "@/lib/offers/checkout";
 import { attachUserOffer, releaseUserOffer } from "@/lib/offers/server";
 import { canEditSearchStart, parseSearchStartInput } from "@/lib/search-start";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -157,44 +151,6 @@ export async function createEventAction(
   redirect(`/eventos/${data.id}/entrevista`);
 }
 
-export interface CouponCheckState {
-  error?: string;
-  ok?: boolean;
-  code?: string;
-  finalCents?: number;
-  discountCents?: number;
-  /** A oferta pessoal ativa dá mais desconto que o cupom (sem acumular). */
-  offerWins?: boolean;
-}
-
-/**
- * Feedback imediato do cupom (spec: validar ANTES de gerar o Pix).
- * O checkout revalida no servidor na compra — este passo é UX + defesa em profundidade.
- */
-export async function applyCouponAction(
-  _previous: CouponCheckState,
-  formData: FormData,
-): Promise<CouponCheckState> {
-  const user = await requireUser();
-  const rawEntry = formData.get("code");
-  const result = await previewCheckoutDiscount({
-    profileId: user.id,
-    category: "avulso",
-    priceCents: serverEnv().B2C_TICKET_PRICE_CENTS,
-    couponRaw: typeof rawEntry === "string" ? rawEntry : "",
-  });
-  if ("error" in result) {
-    return { error: result.error };
-  }
-  return {
-    ok: true,
-    code: result.code,
-    finalCents: result.finalCents,
-    discountCents: result.discountCents,
-    offerWins: result.offerWins,
-  };
-}
-
 export interface CheckoutState {
   error?: string;
   pix?: {
@@ -285,7 +241,8 @@ export async function buyTicketAction(
       .update({ document_number: parsed.data.cpf, document_type: "cpf" })
       .eq("id", user.id);
 
-    // Cupom digitado vs. oferta pessoal (0036): o MAIOR, sem acumular — tudo no servidor.
+    // Desconto do checkout resolvido SEMPRE no servidor: oferta de boas-vindas (0036).
+    // A redenção de cupom digitado permanece no servidor (sem entrada na UI) — dormente.
     const couponRawEntry = formData.get("coupon");
     const couponRaw = typeof couponRawEntry === "string" ? normalizeCouponCode(couponRawEntry) : "";
 
@@ -336,16 +293,8 @@ export async function buyTicketAction(
       couponCode = resolved.code;
       reservationId = resolved.reservationId;
       claimedOfferId = resolved.offerId;
-    } else {
-      // Sem cupom e sem oferta pessoal. A boas-vindas única é a oferta pessoal da conta
-      // (R$ 40 avulso / 30% pacotes, 48h — 0036); a legada de R$ 47 do visitante não vale mais.
-      // Cupom sorteado: percentual SEMPRE o gravado no banco (nunca do client).
-      const lucky = await reserveLuckyCoupon(user.id, event.id);
-      if (lucky !== null) {
-        discount = luckyDiscountCents(env.B2C_TICKET_PRICE_CENTS, lucky.percent);
-        couponCode = lucky.code;
-      }
     }
+    // Sem desconto aplicado: preço cheio (o checkout não oferece mais entrada de cupom).
 
     const finalPrice = finalPriceCents(env.B2C_TICKET_PRICE_CENTS, discount);
 
@@ -370,7 +319,7 @@ export async function buyTicketAction(
       description:
         couponCode === null
           ? `EventeIA — ticket do evento "${event.title}"`
-          : `EventeIA — ticket do evento "${event.title}" (cupom ${couponCode})`,
+          : `EventeIA — ticket do evento "${event.title}" (oferta ${couponCode})`,
       dueDate,
     };
     const pixPayment = billingType === "PIX" ? await createAsaasPixPayment(chargeInput) : null;

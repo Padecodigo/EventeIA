@@ -19,7 +19,6 @@ describe("DashboardNav", () => {
       "/admin/financeiro",
       "/admin/consumo",
       "/admin/depoimentos",
-      "/admin/cupons",
       "/admin/chamados",
       "/painel",
     ])

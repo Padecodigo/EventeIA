@@ -106,7 +106,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
         <Card label="Custo médio por evento" value={formatBRL(r.avgCostPerEventCents)} hint={`${String(r.eventsWithCost)} eventos · ${String(r.paymentsCount)} pagamentos · estornos ${formatBRL(r.refundedCents)}`} />
       </section>
 
-      <WelcomeStats data={welcome} title="Cupom de boas-vindas no período" />
+      <WelcomeStats data={welcome} title="Oferta de boas-vindas no período" />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <RevenueCostLine points={revenueCostSeries(r.revenueByDay, r.costByDay)} />

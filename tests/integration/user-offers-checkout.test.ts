@@ -3,8 +3,9 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createFakeDb, fakeClient, type FakeDb } from "./helpers/fake-supabase";
 
 /**
- * Ofertas pessoais (0036) no checkout: boas-vindas R$ 40 avulso / 30% pacotes,
- * cupom pessoal, sem acumular com cupom digitado, prazo e uso único no servidor.
+ * Ofertas (0036) no checkout: boas-vindas limitada a 20% do avulso (o banco ainda
+ * grava R$ 40) e 30% em pacotes; sem acumular com cupom digitado (redenção dormente),
+ * prazo e uso único no servidor.
  */
 let db: FakeDb;
 
@@ -21,7 +22,6 @@ vi.mock("@/lib/welcome/server", () => ({
   bindWelcomeOfferToUser: async () => undefined,
   reserveWelcomeOffer: () => legacyWelcome(),
 }));
-vi.mock("@/lib/lucky/server", () => ({ reserveLuckyCoupon: async () => null }));
 vi.mock("@/lib/feeds", () => ({ emitFeed: async () => undefined }));
 vi.mock("@/lib/queue", () => ({ enqueue: async () => true, QUEUE_NAMES: {} }));
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined }));
@@ -168,36 +168,36 @@ describe("evento avulso", () => {
     await import("@/app/(dashboard)/eventos/actions");
   }, 60_000);
 
-  it("boas-vindas ativa ⇒ R$ 97 − R$ 40 = R$ 57, resgata e vincula ao pagamento", async () => {
+  it("boas-vindas ativa ⇒ 20% do avulso (R$ 97 − R$ 19,40 = R$ 77,60), resgata e vincula", async () => {
     const { buyTicketAction } = await import("@/app/(dashboard)/eventos/actions");
     const state = await buyTicketAction({}, ticketForm());
     expect(state.error).toBeUndefined();
     expect(state.applied).toEqual({
       code: "BOASVINDAS-AAAA1111",
-      finalCents: 5700,
-      discountCents: 4000,
+      finalCents: 7760,
+      discountCents: 1940,
     });
-    expect(asaasValue()).toBe(57);
+    expect(asaasValue()).toBe(77.6);
     expect(fns()).toEqual(["user_offer_current", "user_offer_claim", "user_offer_attach"]);
     expect(db.tables.payments?.[0]).toMatchObject({
-      amount_cents: 5700,
-      discount_cents: 4000,
+      amount_cents: 7760,
+      discount_cents: 1940,
       coupon_code: "BOASVINDAS-AAAA1111",
     });
     expect(legacyWelcome).not.toHaveBeenCalled();
   });
 
-  it("cupom pessoal (Quer cupom?) ⇒ R$ 20 off", async () => {
+  it("oferta pessoal legada ⇒ também limitada a 20% do avulso", async () => {
     offer = activeOffer("personal");
     const { buyTicketAction } = await import("@/app/(dashboard)/eventos/actions");
     const state = await buyTicketAction({}, ticketForm());
-    expect(state.applied).toMatchObject({ finalCents: 7700, discountCents: 2000 });
+    expect(state.applied).toMatchObject({ finalCents: 7760, discountCents: 1940 });
   });
 
   it("sem acumular: cupom menor (10%) ⇒ vale a oferta e o cupom NÃO é reservado", async () => {
     const { buyTicketAction } = await import("@/app/(dashboard)/eventos/actions");
     const state = await buyTicketAction({}, ticketForm("dez"));
-    expect(state.applied).toMatchObject({ code: "BOASVINDAS-AAAA1111", finalCents: 5700 });
+    expect(state.applied).toMatchObject({ code: "BOASVINDAS-AAAA1111", finalCents: 7760 });
     expect(fns()).not.toContain("reserve_coupon");
   });
 
@@ -217,7 +217,7 @@ describe("evento avulso", () => {
     expect(fns()).not.toContain("user_offer_claim");
   });
 
-  it("expirada ⇒ desconto some de verdade (preço cheio, cai no fluxo legado)", async () => {
+  it("expirada ⇒ desconto some de verdade (preço cheio)", async () => {
     offer = activeOffer("welcome", -1);
     const { buyTicketAction } = await import("@/app/(dashboard)/eventos/actions");
     const state = await buyTicketAction({}, ticketForm());
@@ -240,17 +240,6 @@ describe("evento avulso", () => {
     const state = await buyTicketAction({}, ticketForm());
     expect(state.error).toBeDefined();
     expect(fns()).toContain("user_offer_release");
-  });
-
-  it("prévia do 'Tem um cupom?' avisa quando a oferta é maior", async () => {
-    const { applyCouponAction } = await import("@/app/(dashboard)/eventos/actions");
-    const f = new FormData();
-    f.set("acceptTerms", "on"); // aceite dos termos (obrigatório no checkout)
-    f.set("code", "dez");
-    const preview = await applyCouponAction({}, f);
-    expect(preview).toMatchObject({ ok: true, offerWins: true, finalCents: 5700 });
-    expect(fns()).not.toContain("reserve_coupon");
-    expect(fns()).not.toContain("user_offer_claim");
   });
 });
 
@@ -327,50 +316,6 @@ describe("pacotes, slider e franquia", () => {
       asaas_payment_id: "pay_first",
       amount_cents: 13_790,
       status: "pending",
-    });
-  });
-});
-
-describe("'Quer cupom?'", () => {
-  it("intervalo de 90 dias é enviado ao banco; cooldown devolve a data", async () => {
-    db.rpc = async (fn, args) => {
-      rpcCalls.push({ fn, args });
-      if (fn === "user_offer_request") {
-        return {
-          data: [{ status: "cooldown", offer_id: null, next_at: "2027-01-20T00:00:00Z" }],
-          error: null,
-        };
-      }
-      return { data: null, error: null };
-    };
-    const { requestOfferAction } = await import("@/app/actions/offers");
-    const state = await requestOfferAction({}, new FormData());
-    expect(state).toEqual({ cooldownUntil: "2027-01-20T00:00:00Z" });
-    expect(rpcCalls[0]).toEqual({
-      fn: "user_offer_request",
-      args: { p_profile_id: "user-1", p_cooldown_days: 90 },
-    });
-  });
-
-  it("emite e devolve o código com prazo do banco", async () => {
-    offer = activeOffer("personal", 48);
-    const current = offer;
-    db.rpc = async (fn, args) => {
-      rpcCalls.push({ fn, args });
-      if (fn === "user_offer_request")
-        return {
-          data: [{ status: "created", offer_id: "offer-personal", next_at: null }],
-          error: null,
-        };
-      if (fn === "user_offer_current") return { data: [current], error: null };
-      return { data: null, error: null };
-    };
-    const { requestOfferAction } = await import("@/app/actions/offers");
-    const state = await requestOfferAction({}, new FormData());
-    expect(state.offer).toMatchObject({
-      code: "PRAVOCE-BBBB2222",
-      isNew: true,
-      remainingMs: 48 * 3600_000,
     });
   });
 });

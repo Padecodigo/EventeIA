@@ -12,7 +12,6 @@ vi.mock("@/app/(auth)/actions", () => ({
 }));
 vi.mock("@/app/(dashboard)/creditos/actions", () => ({
   subscribeToPlanAction: vi.fn(),
-  applyPackCouponAction: vi.fn(),
 }));
 
 // Script do Google indisponível → fluxo OAuth antigo (fallback) com o botão próprio.

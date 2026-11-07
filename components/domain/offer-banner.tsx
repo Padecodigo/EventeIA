@@ -18,8 +18,8 @@ export function OfferBanner({ headline, remainingMs, detail }: OfferBannerProps)
       </p>
       {detail !== undefined ? <p className="mt-1 text-off-white/85">{detail}</p> : null}
       <p className="mt-1 text-caption text-off-white/70">
-        Aplicada automaticamente na sua primeira compra elegível. Uso único; não acumula com outro
-        cupom (vale o maior desconto).
+        Aplicada automaticamente na sua primeira compra elegível. Uso único; não acumula com outras
+        ofertas.
       </p>
     </div>
   );

@@ -2,16 +2,18 @@ import { roundHalfUpDiv } from "@/lib/money";
 import { DISCOUNT_FLOOR_CENTS } from "@/lib/pricing";
 
 /**
- * Ofertas pessoais do usuário logado (migração 0036) — regras puras.
+ * Ofertas do usuário logado (migração 0036) — regras puras.
  * Valores gravados no banco por oferta; estas constantes espelham a migração.
+ * A oferta de boas-vindas é o único desconto do produto: 20% do ticket.
  */
-export const WELCOME_AVULSO_OFF_CENTS = 4_000;
-export const WELCOME_PACK_PERCENT = 30;
+export const WELCOME_PERCENT = 20;
+/** 20% do ticket avulso (R$ 97) — o banco pode ter gravado mais; o app limita a 20%. */
+export const WELCOME_AVULSO_OFF_CENTS = 1_940;
+export const WELCOME_PACK_PERCENT = WELCOME_PERCENT;
+/** Oferta pessoal legada (0036): valores de referência; o app não emite mais. */
 export const PERSONAL_AVULSO_OFF_CENTS = 2_000;
-export const PERSONAL_PACK_PERCENT = 20;
+export const PERSONAL_PACK_PERCENT = WELCOME_PERCENT;
 export const OFFER_WINDOW_HOURS = 48;
-/** "Quer cupom?": 1 cupom novo por usuário a cada N dias (decisão do produto: 3 meses). */
-export const PERSONAL_COUPON_COOLDOWN_DAYS = 90;
 
 /** Mesmo piso dos cupons: nunca abaixo de R$ 47 (DISCOUNT_FLOOR_CENTS). */
 export const OFFER_MIN_FINAL_CENTS = DISCOUNT_FLOOR_CENTS;
@@ -25,7 +27,11 @@ export interface OfferTerms {
   packPercent: number;
 }
 
-/** Desconto da oferta para o preço dado (inteiro, nunca deixa abaixo do piso). */
+/**
+ * Desconto da oferta para o preço dado (inteiro, nunca deixa abaixo do piso).
+ * Avulso nunca ultrapassa WELCOME_PERCENT% do preço — protege ofertas antigas
+ * gravadas com valor fixo maior (ex.: R$ 40).
+ */
 export function offerDiscountCents(
   offer: OfferTerms,
   category: OfferCategory,
@@ -36,7 +42,7 @@ export function offerDiscountCents(
   }
   const raw =
     category === "avulso"
-      ? offer.avulsoOffCents
+      ? Math.min(offer.avulsoOffCents, roundHalfUpDiv(priceCents * WELCOME_PERCENT, 100))
       : roundHalfUpDiv(priceCents * Math.min(offer.packPercent, 90), 100);
   return Math.max(0, Math.min(raw, priceCents - OFFER_MIN_FINAL_CENTS));
 }
@@ -56,14 +62,11 @@ export function pickBetterDiscount(
 }
 
 /** Texto honesto do benefício (sem urgência inventada). */
-export function offerHeadline(kind: OfferKind, terms: OfferTerms): string {
-  const label = kind === "welcome" ? "Oferta de boas-vindas" : "Seu cupom pessoal";
-  const reais = `R$ ${String(Math.round(terms.avulsoOffCents / 100))}`;
-  return `${label}: ${reais} de desconto no ticket nas primeiras ${String(OFFER_WINDOW_HOURS)}h.`;
+export function offerHeadline(): string {
+  return `${WELCOME_PERCENT}% de desconto nas primeiras ${OFFER_WINDOW_HOURS}h após o primeiro acesso.`;
 }
 
 /** Texto público (visitante) da boas-vindas — espelha as constantes acima, sem contagem. */
 export function welcomeVisitorCopy(): string {
-  const reais = (WELCOME_AVULSO_OFF_CENTS / 100).toLocaleString("pt-BR");
-  return `R$ ${reais} de desconto no ticket nas primeiras ${OFFER_WINDOW_HOURS}h após o primeiro acesso.`;
+  return `${WELCOME_PERCENT}% de desconto nas primeiras ${OFFER_WINDOW_HOURS}h após o primeiro acesso.`;
 }
