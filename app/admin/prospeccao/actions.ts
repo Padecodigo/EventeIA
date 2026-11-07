@@ -4,11 +4,14 @@ import { revalidatePath } from "next/cache";
 
 import type { OpResult } from "@/lib/admin/suppliers";
 import { requireAdmin } from "@/lib/auth";
+import { cleanupEventPublicationsById } from "@/lib/events/social-cleanup";
 import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { metaPublishConfigFromEnv } from "@/lib/meta/config";
 import { buildEventPostContent } from "@/lib/prospecting/event-post";
 import {
   createSupabaseProspectingPostStore,
+  PublicationConflictError,
   type ProspectingPostRecord,
 } from "@/lib/prospecting/event-post-store";
 import { loadLookingFor } from "@/lib/prospecting/looking-for";
@@ -17,7 +20,6 @@ import { createSupabasePostStore, findImageFor } from "@/lib/prospecting/posts-s
 import { publishEventPost } from "@/lib/prospecting/publish-event-post";
 import { choosePublishPath } from "@/lib/prospecting/publish-path";
 import { publishPlannedPost } from "@/lib/prospecting/publish-runtime";
-import { QUEUE_NAMES, enqueue } from "@/lib/queue";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 /**
@@ -62,13 +64,26 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
   const cachedArt = eventId !== undefined ? await findImageFor(eventId, category) : null;
   // Arte com a identidade da EventeIA, por tipo de evento (sem valores no post).
   let eventType: string | null = null;
+  let eventState: {
+    status: string | null;
+    closed_at: string | null;
+    user_deleted_at: string | null;
+  } | null = null;
   if (eventId !== undefined) {
     const { data } = await getSupabaseAdmin()
       .from("events")
-      .select("event_type")
+      .select("event_type,status,closed_at,user_deleted_at")
       .eq("id", eventId)
       .maybeSingle();
     eventType = data?.event_type ?? null;
+    eventState =
+      data === null
+        ? null
+        : {
+            status: data.status,
+            closed_at: data.closed_at ?? null,
+            user_deleted_at: data.user_deleted_at ?? null,
+          };
   }
   const brandedArt =
     eventId !== undefined
@@ -78,31 +93,25 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
         }
       : null;
 
-  // Provedor browser (grokbot-style): o worker (imagem Playwright) publica; o app enfileira.
+  // O navegador só publica Instagram e não devolve media id. Como o fluxo
+  // exige Facebook + Instagram via Graph, recusamos em vez de enfileirar.
   if (path === "browser") {
-    const imageUrl = cachedArt?.url ?? brandedArt?.url ?? null;
-    if (imageUrl === null) {
-      return {
-        ok: false,
-        error: "Sem imagem para publicar no navegador (use um evento com arte da marca).",
-      };
-    }
-    const queued = await enqueue(QUEUE_NAMES.instagramPublish, "publish", {
-      imageUrl,
-      caption,
-      eventId: eventId ?? null,
-    });
-    if (!queued) {
-      return { ok: false, error: "Fila indisponível — tente novamente." };
-    }
-    revalidatePath("/admin/prospeccao");
-    return { ok: true };
+    return {
+      ok: false,
+      error:
+        "Publicação de evento/isca exige Graph API (Facebook + Instagram). O provedor de navegador não publica o Facebook.",
+    };
   }
 
-  const accessToken = env.META_ACCESS_TOKEN;
-  const igUserId = env.META_INSTAGRAM_BUSINESS_ID;
-  if (accessToken === undefined || igUserId === undefined) {
+  const meta = metaPublishConfigFromEnv(env);
+  if (meta.igUserId.length === 0 || meta.accessToken.length === 0) {
     return { ok: false, error: "Configure META_ACCESS_TOKEN e META_INSTAGRAM_BUSINESS_ID." };
+  }
+  if ((meta.pageId ?? "").length === 0) {
+    return {
+      ok: false,
+      error: "Configure META_PAGE_ID e META_PAGE_ACCESS_TOKEN para publicar no Facebook.",
+    };
   }
 
   const outcome = await publishPlannedPost({
@@ -115,14 +124,32 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
     },
     approved: true,
     modelslabKey: env.MODELSLAB_API_KEY,
-    meta: {
-      igUserId,
-      accessToken,
-      apiVersion: env.META_API_VERSION,
-      apiHost: env.META_API_HOST,
-    },
+    meta,
     store: createSupabasePostStore(),
     eventId,
+    event: eventId === undefined ? undefined : eventState,
+    requireFacebook: true,
+    ...(eventId === undefined
+      ? {}
+      : {
+          recheckEvent: async () => {
+            const { data } = await getSupabaseAdmin()
+              .from("events")
+              .select("status,closed_at,user_deleted_at")
+              .eq("id", eventId)
+              .maybeSingle();
+            return data === null
+              ? null
+              : {
+                  status: data.status,
+                  closed_at: data.closed_at ?? null,
+                  user_deleted_at: data.user_deleted_at ?? null,
+                };
+          },
+          onEventClosed: async () => {
+            await cleanupEventPublicationsById([eventId]);
+          },
+        }),
     cachedArt,
     fallbackArt: brandedArt !== null ? { url: brandedArt.url } : undefined,
     persistArt: undefined,
@@ -159,7 +186,9 @@ export async function approveEventPostAction(
   const admin = getSupabaseAdmin();
   const { data: event } = await admin
     .from("events")
-    .select("id,event_type,event_date,city,city_uf,region_code,confirmed_at")
+    .select(
+      "id,event_type,event_date,city,city_uf,region_code,confirmed_at,status,closed_at,user_deleted_at",
+    )
     .eq("id", eventId)
     .maybeSingle();
   if (event === null) {
@@ -186,41 +215,72 @@ export async function approveEventPostAction(
   let post: ProspectingPostRecord;
   try {
     post = await store.upsert({ ...source, imageUrl, status: "pending_approval" });
-  } catch {
+  } catch (caught) {
+    if (caught instanceof PublicationConflictError) {
+      return {
+        ok: false,
+        error: "Publicação em andamento para este evento. Aguarde e tente novamente.",
+      };
+    }
     return { ok: false, error: "Não foi possível gerar o post de prospecção." };
   }
 
-  // Provedor browser: o worker publica; aqui apenas enfileiramos o post aprovado.
+  // O provedor de navegador não publica Facebook nem expõe media id; o fluxo
+  // de evento exige Graph API para os dois canais.
   if (path === "browser") {
-    const queued = await enqueue(QUEUE_NAMES.instagramPublish, "publish", {
-      imageUrl,
-      caption: content.caption,
-      eventId: event.id,
-    });
-    if (!queued) {
-      return { ok: false, error: "Fila indisponível — tente novamente." };
-    }
-    await store.updateStatus(post.id, { status: "approved" });
-    revalidatePath("/admin/prospeccao");
-    return { ok: true };
+    return {
+      ok: false,
+      error:
+        "Publicação do evento exige Graph API (Facebook + Instagram). O provedor de navegador não publica o Facebook.",
+    };
   }
 
-  const accessToken = env.META_ACCESS_TOKEN;
-  const igUserId = env.META_INSTAGRAM_BUSINESS_ID;
-  if (accessToken === undefined || igUserId === undefined) {
+  const meta = metaPublishConfigFromEnv(env);
+  if (meta.igUserId.length === 0 || meta.accessToken.length === 0) {
     return { ok: false, error: "Configure META_ACCESS_TOKEN e META_INSTAGRAM_BUSINESS_ID." };
+  }
+  if ((meta.pageId ?? "").length === 0) {
+    return {
+      ok: false,
+      error: "Configure META_PAGE_ID e META_PAGE_ACCESS_TOKEN para publicar no Facebook.",
+    };
   }
 
   const outcome = await publishEventPost({
-    post: { id: post.id, caption: content.caption, imageUrl },
-    approved: true,
-    meta: {
-      igUserId,
-      accessToken,
-      apiVersion: env.META_API_VERSION,
-      apiHost: env.META_API_HOST,
+    post: {
+      id: post.id,
+      caption: content.caption,
+      imageUrl,
+      igMediaId: post.igMediaId,
+      fbPostId: post.fbPostId,
+      publicationState: post.publicationState,
     },
+    approved: true,
+    meta,
     store,
+    event: {
+      status: event.status,
+      closed_at: event.closed_at ?? null,
+      user_deleted_at: event.user_deleted_at ?? null,
+    },
+    requireFacebook: true,
+    recheckEvent: async () => {
+      const { data } = await admin
+        .from("events")
+        .select("status,closed_at,user_deleted_at")
+        .eq("id", event.id)
+        .maybeSingle();
+      return data === null
+        ? null
+        : {
+            status: data.status,
+            closed_at: data.closed_at ?? null,
+            user_deleted_at: data.user_deleted_at ?? null,
+          };
+    },
+    onEventClosed: async () => {
+      await cleanupEventPublicationsById([event.id]);
+    },
   });
 
   if (!outcome.ok) {

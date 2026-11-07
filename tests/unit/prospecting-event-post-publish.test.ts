@@ -11,6 +11,7 @@ function fakeStore() {
   const store = {
     async updateStatus(id: string, patch: ProspectingPostStatusPatch) {
       patches.push({ id, patch });
+      return { kind: "saved" as const };
     },
   } as Pick<ProspectingPostStore, "updateStatus">;
   return { store, patches };
@@ -25,7 +26,11 @@ function fakeFetch(route: (url: string) => unknown, status = 200): typeof fetch 
 }
 
 const meta = { igUserId: "1784", accessToken: "tok" };
-const post = { id: "post-1", caption: "Estamos buscando fornecedores", imageUrl: "https://cdn/arte.jpg" };
+const post = {
+  id: "post-1",
+  caption: "Estamos buscando fornecedores",
+  imageUrl: "https://cdn/arte.jpg",
+};
 
 describe("publicação do post de prospecção", () => {
   it("sem aprovação não chama a API e mantém pending_approval", async () => {
@@ -41,7 +46,7 @@ describe("publicação do post de prospecção", () => {
         return new Response("{}");
       }) as unknown as typeof fetch,
     });
-    expect(outcome).toEqual({ ok: false, reason: "approval_required" });
+    expect(outcome).toEqual({ kind: "approval_required", ok: false, reason: "approval_required" });
     expect(called).toBe(false);
     expect(patches).toEqual([{ id: "post-1", patch: { status: "pending_approval" } }]);
   });
@@ -58,10 +63,42 @@ describe("publicação do post de prospecção", () => {
     });
     const outcome = await publishEventPost({ post, approved: true, meta, store, fetchImpl });
 
-    expect(outcome).toEqual({ ok: true, mediaId: "media-1", imageUrl: "https://cdn/arte.jpg" });
+    expect(outcome).toEqual({
+      kind: "published",
+      ok: true,
+      mediaId: "media-1",
+      imageUrl: "https://cdn/arte.jpg",
+    });
     expect(calls.some((url) => url.includes("/media?"))).toBe(true);
     expect(calls.some((url) => url.includes("/media_publish"))).toBe(true);
-    expect(patches.at(-1)?.patch).toMatchObject({ status: "published", igMediaId: "media-1" });
+    expect(patches.at(-1)?.patch).toMatchObject({ status: "published" });
+    expect(patches.at(-1)?.patch).not.toHaveProperty("igMediaId");
+  });
+
+  it("conflito ao persistir status não vira sucesso", async () => {
+    const calls: string[] = [];
+    const fetchImpl = fakeFetch((url) => {
+      calls.push(url);
+      if (url.includes("fields=status_code")) return { status_code: "FINISHED" };
+      if (url.includes("/media?")) return { id: "container-1" };
+      if (url.includes("/media_publish")) return { id: "media-1" };
+      return {};
+    });
+    const outcome = await publishEventPost({
+      post,
+      approved: true,
+      meta,
+      store: {
+        async updateStatus() {
+          return { kind: "conflict" as const, error: "removido durante o publish" };
+        },
+      },
+      fetchImpl,
+    });
+
+    expect(outcome).toMatchObject({ ok: false, kind: "persistence_failed" });
+    expect(outcome.ok).toBe(false);
+    expect(calls.some((url) => url.includes("/media_publish"))).toBe(true);
   });
 
   it("sem imagem marca failed sem chamar a API", async () => {

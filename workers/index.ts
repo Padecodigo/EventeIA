@@ -1,14 +1,17 @@
 import { DelayedError, Worker } from "bullmq";
 
-
 import { serverEnv } from "@/lib/env";
 import { stopEventBackgroundWork } from "@/lib/events/stop";
 import { runBalanceCheck } from "@/lib/finance/balance-monitor";
-import { publishWithBrowser } from "@/lib/instagram-browser/publish";
 import { runAsaasReconcileSweep } from "@/lib/jobs/asaas-reconcile";
 import { handleAsaasWebhookJob, type AsaasWebhookJob } from "@/lib/jobs/asaas-webhook";
 import { runCostArchivePurge } from "@/lib/jobs/cost-archive-purge";
-import { runClosedReportPurge, runEventClosureSweep, type ClosureDb } from "@/lib/jobs/event-closure";
+import { decideBrowserPublishJob } from "@/lib/jobs/browser-publish-refusal";
+import {
+  runClosedReportPurge,
+  runEventClosureSweep,
+  type ClosureDb,
+} from "@/lib/jobs/event-closure";
 import { runEventHistoryPurge } from "@/lib/jobs/event-history-purge";
 import {
   externalEventIdOf,
@@ -17,11 +20,9 @@ import {
   type MetaWebhookJobData,
 } from "@/lib/jobs/meta-webhook";
 import { requeueStaleMetaWebhooks } from "@/lib/jobs/meta-webhook-requeue";
-import {
-  handleProspectReplyJob,
-  type ProspectReplyJobData,
-} from "@/lib/jobs/prospect-reply";
+import { handleProspectReplyJob, type ProspectReplyJobData } from "@/lib/jobs/prospect-reply";
 import { logger } from "@/lib/logger";
+import { metaPublishConfigFromEnv } from "@/lib/meta/config";
 import { publishAutopilotPost } from "@/lib/marketing/autopilot";
 import { isAutopilotEnabled } from "@/lib/marketing/settings";
 import type { MetaPublishConfig } from "@/lib/meta/publishing";
@@ -76,7 +77,10 @@ metaWebhooksWorker.on("failed", (job, error) => {
   if (job.attemptsMade >= (job.opts.attempts ?? 1)) {
     void markMetaWebhookFailed(job.data).catch((caught: unknown) => {
       logger.error(
-        { externalEventId: externalEventIdOf(job.data), reason: caught instanceof Error ? caught.message : "?" },
+        {
+          externalEventId: externalEventIdOf(job.data),
+          reason: caught instanceof Error ? caught.message : "?",
+        },
         "falha ao marcar webhook meta como failed",
       );
     });
@@ -167,7 +171,8 @@ const metaWindowSweepWorker = new Worker(
   QUEUE_NAMES.metaWindowSweep,
   async () => {
     const closed = await runSupplierWindowSweep();
-    if (closed > 0) logger.info({ closed }, "janelas de mensagem do Meta expiradas — canal_fechado");
+    if (closed > 0)
+      logger.info({ closed }, "janelas de mensagem do Meta expiradas — canal_fechado");
   },
   { connection, concurrency: 1 },
 );
@@ -206,13 +211,14 @@ const prospectPostDeleteWorker = new Worker(
   QUEUE_NAMES.prospectPostDelete,
   async () => {
     const env = serverEnv();
-    const accessToken = env.META_ACCESS_TOKEN;
-    const igUserId = env.META_INSTAGRAM_BUSINESS_ID;
-    const meta: MetaPublishConfig | null =
-      accessToken === undefined || igUserId === undefined
-        ? null
-        : { igUserId, accessToken, apiVersion: env.META_API_VERSION, apiHost: env.META_API_HOST };
-    // P2 (0080): encerra eventos prontos e limpa posts de eventos encerrados.
+    const configured = metaPublishConfigFromEnv(env);
+    const hasMeta =
+      configured.igUserId.length > 0 ||
+      configured.accessToken.length > 0 ||
+      (configured.pageId ?? "").length > 0;
+    const meta: MetaPublishConfig | null = hasMeta ? configured : null;
+    // P2 (0080): encerra eventos prontos e limpa posts de eventos encerrados
+    // (completed e canceled) nos dois canais.
     await runEventClosureSweep({
       db: closureDb(),
       meta,
@@ -230,12 +236,24 @@ const prospectPostDeleteWorker = new Worker(
 );
 
 // Publicação de isca via navegador logado (Playwright no container do worker).
+interface InstagramPublishJob {
+  kind?: "event" | "bait";
+  postId?: string | null;
+  eventId?: string | null;
+  imageUrl: string;
+  caption: string;
+}
+
 const instagramPublishWorker = new Worker(
   QUEUE_NAMES.instagramPublish,
   async (job) => {
-    const data = job.data as { imageUrl: string; caption: string };
-    const result = await publishWithBrowser({ imageUrl: data.imageUrl, caption: data.caption });
-    if (!result.ok) throw new Error(result.error);
+    const data = job.data as InstagramPublishJob;
+    const decision = decideBrowserPublishJob();
+    logger.warn(
+      { jobId: job.id, eventId: data.eventId ?? null, reason: decision.reason },
+      "job de publicação pelo navegador recusado",
+    );
+    return;
   },
   { connection, concurrency: 1 },
 );
@@ -331,7 +349,25 @@ void getQueue(QUEUE_NAMES.creditsExpireLegacy)
   })
   .catch(() => undefined);
 
-const workers = [asaasWorker, metaWebhooksWorker, metaWebhookRequeueWorker, prospectReplyWorker, reconcileWorker, balanceWorker, metaTokenHealthWorker, metaWindowSweepWorker, prospectWindowReminderWorker, artCleanupWorker, prospectPostDeleteWorker, instagramPublishWorker, marketingAutopilotWorker, eventHistoryPurgeWorker, costArchivePurgeWorker, discoveryWorker, quoteExtractionWorker];
+const workers = [
+  asaasWorker,
+  metaWebhooksWorker,
+  metaWebhookRequeueWorker,
+  prospectReplyWorker,
+  reconcileWorker,
+  balanceWorker,
+  metaTokenHealthWorker,
+  metaWindowSweepWorker,
+  prospectWindowReminderWorker,
+  artCleanupWorker,
+  prospectPostDeleteWorker,
+  instagramPublishWorker,
+  marketingAutopilotWorker,
+  eventHistoryPurgeWorker,
+  costArchivePurgeWorker,
+  discoveryWorker,
+  quoteExtractionWorker,
+];
 
 for (const worker of workers) {
   worker.on("error", (error) => {
