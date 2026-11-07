@@ -44,6 +44,8 @@ export function toastMessageFor(item: NotificationItem): string {
           return QUOTATIONS_INCOMPLETE_TOAST;
         case "empty":
           return QUOTATIONS_EMPTY_TOAST;
+        case undefined:
+          return QUOTATIONS_ENDED_TOAST;
         default:
           return QUOTATIONS_ENDED_TOAST;
       }
