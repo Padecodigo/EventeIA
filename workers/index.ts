@@ -291,9 +291,9 @@ void getQueue(QUEUE_NAMES.asaasReconcile).add(
   { repeat: { pattern: "30 9 * * *", tz: "America/Sao_Paulo" }, attempts: 3 },
 );
 void getQueue(QUEUE_NAMES.marketingAutopilot).add(
-  "hourly",
+  "slot",
   {},
-  { repeat: { pattern: "0 * * * *", tz: "America/Sao_Paulo" }, attempts: 2 },
+  { repeat: { pattern: "0 */4 * * *", tz: "America/Sao_Paulo" }, attempts: 2 },
 );
 void getQueue(QUEUE_NAMES.artCleanup).add(
   "sweep",

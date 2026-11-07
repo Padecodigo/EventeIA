@@ -2,9 +2,10 @@ import "server-only";
 
 import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { createMediaContainer, publishContainer } from "@/lib/meta/publishing";
+import { metaPublishConfigFromEnv } from "@/lib/meta/config";
+import { publishToChannels } from "@/lib/meta/publishing";
 import { artForEventType } from "@/lib/prospecting/photos";
-import { themeForHour, type MarketingTheme } from "./themes";
+import { MARKETING_THEMES, themeForHour, type MarketingTheme } from "./themes";
 
 /** Prompt de publicidade (puro, testável). */
 export function buildMarketingPrompt(theme: MarketingTheme): string {
@@ -39,12 +40,13 @@ async function captionFor(theme: MarketingTheme): Promise<string> {
 /** Publica uma peça de publicidade (rotação por tema). Desligado => no-op. */
 export async function publishAutopilotPost(now: Date = new Date()): Promise<{ posted: boolean; reason?: string }> {
   const env = serverEnv();
-  if (env.META_ACCESS_TOKEN === undefined || env.META_INSTAGRAM_BUSINESS_ID === undefined) {
+  const config = metaPublishConfigFromEnv(env);
+  if (config.igUserId.length === 0 || config.accessToken.length === 0) {
     return { posted: false, reason: "not_configured" };
   }
-  const accessToken = env.META_ACCESS_TOKEN;
-  const igUserId = env.META_INSTAGRAM_BUSINESS_ID;
-  const theme = themeForHour(now.getHours());
+  // 6 slots/dia (a cada 4h), com ordem embaralhada entre os dias — sem repetir imagem no dia.
+  const dayOffset = Math.floor(now.getTime() / 86_400_000) % MARKETING_THEMES.length;
+  const theme = themeForHour(now.getHours(), dayOffset);
   const imageUrl = `${env.NEXT_PUBLIC_APP_URL}${artForEventType(theme.key)}`;
 
   let caption: string;
@@ -55,29 +57,14 @@ export async function publishAutopilotPost(now: Date = new Date()): Promise<{ po
     return { posted: false, reason: "caption_failed" };
   }
 
-  const container = await createMediaContainer({
-    igUserId,
-    accessToken,
-    apiVersion: env.META_API_VERSION,
-    imageUrl,
-    caption,
-  });
-  if (!container.ok) {
-    logger.warn({ error: container.error }, "autopilot: falha ao criar container");
-    return { posted: false, reason: "container_failed" };
+  const result = await publishToChannels({ ...config, imageUrl, caption });
+  if (result.kind === "published") {
+    logger.info({ theme: theme.key }, "autopilot: publicidade publicada");
+    return { posted: true };
   }
-
-  const published = await publishContainer({
-    igUserId,
-    accessToken,
-    apiVersion: env.META_API_VERSION,
-    creationId: container.id,
-  });
-  if (!published.ok) {
-    logger.warn({ error: published.error }, "autopilot: falha ao publicar");
-    return { posted: false, reason: "publish_failed" };
-  }
-
-  logger.info({ theme: theme.key, mediaId: published.id }, "autopilot: publicidade publicada");
-  return { posted: true };
+  logger.warn(
+    { theme: theme.key, error: result.error ?? "falha ao publicar" },
+    "autopilot: falha ao publicar",
+  );
+  return { posted: false, reason: "publish_failed" };
 }
