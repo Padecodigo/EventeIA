@@ -25,7 +25,7 @@ const CONFIRMATIONS: Record<
   },
   cancel: {
     title: "Excluir o evento?",
-    body: "O evento sairá da sua lista e os disparos serão interrompidos. Esta ação não pode ser desfeita. Se o evento já emitiu cotações, o tíquete não é reembolsado.",
+    body: "O evento sairá da sua lista e os contatos serão interrompidos. Esta ação não pode ser desfeita. Se o evento já emitiu cotações, o ticket não é reembolsado.",
     confirm: "Excluir",
     pending: "Excluindo…",
   },

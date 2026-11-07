@@ -1,10 +1,12 @@
 import Link from "next/link";
 
-import { WelcomeTicketNote } from "@/components/marketing/welcome-offer";
 import { formatBRL } from "@/lib/money";
+import { WELCOME_AVULSO_OFF_CENTS } from "@/lib/offers/pure";
 import { pageMetadata } from "@/lib/seo/site";
 
 const ticketPriceCents = Number(process.env.B2C_TICKET_PRICE_CENTS ?? "9700");
+const welcomeOffReais = WELCOME_AVULSO_OFF_CENTS / 100;
+const welcomePriceCents = ticketPriceCents - WELCOME_AVULSO_OFF_CENTS;
 
 export const metadata = pageMetadata({
   title: "Comprar ticket — R$ 97 por evento",
@@ -27,16 +29,23 @@ export default function PricesPage() {
         </p>
 
         <article className="mt-10 rounded-card border border-line-subtle bg-off-white p-8 shadow-soft sm:p-10">
-          <p className="eyebrow">Anfitriões</p>
-          <h2 className="mt-3 font-serif text-title-1">Tíquete por evento</h2>
+          <p className="eyebrow">Ticket</p>
+          <h2 className="mt-3 font-serif text-title-1">Ticket por evento</h2>
           <p className="mt-6 font-serif text-display-2">{formatBRL(ticketPriceCents)}</p>
           <p className="text-caption text-vinho/75">pagamento único, por evento</p>
-          <WelcomeTicketNote />
+          <div className="mt-4 rounded-xl bg-vinho px-4 py-3 text-sm text-off-white">
+            <p>
+              R$ {welcomeOffReais} de desconto nas primeiras 48h após o primeiro acesso (de{" "}
+              {formatBRL(ticketPriceCents)} por {formatBRL(welcomePriceCents)}), aplicado
+              automaticamente no checkout.
+            </p>
+          </div>
           <ul className="mt-6 space-y-2 text-sm text-vinho/75">
-            <li>Sem mensalidade e sem renovação automática</li>
-            <li>Orçamento único no menor preço válido, com taxas incluídas</li>
+            <li>Sem mensalidade</li>
+            <li>Orçamento pronto no menor preço válido</li>
             <li>Cotações ilimitadas do evento</li>
             <li>Acesso permanente ao evento</li>
+            <li>Pix ou cartão</li>
           </ul>
           <Link
             prefetch={false}

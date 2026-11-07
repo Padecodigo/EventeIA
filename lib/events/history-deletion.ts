@@ -36,7 +36,7 @@ export const DELETION_REMOVES = [
 
 export const DELETION_KEEPS = [
   "Dados dos fornecedores e as cotações que eles enviaram",
-  "Registros financeiros obrigatórios (pagamentos, tíquetes e créditos)",
+  "Registros financeiros obrigatórios (pagamentos, tickets e créditos)",
   "Prova do seu consentimento de repasse de contato (LGPD)",
 ] as const;
 

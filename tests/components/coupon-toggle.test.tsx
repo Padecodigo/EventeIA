@@ -57,8 +57,7 @@ describe("'Tem um cupom?' e 'Quer cupom?' em todos os checkouts", () => {
     render(
       <CreditSliderForm
         offer={{
-          headline:
-            "Oferta de boas-vindas: R$ 40 de desconto no evento avulso ou 30% nos pacotes de créditos",
+          headline: "Oferta de boas-vindas: R$ 40 de desconto no ticket nas primeiras 48h.",
           remainingMs: (47 * 3600 + 12 * 60 + 5) * 1000,
           avulsoOffCents: 4000,
           packPercent: 30,

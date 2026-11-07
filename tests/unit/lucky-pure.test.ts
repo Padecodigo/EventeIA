@@ -42,7 +42,7 @@ describe("cupom sorteado — regras puras", () => {
     expect(isValidLuckyPercent("30")).toBe(false);
   });
 
-  it("calcula o desconto no tíquete de R$ 97", () => {
+  it("calcula o desconto no ticket de R$ 97", () => {
     expect(luckyDiscountCents(9700, 20)).toBe(1940);
     expect(luckyDiscountCents(9700, 40)).toBe(3880);
     expect(luckyDiscountCents(9700, 33)).toBe(3201);

@@ -10,7 +10,7 @@ import type { CostRow, RevenueRow } from "./report";
 
 const MAX_ROWS = 20_000;
 const PLAN_LABELS: Record<string, string> = {
-  event_ticket: "Tíquete avulso",
+  event_ticket: "Ticket avulso",
   credit_topup: "Créditos (B2B)",
   subscription_invoice: "Assinatura",
 };

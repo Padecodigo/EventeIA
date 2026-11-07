@@ -74,7 +74,7 @@ export default async function DashboardPage() {
           <p className="mt-2 font-serif text-display-2">{totalEvents}</p>
         </article>
         <article className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
-          <p className="text-caption text-vinho/75">Tíquetes ativos</p>
+          <p className="text-caption text-vinho/75">Tickets ativos</p>
           <p className="mt-2 font-serif text-display-2">{activeTickets}</p>
         </article>
         <article className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">

@@ -68,9 +68,11 @@ describe("contagem dd:hh:mm:ss e texto honesto", () => {
   });
   it("headline cita apenas o benefício real", () => {
     expect(offerHeadline("welcome", welcome)).toBe(
-      "Oferta de boas-vindas: R$ 40 de desconto no evento avulso ou 30% nos pacotes de créditos",
+      "Oferta de boas-vindas: R$ 40 de desconto no ticket nas primeiras 48h.",
     );
-    expect(offerHeadline("personal", personal)).toMatch(/R\$ 20 .* 20%/);
+    expect(offerHeadline("personal", personal)).toBe(
+      "Seu cupom pessoal: R$ 20 de desconto no ticket nas primeiras 48h.",
+    );
     expect(offerHeadline("welcome", welcome)).not.toMatch(/últim|corra|só hoje/i);
   });
 });

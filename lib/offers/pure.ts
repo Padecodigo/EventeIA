@@ -17,7 +17,7 @@ export const PERSONAL_COUPON_COOLDOWN_DAYS = 90;
 export const OFFER_MIN_FINAL_CENTS = DISCOUNT_FLOOR_CENTS;
 
 export type OfferKind = "welcome" | "personal";
-/** avulso = tíquete de 1 evento; pack = pacote/slider/1ª fatura da franquia. */
+/** avulso = ticket de 1 evento; pack = pacote/slider/1ª fatura da franquia. */
 export type OfferCategory = "avulso" | "pack";
 
 export interface OfferTerms {
@@ -59,11 +59,11 @@ export function pickBetterDiscount(
 export function offerHeadline(kind: OfferKind, terms: OfferTerms): string {
   const label = kind === "welcome" ? "Oferta de boas-vindas" : "Seu cupom pessoal";
   const reais = `R$ ${String(Math.round(terms.avulsoOffCents / 100))}`;
-  return `${label}: ${reais} de desconto no evento avulso ou ${String(terms.packPercent)}% nos pacotes de créditos`;
+  return `${label}: ${reais} de desconto no ticket nas primeiras ${String(OFFER_WINDOW_HOURS)}h.`;
 }
 
 /** Texto público (visitante) da boas-vindas — espelha as constantes acima, sem contagem. */
 export function welcomeVisitorCopy(): string {
   const reais = (WELCOME_AVULSO_OFF_CENTS / 100).toLocaleString("pt-BR");
-  return `Crie sua conta e ganhe R$ ${reais} no evento avulso ou ${WELCOME_PACK_PERCENT}% nos pacotes por ${OFFER_WINDOW_HOURS}h.`;
+  return `R$ ${reais} de desconto no ticket nas primeiras ${OFFER_WINDOW_HOURS}h após o primeiro acesso.`;
 }

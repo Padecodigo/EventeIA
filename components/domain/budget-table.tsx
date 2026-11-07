@@ -67,7 +67,7 @@ export function BudgetTable({ result, unlocked }: BudgetTableProps) {
 
       {!unlocked ? (
         <p className="border-t border-line-subtle bg-champagne-claro/25 px-6 py-4 text-sm text-vinho/75">
-          A prévia mostra 3 categorias. Compre o tíquete do evento para liberar o orçamento completo,
+          A prévia mostra 3 categorias. Compre o ticket do evento para liberar o orçamento completo,
           as cotações ilimitadas e os disparos.
         </p>
       ) : null}

@@ -23,7 +23,7 @@ describe("personalEventsOrFilter", () => {
 });
 
 // Regressão: após 0035 (admin lê tudo via RLS) o /painel do admin listava eventos,
-// tíquetes, cotações e notificações de TODOS os usuários.
+// tickets, cotações e notificações de TODOS os usuários.
 describe("telas pessoais filtram explicitamente pelo usuário", () => {
   const src = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
   it("/painel", () => {

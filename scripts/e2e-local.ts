@@ -104,7 +104,7 @@ async function main(): Promise<void> {
   assert(painel.status === 200, "painel acessível com a sessão");
   assert(painelHtml.includes("Histórico"), "painel renderiza o histórico");
 
-  // 2) B2C: novo evento + tíquete + webhook Pix confirmado
+  // 2) B2C: novo evento + ticket + webhook Pix confirmado
   const { data: users } = await admin.auth.admin.listUsers({ page: 1, perPage: 500 });
   const anaId = users?.users.find((candidate) => candidate.email === "ana@eventeia.com")?.id;
 
@@ -143,7 +143,7 @@ async function main(): Promise<void> {
   });
 
   const webhookId = `e2e_evt_${randomUUID()}`;
-  console.log("\n1) Tíquete B2C via webhook Pix:");
+  console.log("\n1) Ticket B2C via webhook Pix:");
   const postStatus = await postWebhook(webhookId, "PAYMENT_RECEIVED", asaasPaymentId);
   assert(postStatus === 200, "webhook aceito (200)");
   const ticketOutcome = await processWebhook(webhookId);
@@ -165,7 +165,7 @@ async function main(): Promise<void> {
     .select("status")
     .eq("event_id", eventId)
     .maybeSingle();
-  assert(ticketAfter?.status === "active", "tíquete ativado");
+  assert(ticketAfter?.status === "active", "ticket ativado");
 
   const { count: confirmFeeds } = await admin
     .from("system_events")

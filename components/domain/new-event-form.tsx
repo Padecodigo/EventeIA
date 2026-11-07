@@ -20,7 +20,7 @@ export function NewEventForm({ today }: { today: string }) {
     >
       <h2 className="font-serif text-title-2">Novo evento</h2>
       <p className="mt-1 text-sm text-vinho/75">
-        Rascunhar é gratuito. A ativação acontece quando você comprar o tíquete do evento.
+        Rascunhar é gratuito. A ativação acontece quando você comprar o ticket do evento.
       </p>
 
       <form action={formAction} className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
