@@ -125,14 +125,12 @@ export default async function LandingPage() {
             </Link>
           </div>
 
-          <Link
-            prefetch={false}
-            href="#planos"
-            className="mt-4 inline-flex min-h-[44px] items-center gap-1 text-[15px] font-semibold text-ameixa underline-offset-4 hover:underline"
-          >
-            {formatBRL(ticketPriceCents)} por evento, sem mensalidade.
-            <span className="font-normal text-tinta-suave">Pix ou cartão.</span>
-          </Link>
+          <p className="mt-4 text-[15px] font-semibold text-ameixa">
+            <Link prefetch={false} href="#planos" className="underline-offset-4 hover:underline">
+              {formatBRL(ticketPriceCents)} por evento, sem mensalidade
+            </Link>
+            <span className="font-normal text-tinta-suave"> · Pix ou cartão.</span>
+          </p>
 
           <ul className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-tinta-suave">
             {[
@@ -162,7 +160,7 @@ export default async function LandingPage() {
               width={1200}
               height={675}
               priority
-              quality={72}
+              quality={70}
               sizes="(max-width: 640px) calc(100vw - 40px), (max-width: 1152px) calc(100vw - 64px), 1104px"
               className="h-56 w-full object-cover sm:h-80 lg:h-96"
             />
@@ -177,7 +175,7 @@ export default async function LandingPage() {
             <p className="text-[13px] font-semibold text-ameixa">{formatBRL(ticketPriceCents)} por evento</p>
             <p className="text-[11px] text-tinta-suave">sem mensalidade · você decide depois</p>
           </div>
-          <Link prefetch={false} href="/registrar" className={`${ctaPrimary} flex-1 px-5 py-3 text-[15px]`}>
+          <Link prefetch={false} href="/registrar" className={`${ctaPrimary} flex-1 whitespace-nowrap px-4 py-3 text-[15px]`}>
             Começar agora
           </Link>
         </div>
