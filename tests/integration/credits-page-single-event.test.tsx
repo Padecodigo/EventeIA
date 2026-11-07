@@ -17,6 +17,9 @@ vi.mock("@/lib/auth/personal-scope-server", () => ({
   personalEventsFilter: () => Promise.resolve("owner_profile_id.eq.user-1"),
 }));
 vi.mock("@/lib/seo/pricing", () => ({ ticketPriceCents: () => 9700 }));
+vi.mock("@/app/(dashboard)/creditos/actions", () => ({
+  startTicketCheckoutAction: vi.fn(),
+}));
 vi.mock("@/components/domain/buy-ticket-form", () => ({
   BuyTicketForm: ({ eventId }: { eventId: string }) => (
     <div data-testid="checkout">checkout {eventId}</div>
@@ -59,13 +62,14 @@ describe("/creditos — comprar ticket do evento", () => {
     expect(screen.getByTestId("checkout")).toHaveTextContent("ev-1");
   });
 
-  it("sem evento pendente, explica que o ticket fica na página do evento", async () => {
+  it("sem evento pendente, ainda oferece comprar o ticket", async () => {
     events = [{ id: "ev-2", title: "Casamento Ana", event_date: null, status: "active" }];
     tickets = [{ event_id: "ev-2", status: "active" }];
 
     render(await PaymentPage());
 
-    expect(screen.getByText(/o ticket é comprado na página do evento/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /comprar ticket/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/pix ou cart\u00e3o/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/assinatura|franquia|créditos/i)).toBeNull();
   });
 });

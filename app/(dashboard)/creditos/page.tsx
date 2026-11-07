@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { startTicketCheckoutAction } from "./actions";
 import { requireUser } from "@/lib/auth";
 import { personalEventsFilter } from "@/lib/auth/personal-scope-server";
 import { BuyTicketForm } from "@/components/domain/buy-ticket-form";
@@ -98,10 +99,30 @@ export default async function PaymentPage() {
             ))}
           </ul>
         ) : (
-          <p className="mt-3 max-w-prose text-sm text-vinho/75">
-            O ticket é comprado na página do evento, no momento de ativar o orçamento. Crie o evento
-            primeiro — depois você compra o ticket dele.
-          </p>
+          <div className="mt-4 rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
+            <p className="eyebrow">Ticket por evento</p>
+            <p className="mt-2 font-serif text-title-1">{price}</p>
+            <p className="mt-1 text-sm text-vinho/75">
+              Pagamento único por evento, Pix ou cartão de crédito. Libera o orçamento completo, as
+              cotações ilimitadas e o contato com os fornecedores daquele evento.
+            </p>
+            <ol className="mt-4 space-y-1 text-sm text-vinho/75">
+              <li>1. Conte do evento (30 segundos)</li>
+              <li>2. Pague o ticket — Pix ou cartão</li>
+              <li>3. Receba o orçamento pronto</li>
+            </ol>
+            <form action={startTicketCheckoutAction}>
+              <button
+                type="submit"
+                className="mt-5 inline-flex min-h-[48px] items-center justify-center rounded-full bg-primaria px-7 py-3 text-sm font-semibold text-on-primary transition hover:bg-primaria-escura"
+              >
+                Comprar ticket
+              </button>
+            </form>
+            <p className="mt-3 text-caption text-vinho/60">
+              Escolha Pix ou cartão na etapa seguinte. A entrevista só começa depois do pagamento.
+            </p>
+          </div>
         )}
 
         <div className="mt-6 flex flex-wrap gap-4 text-sm">

@@ -363,13 +363,17 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           <span className="text-caption text-vinho/70">
             Entrevista travada: o evento já começou.
           </span>
-        ) : (
+        ) : unlocked ? (
           <Link
             href={`/eventos/${event.id}/entrevista`}
             className="rounded-full bg-primaria px-6 py-3 text-sm font-semibold text-on-primary hover:bg-primaria-escura"
           >
             {interviewDone ? "Revisar respostas" : "Começar entrevista"}
           </Link>
+        ) : (
+          <span className="rounded-full border border-line-subtle px-4 py-2 text-caption text-vinho/70">
+            A entrevista abre depois do ticket
+          </span>
         )}
       </section>
 
