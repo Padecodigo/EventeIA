@@ -26,7 +26,7 @@ describe("regressão: oferta de boas-vindas não bloqueia a navegação", () => 
   });
 
   it("faixas ficam no fluxo (sem fixed/absolute/overlay) e não sobrepõem o header", () => {
-    for (const id of ["ev-welcome-banner", "ev-lucky-banner"]) {
+    for (const id of ["ev-welcome-banner"]) {
       const cls = document.getElementById(id)?.className ?? "";
       expect(cls).not.toMatch(/\b(fixed|absolute|sticky|inset-0|inset-x-0|top-0)\b/);
       expect(cls).not.toMatch(/z-\[?\d/);

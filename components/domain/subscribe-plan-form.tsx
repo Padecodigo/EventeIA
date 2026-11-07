@@ -2,12 +2,7 @@
 
 import { useActionState, useState } from "react";
 
-import {
-  applyPackCouponAction,
-  subscribeToPlanAction,
-  type SubscribeState,
-} from "@/app/(dashboard)/creditos/actions";
-import { CouponToggle } from "@/components/domain/coupon-toggle";
+import { subscribeToPlanAction, type SubscribeState } from "@/app/(dashboard)/creditos/actions";
 import { TermsCheckbox } from "@/components/legal/terms-checkbox";
 import { Button } from "@/components/ui/button";
 import { formatBRL } from "@/lib/money";
@@ -31,18 +26,16 @@ export function SubscribePlanForm({
   firstMonthCents = null,
 }: SubscribePlanFormProps) {
   const [state, formAction, pending] = useActionState(subscribeToPlanAction, initialState);
-  const [coupon, setCoupon] = useState<{ code: string; finalCents: number } | null>(null);
-  const firstMonth = coupon?.finalCents ?? firstMonthCents;
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   return (
     <div>
       <form action={formAction}>
         <input type="hidden" name="planCode" value={planCode} />
-        {coupon !== null ? <input type="hidden" name="coupon" value={coupon.code} /> : null}
-        {firstMonth !== null && state.success !== true ? (
+        {firstMonthCents !== null && state.success !== true ? (
           <p className="mb-2 text-caption text-vinho/80">
-            1º pagamento por <strong>{formatBRL(firstMonth)}</strong>; depois {priceFormatted}/mês.
+            1º pagamento por <strong>{formatBRL(firstMonthCents)}</strong>; depois{" "}
+            {priceFormatted}/mês.
           </p>
         ) : null}
         <fieldset className="mb-3">
@@ -121,20 +114,6 @@ export function SubscribePlanForm({
           </div>
         ) : null}
       </form>
-      {state.success !== true && state.pix === undefined && state.card === undefined ? (
-        <CouponToggle
-          action={applyPackCouponAction}
-          extra={{ planCode }}
-          idPrefix={`plan-${planCode}`}
-          onApplied={(code, preview) =>
-            setCoupon(
-              code !== null && preview?.finalCents !== undefined
-                ? { code, finalCents: preview.finalCents }
-                : null,
-            )
-          }
-        />
-      ) : null}
     </div>
   );
 }

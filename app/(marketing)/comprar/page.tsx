@@ -1,12 +1,10 @@
 import Link from "next/link";
 
 import { formatBRL } from "@/lib/money";
-import { WELCOME_AVULSO_OFF_CENTS } from "@/lib/offers/pure";
+import { WELCOME_PERCENT } from "@/lib/offers/pure";
 import { pageMetadata } from "@/lib/seo/site";
 
 const ticketPriceCents = Number(process.env.B2C_TICKET_PRICE_CENTS ?? "9700");
-const welcomeOffReais = WELCOME_AVULSO_OFF_CENTS / 100;
-const welcomePriceCents = ticketPriceCents - WELCOME_AVULSO_OFF_CENTS;
 
 export const metadata = pageMetadata({
   title: "Comprar ticket — R$ 97 por evento",
@@ -35,8 +33,7 @@ export default function PricesPage() {
           <p className="text-caption text-vinho/75">pagamento único, por evento</p>
           <div className="mt-4 rounded-xl bg-vinho px-4 py-3 text-sm text-off-white">
             <p>
-              R$ {welcomeOffReais} de desconto nas primeiras 48h após o primeiro acesso (de{" "}
-              {formatBRL(ticketPriceCents)} por {formatBRL(welcomePriceCents)}), aplicado
+              {WELCOME_PERCENT}% de desconto nas primeiras 48h após o primeiro acesso, aplicado
               automaticamente no checkout.
             </p>
           </div>

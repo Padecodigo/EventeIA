@@ -25,7 +25,7 @@ import { emitFeed } from "@/lib/feeds";
 import { recordTermsAcceptance } from "@/lib/legal/acceptance-server";
 import { TERMS_ERROR, hasAcceptedTerms } from "@/lib/legal/terms";
 import { logger } from "@/lib/logger";
-import { previewCheckoutDiscount, resolveCheckoutDiscount } from "@/lib/offers/checkout";
+import { resolveCheckoutDiscount } from "@/lib/offers/checkout";
 import { attachUserOffer, releaseUserOffer } from "@/lib/offers/server";
 import { CREDIT_PACKAGES, PLANS } from "@/lib/plans";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -62,53 +62,6 @@ export interface AppliedDiscount {
   code: string;
   discountCents: number;
   finalCents: number;
-}
-
-export interface PackCouponState {
-  error?: string;
-  ok?: boolean;
-  code?: string;
-  discountCents?: number;
-  finalCents?: number;
-  offerWins?: boolean;
-}
-
-/** Preço cheio (servidor) do item do checkout de créditos. */
-function packPriceFrom(formData: FormData): number | null {
-  const planCode = formData.get("planCode");
-  if (typeof planCode === "string" && planCode.length > 0) {
-    return PLANS.find((item) => item.code === planCode)?.priceCents ?? null;
-  }
-  return resolvePack(formData)?.priceCents ?? null;
-}
-
-/** "Tem um cupom?" nos pacotes/slider/franquia — prévia com a mesma regra do checkout. */
-export async function applyPackCouponAction(
-  _previous: PackCouponState,
-  formData: FormData,
-): Promise<PackCouponState> {
-  const user = await requireUser();
-  const price = packPriceFrom(formData);
-  if (price === null) {
-    return { error: "Pacote inválido." };
-  }
-  const raw = formData.get("code");
-  const result = await previewCheckoutDiscount({
-    profileId: user.id,
-    category: "pack",
-    priceCents: price,
-    couponRaw: typeof raw === "string" ? raw : "",
-  });
-  if ("error" in result) {
-    return { error: result.error };
-  }
-  return {
-    ok: true,
-    code: result.code,
-    discountCents: result.discountCents,
-    finalCents: result.finalCents,
-    offerWins: result.offerWins,
-  };
 }
 
 const paymentMethodSchema = z.enum(["pix", "card"]).default("pix");
@@ -252,7 +205,7 @@ export async function subscribeToPlanAction(
       return { error: "Assinatura criada no Asaas, mas o registro local falhou." };
     }
 
-    // Desconto (oferta/cupom) somente na 1ª fatura da franquia.
+    // Desconto (oferta) somente na 1ª fatura da franquia.
     let firstInvoice: AppliedDiscount | undefined;
     let notice: string | undefined;
     if (applied !== null && applied.discountCents > 0) {
@@ -308,7 +261,7 @@ export async function subscribeToPlanAction(
         );
         if (applied.offerId !== null) await releaseUserOffer(applied.offerId);
         notice =
-          "Não conseguimos aplicar o desconto na 1ª fatura — ela veio com o valor cheio e sua oferta/cupom continua disponível.";
+          "Não conseguimos aplicar o desconto na 1ª fatura — ela veio com o valor cheio e sua oferta continua disponível.";
       }
     }
     claimedOfferId = null;
@@ -459,7 +412,7 @@ export async function buyCreditsAction(
   try {
     const admin = getSupabaseAdmin();
 
-    // Cupom digitado vs. oferta pessoal: o MAIOR, sem acumular (servidor).
+    // Oferta pessoal (0036) aplicada no servidor; redenção de cupom digitado permanece dormente.
     const couponEntry = formData.get("coupon");
     const resolved = await resolveCheckoutDiscount({
       profileId: user.id,
@@ -496,7 +449,7 @@ export async function buyCreditsAction(
       description:
         applied === null
           ? `EventeIA — ${pack.name} (${String(pack.credits)} créditos)`
-          : `EventeIA — ${pack.name} (${String(pack.credits)} créditos, cupom ${applied.code})`,
+          : `EventeIA — ${pack.name} (${String(pack.credits)} créditos, oferta ${applied.code})`,
       dueDate,
     };
     const pixPayment = billingType === "PIX" ? await createAsaasPixPayment(chargeInput) : null;

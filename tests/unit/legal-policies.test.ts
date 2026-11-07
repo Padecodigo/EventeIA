@@ -31,7 +31,7 @@ describe("políticas de estorno e retenção", () => {
       "Atelier",
       "Maison",
       "R$ 97",
-      "R$ 57",
+      "20% de desconto",
       "/chamados",
       "/contato",
     ]) {

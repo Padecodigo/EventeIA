@@ -28,10 +28,8 @@ import { serverEnv } from "@/lib/env";
 import { isAboveBudgetLimit } from "@/lib/events/budget-limit";
 import { isEventStarted, STARTED_EVENT_LOCK_MESSAGE } from "@/lib/events/edit-lock";
 import { canCancelEvent, canCompleteEvent } from "@/lib/events/lifecycle";
-import { luckyDiscountCents } from "@/lib/lucky/pure";
-import { lookupLuckyCoupon } from "@/lib/lucky/server";
 import { formatBRL } from "@/lib/money";
-import { offerDiscountCents } from "@/lib/offers/pure";
+import { offerDiscountCents, WELCOME_PERCENT } from "@/lib/offers/pure";
 import { activeUserOffer } from "@/lib/offers/server";
 import { listEventChatConversations } from "@/lib/outreach/chat-read";
 import { parseCoverageSummary } from "@/lib/prospecting/coverage-gaps";
@@ -78,33 +76,22 @@ async function welcomeForCheckout(profileId: string): Promise<{
   countdownFormat?: "hms" | "dhms";
 } | null> {
   const fullCents = serverEnv().B2C_TICKET_PRICE_CENTS;
-  // Oferta pessoal da conta (0036) tem prioridade — mesma regra do checkout.
+  // Oferta de boas-vindas da conta (0036) — mesma regra do checkout.
   const personal = await activeUserOffer(profileId);
-  if (personal !== null) {
-    const off = offerDiscountCents(personal, "avulso", fullCents);
-    if (off > 0) {
-      return {
-        remainingMs: personal.remainingMs,
-        fullCents,
-        finalCents: fullCents - off,
-        label:
-          personal.kind === "welcome"
-            ? `Oferta de boas-vindas: ${formatBRL(off)} de desconto no evento avulso`
-            : `Seu cupom pessoal: ${formatBRL(off)} de desconto no evento avulso`,
-        countdownFormat: "dhms",
-      };
-    }
+  if (personal === null) {
+    return null;
   }
-  // Nunca as duas ofertas juntas: o cupom sorteado só entra sem boas-vindas ativa.
-  const lucky = await lookupLuckyCoupon({ draw: false, profileId }).catch(() => null);
-  return lucky?.status === "active" && lucky.percent !== null && lucky.remainingMs > 0
-    ? {
-        remainingMs: lucky.remainingMs,
-        fullCents,
-        finalCents: fullCents - luckyDiscountCents(fullCents, lucky.percent),
-        label: `Cupom sorteado de ${lucky.percent}% aplicado`,
-      }
-    : null;
+  const off = offerDiscountCents(personal, "avulso", fullCents);
+  if (off <= 0) {
+    return null;
+  }
+  return {
+    remainingMs: personal.remainingMs,
+    fullCents,
+    finalCents: fullCents - off,
+    label: `Oferta de boas-vindas: ${WELCOME_PERCENT}% de desconto no evento avulso`,
+    countdownFormat: "dhms",
+  };
 }
 
 export default async function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {

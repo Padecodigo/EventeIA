@@ -6,7 +6,7 @@ export const REFUND_SECTIONS: readonly LegalSection[] = [
     id: "abrangencia",
     title: "A quem esta política se aplica",
     paragraphs: [
-      "Esta política vale para todas as compras feitas no EventeIA: o ticket avulso (R$ 97, ou R$ 57 com o desconto de boas-vindas) e os pacotes Essencial, Atelier e Maison, além da renovação mensal. Os valores de cada pacote são os informados na página de planos no momento da compra.",
+      "Esta política vale para todas as compras feitas no EventeIA: o ticket avulso (R$ 97, com 20% de desconto de boas-vindas nas primeiras 48h após o primeiro acesso) e os pacotes Essencial, Atelier e Maison, além da renovação mensal. Os valores de cada pacote são os informados na página de planos no momento da compra.",
       "O pagamento é feito por Pix ou cartão de crédito, processado pelo Asaas.",
     ],
   },

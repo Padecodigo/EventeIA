@@ -3,7 +3,7 @@
  *
  * Regressão: comparava `Origin` com `request.nextUrl.origin`, que atrás do proxy é a
  * origem interna do container — todo POST legítimo do navegador recebia 403
- * (/api/boas-vindas e /api/cupom-sorte nunca emitiam a oferta/cupom).
+ * (/api/boas-vindas nunca emitia a oferta).
  */
 export interface OriginContext {
   origin: string | null;

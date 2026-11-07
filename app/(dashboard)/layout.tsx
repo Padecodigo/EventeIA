@@ -72,7 +72,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       {offer !== null ? (
         <div className="mx-auto w-full max-w-6xl px-6 pt-6 print:hidden">
           <OfferBanner
-            headline={offerHeadline(offer.kind, offer)}
+            headline={offerHeadline()}
             remainingMs={offer.remainingMs}
           />
         </div>

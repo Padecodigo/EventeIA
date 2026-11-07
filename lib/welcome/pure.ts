@@ -79,7 +79,7 @@ export interface WelcomeSummary {
   bySource: Record<WelcomeSource, number>;
 }
 
-/** Resumo para /admin/cupons e financeiro. `now` explícito (determinístico em teste). */
+/** Resumo para o financeiro. `now` explícito (determinístico em teste). */
 export function summarizeWelcomeOffers(rows: WelcomeOfferRow[], now: Date): WelcomeSummary {
   const t = now.getTime();
   const summary: WelcomeSummary = {

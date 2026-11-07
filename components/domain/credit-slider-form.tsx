@@ -3,11 +3,9 @@
 import { useActionState, useId, useState } from "react";
 
 import {
-  applyPackCouponAction,
   buyCreditsAction,
   type CreditsCheckoutState,
 } from "@/app/(dashboard)/creditos/actions";
-import { CouponToggle } from "@/components/domain/coupon-toggle";
 import { OfferBanner } from "@/components/domain/offer-banner";
 import { TermsCheckbox } from "@/components/legal/terms-checkbox";
 import { Button } from "@/components/ui/button";
@@ -36,20 +34,13 @@ export function CreditSliderForm({
   offer?: PackOfferProps | null;
 }) {
   const [credits, setCredits] = useState(defaultCredits);
-  const [coupon, setCoupon] = useState<{
-    code: string;
-    finalCents: number;
-    credits: number;
-  } | null>(null);
   const [state, formAction, pending] = useActionState(buyCreditsAction, initialState);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const sliderId = useId();
   const quote = quoteCustomCredits(credits);
   const valueText = `${String(credits)} eventos por ${formatBRL(quote.priceCents)}`;
   const offerOff = offer === null ? 0 : offerDiscountCents(offer, "pack", quote.priceCents);
-  // Prévia: o servidor recalcula tudo no pagamento (cupom só vale para a quantidade validada).
-  const activeCoupon = coupon !== null && coupon.credits === credits ? coupon : null;
-  const previewCents = activeCoupon?.finalCents ?? quote.priceCents - offerOff;
+  const previewCents = quote.priceCents - offerOff;
 
   if (state.card !== undefined) {
     return (
@@ -119,9 +110,6 @@ export function CreditSliderForm({
       ) : null}
       <form action={formAction}>
         <input type="hidden" name="credits" value={credits} />
-        {activeCoupon !== null ? (
-          <input type="hidden" name="coupon" value={activeCoupon.code} />
-        ) : null}
         <label htmlFor={sliderId} className="font-serif text-title-2">
           Quantos eventos você precisa?
         </label>
@@ -197,18 +185,6 @@ export function CreditSliderForm({
           </p>
         ) : null}
       </form>
-      <CouponToggle
-        action={applyPackCouponAction}
-        extra={{ credits: String(credits) }}
-        idPrefix="slider"
-        onApplied={(code, preview) =>
-          setCoupon(
-            code !== null && preview?.finalCents !== undefined
-              ? { code, finalCents: preview.finalCents, credits }
-              : null,
-          )
-        }
-      />
     </div>
   );
 }

@@ -22,8 +22,8 @@ export function SingleEventOffer({ priceCents }: SingleEventOfferProps) {
       </h2>
       <p className="mt-2 font-serif text-title-1">{formatBRL(priceCents)}</p>
       <p className="mt-1 text-sm text-vinho/75">
-        Pagamento único por evento, sem mensalidade. Pix ou cartão de crédito; cupons de desconto
-        são aceitos no checkout do evento.
+        Pagamento único por evento, sem mensalidade. Pix ou cartão de crédito; a oferta de
+        boas-vindas é aplicada automaticamente no checkout.
       </p>
       <Link
         href="/eventos#novo-evento"

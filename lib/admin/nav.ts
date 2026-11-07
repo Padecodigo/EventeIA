@@ -8,7 +8,6 @@ export const ADMIN_NAV = [
     description: "Uso de tokens/LLM por usuário e evento.",
   },
   { href: "/admin/depoimentos", label: "Depoimentos", description: "Moderação de depoimentos." },
-  { href: "/admin/cupons", label: "Cupons", description: "Criação e gestão de cupons." },
   { href: "/admin/chamados", label: "Chamados", description: "Atendimento e tickets de suporte." },
   { href: "/admin/eventos", label: "Eventos", description: "Todos os eventos (somente leitura)." },
   { href: "/admin/clientes", label: "Clientes", description: "Contas, eventos e pagamentos (somente leitura)." },

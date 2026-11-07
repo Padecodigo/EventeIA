@@ -11,7 +11,6 @@ describe("menu admin (superusuário)", () => {
       "/admin/custos",
       "/admin/consumo",
       "/admin/depoimentos",
-      "/admin/cupons",
       "/admin/chamados",
       "/admin/eventos",
       "/admin/clientes",

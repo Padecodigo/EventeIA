@@ -20,7 +20,6 @@ vi.mock("@/lib/welcome/server", () => ({
   bindWelcomeOfferToUser: async () => undefined,
   reserveWelcomeOffer: async () => null,
 }));
-vi.mock("@/lib/lucky/server", () => ({ reserveLuckyCoupon: async () => null }));
 vi.mock("@/lib/feeds", () => ({ emitFeed: async () => undefined }));
 vi.mock("@/lib/queue", () => ({ enqueue: async () => true, QUEUE_NAMES: {} }));
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined }));

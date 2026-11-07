@@ -6,7 +6,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/app/(dashboard)/creditos/actions", () => ({
   subscribeToPlanAction: vi.fn(),
-  applyPackCouponAction: vi.fn(),
 }));
 
 import { SubscribePlanForm } from "@/components/domain/subscribe-plan-form";

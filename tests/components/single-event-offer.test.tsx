@@ -9,11 +9,11 @@ import { SingleEventOffer } from "@/components/domain/single-event-offer";
 afterEach(cleanup);
 
 describe("SingleEventOffer — evento avulso no painel", () => {
-  it("mostra preço, Pix ou cartão de crédito, cupom e leva ao novo evento", () => {
+  it("mostra preço, Pix ou cartão de crédito, a oferta de boas-vindas e leva ao novo evento", () => {
     render(<SingleEventOffer priceCents={9700} />);
     expect(screen.getByText(/97,00/)).toBeInTheDocument();
     expect(screen.getByText(/Pix ou cartão de crédito/)).toBeInTheDocument();
-    expect(screen.getByText(/cupons/i)).toBeInTheDocument();
+    expect(screen.getByText(/oferta de boas-vindas/i)).toBeInTheDocument();
     expect(screen.queryByText(/débito/i)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /criar evento avulso/i })).toHaveAttribute(
       "href",

@@ -3,7 +3,7 @@ import "server-only";
 import { logger } from "@/lib/logger";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
-import { PERSONAL_COUPON_COOLDOWN_DAYS, type OfferKind } from "./pure";
+import { type OfferKind } from "./pure";
 
 /** Oferta pessoal vista pelo app — prazo SEMPRE calculado com o relógio do banco. */
 export interface UserOfferView {
@@ -58,28 +58,6 @@ async function currentUserOffer(profileId: string): Promise<UserOfferView | null
 export async function activeUserOffer(profileId: string): Promise<UserOfferView | null> {
   const offer = await currentUserOffer(profileId);
   return offer !== null && offer.status === "active" && offer.remainingMs > 0 ? offer : null;
-}
-
-export type RequestOfferResult =
-  | { status: "active" | "created"; offer: UserOfferView }
-  | { status: "cooldown"; nextAt: string }
-  | { status: "error" };
-
-/** "Quer cupom?" — emite/devolve a oferta no servidor, respeitando o intervalo. */
-export async function requestUserOffer(profileId: string): Promise<RequestOfferResult> {
-  const { data, error } = await getSupabaseAdmin().rpc("user_offer_request", {
-    p_profile_id: profileId,
-    p_cooldown_days: PERSONAL_COUPON_COOLDOWN_DAYS,
-  });
-  const row = Array.isArray(data) ? data[0] : undefined;
-  if (error !== null || row === undefined) {
-    return { status: "error" };
-  }
-  if (row.status === "cooldown") {
-    return { status: "cooldown", nextAt: row.next_at ?? "" };
-  }
-  const offer = await activeUserOffer(profileId);
-  return offer === null ? { status: "error" } : { status: row.status, offer };
 }
 
 /** Resgate atômico (prazo com now() do banco). false ⇒ expirou/já usada. */
