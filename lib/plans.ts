@@ -54,7 +54,7 @@ export const PLANS: readonly PlanDefinition[] = [
     name: "Essencial",
     priceCents: 11_700,
     credits: 3,
-    description: "Para quem está começando a organizar festas infantis.",
+    description: "Para quem está começando a organizar eventos.",
     featured: false,
   },
   {

@@ -159,12 +159,12 @@ describe("checkout com cupom", () => {
     expect(calls).toHaveLength(0);
   });
 
-  it("regressão: cupom 100% comum não zera (piso R$ 47) e reserva antes de cobrar", async () => {
+  it("regressão: cupom pedindo 100% respeita o teto de 30% e reserva antes de cobrar", async () => {
     const { buyTicketAction } = await import("@/app/(dashboard)/eventos/actions");
     const state = await buyTicketAction({}, form("TUDO100", "card"));
     expect(state.error).toBeUndefined();
-    expect(state.applied).toMatchObject({ finalCents: 4700 });
-    expect(calls[0]?.body).toMatchObject({ value: 47 });
+    expect(state.applied).toMatchObject({ finalCents: 6790 });
+    expect(calls[0]?.body).toMatchObject({ value: 67.9 });
     expect(rpcCalls.map((c) => c.fn)).toEqual(["reserve_coupon", "attach_coupon_reservation"]);
     expect(rpcCalls[1]?.args).toMatchObject({ p_reservation_id: "res-1" });
   });

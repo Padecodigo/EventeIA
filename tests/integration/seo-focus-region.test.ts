@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("next/font/local", () => ({ default: () => ({ variable: "font" }) }));
 
 import { metadata as rootMeta } from "@/app/layout";
-import { metadata as plannersMeta } from "@/app/(marketing)/para-planners/page";
 import { buildFaq } from "@/lib/seo/faq";
 import { faqLd, graph, localBusinessLd, serializeJsonLd, serviceLd } from "@/lib/seo/jsonld";
 
@@ -13,11 +12,6 @@ describe("metadata + JSON-LD publicados com a região de foco", () => {
     expect(title.default).toContain("Vale do Paraíba e em São Paulo");
     expect(rootMeta.description).toContain("São Paulo");
     expect((rootMeta.openGraph as { description: string }).description).toContain("Vale do Paraíba");
-  });
-
-  it("para-planners: descrição e OpenGraph", () => {
-    expect(plannersMeta.description).toContain("Vale do Paraíba e de São Paulo");
-    expect((plannersMeta.openGraph as { description: string }).description).toContain("São Paulo");
   });
 
   it("script ld+json serializado contém areaServed e FAQ de cidade", () => {

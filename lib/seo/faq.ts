@@ -22,7 +22,7 @@ export function buildFaq(ticketPriceCents: number): FaqItem[] {
     },
     {
       q: "Quanto custa um orçamento de festa pela EventeIA?",
-      a: `Para quem organiza o próprio evento, um ticket avulso de ${formatBRL(ticketPriceCents)} por evento, sem mensalidade. Cerimonialistas e planners têm planos mensais com créditos.`,
+      a: `Um ticket avulso de ${formatBRL(ticketPriceCents)} por evento, sem mensalidade e sem assinatura. Você paga uma vez, quando decide ativar o evento.`,
     },
     {
       q: "Sou obrigado a fechar com algum fornecedor?",

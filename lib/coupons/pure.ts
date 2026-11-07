@@ -22,8 +22,8 @@ export interface CouponLike {
   redemptions: number;
 }
 
-/** Percentual máximo permitido (evita tíquete de graça via percentual). */
-const MAX_PERCENT = 90;
+/** Teto do produto: nenhum cupom passa de 30% (campanhas sazonais). */
+export const MAX_PERCENT = 30;
 
 /**
  * Regra de ouro: o valor final com cupom NUNCA fica abaixo do piso de desconto

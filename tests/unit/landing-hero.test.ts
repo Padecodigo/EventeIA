@@ -18,9 +18,9 @@ function mosaicSources(): string[] {
 describe("landing — proposta inequívoca (beta 31/10: confundiram com B2B entre fornecedores)", () => {
   const page = readFileSync(join(process.cwd(), "app/(marketing)/page.tsx"), "utf8");
   const hero = page.slice(page.indexOf("HERO (acima da dobra)"), page.indexOf("Selos de confiança"));
-  it("headline fala com quem organiza: encontra fornecedores, compara preços, orçamento pronto", () => {
+  it("headline fala com quem organiza: tempo poupado + orçamento pronto", () => {
     const h1 = page.slice(page.indexOf("<h1"), page.indexOf("</h1>"));
-    for (const t of ["Você conta como é seu evento.", "encontra os fornecedores", "compara os preços", "orçamento pronto"]) expect(h1).toContain(t);
+    for (const t of ["Sua festa sem ficar ligando para fornecedor.", "encontra os fornecedores", "compara os preços", "orçamento pronto"]) expect(h1).toContain(t);
     expect(hero).toContain("Para quem está organizando um evento");
     for (const t of ["Casamento", "aniversário", "corporativo"]) expect(hero).toContain(t);
   });
@@ -84,7 +84,7 @@ describe("landing — hero", () => {
     expect(source).toContain('href="#planos"');
     expect(source).toContain('id="planos"');
     expect(source).toContain("Ticket avulso");
-    expect(source).toContain("PLANS.map");
+    expect(source).not.toContain("PLANS.map"); // planners saíram do produto
   });
 
   it("não é focada só em festa infantil", () => {

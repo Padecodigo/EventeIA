@@ -20,7 +20,6 @@ function parseTestimonialId(formData: FormData): string | null {
 function revalidateTestimonialSurfaces(): void {
   revalidatePath("/admin/depoimentos");
   revalidatePath("/");
-  revalidatePath("/para-planners");
 }
 
 async function emitModerationFeed(

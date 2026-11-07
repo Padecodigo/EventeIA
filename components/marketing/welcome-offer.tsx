@@ -106,7 +106,8 @@ export function WelcomeOffer() {
             Seu desconto é de…
           </h2>
           <p className="mt-4 font-serif text-display-2 tabular-nums" aria-live="polite">
-            <span data-lucky-roll>??</span>%
+            <span data-lucky-roll aria-hidden="true">…</span>
+            <span className="sr-only">Sorteando seu desconto</span>%
           </p>
           <div data-lucky-result hidden>
             <p className="mt-2 flex items-baseline justify-center gap-3">

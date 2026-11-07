@@ -47,6 +47,11 @@ const nextConfig = {
   output: "standalone",
   // Raiz explícita: evita o Next inferir /home/fedora (há um package-lock.json lá fora).
   outputFileTracingRoot: fileURLToPath(new URL(".", import.meta.url)),
+  async redirects() {
+    // Planners saíram do produto: a rota antiga (ainda indexada) aponta para a página de preços.
+    return [{ source: "/para-planners", destination: "/planos", permanent: true }];
+  },
+
   async headers() {
     const headers = [...securityHeaders];
     if (process.env.NODE_ENV === "production") {

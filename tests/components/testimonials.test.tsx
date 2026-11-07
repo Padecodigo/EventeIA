@@ -26,7 +26,7 @@ describe("Testimonials", () => {
     render(<Testimonials />);
 
     expect(screen.getByText("Camila R.")).toBeInTheDocument();
-    expect(screen.getByText("Débora N.")).toBeInTheDocument();
+    expect(screen.getByText("Marina A.")).toBeInTheDocument();
   });
 
   it("com casos reais, substitui as personas", () => {

@@ -43,13 +43,10 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-describe("depoimentos: subtítulo (regressão do chip /para-planners)", () => {
-  it("mostra link normal para /para-planners sem <code>", async () => {
-    const { container } = render(await Depoimentos());
-    const link = screen.getByTestId("link-para-planners");
-    expect(link).toHaveAttribute("href", "/para-planners");
-    expect(link.className).toContain("whitespace-nowrap");
-    expect(container.querySelector("code")).toBeNull();
+describe("depoimentos: subtítulo", () => {
+  it("não aponta mais para planners (removidos do produto)", async () => {
+    render(await Depoimentos());
+    expect(screen.queryByTestId("link-para-planners")).toBeNull();
   });
 });
 

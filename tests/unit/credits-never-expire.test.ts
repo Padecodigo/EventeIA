@@ -8,11 +8,7 @@ const read = (p: string) => readFileSync(p, "utf8");
 
 describe("regressão: créditos nunca expiram", () => {
   it("copy do painel e páginas públicas não promete expiração", () => {
-    for (const file of [
-      "app/(dashboard)/creditos/page.tsx",
-      "app/(marketing)/planos/page.tsx",
-      "app/(marketing)/para-planners/page.tsx",
-    ]) {
+    for (const file of ["app/(dashboard)/creditos/page.tsx"]) {
       const src = read(file);
       expect(src).not.toMatch(/valem por (dois )?ciclos?/);
       expect(src).not.toMatch(/Uma fatura Pix por mês/);

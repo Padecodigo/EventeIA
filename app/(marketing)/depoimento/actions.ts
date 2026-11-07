@@ -144,7 +144,6 @@ export async function submitTestimonialAction(
     }
 
     revalidatePath("/");
-    revalidatePath("/para-planners");
 
     return { success: true };
   } catch (caught) {

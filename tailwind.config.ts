@@ -53,6 +53,21 @@ const config: Config = {
         "teal-soft": PALETTE.tealSoft,
         /* Texto sobre primaria/champagne: charcoal fixo (não inverte no tema escuro). */
         "on-primary": PALETTE.onPrimary,
+        /* ---- Landing v2 (escopo da home): ameixa + coral + verde funcional ---- */
+        ameixa: "#5B2A4E",
+        "ameixa-fundo": "#4A2340",
+        "coral-cta": "#C24145", // CTA com texto branco — 5,08:1 (AA)
+        "coral-cta-escura": "#A9343A",
+        "coral-texto": "#B93A3D", // acento de texto sobre claro — 5,62:1
+        "coral-vivo": "#E8575A", // decorativo / texto grande (≥ 3:1)
+        "lilas-claro": "#EFE6F7",
+        pessego: "#FFE7DC",
+        papel: "#FFFAF6",
+        tinta: "#2B2230",
+        "tinta-suave": "#6E6275",
+        "verde-preco": "#1E7A50", // texto "menor preço" — 5,31:1
+        "verde-vivo": "#2E9E6B", // preenchimento/ícone
+        "borda-suave": "#EDE3EA",
 
         /* ---- Tokens semânticos (preferidos nos componentes) ---- */
         brand: {

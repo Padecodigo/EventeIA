@@ -64,21 +64,20 @@ describe("paleta Areia & Coral — heros e faixas claros", () => {
     expect(offer).not.toMatch(/bg-vinho text-off-white/);
   });
 
-  it("hero, marquee e card de depoimento usam superfícies claras", () => {
+  it("hero e seções da landing usam superfícies claras da paleta v2", () => {
     const page = read("app/(marketing)/page.tsx");
-    expect(page).toContain("bg-areia-quente");
-    expect(page).toContain("text-coral-escuro");
-    expect(page).toContain("bg-gradient-to-r from-areia-quente via-champagne-claro to-teal-soft");
-    expect(page).toContain("border-line-subtle bg-white p-5 shadow-soft");
-    expect(page).toContain("ev-rise text-vinho");
+    expect(page).toContain("bg-papel");
+    expect(page).toContain("text-coral-texto");
+    expect(page).toContain("bg-white");
+    expect(page).toContain("text-ameixa");
+    // CTA sempre com texto branco sobre o coral acessível (5,08:1)
+    expect(page).toContain("bg-coral-cta");
+    expect(page).toContain("text-white");
   });
 
-  it("heros de como-funciona, planos e para-planners são claros", () => {
+  it("heros de como-funciona e preços são claros", () => {
     expect(read("app/(marketing)/como-funciona/page.tsx")).toContain('<section className="bg-areia-quente">');
-    expect(read("app/(marketing)/planos/page.tsx")).toContain('<div className="bg-areia-quente text-vinho">');
-    const planners = read("app/(marketing)/para-planners/page.tsx");
-    expect(planners).toContain("bg-white/95 p-4 text-vinho");
-    expect(planners).not.toContain("bg-vinho/95");
+    expect(read("app/(marketing)/planos/page.tsx")).toContain("bg-areia-quente text-vinho");
   });
 });
 
