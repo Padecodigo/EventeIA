@@ -1,26 +1,27 @@
 # TASKS — handoff do agente
 
 > Atualize ao encerrar a sessão: o que ficou pronto, o que está travado, qual o próximo passo.
-> Última atualização: 2026-11-07 08h00 (America/Sao_Paulo).
+> Última atualização: 2026-11-07 08h10 (America/Sao_Paulo).
 
 ## Estado do tronco
 
-- `main` = `b294f71` (`fix(copy): como-funciona step 3`, #205) — **é o que está em produção**.
+- `main` = `78423c1` (`fix(print)` #207, sobre `ae1f120` #206, sobre `b294f71` #205) —
+  **é o que está em produção desde 07/11 11h09**.
+- Deploy do stack `eventeia-prod` (app + worker + Redis num só compose do Coolify) no commit
+  `78423c1`: app, worker e Redis `healthy`; `/api/health` 200; `/como-funciona` confirma o texto
+  novo e não contém mais "faixa mínima, sugestão e teto".
 - `/204` entregou o orçamento único de menor preço (engine, painel, impressão/CSV, marketing,
   notificações). `/205` fechou o texto do passo 03 em `/como-funciona`.
-- Deploy confirmado pelo Coolify em 07/11 07:45: site e serviço de tarefas saudáveis.
 - **Migração `0083` já aplicada. NÃO reaplicar.** Duas exclusões auditadas de registros
   redundantes já foram feitas. **NÃO repetir.**
 
-## Prontos, aguardando janela de deploy
+## Entregue nesta sessão (07/11)
 
-- [ ] **[PR #206](https://github.com/Padecodigo/EventeIA/pull/206)** — `components/marketing/trust-strip.tsx`
-      ainda dizia "faixa mínima, sugestão e teto" (mesma promessa de 3 opções corrigida no #205).
-      CI verde (Qualidade, RLS, Lighthouse).
-- [ ] **[PR #207](https://github.com/Padecodigo/EventeIA/pull/207)** — o `Imprimir / salvar PDF`
-      herdava o chrome do painel (header, banners, rodapé, radial-gradient). Adiciona
-      `print:hidden` no layout, `@page` A4 16mm, `tr` sem quebra e paleta clara forçada na impressão.
-      `pnpm build` e `tsc --noEmit` exit 0; CI: Qualidade e RLS verdes.
+- [x] **#206** — `components/marketing/trust-strip.tsx` dizia "faixa mínima, sugestão e teto"
+      (mesma promessa de 3 opções corrigida no #205). Mergeado e no ar.
+- [x] **#207** — o `Imprimir / salvar PDF` herdava o chrome do painel (header, banners, rodapé,
+      radial-gradient). `print:hidden` no layout, `@page` A4 16mm, `tr` sem quebra, paleta clara
+      forçada. Mergeado e no ar.
 
 > Regra: merge só junto com deploy (app + worker). Mergear sem deploy deixa `main` à frente da
 > produção. Ver decisão 007 em `DECISIONS.md`.
@@ -62,5 +63,8 @@
 
 ## Último estado de produção
 
-- Commit `b294f71` · site e serviço de tarefas saudáveis (Coolify, 07/11 07:45).
+- Commit `78423c1` · app, worker e Redis `healthy` (Coolify `eventeia-prod`, 07/11 11h09).
+- `/api/health` 200 · `/como-funciona` com o texto novo.
 - Login/painel **não** validados visualmente. Não declarar validado sem prova.
+- Deploy: `POST /api/v1/deploy?uuid=ozqnl541gzloqhsqvpjtqa8l` no Coolify (token em
+  `/root/.coolify_token` na VPS). Um único compose sobe app + worker + Redis juntos.
