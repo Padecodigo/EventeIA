@@ -315,7 +315,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
         </div>
       </header>
 
-      {event.confirmed_at === null ? (
+      {/* O código só faz sentido depois do ticket pago: antes disso o evento nem começou. */}
+      {unlocked && event.confirmed_at === null ? (
         <EventConfirmationCodeCard code={event.confirmation_code} />
       ) : null}
 
