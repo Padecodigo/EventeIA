@@ -11,6 +11,7 @@
 --   support_rate_limits  — 0027: "support_rate_limits: sem políticas (só SECURITY DEFINER)".
 --   testimonial_invites  — 0004: "Default deny; convites só via service_role".
 --   welcome_rate_limits  — 0022: "Sem políticas: só funções SECURITY DEFINER tocam esta tabela".
+--   tiktok_oauth_tokens  — 0084: "RLS: somente service_role lê/escreve" (deny-all intencional).
 --
 -- Partições (ex.: system_events_default) herdam as políticas da tabela-mãe particionada
 -- (system_events), então são consideradas cobertas via pg_inherits.
@@ -78,7 +79,8 @@ select is(
           'webhook_events',       -- 0002
           'support_rate_limits',  -- 0027
           'testimonial_invites',  -- 0004
-          'welcome_rate_limits'   -- 0022
+          'welcome_rate_limits',  -- 0022
+          'tiktok_oauth_tokens'   -- 0084: deny-all (só service_role)
         ])
       )
     order by c.relname
