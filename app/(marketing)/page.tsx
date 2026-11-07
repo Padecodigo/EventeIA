@@ -281,7 +281,7 @@ export default async function LandingPage() {
                     >
                       <span>
                         {p.supplier}
-                        <span className={`block text-[11px] ${cheapest ? "text-tinta-suave" : "text-white/55"}`}>
+                        <span className={`block text-[11px] ${cheapest ? "text-tinta-suave" : "text-white/75"}`}>
                           {p.note}
                         </span>
                       </span>
@@ -292,7 +292,7 @@ export default async function LandingPage() {
                   );
                 })}
               </ul>
-              <p className="mt-3 text-[11px] leading-relaxed text-white/60">
+              <p className="mt-3 text-[11px] leading-relaxed text-white/75">
                 Comparação ilustrativa, com valores fictícios. O valor válido já inclui as taxas
                 obrigatórias — a proposta mais barata na vitrine nem sempre é a mais barata no total.
               </p>
@@ -311,7 +311,7 @@ export default async function LandingPage() {
                 ))}
               </dl>
 
-              <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-lilas-claro px-3 py-3">
+              <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-3 ring-1 ring-borda-suave">
                 <span className="text-sm font-semibold text-ameixa">Total com taxas</span>
                 <span className="tabular-nums font-display text-xl font-bold text-verde-preco">{formatBRL(exampleTotal)}</span>
               </div>
