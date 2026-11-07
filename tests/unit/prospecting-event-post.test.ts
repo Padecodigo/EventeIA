@@ -84,4 +84,10 @@ describe("post de prospecção por evento", () => {
       region: "SP",
     });
   });
+
+  it("legenda termina com a assinatura de marca (sem logo sobreposta)", () => {
+    const caption = buildEventPostCaption(source);
+    expect(caption.endsWith("— EventeIA · Você imagina. A EventeIA faz acontecer.")).toBe(true);
+    expect(validateCaption(caption)).toEqual({ ok: true });
+  });
 });

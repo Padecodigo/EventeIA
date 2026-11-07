@@ -27,6 +27,13 @@ const OPENERS = [
 
 const DISCLOSURE = "Imagens ilustrativas.";
 
+/**
+ * Assinatura de marca que fecha TODA legenda publicada. O overlay da logo sobre
+ * a arte é uma decisão separada (sharp ou API de imagem); até lá, a marca entra
+ * como assinatura textual no fim da legenda.
+ */
+export const BRAND_SIGNATURE = "— EventeIA · Você imagina. A EventeIA faz acontecer.";
+
 function categoryPhrase(category: string): string {
   return category.trim().toLowerCase() || "fornecedores";
 }
@@ -55,7 +62,7 @@ export function buildCaption(input: ContentInput): string {
     .slice(0, CAPTION.maxMentions - 1);
   const mentions = handles.length > 0 ? `\n\nFornecedores do lote: ${handles.join(" ")}` : "";
   const cta = `\n\nComente ${keyword} e a EventeIA te chama no Direct.${mentions}\n\n${DISCLOSURE}`;
-  return `${opener}${cta}`;
+  return `${opener}${cta}\n\n${BRAND_SIGNATURE}`;
 }
 
 export interface PostContent {

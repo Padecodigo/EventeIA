@@ -1,4 +1,5 @@
 import { EVENT_TYPE_LABELS } from "@/lib/catalog/v1";
+import { BRAND_SIGNATURE } from "@/lib/prospecting/content";
 import { artForEventType } from "@/lib/prospecting/photos";
 
 /**
@@ -159,8 +160,9 @@ export function buildEventPostCaption(input: EventPostSource): string {
   const location = eventLocationLabel(input);
   const code = eventCodeFromId(input.eventId);
   const base = `${EVENT_POST_CTA}.\n\n${typeLabel} · ${date} · ${location}\nCódigo do evento: ${code}`;
+  const signature = `\n\n${BRAND_SIGNATURE}`;
   const items = (input.lookingFor ?? []).slice(0, 10);
-  if (items.length === 0) return base;
+  if (items.length === 0) return `${base}${signature}`;
   const names = items.map((i) => safeTerm(i.canonical)).filter((n) => n.length > 0);
   const tags: string[] = [];
   for (const term of items.flatMap((i) => [i.canonical, ...i.terms])) {
@@ -169,11 +171,11 @@ export function buildEventPostCaption(input: EventPostSource): string {
   }
   let caption = names.length > 0 ? `${base}\n\nProcuramos: ${names.join(", ")}` : base;
   for (let n = tags.length; n > 0; n--) {
-    const withTags = `${caption}\n\n${tags.slice(0, n).join(" ")}`;
+    const withTags = `${caption}\n\n${tags.slice(0, n).join(" ")}${signature}`;
     if (withTags.length <= MAX_CAPTION) return withTags;
   }
   if (caption.length > MAX_CAPTION) caption = base;
-  return caption;
+  return `${caption}${signature}`;
 }
 
 export function buildEventPostContent(input: EventPostSource): EventPostContent {
