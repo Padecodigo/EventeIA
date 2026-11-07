@@ -12,7 +12,7 @@ export function buildMarketingPrompt(theme: MarketingTheme): string {
     "Você é a EventeIA, inteligência de custos e cotações para eventos.",
     "Escreva uma legenda de Instagram (português do Brasil, tom editorial e humano, sem emojis, até 600 caracteres).",
     `Tema: ${theme.label}. Público: ${theme.audience}. Ângulo: ${theme.angle}.`,
-    "Explique o valor: comparar propostas, três opções prontas, sem planilha e sem corretagem.",
+    "Explique o valor: comparar propostas e entregar um orçamento pronto no menor preço válido, sem planilha e sem corretagem.",
     "Nunca cite valores de orçamento de clientes. Termine com 'EventeIA — Você imagina. A EventeIA faz acontecer.'",
     "Responda só a legenda.",
   ].join("\n");

@@ -71,8 +71,8 @@ function VariantA() {
             </h1>
             <p className="mt-5 max-w-md text-[17px] leading-relaxed text-vinho/70">
               A EventeIA cota com os fornecedores da sua região pelas redes sociais e compara cada
-              proposta por você. Você escolhe entre <strong className="font-semibold text-vinho">3 opções prontas</strong> —
-              melhor preço, custo-benefício e comodidade.
+              proposta por você. Você recebe <strong className="font-semibold text-vinho">um orçamento pronto</strong> —
+              no menor preço válido.
             </p>
             <div className="mt-8 text-vinho">
               <Cta />
@@ -120,8 +120,8 @@ function VariantB() {
               <span className="text-champagne">mais memórias.</span>
             </h1>
             <p className="mt-5 max-w-md text-[17px] leading-relaxed text-ink-inverse/70">
-              Cotações comparadas em três opções prontas, com clareza de custo do primeiro ao último
-              fornecedor. Sem planilhas, sem corretagem.
+              Cotações comparadas em um orçamento pronto, no menor preço válido, com clareza de custo do
+              primeiro ao último fornecedor. Sem planilhas, sem corretagem.
             </p>
             <div className="mt-8 text-ink-inverse">
               <Cta primary={false} />
@@ -155,8 +155,8 @@ function VariantB() {
               </div>
             ))}
             <div className="col-span-2 rounded-2xl bg-white/5 p-4 text-sm text-ink-inverse/75 ring-1 ring-white/10">
-              <p className="font-semibold text-champagne">3 opções prontas</p>
-              <p className="mt-1">Melhor preço · Custo-benefício · Comodidade</p>
+              <p className="font-semibold text-champagne">Orçamento pronto</p>
+              <p className="mt-1">Menor preço válido, com as taxas incluídas</p>
             </div>
           </div>
         </div>
@@ -182,8 +182,8 @@ function VariantC() {
             mais memórias.
           </h1>
           <p className="mt-5 max-w-md text-[17px] leading-relaxed text-vinho/70">
-            A EventeIA cota pelas redes sociais e compara cada proposta por você. Escolha entre
-            três opções prontas e aproveite o evento.
+            A EventeIA cota pelas redes sociais e compara cada proposta por você. Receba um orçamento
+            pronto no menor preço válido e aproveite o evento.
           </p>
           <div className="mt-8 text-vinho">
             <Cta />
@@ -200,8 +200,8 @@ function VariantC() {
       <div className="bg-surface-dark px-5 py-10 sm:px-8">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 text-ink-inverse sm:flex-row sm:items-center">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-champagne">Sempre 3 opções prontas</p>
-            <p className="mt-1 font-display text-2xl font-semibold">Melhor preço · Custo-benefício · Comodidade</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-champagne">Sempre um orçamento pronto</p>
+            <p className="mt-1 font-display text-2xl font-semibold">Menor preço válido, com as taxas incluídas</p>
           </div>
           <span className="rounded-full bg-champagne px-6 py-3 text-sm font-semibold text-on-primary">Começar agora →</span>
         </div>

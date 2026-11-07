@@ -21,7 +21,7 @@ import {
   type CategoryCode,
   type SupplierIncluiTag,
 } from "@/lib/catalog/v1";
-import { buildAllScenarios, MAX_REQUIRED_CATEGORIES } from "@/lib/engine/scenarios";
+import { buildLowestPriceScenario, MAX_REQUIRED_CATEGORIES } from "@/lib/engine/scenarios";
 import type { QuoteFee, ScenarioKind, ScenarioOutcome, SupplierQuote } from "@/lib/engine/types";
 import { formatBRL } from "@/lib/money";
 import {
@@ -304,7 +304,6 @@ export function expandOffer(
     .reduce((s, a) => s + a.priceCents, 0);
   // amount_cents já soma as taxas extras: base = total − taxas obrigatórias − taxas viradas adicionais.
   const baseCents = consistent ? row.amount_cents - mandatorySum - feeAddOnSum : row.amount_cents;
-  const quality = Math.round(Math.min(1, Math.max(0, row.confidence ?? 0)) * 10_000);
 
   const variants = subsets(limited).map((chosen) => {
     const suffix = chosen.map((a) => a.key).join("+");
@@ -320,7 +319,6 @@ export function expandOffer(
         totalPriceCents: null,
         fees: consistent ? mandatory : [],
         perGuestCents,
-        qualityBps: quality,
       },
     };
   });
@@ -387,58 +385,54 @@ export function composeWithCoverage(
   const detailByOffer = new Map(expanded.map((e) => [e.detail.offerId, e.detail]));
   const quotes = variants.map((v) => v.quote);
 
-  const exact = buildAllScenarios(
+  const exact = buildLowestPriceScenario(
     required,
     quotes,
     { alreadyOwned: [], unneededFeeCategories: [] },
     { exactCover: true, guestCount },
   );
-  const loose = buildAllScenarios(required, quotes, {
-    alreadyOwned: [],
-    unneededFeeCategories: [],
-  }, { guestCount });
-  const kinds: ScenarioKind[] = ["preco", "custo_beneficio", "comodidade"];
-  const outcomes = {} as Record<ScenarioKind, ScenarioOutcome>;
-  const details = {} as CoverageResult["details"];
-  const overlapFallback = {} as CoverageResult["overlapFallback"];
+  const loose = buildLowestPriceScenario(
+    required,
+    quotes,
+    { alreadyOwned: [], unneededFeeCategories: [] },
+    { guestCount },
+  );
+  const useLoose = exact.scenario === null && loose.scenario !== null;
+  const outcome = useLoose ? loose : exact;
+  const outcomes: Record<ScenarioKind, ScenarioOutcome> = { preco: outcome };
+  const overlapFallback: Record<ScenarioKind, boolean> = { preco: useLoose };
 
-  for (const kind of kinds) {
-    const useLoose = exact[kind].scenario === null && loose[kind].scenario !== null;
-    const outcome = useLoose ? loose[kind] : exact[kind];
-    outcomes[kind] = outcome;
-    overlapFallback[kind] = useLoose;
-    const sels = outcome.scenario?.selections ?? [];
-    const coveredBy = new Map<string, string>();
-    for (const s of sels)
-      for (const c of byVariant.get(s.supplierId)?.quote.covers ?? [])
-        if (!coveredBy.has(c)) coveredBy.set(c, s.supplierName);
-    const kindDetails: Record<string, SelectionNote> = {};
-    for (const s of sels) {
-      const v = byVariant.get(s.supplierId);
-      if (v === undefined) continue;
-      const d = detailByOffer.get(v.offerId);
-      const notes: string[] = [];
-      for (const a of v.chosenAddOns)
-        notes.push(`Inclui à parte: ${a.label} (${formatBRL(a.priceCents)}).`);
-      for (const a of v.skippedAddOns) {
-        const other = coveredBy.get(a.covers);
-        notes.push(
-          other !== undefined && other !== s.supplierName
-            ? `${a.label} (${formatBRL(a.priceCents)}) dispensado: ${categoryName(a.covers)} já incluso em ${other}.`
-            : `${a.label} (${formatBRL(a.priceCents)}) não contratado.`,
-        );
-      }
-      if (useLoose)
-        notes.push("Atenção: sem combinação sem sobreposição; há serviço possivelmente duplicado.");
-      kindDetails[s.supplierId] = {
-        supplierId: s.supplierId,
-        offerId: v.offerId,
-        includes: d?.includes ?? [],
-        excludes: d?.excludes ?? [],
-        notes,
-      };
+  const sels = outcome.scenario?.selections ?? [];
+  const coveredBy = new Map<string, string>();
+  for (const s of sels)
+    for (const c of byVariant.get(s.supplierId)?.quote.covers ?? [])
+      if (!coveredBy.has(c)) coveredBy.set(c, s.supplierName);
+  const kindDetails: Record<string, SelectionNote> = {};
+  for (const s of sels) {
+    const v = byVariant.get(s.supplierId);
+    if (v === undefined) continue;
+    const d = detailByOffer.get(v.offerId);
+    const notes: string[] = [];
+    for (const a of v.chosenAddOns)
+      notes.push(`Inclui à parte: ${a.label} (${formatBRL(a.priceCents)}).`);
+    for (const a of v.skippedAddOns) {
+      const other = coveredBy.get(a.covers);
+      notes.push(
+        other !== undefined && other !== s.supplierName
+          ? `${a.label} (${formatBRL(a.priceCents)}) dispensado: ${categoryName(a.covers)} já incluso em ${other}.`
+          : `${a.label} (${formatBRL(a.priceCents)}) não contratado.`,
+      );
     }
-    details[kind] = kindDetails;
+    if (useLoose)
+      notes.push("Atenção: sem combinação sem sobreposição; há serviço possivelmente duplicado.");
+    kindDetails[s.supplierId] = {
+      supplierId: s.supplierId,
+      offerId: v.offerId,
+      includes: d?.includes ?? [],
+      excludes: d?.excludes ?? [],
+      notes,
+    };
   }
+  const details: CoverageResult["details"] = { preco: kindDetails };
   return { required, uncovered, gaps, outcomes, details, overlapFallback };
 }

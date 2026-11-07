@@ -160,7 +160,11 @@ describe("orçamento pronto → e-mail do Google", () => {
       warn: vi.fn(),
     };
     await expect(
-      recordQuotationsReady(deps, { eventId: "e1", reason: "collection_complete" }),
+      recordQuotationsReady(deps, {
+        eventId: "e1",
+        reason: "collection_complete",
+        readiness: { status: "complete" },
+      }),
     ).resolves.toBe("created");
     expect(send).toHaveBeenCalledWith(expect.objectContaining({ to: "ana@gmail.com" }));
     expect(deps.markEmailSent).toHaveBeenCalledWith("n1");

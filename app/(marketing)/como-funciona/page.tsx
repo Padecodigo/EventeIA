@@ -30,12 +30,12 @@ const STEPS = [
   },
   {
     number: "03",
-    title: "Receba propostas claras",
-    text: "Os orçamentos chegam organizados para você comparar caminhos, valores e possibilidades com tranquilidade.",
+    title: "Receba o orçamento pronto",
+    text: "As propostas são comparadas e você recebe um orçamento pronto, no menor preço válido, com o que está incluído e o que ficou de fora.",
     details: [
       "Faixa mínima, sugestão e teto para cada categoria",
       "Você aprova cada fornecedor — nada é fechado sem o seu “sim”",
-      "Compare lado a lado e decida no seu tempo",
+      "Um único orçamento, com cada valor explicado",
     ],
   },
 ];
@@ -64,7 +64,7 @@ const testimonial = TESTIMONIALS.find((item) => item.id === "camila");
 export const metadata = pageMetadata({
   title: "Como funciona",
   description:
-    "Veja como a EventeIA monta o orçamento da sua festa: você conta o que imagina, cotamos fornecedores pelas redes sociais e entregamos 3 opções comparadas.",
+    "Veja como a EventeIA monta o orçamento da sua festa: você conta o que imagina, cotamos fornecedores pelas redes sociais e entregamos o orçamento pronto no menor preço válido.",
   path: "/como-funciona",
   keywords: ["como fazer orçamento de festa", "cotação de fornecedores"],
 });

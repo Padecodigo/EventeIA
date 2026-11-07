@@ -37,7 +37,7 @@ async function loadEventForAction(eventId: string) {
 
 /**
  * Encerra o evento (active → completed). Finaliza a coleta em andamento,
- * entrega os cenários já cotados e para os disparos de fornecedores.
+ * entrega o orçamento de menor preço já cotado e para os disparos de fornecedores.
  */
 export async function completeEventAction(
   _previous: EventLifecycleState,
@@ -73,7 +73,7 @@ export async function completeEventAction(
   await stopEventBackgroundWork(event.id);
 
   try {
-    // Fase 4 idempotente: congela os três cenários com o que já foi cotado.
+    // Fase 4 idempotente: congela o orçamento único com o que já foi cotado.
   } catch (caught) {
     logger.warn(
       { eventId: event.id, reason: caught instanceof Error ? caught.message : "desconhecido" },

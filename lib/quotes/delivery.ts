@@ -1,6 +1,6 @@
 import { buildEventScenarios, toSnapshotRows, type QuotationRowForScenario } from "./scenarios";
 
-/** Entrega das cotações (fase 4), idempotente pela marca events.quotes_delivered_at. */
+/** Entrega do orçamento único (fase 4), idempotente pela marca events.quotes_delivered_at. */
 export interface DeliveryDeps {
   /** UPDATE ... SET quotes_delivered_at = now() WHERE quotes_delivered_at IS NULL; true se marcou. */
   claim(eventId: string): Promise<boolean>;

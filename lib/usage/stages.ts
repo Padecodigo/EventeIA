@@ -1,7 +1,7 @@
 /**
  * Estágios do processo EventeIA (espelham o CHECK da migração 0026):
  * briefing (entrevista) → discovery (busca de fornecedores) → prospecting (1º contato com o fornecedor)
- * → quote_collection (respostas/cotações) → proposal (cenários entregues) → confirmation.
+ * → quote_collection (respostas/cotações) → proposal (orçamento entregue) → confirmation.
  */
 export const PROCESS_STAGES = ["briefing", "discovery", "prospecting", "quote_collection", "proposal", "confirmation"] as const;
 export type ProcessStage = (typeof PROCESS_STAGES)[number];

@@ -1,12 +1,13 @@
 /**
- * Cenários de contratação (puros e determinísticos):
- * - preco: menor custo efetivo total;
- * - custo_beneficio: menor custo ajustado pela qualidade (score determinístico);
- * - comodidade: menor número de fornecedores (desempate pelo custo).
- * Dados insuficientes ⇒ cenário null + campos faltantes. Nunca estima.
+ * Orçamento único de menor preço (puro e determinístico).
+ *
+ * Para cada necessidade, escolhe a combinação de cotações válidas com o menor
+ * custo efetivo total. Em empate, prefere menos fornecedores e mantém a ordem
+ * estável de supplierId. Dados insuficientes ⇒ orçamento null + faltantes.
+ * Nunca estima.
  */
 
-import { applyBps, BPS_DENOMINATOR, effectiveCost } from "./calculator";
+import { effectiveCost } from "./calculator";
 import type {
   MissingInfo,
   Scenario,
@@ -18,48 +19,25 @@ import type {
 
 export const MAX_REQUIRED_CATEGORIES = 12;
 
+const KIND: ScenarioKind = "preco";
+
 interface Candidate {
   quote: SupplierQuote;
   mask: number;
   categories: string[];
   effectiveCents: number;
-  scoreCents: number | null;
 }
 
 interface DpCell {
   count: number;
   cost: number;
-  score: number;
   picks: number[];
 }
 
-/** Score do custo-benefício: custo × (2 − qualidade). Qualidade 100% ⇒ custo puro. */
-export function valueScoreCents(effectiveCents: number, qualityBps: number): number {
-  if (!Number.isInteger(qualityBps) || qualityBps < 0 || qualityBps > BPS_DENOMINATOR) {
-    throw new Error("qualityBps deve ser inteiro entre 0 e 10000");
-  }
-  return applyBps(effectiveCents, 2 * BPS_DENOMINATOR - qualityBps);
-}
-
-function better(kind: ScenarioKind, a: DpCell, b: DpCell | undefined): boolean {
+function better(a: DpCell, b: DpCell | undefined): boolean {
   if (b === undefined) return true;
-  const keyA =
-    kind === "comodidade"
-      ? [a.count, a.cost]
-      : kind === "preco"
-        ? [a.cost, a.count]
-        : [a.score, a.cost, a.count];
-  const keyB =
-    kind === "comodidade"
-      ? [b.count, b.cost]
-      : kind === "preco"
-        ? [b.cost, b.count]
-        : [b.score, b.cost, b.count];
-  for (let i = 0; i < keyA.length; i += 1) {
-    const x = keyA[i] ?? 0;
-    const y = keyB[i] ?? 0;
-    if (x !== y) return x < y;
-  }
+  if (a.cost !== b.cost) return a.cost < b.cost;
+  if (a.count !== b.count) return a.count < b.count;
   return false; // empate: mantém o primeiro (ordem estável por supplierId)
 }
 
@@ -70,15 +48,10 @@ export interface ScenarioOptions {
   guestCount?: number;
 }
 
-function solve(
-  kind: ScenarioKind,
-  required: string[],
-  candidates: Candidate[],
-  exact = false,
-): number[] | null {
+function solve(required: string[], candidates: Candidate[], exact = false): number[] | null {
   const full = (1 << required.length) - 1;
   const dp: (DpCell | undefined)[] = new Array<DpCell | undefined>(full + 1).fill(undefined);
-  dp[0] = { count: 0, cost: 0, score: 0, picks: [] };
+  dp[0] = { count: 0, cost: 0, picks: [] };
 
   for (let mask = 0; mask <= full; mask += 1) {
     const cell = dp[mask];
@@ -91,10 +64,9 @@ function solve(
       const proposal: DpCell = {
         count: cell.count + 1,
         cost: cell.cost + candidate.effectiveCents,
-        score: cell.score + (candidate.scoreCents ?? 0),
         picks: [...cell.picks, index],
       };
-      if (better(kind, proposal, dp[next])) dp[next] = proposal;
+      if (better(proposal, dp[next])) dp[next] = proposal;
     });
   }
 
@@ -102,7 +74,6 @@ function solve(
 }
 
 function buildCandidates(
-  kind: ScenarioKind,
   required: string[],
   quotes: SupplierQuote[],
   assets: UserAssets,
@@ -127,26 +98,12 @@ function buildCandidates(
       continue;
     }
 
-    let scoreCents: number | null = null;
-    if (kind === "custo_beneficio") {
-      if (quote.qualityBps === null) {
-        missing.push({
-          category: categories.join("+"),
-          supplierId: quote.supplierId,
-          field: "quality_bps",
-        });
-        continue;
-      }
-      scoreCents = valueScoreCents(cost.effectiveCents, quote.qualityBps);
-    }
-
-    candidates.push({ quote, mask, categories, effectiveCents: cost.effectiveCents, scoreCents });
+    candidates.push({ quote, mask, categories, effectiveCents: cost.effectiveCents });
   }
   return candidates;
 }
 
-export function buildScenario(
-  kind: ScenarioKind,
+export function buildLowestPriceScenario(
   requiredCategories: string[],
   quotes: SupplierQuote[],
   assets: UserAssets,
@@ -158,7 +115,7 @@ export function buildScenario(
   const required = unique.filter((category) => !owned.has(category));
 
   if (required.length > MAX_REQUIRED_CATEGORIES) {
-    throw new Error(`máximo de ${String(MAX_REQUIRED_CATEGORIES)} categorias por cenário`);
+    throw new Error(`máximo de ${String(MAX_REQUIRED_CATEGORIES)} categorias por orçamento`);
   }
 
   const guestCount = options.guestCount ?? 0;
@@ -167,7 +124,7 @@ export function buildScenario(
   }
 
   const missing: MissingInfo[] = [];
-  const candidates = buildCandidates(kind, required, quotes, assets, missing, guestCount);
+  const candidates = buildCandidates(required, quotes, assets, missing, guestCount);
 
   // Categorias sem nenhuma cotação utilizável.
   for (const [index, category] of required.entries()) {
@@ -178,9 +135,9 @@ export function buildScenario(
     }
   }
 
-  const picks = solve(kind, required, candidates, options.exactCover === true);
+  const picks = solve(required, candidates, options.exactCover === true);
   if (picks === null) {
-    return { kind, scenario: null, missing };
+    return { kind: KIND, scenario: null, missing };
   }
 
   const chosen = picks
@@ -199,27 +156,12 @@ export function buildScenario(
   });
 
   const scenario: Scenario = {
-    kind,
+    kind: KIND,
     totalCents: chosen.reduce((sum, candidate) => sum + candidate.effectiveCents, 0),
     supplierCount: chosen.length,
-    scoreCents:
-      kind === "custo_beneficio" ? chosen.reduce((sum, c) => sum + (c.scoreCents ?? 0), 0) : null,
     selections,
     ownedCategories,
   };
 
-  return { kind, scenario, missing: [] };
-}
-
-export function buildAllScenarios(
-  requiredCategories: string[],
-  quotes: SupplierQuote[],
-  assets: UserAssets,
-  options: ScenarioOptions = {},
-): Record<ScenarioKind, ScenarioOutcome> {
-  return {
-    preco: buildScenario("preco", requiredCategories, quotes, assets, options),
-    custo_beneficio: buildScenario("custo_beneficio", requiredCategories, quotes, assets, options),
-    comodidade: buildScenario("comodidade", requiredCategories, quotes, assets, options),
-  };
+  return { kind: KIND, scenario, missing: [] };
 }

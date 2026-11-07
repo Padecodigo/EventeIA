@@ -52,7 +52,7 @@ export function createDeliveryDeps(): DeliveryDeps {
       const { error } = await admin
         .from("budget_snapshots")
         .insert(rows.map((r) => ({ ...r, breakdown: r.breakdown as unknown as Json })));
-      if (error !== null) throw new Error(`falha ao gravar cenários (${error.code})`);
+      if (error !== null) throw new Error(`falha ao gravar orçamento (${error.code})`);
     },
   };
 }

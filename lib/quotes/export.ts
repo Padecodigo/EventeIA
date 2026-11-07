@@ -32,9 +32,11 @@ export function scenarioLines(snap: ScenarioSnapshotBreakdown): PrintLine[] {
 export function scenarioCsv(snap: ScenarioSnapshotBreakdown): string {
   const lines = scenarioLines(snap);
   const total = snap.outcome.scenario?.totalCents ?? 0;
+  const incomplete = snap.uncovered.length > 0 || lines.length === 0;
+  const label = incomplete ? "Orçamento incompleto" : snap.label;
   return toCsv(
     [
-      "cenario",
+      "orcamento",
       "fornecedor",
       "contato",
       "categorias",
@@ -45,7 +47,7 @@ export function scenarioCsv(snap: ScenarioSnapshotBreakdown): string {
     ],
     [
       ...lines.map((l) => [
-        snap.label,
+        label,
         l.supplierName,
         l.contact,
         l.categories.join(", "),
@@ -54,16 +56,16 @@ export function scenarioCsv(snap: ScenarioSnapshotBreakdown): string {
         l.excludes.join("; "),
         l.notes.join(" "),
       ]),
-      [snap.label, "TOTAL", null, null, centsToCsv(total), null, null, null],
+      [label, incomplete ? "TOTAL PARCIAL" : "TOTAL", null, null, centsToCsv(total), null, null, null],
       ...snap.uncovered.map((c) => [
-        snap.label,
+        label,
         "NÃO COBERTO",
         null,
         categoryLabel(c),
         null,
         null,
         null,
-        "Sem cotação para esta necessidade.",
+        "Sem cotação para esta necessidade; não é possível confirmar o menor preço.",
       ]),
     ],
   );

@@ -29,7 +29,7 @@ export function canUndoDeletion(deletedAt: Date, now: Date, purged: boolean): bo
 /** O que é apagado e o que fica — mostrado no modal de confirmação. */
 export const DELETION_REMOVES = [
   "Dados do evento (nome, entrevista, local, estilo e orçamento limite)",
-  "Orçamentos calculados e cenários",
+  "Orçamentos calculados",
   "Suas escolhas de opções e produtos",
   "Notificações e convites ligados ao evento",
 ] as const;
