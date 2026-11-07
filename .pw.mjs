@@ -1,16 +1,18 @@
-import { readFileSync, mkdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { chromium } from "playwright";
 const jar = JSON.parse(readFileSync(".ck.json","utf8"));
-mkdirSync("shots2",{recursive:true});
 const b = await chromium.launch();
-const ctx = await b.newContext({ viewport:{width:390,height:844}, locale:"pt-BR" });
+const ctx = await b.newContext({ viewport:{width:390,height:844} });
 await ctx.addCookies(jar.map(c=>({name:c.name,value:c.value,domain:"eventeia.com.br",path:"/"})));
 const p = await ctx.newPage();
-for (const [name, url] of [["comprar","https://eventeia.com.br/creditos"],["planos","https://eventeia.com.br/planos"]]) {
-  const resp = await p.goto(url,{waitUntil:"networkidle",timeout:60000});
-  console.log(name, resp.status(), p.url());
-  await p.screenshot({path:`shots2/${name}.png`,fullPage:true});
-  const t = await p.textContent("body").catch(()=>"");
-  console.log("  texto:", t.slice(0,180).replace(/\s+/g," "));
-}
+p.on("console", m => console.log("console:", m.type(), m.text().slice(0,140)));
+p.on("response", r => { if (r.request().method() === "POST") console.log("POST", r.url(), r.status()); });
+await p.goto("https://eventeia.com.br/creditos",{waitUntil:"networkidle"});
+const html = await p.content();
+const m = html.match(/<form[^>]*>/g) || [];
+console.log("forms:", m.join(" | ").slice(0,300));
+await p.getByRole("button",{name:/comprar ticket/i}).click();
+await p.waitForTimeout(4000);
+console.log("url:", p.url());
+console.log("erro na tela?", /erro|não foi possível/i.test(await p.textContent("body")));
 await b.close();
