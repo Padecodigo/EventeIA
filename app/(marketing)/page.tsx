@@ -333,7 +333,7 @@ export default async function LandingPage() {
           >
             <span className="font-display text-xl font-bold text-ameixa">{PRIMARY_TYPE.label}</span>
             <span className="text-sm leading-relaxed text-tinta">{PRIMARY_TYPE.hint}</span>
-            <span className="mt-2 text-sm font-semibold text-coral-cta">Começar por aqui →</span>
+            <span className="mt-2 text-sm font-semibold text-ameixa underline underline-offset-4">Começar por aqui →</span>
           </Link>
 
           <ul className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
