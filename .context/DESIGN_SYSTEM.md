@@ -266,3 +266,22 @@ Motivo: o visual vinho + serifada lia como "casamento"; o público é amplo (fes
 - Acentos decorativos: `sol` `#FFC94D`, `menta` `#2BB59A`, `lilas` `#8B7CF6` — não usar como cor de texto pequeno.
 - Tipografia: Nunito 600–800 (`font-serif`/`font-display`/`font-brand`, títulos) e Inter (`font-sans`, corpo).
 - Coral nunca como texto sobre fundo claro (2,6:1); use `coral-escuro`.
+
+## Paleta da landing v2 (2026-11-07)
+
+Tokens no `tailwind.config.ts`, escopados ao marketing. Máximo de dois acentos (ameixa + coral) mais verde funcional.
+
+| Token | Hex | Uso |
+|---|---|---|
+| `ameixa` | `#5B2A4E` | títulos, links e acento sobre fundo claro |
+| `coral-cta` | `#C24145` | fundo do CTA com texto branco (5,08:1) — mesma cor em hover/focus |
+| `coral-vivo` | `#E8575A` | só texto grande (≥24 px), ícones e bordas decorativas |
+| `lilas-claro` | `#EFE6F7` | fundo de cards e badges |
+| `pessego` | `#FFE7DC` | fundo de destaque (festa infantil) |
+| `papel` | `#FFFAF6` | fundo de página |
+| `tinta` | `#2B2230` | texto principal |
+| `tinta-suave` | `#6E6275` | texto secundário (5,52:1 sobre papel) |
+| `verde-preco` | `#1E7A50` | "menor preço"/sucesso (5,31:1 sobre branco) |
+| `borda-suave` | `#EDE3EA` | bordas |
+
+Regra: nenhum par texto/fundo abaixo de 4,5:1. O Lighthouse (`color-contrast`) bloqueia o merge.

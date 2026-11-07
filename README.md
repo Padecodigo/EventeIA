@@ -68,7 +68,7 @@ A pasta [`.context/`](.context/) é a **fonte da verdade**. Leia antes de codar.
 | [`DESIGN_SYSTEM.md`](.context/DESIGN_SYSTEM.md)           | Paleta, tipografia, variáveis CSS, regras de componentes                    |
 | [`PAYMENTS.md`](.context/PAYMENTS.md)                     | Asaas, webhooks idempotentes, fluxos B2C × B2B                              |
 | [`DATABASE_RLS.md`](.context/DATABASE_RLS.md)             | Schemas de tabelas e políticas Supabase RLS                                 |
-| [`COMMERCIAL_MODEL.md`](.context/COMMERCIAL_MODEL.md)     | Tíquetes B2C, franquia de créditos B2B, reembolsos                          |
+| [`COMMERCIAL_MODEL.md`](.context/COMMERCIAL_MODEL.md)     | Tíquete único por evento, cupons de campanha, reembolsos                    |
 | [`FEEDS.md`](.context/FEEDS.md)                           | Registro de eventos do sistema, logs e auditoria                            |
 | [`SECURITY.md`](.context/SECURITY.md)                     | Proteção de dados (LGPD), SAN e mitigação de vulnerabilidades               |
 
@@ -219,13 +219,11 @@ Com o tunnel e o Asaas Sandbox configurados:
 ## Estado do scaffold
 
 Já implementado: autenticação (Supabase Auth + middleware), criação de eventos, motor
-determinístico (v1.1.0 com golden tests), checkout Pix (Asaas), **assinatura recorrente com
-concessão automática de franquia (0009)**, **conciliação diária (job); créditos não expiram (0037)**,
+determinístico (v1.1.0 com golden tests), checkout Pix (Asaas), **assinatura recorrente (legado, fora do produto desde 2026-11-07)**,
 webhooks idempotentes Asaas/Meta, ativação de tíquete em transação SQL, ledger de créditos
 com guarda de saldo, **testes de componentes React (Vitest + Testing Library)**,
-landing + `/como-funciona` + `/para-planners` + `/planos` + auth/painel, perfil com CPF e
-consentimento, **cotações com contato por Instagram/Messenger**, **workspace B2B com pacotes de
-créditos** e ativação de evento por crédito, **fluxo completo de depoimentos reais** (convite
+landing + `/como-funciona` + `/planos` + auth/painel (`/para-planners` foi removida, com 301 para `/planos`), perfil com CPF e
+consentimento, **cotações com contato por Instagram/Messenger**, **ativação de evento por tíquete único**, **fluxo completo de depoimentos reais** (convite
 automático → consentimento → moderação → vitrine), **Agente Orçamentista** (prospecção de
 fornecedores via Instagram/Messenger), **admin de cupons** (`/admin/cupons`), workers BullMQ e
 validação SQL via Docker.
