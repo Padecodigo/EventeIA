@@ -25,7 +25,7 @@ export function SiteFooter() {
             Como funciona
           </Link>
           <Link prefetch={false} href="/planos" className="text-ink-inverse/70 transition hover:text-ink-inverse">
-            Planos
+            Comprar
           </Link>
         </div>
         <div className="flex flex-col gap-2">
