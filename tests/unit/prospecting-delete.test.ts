@@ -23,7 +23,7 @@ describe("deleteMedia (Meta Graph API)", () => {
 
     const result = await deleteMedia({ ...meta, mediaId: "media-9", fetchImpl });
 
-    expect(result).toEqual({ ok: true, id: "media-9" });
+    expect(result).toMatchObject({ kind: "deleted", channel: "instagram", id: "media-9" });
     expect(method).toBe("DELETE");
     expect(url).toBe("https://graph.facebook.com/v26.0/media-9");
     expect(auth).toBe("Bearer tok");
@@ -35,8 +35,8 @@ describe("deleteMedia (Meta Graph API)", () => {
 
     const result = await deleteMedia({ ...meta, mediaId: "x", fetchImpl });
 
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toContain("não encontrada");
+    expect(result.kind).not.toBe("deleted");
+    if (result.kind !== "deleted") expect(result.error).toContain("não encontrada");
   });
 });
 

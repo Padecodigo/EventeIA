@@ -1,8 +1,14 @@
-import { createMediaContainer, publishContainer, type MetaPublishConfig } from "@/lib/meta/publishing";
+import {
+  publishToChannels,
+  type ChannelPublicationIds,
+  type MetaPublishConfig,
+} from "@/lib/meta/publishing";
 import { generateImage } from "@/lib/modelslab/client";
 
-import type { PostStore } from "./posts-store";
+import type { BaitReservation, PostStore, PostStatus } from "./posts-store";
+import { canPublishForEvent, type EventPublicationState } from "./publish-guard";
 import type { PlannedPost } from "./publish-plan";
+import type { PublicationState } from "./publication-state";
 
 /**
  * Publica um post planejado: gera a imagem (SDXL), cria o container e publica.
@@ -13,11 +19,23 @@ export type PublishFailure =
   | "approval_required"
   | "image_failed"
   | "container_failed"
-  | "publish_failed";
+  | "publish_failed"
+  | "facebook_failed"
+  | "event_closed"
+  | "migration_required"
+  | "persistence_failed"
+  | "uncertain";
 
 export type PublishOutcome =
-  | { ok: true; mediaId: string; imageUrl: string }
-  | { ok: false; reason: PublishFailure; error?: string };
+  | { kind: "published"; ok: true; mediaId: string; imageUrl: string; fbPostId?: string }
+  | {
+      kind: "failed" | PublishFailure;
+      ok: false;
+      reason: PublishFailure;
+      error?: string;
+      igMediaId?: string;
+      fbPostId?: string;
+    };
 
 export interface PublishPlannedPostInput {
   planned: PlannedPost;
@@ -28,6 +46,16 @@ export interface PublishPlannedPostInput {
   store?: PostStore;
   /** Evento de origem do plano (gravado em prospect_posts). */
   eventId?: string;
+  /** Estado do evento (bloqueia publicação após encerramento/exclusão). */
+  event?: EventPublicationState | null;
+  /** Ids remotos já publicados (apenas compatibilidade; produção usa a reserva). */
+  existing?: ChannelPublicationIds;
+  /** Exige a Página do Facebook configurada (fluxo de evento). */
+  requireFacebook?: boolean;
+  /** Recheca o evento depois do efeito remoto (H1). */
+  recheckEvent?: () => Promise<EventPublicationState | null>;
+  /** Dispara limpeza quando o evento fechou durante a publicação. */
+  onEventClosed?: () => Promise<void>;
   /** Arte em cache (mesmo evento + necessidade) com validade. */
   cachedArt?: { url: string; expiresAt: Date } | null;
   /** Arte da marca usada quando não há chave de geração ou a geração falha. */
@@ -48,7 +76,60 @@ export async function publishPlannedPost(input: PublishPlannedPostInput): Promis
       imageExpiresAt: imageExpiresAt ?? undefined,
       status: "pending_approval",
     });
-    return { ok: false, reason: "approval_required" };
+    return { kind: "approval_required", ok: false, reason: "approval_required" };
+  }
+
+  // B2: sem schema de persistência por canal, NENHUMA chamada remota acontece.
+  if (input.requireFacebook === true) {
+    if (
+      input.store?.probe === undefined ||
+      input.store.reserve === undefined ||
+      input.store.saveState === undefined
+    ) {
+      return {
+        kind: "migration_required",
+        ok: false,
+        reason: "migration_required",
+        error: "persistência por canal (fb_post_id/publication) não disponível",
+      };
+    }
+    if (input.eventId === undefined) {
+      return {
+        kind: "persistence_failed",
+        ok: false,
+        reason: "persistence_failed",
+        error: "publicação de isca exige eventId para reserva durável",
+      };
+    }
+    const probe = await input.store.probe();
+    if (probe.kind === "migration_required") {
+      return {
+        kind: "migration_required",
+        ok: false,
+        reason: "migration_required",
+        error: `migração necessária: ${probe.missing.join(", ")}`,
+      };
+    }
+    if (probe.kind === "failed") {
+      return {
+        kind: "persistence_failed",
+        ok: false,
+        reason: "persistence_failed",
+        error: probe.error,
+      };
+    }
+  }
+
+  if (input.event !== undefined && !canPublishForEvent(input.event)) {
+    const error = "evento encerrado ou excluído";
+    await input.store?.record({
+      planned: input.planned,
+      eventId: input.eventId,
+      imageExpiresAt: imageExpiresAt ?? undefined,
+      status: "failed",
+      error,
+    });
+    return { kind: "event_closed", ok: false, reason: "event_closed", error };
   }
 
   if (imageUrl === null) {
@@ -82,7 +163,7 @@ export async function publishPlannedPost(input: PublishPlannedPostInput): Promis
             status: "failed",
             error: reason,
           });
-          return { ok: false, reason: "image_failed", error: reason };
+          return { kind: "image_failed", ok: false, reason: "image_failed", error: reason };
         }
       } else if (input.fallbackArt !== undefined) {
         imageUrl = input.fallbackArt.url;
@@ -95,47 +176,172 @@ export async function publishPlannedPost(input: PublishPlannedPostInput): Promis
           status: "failed",
           error: image.error,
         });
-        return { ok: false, reason: "image_failed", error: image.error };
+        return { kind: "image_failed", ok: false, reason: "image_failed", error: image.error };
       }
     } else if (input.fallbackArt !== undefined) {
       imageUrl = input.fallbackArt.url;
       imageExpiresAt = null;
     } else {
-      return { ok: false, reason: "image_failed", error: "sem chave de geração e sem arte de fallback" };
+      return {
+        kind: "image_failed",
+        ok: false,
+        reason: "image_failed",
+        error: "sem chave de geração e sem arte de fallback",
+      };
     }
   }
 
-  const container = await createMediaContainer({
+  let reservation: BaitReservation | null = null;
+  if (input.requireFacebook === true) {
+    const reserved = await input.store?.reserve?.({
+      planned: input.planned,
+      eventId: input.eventId as string,
+      imageUrl,
+      imageExpiresAt: imageExpiresAt ?? undefined,
+    });
+    if (reserved === undefined) {
+      return {
+        kind: "migration_required",
+        ok: false,
+        reason: "migration_required",
+        error: "reserva durável indisponível",
+      };
+    }
+    if (reserved.kind === "migration_required") {
+      return {
+        kind: "migration_required",
+        ok: false,
+        reason: "migration_required",
+        error: `migração necessária: ${reserved.missing.join(", ")}`,
+      };
+    }
+    if (reserved.kind === "failed") {
+      return {
+        kind: "persistence_failed",
+        ok: false,
+        reason: "persistence_failed",
+        error: reserved.error,
+      };
+    }
+    reservation = reserved.reservation;
+  }
+
+  const statusFor = (state: PublicationState): PostStatus => {
+    if (state.instagram.kind === "published" && state.facebook.kind === "published") {
+      return "published";
+    }
+    if (state.instagram.kind === "uncertain" || state.facebook.kind === "uncertain") {
+      return "failed";
+    }
+    if (state.instagram.kind === "failed" || state.facebook.kind === "failed") {
+      return "failed";
+    }
+    return "approved";
+  };
+
+  const reservationId = reservation?.id ?? null;
+  let latestState: PublicationState | null = reservation?.state ?? null;
+  const dual = await publishToChannels({
     ...input.meta,
     imageUrl,
     caption: input.planned.caption,
     userTags: input.planned.handles,
+    existing: reservation === null ? input.existing : undefined,
+    initialState: reservation?.state,
+    onState:
+      reservationId === null || input.store?.saveState === undefined
+        ? undefined
+        : async (state, previous) => {
+            latestState = state;
+            const saved = await input.store!.saveState!(
+              reservationId,
+              state,
+              statusFor(state),
+              previous,
+            );
+            if (saved.kind === "saved") return { kind: "saved" as const };
+            if (saved.kind === "conflict") {
+              return { kind: "conflict" as const, error: saved.error };
+            }
+            if (saved.kind === "migration_required") {
+              return { kind: "migration_required" as const, missing: saved.missing };
+            }
+            return { kind: "failed" as const, error: saved.error };
+          },
+    requireFacebook: input.requireFacebook,
     fetchImpl: input.fetchImpl,
   });
-  if (!container.ok) {
-    await input.store?.record({ planned: input.planned, eventId: input.eventId,
-    imageExpiresAt: imageExpiresAt ?? undefined, status: "failed", imageUrl, error: container.error });
-    return { ok: false, reason: "container_failed", error: container.error };
+
+  if (input.recheckEvent !== undefined) {
+    const after = await input.recheckEvent();
+    if (after === null || !canPublishForEvent(after)) {
+      if (input.onEventClosed !== undefined) await input.onEventClosed();
+    }
   }
 
-  const published = await publishContainer({
-    ...input.meta,
-    creationId: container.id,
-    fetchImpl: input.fetchImpl,
-  });
-  if (!published.ok) {
-    await input.store?.record({ planned: input.planned, eventId: input.eventId,
-    imageExpiresAt: imageExpiresAt ?? undefined, status: "failed", imageUrl, error: published.error });
-    return { ok: false, reason: "publish_failed", error: published.error };
+  const igId = dual.instagram.kind === "published" ? dual.instagram.id : null;
+  const fbId = dual.facebook.kind === "published" ? dual.facebook.id : null;
+
+  if (dual.kind === "uncertain") {
+    return {
+      kind: "uncertain",
+      ok: false,
+      reason: "uncertain",
+      error: dual.error,
+      ...(igId !== null ? { igMediaId: igId } : {}),
+      ...(fbId !== null ? { fbPostId: fbId } : {}),
+    };
   }
 
-  await input.store?.record({
-    planned: input.planned,
-    eventId: input.eventId,
-    imageExpiresAt: imageExpiresAt ?? undefined,
-    status: "published",
+  if (dual.kind !== "published" || igId === null) {
+    const reason: PublishFailure =
+      dual.kind === "failed" && dual.instagram.kind === "failed"
+        ? dual.instagram.stage === "container"
+          ? "container_failed"
+          : "publish_failed"
+        : "facebook_failed";
+    const error = dual.kind === "published" ? "Instagram não devolveu id" : dual.error;
+
+    if (reservation !== null && input.store?.saveState !== undefined && latestState !== null) {
+      await input.store.saveState(reservation.id, latestState, "failed");
+    } else {
+      await input.store?.record({
+        planned: input.planned,
+        eventId: input.eventId,
+        imageExpiresAt: imageExpiresAt ?? undefined,
+        status: "failed",
+        imageUrl,
+        error,
+        ...(igId !== null ? { igMediaId: igId } : {}),
+        ...(fbId !== null ? { fbPostId: fbId } : {}),
+      });
+    }
+    return {
+      kind: "failed",
+      ok: false,
+      reason,
+      error,
+      ...(igId !== null ? { igMediaId: igId } : {}),
+      ...(fbId !== null ? { fbPostId: fbId } : {}),
+    };
+  }
+
+  if (reservation === null) {
+    await input.store?.record({
+      planned: input.planned,
+      eventId: input.eventId,
+      imageExpiresAt: imageExpiresAt ?? undefined,
+      status: "published",
+      imageUrl,
+      igMediaId: igId,
+      ...(fbId !== null ? { fbPostId: fbId } : {}),
+    });
+  }
+  return {
+    kind: "published",
+    ok: true,
+    mediaId: igId,
     imageUrl,
-    igMediaId: published.id,
-  });
-  return { ok: true, mediaId: published.id, imageUrl };
+    ...(fbId !== null ? { fbPostId: fbId } : {}),
+  };
 }

@@ -33,7 +33,7 @@ describe("publicação com fallback de arte da marca", () => {
     });
 
     expect(chamouModelsLab).toBe(false);
-    expect(outcome).toEqual({ ok: true, mediaId: "media-1", imageUrl: "https://site/brand/posts/buffet.jpg" });
+    expect(outcome).toEqual({ kind: "published", ok: true, mediaId: "media-1", imageUrl: "https://site/brand/posts/buffet.jpg" });
   });
 
   it("geração falhando cai para a arte da marca", async () => {
@@ -54,6 +54,6 @@ describe("publicação com fallback de arte da marca", () => {
       fetchImpl,
     });
 
-    expect(outcome).toEqual({ ok: true, mediaId: "media-1", imageUrl: "https://site/brand/posts/buffet.jpg" });
+    expect(outcome).toEqual({ kind: "published", ok: true, mediaId: "media-1", imageUrl: "https://site/brand/posts/buffet.jpg" });
   });
 });

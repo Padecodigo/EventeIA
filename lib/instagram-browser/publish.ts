@@ -19,7 +19,7 @@ export interface PublishWithBrowserInput {
 }
 
 export type PublishWithBrowserResult =
-  | { ok: true; permalink: string | null }
+  | { ok: true; permalink: string | null; mediaId: string | null }
   | { ok: false; error: string };
 
 const IG_HOME = "https://www.instagram.com/";
@@ -92,7 +92,9 @@ export async function publishWithBrowser(input: PublishWithBrowserInput): Promis
       // 6) espera o link do post
       await page.waitForTimeout(6_000);
       const permalink = /instagram\.com\/(p|reel)\//.test(page.url()) ? page.url() : null;
-      return { ok: true, permalink };
+      // O shortcode é o identificador estável que o navegador consegue expor.
+      const mediaId = permalink === null ? null : (/instagram\.com\/(?:p|reel)\/([^/?#]+)/.exec(permalink)?.[1] ?? null);
+      return { ok: true, permalink, mediaId };
     });
   } catch (caught) {
     logger.warn(

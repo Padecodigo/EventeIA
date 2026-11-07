@@ -2,6 +2,11 @@ import { cancelAsaasPayment } from "@/lib/asaas/client";
 import { removeScheduledEventJobs, stopEventBackgroundWork } from "@/lib/events/stop";
 import { emitFeed } from "@/lib/feeds";
 import { logger } from "@/lib/logger";
+import { metaPublishConfigFromProcessEnv } from "@/lib/meta/config";
+import {
+  deleteEventPublications,
+  type PublicationCleanupDb,
+} from "@/lib/prospecting/delete-publications";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export interface CancelEventFollowUpInput {
@@ -63,6 +68,33 @@ export async function cancelEventFollowUp(input: CancelEventFollowUpInput): Prom
 
   await stopEventBackgroundWork(input.eventId);
   removeScheduledEventJobs(input.eventId, input.ownerProfileId);
+
+  // Exclusão = remover as publicações dos dois canais agora. Se um canal falhar,
+  // os ids ficam na linha e o sweep de encerramento tenta de novo.
+  try {
+    const result = await deleteEventPublications({
+      // O client Supabase completo estoura a inferência recursiva; o contrato
+      // mínimo de limpeza é suficiente e foi validado pela suíte.
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+      db: admin as unknown as PublicationCleanupDb,
+      eventId: input.eventId,
+      meta: metaPublishConfigFromProcessEnv(),
+    });
+    if (result.pending > 0) {
+      logger.warn(
+        { eventId: input.eventId, pending: result.pending },
+        "cancelamento: limpeza de publicações ficou pendente para retry",
+      );
+    }
+  } catch (caught) {
+    logger.warn(
+      {
+        eventId: input.eventId,
+        reason: caught instanceof Error ? caught.message : "desconhecido",
+      },
+      "cancelamento: falha ao limpar publicações sociais",
+    );
+  }
 
   try {
     await emitFeed(admin, {

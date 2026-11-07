@@ -15,27 +15,38 @@ function fakeDb() {
           }),
         }),
       }),
-      upsert: (values: Row) => ({
+      insert: (values: Row) => ({
         select: () => ({
           single: async () => {
-            const existing = rows.find((row) => row.event_id === values.event_id);
-            if (existing !== undefined) {
-              Object.assign(existing, values);
-              return { data: existing };
+            if (rows.some((row) => row.event_id === values.event_id)) {
+              return { data: null, error: { code: "23505", message: "duplicate" } };
             }
             const row: Row = { id: `post-${String(rows.length + 1)}`, ...values };
             rows.push(row);
-            return { data: row };
+            return { data: row, error: null };
           },
         }),
       }),
-      update: (values: Row) => ({
-        eq: async (column: string, value: string) => {
-          const row = rows.find((item) => item[column] === value);
-          if (row !== undefined) Object.assign(row, values);
-          return { error: null };
-        },
-      }),
+      update: (values: Row) => {
+        const filters: { column: string; value: string }[] = [];
+        let matched: Row | undefined;
+        const query = {
+          eq: (column: string, value: string) => {
+            filters.push({ column, value });
+            return query;
+          },
+          select: async () => {
+            matched = rows.find((item) =>
+              filters.every((filter) => item[filter.column] === filter.value),
+            );
+            if (matched === undefined) return { data: [], error: null };
+            Object.assign(matched, values);
+            return { data: [matched], error: null };
+          },
+          then: (resolve: (value: unknown) => unknown) => resolve({ data: null, error: null }),
+        };
+        return query;
+      },
     }),
   };
   return { db, rows };
@@ -73,12 +84,45 @@ describe("persistência do post de prospecção", () => {
     expect(second.city).toBe("Jacareí");
   });
 
+  it("regenerar post publicado preserva publication state e ig_media_id", async () => {
+    const { db, rows } = fakeDb();
+    const store = createSupabaseProspectingPostStore(db as never);
+    const post = await store.upsert(source);
+    rows[0] = {
+      ...rows[0],
+      status: "published",
+      ig_media_id: "17841400000000001",
+      image_params: {
+        eventType: "casamento",
+        publication: {
+          version: 1,
+          instagram: { kind: "published", id: "17841400000000001" },
+          facebook: { kind: "published", id: "page-1_fb-1" },
+        },
+      },
+    };
+
+    await store.upsert({ ...source, city: "Jacareí" });
+
+    expect(rows[0]).toMatchObject({
+      ig_media_id: "17841400000000001",
+      image_params: {
+        publication: {
+          instagram: { kind: "published", id: "17841400000000001" },
+          facebook: { kind: "published", id: "page-1_fb-1" },
+        },
+      },
+    });
+  });
+
   it("resolve o evento pelo código público (entrada de DM)", async () => {
     const { db } = fakeDb();
     const store = createSupabaseProspectingPostStore(db as never);
     const post = await store.upsert(source);
     await expect(store.findEventIdByCode(post.eventCode)).resolves.toBe(source.eventId);
-    await expect(store.findEventIdByCode(post.eventCode.toLowerCase())).resolves.toBe(source.eventId);
+    await expect(store.findEventIdByCode(post.eventCode.toLowerCase())).resolves.toBe(
+      source.eventId,
+    );
     await expect(store.findEventIdByCode("EVT-NAOEXIST")).resolves.toBeNull();
   });
 
@@ -88,13 +132,12 @@ describe("persistência do post de prospecção", () => {
     const post = await store.upsert(source);
     await store.updateStatus(post.id, {
       status: "published",
-      igMediaId: "media-1",
       publishedAt: "2026-10-31T12:00:00.000Z",
     });
     expect(rows[0]).toMatchObject({
       status: "published",
-      ig_media_id: "media-1",
       published_at: "2026-10-31T12:00:00.000Z",
     });
+    expect(rows[0]).not.toHaveProperty("ig_media_id");
   });
 });

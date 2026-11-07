@@ -51,7 +51,7 @@ describe("runtime de publicação", () => {
         return new Response("{}");
       }) as unknown as typeof fetch,
     });
-    expect(outcome).toEqual({ ok: false, reason: "approval_required" });
+    expect(outcome).toEqual({ kind: "approval_required", ok: false, reason: "approval_required" });
     expect(called).toBe(false);
   });
 
@@ -66,7 +66,7 @@ describe("runtime de publicação", () => {
       return {};
     });
     const outcome = await publishPlannedPost({ planned, approved: true, modelslabKey: "k", meta, fetchImpl });
-    expect(outcome).toEqual({ ok: true, mediaId: "media-1", imageUrl: "https://cdn/img.jpg" });
+    expect(outcome).toEqual({ kind: "published", ok: true, mediaId: "media-1", imageUrl: "https://cdn/img.jpg" });
     expect(calls.some((u) => u.includes("modelslab.com"))).toBe(true);
     expect(calls.some((u) => u.includes("media_publish"))).toBe(true);
   });
@@ -166,7 +166,7 @@ describe("cache de imagem por necessidade", () => {
       fetchImpl,
     });
     expect(chamouModelsLab).toBe(false);
-    expect(outcome).toEqual({ ok: true, mediaId: "media-1", imageUrl: "https://cdn/cache.jpg" });
+    expect(outcome).toEqual({ kind: "published", ok: true, mediaId: "media-1", imageUrl: "https://cdn/cache.jpg" });
   });
 
   it("sem cache, gera a imagem", async () => {

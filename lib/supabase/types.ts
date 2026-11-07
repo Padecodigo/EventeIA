@@ -79,6 +79,11 @@ export interface Database {
         user_deleted_by: string | null;
         user_purged_at: string | null;
         status: "draft" | "awaiting_payment" | "active" | "completed" | "canceled";
+        /** Migração 0080 (encerramento). */
+        closed_at?: string | null;
+        close_reason?: "auto" | "manual" | null;
+        content_purged_at?: string | null;
+        report_purged_at?: string | null;
         city: string | null;
         city_uf: string | null;
         city_ibge_code: number | null;
@@ -422,6 +427,27 @@ export interface Database {
         error: string | null;
         created_at: string;
       }>;
+      prospect_posts: Table<{
+        id: string;
+        caption: string;
+        image_url: string | null;
+        categories: string[];
+        day_index: number;
+        status: "draft" | "pending_approval" | "approved" | "published" | "failed";
+        scheduled_at: string | null;
+        published_at: string | null;
+        ig_media_id: string | null;
+        error: string | null;
+        created_at: string;
+        updated_at: string;
+        event_id: string | null;
+        image_expires_at: string | null;
+        deleted_at: string | null;
+        tagged_handles: string[];
+        contacted_handles: string[];
+        fb_post_id: string | null;
+        publication: Json;
+      }>;
       prospecting_posts: Table<{
         id: string;
         event_id: string;
@@ -435,6 +461,7 @@ export interface Database {
         image_params: Json;
         status: "draft" | "pending_approval" | "approved" | "published" | "failed";
         ig_media_id: string | null;
+        fb_post_id: string | null;
         error: string | null;
         published_at: string | null;
         created_at: string;
@@ -710,6 +737,15 @@ export interface Database {
     };
     Views: { [_ in never]: never };
     Functions: {
+      event_publication_has_refs: {
+        Args: {
+          p_ig: string | null;
+          p_fb: string | null;
+          p_publication: Json | null;
+          p_error: string | null;
+        };
+        Returns: boolean;
+      };
       request_event_history_deletion: { Args: { p_event_ids: string[] | null }; Returns: number };
       undo_event_history_deletion: { Args: { p_event_id: string }; Returns: boolean };
       list_my_deleted_events: {
