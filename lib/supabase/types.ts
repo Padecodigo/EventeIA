@@ -734,6 +734,21 @@ export interface Database {
         body: string;
         created_at: string;
       }>;
+      tiktok_oauth_tokens: Table<{
+        id: string;
+        owner_profile_id: string;
+        environment: "sandbox" | "production";
+        open_id: string;
+        display_name: string | null;
+        avatar_url: string | null;
+        access_token: string;
+        refresh_token: string;
+        encrypted: boolean;
+        scopes: string[];
+        expires_at: string | null;
+        created_at: string;
+        updated_at: string;
+      }>;
     };
     Views: { [_ in never]: never };
     Functions: {
