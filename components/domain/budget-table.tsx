@@ -17,7 +17,8 @@ export function BudgetTable({ result, unlocked }: BudgetTableProps) {
         <div>
           <h2 className="font-serif text-title-1">Orçamento estimado</h2>
           <p className="mt-1 text-caption text-vinho/70">
-            Motor determinístico · versão {result.engineVersion} · valores em BRL
+            Estimativa do motor · versão {result.engineVersion} · o orçamento final usa o menor preço
+            válido das cotações reais
           </p>
         </div>
         <span className="rounded-pill bg-areia-secundaria px-3 py-1 text-caption text-vinho/70">
@@ -30,28 +31,20 @@ export function BudgetTable({ result, unlocked }: BudgetTableProps) {
           <thead>
             <tr className="text-left text-overline uppercase tracking-[0.12em] text-vinho/70">
               <th className="px-6 py-3 font-medium">Categoria</th>
-              <th className="px-6 py-3 text-right font-medium">Mínimo</th>
-              <th className="px-6 py-3 text-right font-medium">Sugerido</th>
-              <th className="px-6 py-3 text-right font-medium">Teto</th>
+              <th className="px-6 py-3 text-right font-medium">Estimativa</th>
             </tr>
           </thead>
           <tbody>
             {visibleLines.map((line) => (
               <tr key={line.category} className="border-t border-line-subtle even:bg-areia-quente/60">
                 <td className="px-6 py-3 text-vinho">{line.label}</td>
-                <td className="px-6 py-3 text-right tabular-nums text-vinho/80">
-                  {unlocked ? formatBRL(line.minCents) : MASKED}
-                </td>
                 <td className="px-6 py-3 text-right tabular-nums font-medium text-vinho">
                   {unlocked ? formatBRL(line.suggestedCents) : MASKED}
-                </td>
-                <td className="px-6 py-3 text-right tabular-nums text-vinho/80">
-                  {unlocked ? formatBRL(line.maxCents) : MASKED}
                 </td>
               </tr>
             ))}
             <tr className="border-t border-champagne/60 bg-areia-quente">
-              <td className="px-6 py-4 font-serif text-title-3" colSpan={3}>
+              <td className="px-6 py-4 font-serif text-title-3" colSpan={1}>
                 Total estimado
               </td>
               <td className="px-6 py-4 text-right font-serif text-title-2 tabular-nums">

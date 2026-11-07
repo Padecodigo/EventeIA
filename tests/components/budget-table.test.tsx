@@ -33,8 +33,18 @@ describe("BudgetTable", () => {
     render(<BudgetTable result={result} unlocked={false} />);
 
     expect(screen.getByText("Prévia")).toBeInTheDocument();
+    // A prévia mostra 3 categorias + o total; cada linha tem uma única coluna de valor.
     const masked = screen.getAllByText("R$ •••");
-    expect(masked.length).toBeGreaterThanOrEqual(result.breakdown.length);
+    expect(masked.length).toBe(Math.min(3, result.breakdown.length) + 1);
+  });
+
+  it("não oferece três faixas: uma estimativa por categoria", () => {
+    render(<BudgetTable result={result} unlocked={true} />);
+
+    expect(screen.getByText("Estimativa")).toBeInTheDocument();
+    expect(screen.queryByText("Mínimo")).toBeNull();
+    expect(screen.queryByText("Sugerido")).toBeNull();
+    expect(screen.queryByText("Teto")).toBeNull();
   });
 
   it("liberado: mostra o total e as linhas do breakdown", () => {
