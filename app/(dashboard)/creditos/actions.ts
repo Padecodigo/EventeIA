@@ -16,7 +16,7 @@ import {
   getAsaasSubscriptionFirstInvoiceUrl,
 } from "@/lib/asaas/client";
 import { requireUser } from "@/lib/auth";
-import { spDateKey } from "@/lib/search-start";
+import { addBusinessDays } from "@/lib/business-days";
 import {
   CUSTOM_CREDITS_MAX,
   CUSTOM_CREDITS_MIN,
@@ -685,7 +685,7 @@ export async function startTicketCheckoutAction(): Promise<void> {
       event_date: in45Days,
       region_code: "sp",
       guest_count: 30,
-      search_start_date: spDateKey(new Date()),
+      search_start_date: addBusinessDays(new Date(), 1), // o banco exige dia útil
       status: "awaiting_payment",
     })
     .select("id")
