@@ -60,7 +60,10 @@ export const metadata: Metadata = {
     images: [OG_IMAGE.url],
   },
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 } },
-  other: { "llms-txt": "/llms.txt" },
+  other: {
+    "llms-txt": "/llms.txt",
+    "tiktok-developers-site-verification": "9xMTa8tZAVnso5MZw5eejPEoaPA93gmO",
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
