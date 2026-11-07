@@ -104,6 +104,17 @@ const serverSchema = z.object({
   SUPPLIER_REPLY_NOTIFY_EMAIL: z.string().email().optional().or(z.literal("")),
   // No máximo 1 e-mail por conversa nesta janela (anti-spam); o e-mail resume as pendentes.
   SUPPLIER_REPLY_NOTIFY_THROTTLE_MINUTES: z.coerce.number().int().min(1).default(30),
+  // TikTok — Login Kit (OAuth 2.0 + PKCE) + Content Posting API (draft/inbox, sem publish direto).
+  // Ambiente ativo: sandbox (padrão) usa TIKTOK_SANDBOX_*; production usa TIKTOK_*.
+  TIKTOK_ENV: z.enum(["sandbox", "production"]).default("sandbox"),
+  TIKTOK_CLIENT_KEY: z.string().optional(),
+  TIKTOK_CLIENT_SECRET: z.string().optional(),
+  TIKTOK_SANDBOX_CLIENT_KEY: z.string().optional(),
+  TIKTOK_SANDBOX_CLIENT_SECRET: z.string().optional(),
+  // Redirect URI exato registrado no app TikTok; vazio = deriva de NEXT_PUBLIC_APP_URL + /tiktok/callback.
+  TIKTOK_REDIRECT_URI: z.string().url().optional().or(z.literal("")),
+  // Chave (server-only) para criptografar access_token/refresh_token em repouso (AES-256-GCM).
+  TIKTOK_TOKEN_ENCRYPTION_KEY: z.string().optional(),
 });
 
 /** Chave de API presente e não vazia (vazio = não configurado). Type guard. */
