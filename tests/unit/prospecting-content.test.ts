@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { validateCaption } from "@/lib/meta/publishing";
-import { buildCaption, buildImagePrompt, buildPostContent } from "@/lib/prospecting/content";
+import { BRAND_SIGNATURE, buildCaption, buildImagePrompt, buildPostContent } from "@/lib/prospecting/content";
 
 const base = { category: "Buffet", keyword: "cotação", handles: ["buffet_a", "foto_b"], variant: 0 };
 
@@ -44,5 +44,11 @@ describe("conteúdo do post de isca", () => {
     const content = buildPostContent(base);
     expect(content.imagePrompt.length).toBeGreaterThan(10);
     expect(content.caption).toContain("COTAÇÃO");
+  });
+
+  it("legenda termina com a assinatura de marca", () => {
+    const caption = buildCaption(base);
+    expect(caption.endsWith(BRAND_SIGNATURE)).toBe(true);
+    expect(validateCaption(caption)).toEqual({ ok: true });
   });
 });
