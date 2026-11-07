@@ -57,8 +57,6 @@ const config: Config = {
         ameixa: "#5B2A4E",
         "ameixa-fundo": "#4A2340",
         "coral-cta": "#C24145", // CTA com texto branco — 5,08:1 (AA)
-        "coral-cta-escura": "#A9343A",
-        "coral-texto": "#B93A3D", // acento de texto sobre claro — 5,62:1
         "coral-vivo": "#E8575A", // decorativo / texto grande (≥ 3:1)
         "lilas-claro": "#EFE6F7",
         pessego: "#FFE7DC",

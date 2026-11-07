@@ -72,10 +72,12 @@ describe("landing — hero", () => {
   it("proposta de valor clara: redes sociais + orçamento único no menor preço válido", () => {
     const h1End = source.indexOf("</h1>");
     const hero = source.slice(source.indexOf("<h1"), source.indexOf("</p>", h1End));
-    expect(hero).toMatch(/redes sociais/);
+    // Copy aprovada pelo dono: não cita canais nem regiões no parágrafo de apoio.
+    expect(hero).not.toMatch(/redes sociais|Vale do Paraíba|São Paulo/);
     expect(hero).toMatch(/um orçamento pronto/);
     expect(hero).not.toMatch(/\bIA\b|fila/);
     expect(hero).toContain("menor preço válido");
+    expect(hero).toContain("em vez de você ligar para um por um");
     expect(hero).not.toMatch(/3 opções|custo-benefício|comodidade/i);
   });
 
@@ -146,10 +148,13 @@ describe("landing — animação 'como funciona' (leve, sem JS)", () => {
 });
 
 describe("hero mobile-first", () => {
-  it("encurta o subtítulo no celular para o CTA ficar acima da dobra", async () => {
+  it("parágrafo de apoio é exatamente o texto aprovado", async () => {
     const { readFileSync } = await import("node:fs");
     const src = readFileSync("app/(marketing)/page.tsx", "utf8");
-    expect(src).toContain('<span className="hidden sm:inline">: em vez de você ligar');
+    const flat = src.replace(/\s+/g, " ").replace(/{[^}]*}/g, " ").replace(/\s+/g, " ");
+    expect(flat).toContain(
+      "Casamento, aniversário, 15 anos, formatura ou corporativo: em vez de você ligar para um por um, a EventeIA pede orçamento aos fornecedores da sua região e compara tudo.",
+    );
     expect(src).toContain("mt-6 flex flex-col gap-3 sm:mt-8");
   });
 });

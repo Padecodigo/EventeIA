@@ -7,15 +7,6 @@ import { QUEUE_NAMES } from "@/lib/queue";
 const read = (p: string) => readFileSync(p, "utf8");
 
 describe("regressão: créditos nunca expiram", () => {
-  it("copy do painel e páginas públicas não promete expiração", () => {
-    for (const file of ["app/(dashboard)/creditos/page.tsx"]) {
-      const src = read(file);
-      expect(src).not.toMatch(/valem por (dois )?ciclos?/);
-      expect(src).not.toMatch(/Uma fatura Pix por mês/);
-      expect(src).toMatch(/não expiram/);
-    }
-  });
-
   it("worker não agenda mais o job de expiração", () => {
     const src = read("workers/index.ts");
     expect(src).not.toMatch(/runCreditsExpireSweep/);

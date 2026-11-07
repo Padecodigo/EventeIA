@@ -67,7 +67,7 @@ describe("paleta Areia & Coral — heros e faixas claros", () => {
   it("hero e seções da landing usam superfícies claras da paleta v2", () => {
     const page = read("app/(marketing)/page.tsx");
     expect(page).toContain("bg-papel");
-    expect(page).toContain("text-coral-texto");
+    expect(page).toContain("text-coral-cta");
     expect(page).toContain("bg-white");
     expect(page).toContain("text-ameixa");
     // CTA sempre com texto branco sobre o coral acessível (5,08:1)

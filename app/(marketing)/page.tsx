@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { HowItWorksAnimation } from "@/components/marketing/how-it-works-animation";
-import { TESTIMONIALS, Testimonials } from "@/components/marketing/testimonials";
+import { Testimonials } from "@/components/marketing/testimonials";
 import { JsonLd } from "@/components/seo/json-ld";
 import { formatBRL } from "@/lib/money";
 import { buildFaq } from "@/lib/seo/faq";
@@ -47,16 +47,17 @@ const TRUST = [
 ] as const;
 
 /**
- * Exemplo ILUSTRATIVO — festa infantil, 40 convidados, valores fictícios.
+ * Valores fictícios (não renderizar aviso — pedido do dono). Nomes de casa são inventados,
+ * sem relação com fornecedores reais.
  * Mostra o diferencial: compara o total com taxas, não só o preço da vitrine.
  */
 const EXAMPLE = {
   context: "Festa infantil · 40 convidados · São José dos Campos",
   category: "Buffet",
   proposals: [
-    { supplier: "Fornecedor A", cents: 268_000, note: "taxas + 10% · 40 convidados" },
-    { supplier: "Fornecedor B", cents: 254_000, note: "taxas incluídas · 40 convidados" },
-    { supplier: "Fornecedor C", cents: 279_000, note: "taxas + 8% · 40 convidados" },
+    { supplier: "Buffet Estrela", cents: 268_000, note: "taxas + 10% · 40 convidados" },
+    { supplier: "Buffet Jardim", cents: 254_000, note: "taxas incluídas · 40 convidados" },
+    { supplier: "Buffet Aurora", cents: 279_000, note: "taxas + 8% · 40 convidados" },
   ],
   lines: [
     { item: "Buffet (40 convidados)", cents: 254_000 },
@@ -71,16 +72,13 @@ const FAQ = buildFaq(ticketPriceCents);
 const sectionTitle = "font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold leading-[1.1] tracking-[-0.02em] text-ameixa";
 
 const ctaPrimary =
-  "inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-coral-cta px-7 py-3.5 text-[16px] font-semibold text-white shadow-[0_12px_28px_-14px_rgba(194,65,69,0.75)] transition hover:bg-coral-cta-escura focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ameixa active:scale-[0.98]";
+  "inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-coral-cta px-7 py-3.5 text-[16px] font-semibold text-white shadow-[0_12px_28px_-14px_rgba(194,65,69,0.75)] transition hover:shadow-[0_16px_34px_-14px_rgba(194,65,69,0.9)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ameixa active:scale-[0.98]";
 
 const ctaSecondary =
   "inline-flex min-h-[52px] items-center justify-center rounded-full border border-ameixa/25 px-7 py-3.5 text-[15px] font-semibold text-ameixa transition hover:border-ameixa hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ameixa";
 
 export default async function LandingPage() {
   const realTestimonials = await getPublishedTestimonials();
-  const peopleTestimonials = (realTestimonials.length > 0 ? realTestimonials : TESTIMONIALS)
-    .filter((item) => !/cerimonialista/i.test(item.context))
-    .slice(0, 3);
 
   const exampleTotal = EXAMPLE.lines.reduce((sum, line) => sum + line.cents, 0);
   const cheapestProposal = Math.min(...EXAMPLE.proposals.map((p) => p.cents));
@@ -109,9 +107,9 @@ export default async function LandingPage() {
           </h1>
 
           <p className="mt-5 max-w-2xl text-[16px] leading-relaxed text-tinta sm:text-[17px]">
-            Casamento, aniversário, 15 anos, formatura ou corporativo<span className="sm:hidden">.</span>
-            <span className="hidden sm:inline">: em vez de você ligar para um por um, a EventeIA pede orçamento aos fornecedores da sua região pelas redes sociais, com foco no Vale do Paraíba e em São Paulo, e compara tudo.</span>{" "}
-            Você recebe <strong className="font-semibold text-ameixa">um orçamento pronto</strong>, no menor preço válido
+            Casamento, aniversário, 15 anos, formatura ou corporativo: em vez de você ligar para um por um,
+            a EventeIA pede orçamento aos fornecedores da sua região e compara tudo. Você recebe{" "}
+            <strong className="font-semibold text-ameixa">um orçamento pronto</strong>, no menor preço válido
             entre as propostas comparáveis, e só decide.
           </p>
 
@@ -146,9 +144,13 @@ export default async function LandingPage() {
             ))}
           </ul>
 
-          <p className="mt-4 text-xs text-tinta-suave">
+          <p className="mt-3 text-[13px] text-tinta-suave">
+            Atendemos com foco no Vale do Paraíba e em São Paulo.
+          </p>
+
+          <p className="mt-3 text-xs text-tinta-suave">
             É fornecedor de eventos?{" "}
-            <Link prefetch={false} href="/seja-fornecedor" data-testid="link-fornecedor" className="underline underline-offset-2 hover:text-coral-texto">
+            <Link prefetch={false} href="/seja-fornecedor" data-testid="link-fornecedor" className="underline underline-offset-2 hover:text-coral-cta">
               Veja como receber pedidos de orçamento
             </Link>
           </p>
@@ -184,7 +186,7 @@ export default async function LandingPage() {
       {/* ================= Como funciona — 3 passos, uma única vez ================= */}
       <section id="como-funciona" aria-labelledby="como-funciona-titulo" className="scroll-mt-24 bg-white">
         <div className="mx-auto w-full max-w-6xl px-5 py-16 sm:px-8 lg:py-24">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-coral-texto">Como funciona · 3 passos</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-coral-cta">Como funciona · 3 passos</p>
           <h2 id="como-funciona-titulo" className={`mt-3 max-w-2xl ${sectionTitle}`}>
             Do “não sei por onde começar” ao orçamento na mão.
           </h2>
@@ -210,7 +212,7 @@ export default async function LandingPage() {
                   data-testid={`passo-foto-${s.n}`}
                 />
                 <div className="p-5 sm:p-6">
-                  <span className="font-display text-sm font-bold text-coral-texto">Passo {s.n}</span>
+                  <span className="font-display text-sm font-bold text-coral-cta">Passo {s.n}</span>
                   <h3 className="mt-2 font-display text-lg font-bold tracking-tight text-ameixa">{s.title}</h3>
                   <p className="mt-1.5 text-[15px] leading-relaxed text-tinta">{s.text}</p>
                 </div>
@@ -245,7 +247,7 @@ export default async function LandingPage() {
         </ul>
       </section>
 
-      {/* ================= Exemplo ilustrativo do orçamento ================= */}
+      {/* ================= Como o orçamento chega ================= */}
       <section aria-labelledby="exemplo-titulo" className="bg-ameixa">
         <div className="mx-auto w-full max-w-6xl px-5 py-16 sm:px-8 lg:py-24">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-pessego">O que você recebe</p>
@@ -261,9 +263,6 @@ export default async function LandingPage() {
             <article className="rounded-3xl border border-white/15 bg-white/[0.07] p-5 sm:p-6">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="font-display text-lg font-bold text-white">{EXAMPLE.category}</h3>
-                <span className="rounded-full border border-pessego/50 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-pessego">
-                  Exemplo ilustrativo
-                </span>
               </div>
               <p className="mt-1 text-xs text-white/70">{EXAMPLE.context}</p>
 
@@ -291,8 +290,8 @@ export default async function LandingPage() {
                 })}
               </ul>
               <p className="mt-3 text-[11px] leading-relaxed text-white/75">
-                Comparação ilustrativa, com valores fictícios. O valor válido já inclui as taxas
-                obrigatórias — a proposta mais barata na vitrine nem sempre é a mais barata no total.
+                O valor válido já inclui as taxas obrigatórias — a proposta mais barata na vitrine nem
+                sempre é a mais barata no total.
               </p>
             </article>
 
@@ -313,9 +312,7 @@ export default async function LandingPage() {
                 <span className="text-sm font-semibold text-ameixa">Total com taxas</span>
                 <span className="tabular-nums font-display text-xl font-bold text-verde-preco">{formatBRL(exampleTotal)}</span>
               </div>
-              <p className="mt-3 text-[11px] leading-relaxed text-tinta-suave">
-                Exemplo ilustrativo com valores fictícios. Nenhum fornecedor real é citado.
-              </p>
+
             </article>
           </div>
         </div>
@@ -324,7 +321,7 @@ export default async function LandingPage() {
       {/* ================= Tipos de evento (festa infantil em destaque) ================= */}
       <section aria-labelledby="tipos-titulo" className="bg-white">
         <div className="mx-auto w-full max-w-6xl px-5 py-16 sm:px-8 lg:py-24">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-coral-texto">Para todo tipo de evento</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-coral-cta">Para todo tipo de evento</p>
           <h2 id="tipos-titulo" className={`mt-3 max-w-2xl ${sectionTitle}`}>
             Da festinha em casa ao evento corporativo.
           </h2>
@@ -336,7 +333,7 @@ export default async function LandingPage() {
           >
             <span className="font-display text-xl font-bold text-ameixa">{PRIMARY_TYPE.label}</span>
             <span className="text-sm leading-relaxed text-tinta">{PRIMARY_TYPE.hint}</span>
-            <span className="mt-2 text-sm font-semibold text-coral-texto">Começar por aqui →</span>
+            <span className="mt-2 text-sm font-semibold text-ameixa underline underline-offset-4">Começar por aqui →</span>
           </Link>
 
           <ul className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -359,14 +356,14 @@ export default async function LandingPage() {
       {/* ================= Preços ================= */}
       <section id="planos" className="relative isolate scroll-mt-24 overflow-hidden bg-papel py-16 lg:py-24">
         <div className="mx-auto w-full max-w-6xl px-5 sm:px-8">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-coral-texto">Preços</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-coral-cta">Preços</p>
           <h2 className="mt-3 max-w-2xl font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold leading-[1.1] tracking-[-0.02em] text-ameixa">
             Pague só pelo seu evento.
           </h2>
 
           <article className="mt-9 grid grid-cols-1 gap-6 rounded-3xl bg-white p-6 shadow-[0_24px_50px_-30px_rgba(91,42,78,0.35)] ring-2 ring-coral-vivo sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-coral-texto">Ticket avulso</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-coral-cta">Ticket avulso</p>
               <p className="mt-2 font-display text-[clamp(2.5rem,6vw,3.5rem)] font-semibold leading-none tracking-tight text-ameixa">
                 {formatBRL(ticketPriceCents)}
               </p>
@@ -389,11 +386,11 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      <Testimonials items={peopleTestimonials} />
+      <Testimonials items={realTestimonials.length > 0 ? realTestimonials : undefined} />
 
       {/* ================= FAQ em acordeão ================= */}
       <section id="perguntas" aria-labelledby="faq-titulo" className="mx-auto w-full max-w-3xl px-5 py-16 sm:px-8 lg:py-24">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-coral-texto">Dúvidas frequentes</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-coral-cta">Dúvidas frequentes</p>
         <h2 id="faq-titulo" className={`mt-3 ${sectionTitle}`}>Perguntas que a gente sempre ouve</h2>
         <div className="mt-8 space-y-3">
           {FAQ.map((item) => (

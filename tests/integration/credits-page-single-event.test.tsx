@@ -47,31 +47,21 @@ async function renderPage() {
   render(await CreditsPage());
 }
 
-describe("/creditos — evento avulso para quem volta", () => {
-  it("com assinatura ativa, ainda oferece evento avulso", async () => {
+describe("/creditos — só ticket por evento", () => {
+  it("oferece o evento avulso", async () => {
     workspace = { id: "ws-1", name: "Ateliê", plan_code: "atelier" };
     subscription = { plan_code: "atelier", status: "active", current_period_end: "2026-11-01" };
     await renderPage();
     expect(screen.getByRole("heading", { name: /compre avulso/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /criar evento avulso/i })).toBeInTheDocument();
-    expect(screen.getByText(/Renovação automática ativa/i)).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /cancelar renovação automática/i }),
-    ).toBeInTheDocument();
   });
 
-  it("sem assinatura, mostra planos e evento avulso", async () => {
-    workspace = { id: "ws-1", name: "Ateliê", plan_code: null };
-    subscription = null;
-    await renderPage();
-    expect(screen.getByRole("heading", { name: /compre avulso/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /assinatura mensal/i })).toBeInTheDocument();
-  });
-
-  it("sem workspace, também oferece evento avulso", async () => {
+  it("não oferece assinatura mensal nem créditos", async () => {
     workspace = null;
     subscription = null;
     await renderPage();
-    expect(screen.getByRole("link", { name: /criar evento avulso/i })).toBeInTheDocument();
+    expect(screen.queryByText(/assinatura mensal/i)).toBeNull();
+    expect(screen.queryByText(/franquia/i)).toBeNull();
+    expect(screen.queryByText(/créditos/i)).toBeNull();
   });
 });

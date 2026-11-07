@@ -8,7 +8,7 @@ import { ADMIN_NAV } from "@/lib/admin/nav";
 export const DASHBOARD_NAV = [
   { href: "/painel", label: "Painel" },
   { href: "/eventos", label: "Eventos" },
-  { href: "/creditos", label: "Créditos" },
+  { href: "/creditos", label: "Pagamento" },
   { href: "/chamados", label: "Chamados" },
   { href: "/perfil", label: "Perfil" },
 ] as const;
