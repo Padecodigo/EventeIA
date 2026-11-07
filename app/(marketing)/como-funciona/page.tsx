@@ -33,7 +33,7 @@ const STEPS = [
     title: "Receba o orçamento pronto",
     text: "As propostas são comparadas e você recebe um orçamento pronto, no menor preço válido, com o que está incluído e o que ficou de fora.",
     details: [
-      "Faixa mínima, sugestão e teto para cada categoria",
+      "Em cada categoria, a proposta válida de menor preço; o que faltar fica sinalizado",
       "Você aprova cada fornecedor — nada é fechado sem o seu “sim”",
       "Um único orçamento, com cada valor explicado",
     ],
