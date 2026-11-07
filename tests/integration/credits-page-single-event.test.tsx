@@ -5,63 +5,67 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 /**
- * Regressão: o painel /creditos exibia só a assinatura mensal (franquia). O evento
- * avulso precisa aparecer sempre — com ou sem assinatura, com ou sem workspace.
+ * /creditos (aba "Comprar") vende TICKET do evento — não cria evento, não vende assinatura.
  */
-let workspace: Record<string, unknown> | null = null;
-let subscription: Record<string, unknown> | null = null;
+let events: { id: string; title: string; event_date: string | null; status: string }[] = [];
+let tickets: { event_id: string; status: string }[] = [];
 
 vi.mock("@/lib/auth", () => ({
   requireUser: () => Promise.resolve({ id: "user-1", email: "a@b.com" }),
 }));
-vi.mock("@/app/(dashboard)/creditos/actions", () => ({
-  createWorkspaceAction: vi.fn(),
-  buyCreditsAction: vi.fn(),
-  subscribePlanAction: vi.fn(),
-  cancelSubscriptionAction: vi.fn(),
+vi.mock("@/lib/auth/personal-scope-server", () => ({
+  personalEventsFilter: () => Promise.resolve("owner_profile_id.eq.user-1"),
 }));
-vi.mock("@/components/domain/credit-slider-form", () => ({ CreditSliderForm: () => null }));
-vi.mock("@/components/domain/subscribe-plan-form", () => ({ SubscribePlanForm: () => null }));
-function chain(table: string) {
-  const q: Record<string, unknown> = {};
-  for (const m of ["select", "eq", "limit", "in", "order"]) q[m] = () => q;
-  q.maybeSingle = () =>
-    Promise.resolve({
-      data: table === "workspaces" ? workspace : table === "subscriptions" ? subscription : null,
-    });
-  q.then = (resolve: (v: unknown) => unknown) => resolve({ data: [] });
-  return q;
-}
+vi.mock("@/lib/seo/pricing", () => ({ ticketPriceCents: () => 9700 }));
+vi.mock("@/components/domain/buy-ticket-form", () => ({
+  BuyTicketForm: ({ eventId }: { eventId: string }) => (
+    <div data-testid="checkout">checkout {eventId}</div>
+  ),
+}));
 vi.mock("@/lib/supabase/server", () => ({
-  createSupabaseServerClient: () => Promise.resolve({ from: chain }),
-}));
-vi.mock("@/lib/workspace/server", () => ({
-  ensureWorkspace: () => Promise.resolve(workspace),
+  createSupabaseServerClient: () =>
+    Promise.resolve({
+      from: () => {
+        const q: Record<string, unknown> = {};
+        for (const m of ["select", "or", "neq", "order", "eq"]) q[m] = () => q;
+        q.then = (resolve: (v: unknown) => unknown) =>
+          resolve({ data: events, error: null });
+        // `.in(...)` termina a busca de tickets; `.maybeSingle()` a do perfil.
+        q.in = () => Promise.resolve({ data: tickets, error: null });
+        q.maybeSingle = () => Promise.resolve({ data: null, error: null });
+        return q;
+      },
+    }),
 }));
 
-import CreditsPage from "@/app/(dashboard)/creditos/page";
+import PaymentPage from "@/app/(dashboard)/creditos/page";
 
 afterEach(cleanup);
 
-async function renderPage() {
-  render(await CreditsPage());
-}
+describe("/creditos — comprar ticket do evento", () => {
+  it("lista evento pendente com link de compra", async () => {
+    events = [
+      { id: "ev-1", title: "Festa da Lia", event_date: "2026-12-12", status: "draft" },
+      { id: "ev-2", title: "Casamento Ana", event_date: "2027-03-01", status: "active" },
+    ];
+    tickets = [{ event_id: "ev-2", status: "active" }];
 
-describe("/creditos — só ticket por evento", () => {
-  it("oferece o evento avulso", async () => {
-    workspace = { id: "ws-1", name: "Ateliê", plan_code: "atelier" };
-    subscription = { plan_code: "atelier", status: "active", current_period_end: "2026-11-01" };
-    await renderPage();
-    expect(screen.getByRole("heading", { name: /compre avulso/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /criar evento avulso/i })).toBeInTheDocument();
+    render(await PaymentPage());
+
+    expect(screen.getByRole("heading", { name: /comprar ticket/i })).toBeInTheDocument();
+    expect(screen.getByText("Festa da Lia")).toBeInTheDocument();
+    expect(screen.queryByText("Casamento Ana")).toBeNull();
+    // O checkout do ticket acontece na própria aba, para o evento pendente.
+    expect(screen.getByTestId("checkout")).toHaveTextContent("ev-1");
   });
 
-  it("não oferece assinatura mensal nem créditos", async () => {
-    workspace = null;
-    subscription = null;
-    await renderPage();
-    expect(screen.queryByText(/assinatura mensal/i)).toBeNull();
-    expect(screen.queryByText(/franquia/i)).toBeNull();
-    expect(screen.queryByText(/créditos/i)).toBeNull();
+  it("sem evento pendente, explica que o ticket fica na página do evento", async () => {
+    events = [{ id: "ev-2", title: "Casamento Ana", event_date: null, status: "active" }];
+    tickets = [{ event_id: "ev-2", status: "active" }];
+
+    render(await PaymentPage());
+
+    expect(screen.getByText(/o ticket é comprado na página do evento/i)).toBeInTheDocument();
+    expect(screen.queryByText(/assinatura|franquia|créditos/i)).toBeNull();
   });
 });
