@@ -23,9 +23,6 @@ export interface PkcePair {
 /** Base do fluxo OAuth (authorize). */
 export const TIKTOK_AUTHORIZE_URL = "https://www.tiktok.com/v2/auth/authorize/";
 
-/** Base da API (Content Posting / OAuth token / User Info). */
-export const TIKTOK_API_BASE = "https://open.tiktokapis.com";
-
 /** Deriva o code_challenge S256 de um code_verifier. */
 export function s256Challenge(verifier: string): string {
   return createHash("sha256").update(verifier).digest("base64url");
