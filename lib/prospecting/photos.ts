@@ -34,3 +34,8 @@ export function photoForEventType(type: string | null | undefined): string {
 export function artForEventType(type: string | null | undefined): string {
   return `/brand/posts/${photoKeyForEventType(type)}.jpg`;
 }
+
+/** Arte vertical 9:16 com a marca, por tipo de evento (assets em /public/brand/stories). */
+export function storyArtForEventType(type: string | null | undefined): string {
+  return `/brand/stories/${photoKeyForEventType(type)}.jpg`;
+}

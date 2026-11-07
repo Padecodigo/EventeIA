@@ -3,8 +3,8 @@ import "server-only";
 import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { metaPublishConfigFromEnv } from "@/lib/meta/config";
-import { publishToChannels } from "@/lib/meta/publishing";
-import { artForEventType } from "@/lib/prospecting/photos";
+import { createMediaContainer, publishContainer, publishToChannels } from "@/lib/meta/publishing";
+import { artForEventType, storyArtForEventType } from "@/lib/prospecting/photos";
 import { MARKETING_THEMES, themeForHour, type MarketingTheme } from "./themes";
 
 /** Prompt de publicidade (puro, testável). */
@@ -58,7 +58,24 @@ export async function publishAutopilotPost(now: Date = new Date()): Promise<{ po
   }
 
   const result = await publishToChannels({ ...config, imageUrl, caption });
+
+  // Story (Instagram only): vertical 9:16 com a logo, sem legenda.
   if (result.kind === "published") {
+    try {
+      const storyUrl = `${env.NEXT_PUBLIC_APP_URL}${storyArtForEventType(theme.key)}`;
+      const storyContainer = await createMediaContainer({
+        ...config,
+        imageUrl: storyUrl,
+        caption: "",
+        mediaType: "STORIES",
+      });
+      if (storyContainer.ok) {
+        await publishContainer({ ...config, creationId: storyContainer.id });
+        logger.info({ theme: theme.key }, "autopilot: story publicada");
+      }
+    } catch (error) {
+      logger.warn({ error: String(error) }, "autopilot: falha ao publicar story");
+    }
     logger.info({ theme: theme.key }, "autopilot: publicidade publicada");
     return { posted: true };
   }
