@@ -88,8 +88,26 @@ export function facebookTarget(
   return { pageId, accessToken };
 }
 
+/**
+ * Alvo de publicação no Instagram (media container + media_publish).
+ *
+ * Com Facebook Login (Page token presente) o token correto contra o IG business
+ * é o da Página: o token de system user devolve #100/#200 porque a permissão
+ * `instagram_content_publish` vive na Página ligada ao IG. Sem Page token, cai
+ * para o token geral (Instagram Login / legado).
+ */
+export function instagramTarget(
+  config: MetaPublishConfig,
+): { igUserId: string; accessToken: string } | null {
+  const igUserId = config.igUserId.trim();
+  const pageToken = (config.pageAccessToken ?? config.facebookPageAccessToken ?? "").trim();
+  const accessToken = pageToken.length > 0 ? pageToken : config.accessToken.trim();
+  if (igUserId.length === 0 || accessToken.length === 0) return null;
+  return { igUserId, accessToken };
+}
+
 export function hasInstagramTarget(config: MetaPublishConfig): boolean {
-  return config.igUserId.trim().length > 0 && config.accessToken.trim().length > 0;
+  return instagramTarget(config) !== null;
 }
 
 export type CaptionCheck = { ok: true } | { ok: false; reason: string };
@@ -116,9 +134,10 @@ export function limitUserTags(tags: readonly string[]): string[] {
 }
 
 function baseUrl(config: MetaPublishConfig): string {
-  const host = config.apiHost ?? "graph.facebook.com";
+  // Content publishing + private reply do Instagram sempre usam graph.facebook.com.
+  // graph.instagram.com é Instagram Basic Display (somente leitura) e não publica.
   const version = config.apiVersion ?? GRAPH_API_VERSION;
-  return `https://${host}/${version}/${config.igUserId}`;
+  return `https://graph.facebook.com/${version}/${config.igUserId}`;
 }
 
 async function postJson(
@@ -164,6 +183,10 @@ export async function createMediaContainer(
     fetchImpl?: typeof fetch;
   },
 ): Promise<PublishResult> {
+  const target = instagramTarget(input);
+  if (target === null) {
+    return { ok: false, error: "Instagram não configurado", status: null };
+  }
   const check = validateCaption(input.caption);
   if (!check.ok) return { ok: false, error: check.reason, status: null };
 
@@ -173,7 +196,7 @@ export async function createMediaContainer(
 
   return postJson(
     `${baseUrl(input)}/media?${params.toString()}`,
-    input.accessToken,
+    target.accessToken,
     {},
     input.fetchImpl,
   );
@@ -198,10 +221,9 @@ export async function publishFacebookPagePost(
   if (input.imageUrl.trim().length === 0) {
     return { ok: false, error: "post sem imagem", status: null };
   }
-  const host = input.apiHost ?? "graph.facebook.com";
   const version = input.apiVersion ?? GRAPH_API_VERSION;
   const params = new URLSearchParams({ url: input.imageUrl, caption: input.caption });
-  const url = `https://${host}/${version}/${target.pageId}/photos?${params.toString()}`;
+  const url = `https://graph.facebook.com/${version}/${target.pageId}/photos?${params.toString()}`;
   return postJson(url, target.accessToken, {}, input.fetchImpl);
 }
 
@@ -231,15 +253,18 @@ async function getContainerStatus(
 ): Promise<
   { ok: true; status: ContainerStatus } | { ok: false; error: string; status: number | null }
 > {
-  const host = input.apiHost ?? "graph.facebook.com";
+  const target = instagramTarget(input);
+  if (target === null) {
+    return { ok: false, error: "Instagram não configurado", status: null };
+  }
   const version = input.apiVersion ?? GRAPH_API_VERSION;
-  const url = `https://${host}/${version}/${input.containerId}?fields=status_code`;
+  const url = `https://graph.facebook.com/${version}/${input.containerId}?fields=status_code`;
   const fetcher = input.fetchImpl ?? fetch;
   let response: Response;
   try {
     response = await fetcher(url, {
       method: "GET",
-      headers: { Authorization: `Bearer ${input.accessToken}` },
+      headers: { Authorization: `Bearer ${target.accessToken}` },
     });
   } catch (error) {
     return { ok: false, error: String(error), status: null };
@@ -303,10 +328,14 @@ export async function publishContainer(
     const ready = await waitForContainerReady({ ...input, containerId: input.creationId });
     if (!ready.ok) return ready;
   }
+  const target = instagramTarget(input);
+  if (target === null) {
+    return { ok: false, error: "Instagram não configurado", status: null };
+  }
   const params = new URLSearchParams({ creation_id: input.creationId });
   return postJson(
     `${baseUrl(input)}/media_publish?${params.toString()}`,
-    input.accessToken,
+    target.accessToken,
     {},
     input.fetchImpl,
   );
@@ -714,12 +743,22 @@ async function deleteRemoteObject(
 
 /**
  * Exclui uma mídia publicada — `DELETE /{ig-media-id}`.
- * Suportado apenas em graph.facebook.com com token de usuário Facebook Login;
- * Instagram Login (graph.instagram.com) é `unsupported` e não chama a API.
+ * Suportado apenas em graph.facebook.com (Facebook Login; usa o Page token
+ * quando disponível). Instagram Login (graph.instagram.com) é `unsupported`.
  */
 export async function deleteMedia(
   input: MetaPublishConfig & { mediaId: string; fetchImpl?: typeof fetch },
 ): Promise<RemoteDeleteOutcome> {
+  const target = instagramTarget(input);
+  if (target === null) {
+    return {
+      kind: "missing_credentials",
+      channel: "instagram",
+      error: "credenciais do Instagram ausentes",
+    };
+  }
+  // graph.instagram.com (Instagram Login / Basic Display) não publica nem exclui
+  // conteúdo; DELETE só existe em graph.facebook.com (Facebook Login).
   if ((input.apiHost ?? "graph.facebook.com") !== "graph.facebook.com") {
     return {
       kind: "unsupported",
@@ -727,16 +766,9 @@ export async function deleteMedia(
       error: "DELETE do Instagram exige graph.facebook.com com Facebook Login",
     };
   }
-  if (input.accessToken.trim().length === 0) {
-    return {
-      kind: "missing_credentials",
-      channel: "instagram",
-      error: "token do Instagram ausente",
-    };
-  }
   const version = input.apiVersion ?? GRAPH_API_VERSION;
   const url = `https://graph.facebook.com/${version}/${input.mediaId}`;
-  return deleteRemoteObject("instagram", url, input.accessToken, input.mediaId, input.fetchImpl);
+  return deleteRemoteObject("instagram", url, target.accessToken, input.mediaId, input.fetchImpl);
 }
 
 /**
@@ -754,9 +786,8 @@ export async function deleteFacebookPost(
       error: "Página/token do Facebook ausente",
     };
   }
-  const host = input.apiHost ?? "graph.facebook.com";
   const version = input.apiVersion ?? GRAPH_API_VERSION;
-  const url = `https://${host}/${version}/${input.postId}`;
+  const url = `https://graph.facebook.com/${version}/${input.postId}`;
   return deleteRemoteObject("facebook", url, target.accessToken, input.postId, input.fetchImpl);
 }
 

@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  createMediaContainer,
   deleteFacebookPost,
   deleteMedia,
+  hasInstagramTarget,
+  instagramTarget,
   publishFacebookPagePost,
   publishToChannels,
 } from "@/lib/meta/publishing";
@@ -292,11 +295,12 @@ describe("exclusão remota estruturada", () => {
   });
 
   it("credenciais ausentes e 100/33 não limpam refs", async () => {
-    await expect(deleteMedia({ ...meta, accessToken: "", mediaId: "ig-1" })).resolves.toMatchObject(
-      {
-        kind: "missing_credentials",
-      },
-    );
+    // Sem token geral E sem Page token: o alvo do Instagram não resolve.
+    await expect(
+      deleteMedia({ igUserId: "ig-1", accessToken: "", mediaId: "ig-1" }),
+    ).resolves.toMatchObject({
+      kind: "missing_credentials",
+    });
     const ambiguous = (async () =>
       new Response(
         JSON.stringify({
@@ -344,5 +348,55 @@ describe("publishFacebookPagePost", () => {
       caption: "x",
     });
     expect(result.ok).toBe(false);
+  });
+});
+
+describe("resolução do alvo do Instagram (Facebook Login)", () => {
+  it("prefere o Page token para publicar/excluir no IG business", () => {
+    expect(instagramTarget(meta)).toEqual({ igUserId: "ig-1", accessToken: "page-token" });
+    expect(hasInstagramTarget(meta)).toBe(true);
+  });
+
+  it("sem Page token cai para o token geral", () => {
+    expect(instagramTarget({ igUserId: "ig-1", accessToken: "user-token" })).toEqual({
+      igUserId: "ig-1",
+      accessToken: "user-token",
+    });
+  });
+
+  it("sem igUserId nem token resolve para nulo", () => {
+    expect(instagramTarget({ igUserId: "", accessToken: "" })).toBeNull();
+    expect(hasInstagramTarget({ igUserId: "", accessToken: "" })).toBe(false);
+  });
+
+  it("cria o container do Instagram com o Page token (Facebook Login)", async () => {
+    const auths: string[] = [];
+    const fetchImpl = (async (url: string, init?: RequestInit) => {
+      auths.push((init?.headers as Record<string, string> | undefined)?.Authorization ?? "");
+      return new Response(JSON.stringify({ id: "container-1" }), { status: 200 });
+    }) as unknown as typeof fetch;
+
+    const result = await createMediaContainer({
+      ...meta,
+      imageUrl: "https://cdn/arte.jpg",
+      caption: "post",
+      fetchImpl,
+    });
+
+    expect(result).toEqual({ ok: true, id: "container-1" });
+    expect(auths[0]).toBe("Bearer page-token");
+  });
+
+  it("exclui mídia do Instagram com o Page token (Facebook Login)", async () => {
+    const auths: string[] = [];
+    const fetchImpl = (async (url: string, init?: RequestInit) => {
+      auths.push((init?.headers as Record<string, string> | undefined)?.Authorization ?? "");
+      return new Response(JSON.stringify({ success: true }), { status: 200 });
+    }) as unknown as typeof fetch;
+
+    const result = await deleteMedia({ ...meta, mediaId: "ig-1", fetchImpl });
+
+    expect(result).toMatchObject({ kind: "deleted", channel: "instagram", id: "ig-1" });
+    expect(auths[0]).toBe("Bearer page-token");
   });
 });
