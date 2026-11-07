@@ -6,7 +6,6 @@
       "url": [
         "http://localhost:3000/",
         "http://localhost:3000/como-funciona",
-        "http://localhost:3000/para-planners",
         "http://localhost:3000/planos"
       ],
       "numberOfRuns": 3,
