@@ -31,14 +31,13 @@ describe("AuthForm — botão oficial do Google (GIS)", () => {
     expect(gisProps.last?.intent).toBe("signin");
   });
 
-  it("no cadastro só libera o botão oficial após termos + Instagram", () => {
+  it("no cadastro só libera o botão oficial após os termos", () => {
     render(<AuthForm mode="registrar" />);
     expect(screen.queryByTestId("google-gis-button")).toBeNull();
     expect(screen.getByTestId("google-oauth-fallback")).toBeDisabled();
 
     fireEvent.click(screen.getByLabelText(/Li e aceito os Termos/));
-    fireEvent.click(screen.getByLabelText(/Já sigo @eventeia/));
-
+    
     expect(screen.getByTestId("google-gis-button")).toBeInTheDocument();
     expect(gisProps.last?.intent).toBe("signup");
     expect(gisProps.last?.acceptedTerms).toBe(true);

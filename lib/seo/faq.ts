@@ -14,15 +14,15 @@ export function buildFaq(ticketPriceCents: number): FaqItem[] {
     },
     {
       q: "Atende minha cidade?",
-      a: "Nosso foco hoje é o Vale do Paraíba (São José dos Campos, Taubaté, Jacareí, Caçapava, Pindamonhangaba, Guaratinguetá e região) e a cidade de São Paulo e Grande SP. Eventos em outras cidades também são bem-vindos, só que lá a quantidade de fornecedores encontrados pode ser menor.",
+      a: "Sim. Você informa a cidade do seu evento e a EventeIA busca fornecedores da sua região. Dependendo da cidade, a quantidade de fornecedores encontrados pode variar.",
     },
     {
-      q: "Como os fornecedores são contatados?",
-      a: "Pelo Instagram e pelo Messenger (Meta) — os fornecedores que seguem ou comentam recebem a nossa DM com o pedido de orçamento. Quem quiser pode parar de receber a qualquer momento.",
+      q: "Como a EventeIA encontra os fornecedores?",
+      a: "Buscamos fornecedores da sua região para o seu tipo de evento, pedimos os orçamentos por você e comparamos tudo para entregar um orçamento pronto.",
     },
     {
       q: "Quanto custa um orçamento de festa pela EventeIA?",
-      a: `Um ticket avulso de ${formatBRL(ticketPriceCents)} por evento, sem mensalidade e sem assinatura. Você paga uma vez, quando decide ativar o evento.`,
+      a: `Um ticket de ${formatBRL(ticketPriceCents)} por evento, pagamento único. Você rascunha o evento de graça e só paga para ativar.`,
     },
     {
       q: "Sou obrigado a fechar com algum fornecedor?",

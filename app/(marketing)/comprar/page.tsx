@@ -1,15 +1,15 @@
 import Link from "next/link";
 
-import { WelcomePlanosNote } from "@/components/marketing/welcome-offer";
+import { WelcomeTicketNote } from "@/components/marketing/welcome-offer";
 import { formatBRL } from "@/lib/money";
 import { pageMetadata } from "@/lib/seo/site";
 
 const ticketPriceCents = Number(process.env.B2C_TICKET_PRICE_CENTS ?? "9700");
 
 export const metadata = pageMetadata({
-  title: "Preço: um ticket por evento",
-  description: `Um ticket de ${formatBRL(ticketPriceCents)} por evento, sem mensalidade e sem assinatura. Pix ou cartão, com o orçamento completo da sua festa.`,
-  path: "/planos",
+  title: "Comprar ticket — R$ 97 por evento",
+  description: `Um ticket de ${formatBRL(ticketPriceCents)} por evento, sem mensalidade. Pix ou cartão, com o orçamento completo da sua festa.`,
+  path: "/comprar",
   keywords: ["preço orçamento de festa", "quanto custa orçamento de evento"],
 });
 
@@ -31,12 +31,11 @@ export default function PricesPage() {
           <h2 className="mt-3 font-serif text-title-1">Tíquete por evento</h2>
           <p className="mt-6 font-serif text-display-2">{formatBRL(ticketPriceCents)}</p>
           <p className="text-caption text-vinho/75">pagamento único, por evento</p>
-          <WelcomePlanosNote />
+          <WelcomeTicketNote />
           <ul className="mt-6 space-y-2 text-sm text-vinho/75">
-            <li>Sem assinatura e sem renovação automática</li>
+            <li>Sem mensalidade e sem renovação automática</li>
             <li>Orçamento único no menor preço válido, com taxas incluídas</li>
             <li>Cotações ilimitadas do evento</li>
-            <li>Contato com fornecedores pelas redes sociais</li>
             <li>Acesso permanente ao evento</li>
           </ul>
           <Link

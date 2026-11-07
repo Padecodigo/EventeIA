@@ -1,4 +1,3 @@
-import { CREDIT_PACKAGES, PLANS } from "@/lib/plans";
 
 import type { FaqItem } from "./faq";
 import { SERVICE_AREA, SITE_DESCRIPTION, SITE_NAME, absoluteUrl, siteUrl } from "./site";
@@ -33,11 +32,7 @@ export function websiteLd(base: string = siteUrl()): JsonLd {
 }
 
 function areaServed(): JsonLd[] {
-  return SERVICE_AREA.map((name) =>
-    name === "Vale do Paraíba" || name === "Grande São Paulo"
-      ? { "@type": "AdministrativeArea", name, containedInPlace: { "@type": "State", name: "São Paulo" } }
-      : { "@type": "City", name, containedInPlace: { "@type": "State", name: "São Paulo" } },
-  );
+  return SERVICE_AREA.map((name) => ({ "@type": "Country", name }));
 }
 
 export function serviceLd(ticketPriceCents: number, base: string = siteUrl()): JsonLd {
@@ -47,24 +42,8 @@ export function serviceLd(ticketPriceCents: number, base: string = siteUrl()): J
       name: "Ticket avulso por evento",
       price: centsToPrice(ticketPriceCents),
       priceCurrency: "BRL",
-      url: absoluteUrl("/planos", base),
+      url: absoluteUrl("/comprar", base),
     },
-    ...PLANS.map((p) => ({
-      "@type": "Offer",
-      name: `Plano ${p.name} (${p.credits} eventos/mês)`,
-      description: p.description,
-      price: centsToPrice(p.priceCents),
-      priceCurrency: "BRL",
-      url: absoluteUrl("/planos", base),
-    })),
-    ...CREDIT_PACKAGES.map((p) => ({
-      "@type": "Offer",
-      name: p.name,
-      description: p.description,
-      price: centsToPrice(p.priceCents),
-      priceCurrency: "BRL",
-      url: absoluteUrl("/planos", base),
-    })),
   ];
   return {
     "@type": ["Service", "SoftwareApplication"],

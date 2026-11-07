@@ -36,14 +36,14 @@ const OTHER_TYPES = [
 
 const STEPS = [
   { n: "1", title: "Conte seu evento", text: "Tipo de festa, data, cidade, número de convidados e o que não pode faltar. Leva poucos minutos.", photo: "/img/eventos/passo-1-planejando-no-celular.webp", alt: "Mulher sorrindo no sofá enquanto conta pelo celular como vai ser a festa" },
-  { n: "2", title: "A EventeIA busca e compara", text: "Encontramos fornecedores da sua região, pedimos orçamento a cada um pelas redes sociais e comparamos os preços — taxas escondidas incluídas.", photo: "/img/eventos/passo-2-buffet-orcamento.webp", alt: "Mesa de doces com brigadeiros, bolos e flores montada por um fornecedor de festa" },
+  { n: "2", title: "A EventeIA busca e compara", text: "Encontramos fornecedores da sua região, pedimos orçamento a cada um e comparamos os preços — taxas escondidas incluídas.", photo: "/img/eventos/passo-2-buffet-orcamento.webp", alt: "Mesa de doces com brigadeiros, bolos e flores montada por um fornecedor de festa" },
   { n: "3", title: "Você recebe e decide", text: "O orçamento chega pronto, no menor preço válido entre as propostas comparáveis, com as taxas incluídas. Você só fecha com o seu “sim”.", photo: "/img/eventos/passo-3-festa-celebrando.webp", alt: "Amigos de diferentes origens brindando em uma festa de aniversário com balões" },
 ] as const;
 
 const TRUST = [
-  { title: "Sem spam", text: "Contato com intervalo e saída imediata quando o fornecedor pede; a conversa fica no canal dele." },
-  { title: "Pagamento seguro", text: "Pix ou cartão, processados por instituição de pagamento regulada." },
+  { title: "Pagamento seguro", text: "Pix seguro ou cartão, com processamento por instituição de pagamento regulada." },
   { title: "Dados protegidos", text: "Usamos seus dados só para cotar o seu evento, conforme a LGPD." },
+  { title: "Você decide", text: "Sem obrigação de fechar com nenhum fornecedor." },
 ] as const;
 
 /**
@@ -52,7 +52,7 @@ const TRUST = [
  * Mostra o diferencial: compara o total com taxas, não só o preço da vitrine.
  */
 const EXAMPLE = {
-  context: "Festa infantil · 40 convidados · São José dos Campos",
+  context: "Festa infantil · 40 convidados",
   category: "Buffet",
   proposals: [
     { supplier: "Buffet Estrela", cents: 268_000, note: "taxas + 10% · 40 convidados" },
@@ -124,10 +124,14 @@ export default async function LandingPage() {
           </div>
 
           <p className="mt-4 text-[15px] font-semibold text-ameixa">
-            <Link prefetch={false} href="#planos" className="underline-offset-4 hover:underline">
+            <Link prefetch={false} href="#comprar" className="underline-offset-4 hover:underline">
               {formatBRL(ticketPriceCents)} por evento, sem mensalidade
             </Link>
             <span className="font-normal text-tinta-suave"> · Pix ou cartão.</span>
+          </p>
+          <p className="mt-2 text-[13px] text-tinta-suave">
+            Primeiras 48h após o primeiro acesso: {formatBRL(4000)} de desconto — de {formatBRL(ticketPriceCents)} por{" "}
+            {formatBRL(ticketPriceCents - 4000)}. Aplicado automaticamente no checkout, 1 por pessoa, aparelho e conta.
           </p>
 
           <ul className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-tinta-suave">
@@ -135,7 +139,7 @@ export default async function LandingPage() {
               "Você decide sem obrigação de fechar",
               "Comparação com taxas incluídas",
               "Dados protegidos (LGPD)",
-              "Sem spam",
+              "Rascunhar é grátis",
             ].map((seal) => (
               <li key={seal} className="inline-flex items-center gap-1.5">
                 <span aria-hidden="true" className="text-verde-preco">✓</span>
@@ -144,16 +148,7 @@ export default async function LandingPage() {
             ))}
           </ul>
 
-          <p className="mt-3 text-[13px] text-tinta-suave">
-            Atendemos com foco no Vale do Paraíba e em São Paulo.
-          </p>
 
-          <p className="mt-3 text-xs text-tinta-suave">
-            É fornecedor de eventos?{" "}
-            <Link prefetch={false} href="/seja-fornecedor" data-testid="link-fornecedor" className="underline underline-offset-2 hover:text-coral-cta">
-              Veja como receber pedidos de orçamento
-            </Link>
-          </p>
 
           <div className="mt-8 overflow-hidden rounded-3xl ring-1 ring-borda-suave">
             <Image
@@ -263,6 +258,9 @@ export default async function LandingPage() {
             <article className="rounded-3xl border border-white/15 bg-white/[0.07] p-5 sm:p-6">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="font-display text-lg font-bold text-white">{EXAMPLE.category}</h3>
+                <span className="rounded-full border border-pessego/50 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-pessego">
+                  Exemplo ilustrativo
+                </span>
               </div>
               <p className="mt-1 text-xs text-white/70">{EXAMPLE.context}</p>
 
@@ -353,25 +351,34 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* ================= Preços ================= */}
-      <section id="planos" className="relative isolate scroll-mt-24 overflow-hidden bg-papel py-16 lg:py-24">
+      {/* ================= Comprar ================= */}
+      <section id="comprar" className="relative isolate scroll-mt-24 overflow-hidden bg-papel py-16 lg:py-24">
         <div className="mx-auto w-full max-w-6xl px-5 sm:px-8">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-coral-cta">Preços</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-coral-cta">Preço</p>
           <h2 className="mt-3 max-w-2xl font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold leading-[1.1] tracking-[-0.02em] text-ameixa">
-            Pague só pelo seu evento.
+            Um ticket por evento. Sem mensalidade.
           </h2>
 
           <article className="mt-9 grid grid-cols-1 gap-6 rounded-3xl bg-white p-6 shadow-[0_24px_50px_-30px_rgba(91,42,78,0.35)] ring-2 ring-coral-vivo sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-coral-cta">Ticket avulso</p>
-              <p className="mt-2 font-display text-[clamp(2.5rem,6vw,3.5rem)] font-semibold leading-none tracking-tight text-ameixa">
-                {formatBRL(ticketPriceCents)}
+              <p className="text-xs font-bold uppercase tracking-wider text-coral-cta">Ticket por evento</p>
+              <p className="mt-3 flex flex-wrap items-baseline gap-3">
+                <span className="font-display text-[clamp(2.5rem,6vw,3.5rem)] font-semibold leading-none tracking-tight text-ameixa">
+                  {formatBRL(ticketPriceCents)}
+                </span>
+                <span className="rounded-full bg-lilas-claro px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-ameixa">
+                  Primeiras 48h: {formatBRL(4000)} de desconto
+                </span>
               </p>
-              <p className="mt-2 text-sm text-tinta-suave">pagamento único por evento · sem mensalidade</p>
+              <p className="mt-2 text-sm text-tinta-suave">
+                De {formatBRL(ticketPriceCents)} por {formatBRL(ticketPriceCents - 4000)} nas primeiras 48h após o
+                primeiro acesso, aplicado automaticamente no checkout. Pagamento único por evento.
+              </p>
               <ul className="mt-4 grid grid-cols-1 gap-1.5 text-sm text-tinta sm:grid-cols-2">
-                <li>✓ Cotações pelas redes sociais</li>
-                <li>✓ Um orçamento pronto</li>
-                <li>✓ Taxas incluídas na comparação</li>
+                <li>✓ Sem mensalidade</li>
+                <li>✓ Orçamento pronto no menor preço válido</li>
+                <li>✓ Cotações ilimitadas do evento</li>
+                <li>✓ Acesso permanente ao evento</li>
                 <li>✓ Pix ou cartão</li>
               </ul>
             </div>
@@ -379,7 +386,7 @@ export default async function LandingPage() {
               <Link prefetch={false} href="/registrar" className={`${ctaPrimary} w-full lg:w-auto`}>
                 Começar agora
               </Link>
-              <span className="text-xs text-tinta-suave">Você decide sem obrigação de fechar.</span>
+              <span className="text-xs text-tinta-suave">Rascunhar é grátis: você só paga para ativar.</span>
             </div>
           </article>
 

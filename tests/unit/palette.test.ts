@@ -77,7 +77,7 @@ describe("paleta Areia & Coral — heros e faixas claros", () => {
 
   it("heros de como-funciona e preços são claros", () => {
     expect(read("app/(marketing)/como-funciona/page.tsx")).toContain('<section className="bg-areia-quente">');
-    expect(read("app/(marketing)/planos/page.tsx")).toContain("bg-areia-quente text-vinho");
+    expect(read("app/(marketing)/comprar/page.tsx")).toContain("bg-areia-quente text-vinho");
   });
 });
 

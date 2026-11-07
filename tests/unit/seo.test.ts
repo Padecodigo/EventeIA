@@ -55,19 +55,19 @@ describe("sitemap", () => {
       const { pathname } = new URL(url);
       expect(PRIVATE_PREFIXES.some((p) => pathname.startsWith(p))).toBe(false);
     }
-    expect(urls.map((u) => new URL(u).pathname)).toEqual(expect.arrayContaining(["/", "/planos", "/como-funciona"]));
+    expect(urls.map((u) => new URL(u).pathname)).toEqual(expect.arrayContaining(["/", "/comprar", "/como-funciona"]));
   });
 });
 
 describe("pageMetadata", () => {
   it("gera canonical, og pt_BR 1200x630 e twitter large", () => {
-    const m = pageMetadata({ title: "Planos", description: "d", path: "/planos" });
-    expect(m.alternates?.canonical).toBe(absoluteUrl("/planos"));
+    const m = pageMetadata({ title: "Comprar", description: "d", path: "/comprar" });
+    expect(m.alternates?.canonical).toBe(absoluteUrl("/comprar"));
     const og = m.openGraph as { locale: string; images: { width: number; height: number }[] };
     expect(og.locale).toBe("pt_BR");
     expect(og.images[0]).toMatchObject({ width: 1200, height: 630 });
     expect((m.twitter as { card: string }).card).toBe("summary_large_image");
-    expect(m.keywords).toEqual(expect.arrayContaining(["orçamento de festa", "Vale do Paraíba", "Taubaté"]));
+    expect(m.keywords).toEqual(expect.arrayContaining(["orçamento de festa", "festa infantil"]));
   });
 });
 
@@ -87,16 +87,16 @@ describe("JSON-LD", () => {
     expect(types).toEqual(expect.arrayContaining(["Organization", "WebSite", "Service", "SoftwareApplication", "LocalBusiness", "FAQPage"]));
   });
 
-  it("ofertas espelham os planos em BRL", () => {
+  it("oferta é o ticket único em BRL", () => {
     const service = nodes.find((n) => n["@id"] === `${BASE}/#service`) as { offers: { price: string; priceCurrency: string }[] };
-    expect(service.offers).toHaveLength(1 + PLANS.length + CREDIT_PACKAGES.length);
+    expect(service.offers).toHaveLength(1);
     expect(service.offers.every((o) => o.priceCurrency === "BRL" && /^\d+\.\d{2}$/.test(o.price))).toBe(true);
     expect(centsToPrice(11_700)).toBe("117.00");
   });
 
-  it("LocalBusiness atende o Vale do Paraíba", () => {
+  it("LocalBusiness atende o Brasil", () => {
     const lb = nodes.find((n) => n["@type"] === "LocalBusiness") as { areaServed: { name: string }[] };
-    expect(lb.areaServed.map((a) => a.name)).toEqual(expect.arrayContaining(["Vale do Paraíba", "São José dos Campos", "Taubaté"]));
+    expect(lb.areaServed.map((a) => a.name)).toEqual(["Brasil"]);
   });
 
   it("FAQPage tem pergunta e resposta para cada item", () => {
@@ -108,10 +108,10 @@ describe("JSON-LD", () => {
 
 describe("IndexNow", () => {
   it("filtra outros hosts e rotas privadas", () => {
-    const p = buildIndexNowPayload(BASE, "abcd1234abcd", [`${BASE}/`, `${BASE}/planos`, `${BASE}/painel`, "https://outro.com/x", `${BASE}/planos`], PRIVATE_PREFIXES);
+    const p = buildIndexNowPayload(BASE, "abcd1234abcd", [`${BASE}/`, `${BASE}/comprar`, `${BASE}/painel`, "https://outro.com/x", `${BASE}/comprar`], PRIVATE_PREFIXES);
     expect(p.host).toBe("eventeia.com.br");
     expect(p.keyLocation).toBe(`${BASE}/indexnow-key.txt`);
-    expect(p.urlList).toEqual([`${BASE}/`, `${BASE}/planos`]);
+    expect(p.urlList).toEqual([`${BASE}/`, `${BASE}/comprar`]);
   });
 
   it("rejeita chave inválida", () => {

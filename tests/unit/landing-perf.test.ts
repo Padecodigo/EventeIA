@@ -11,7 +11,7 @@ const ENTRIES = [
   "app/(marketing)/layout.tsx",
   "app/(marketing)/page.tsx",
   "app/(marketing)/como-funciona/page.tsx",
-  "app/(marketing)/planos/page.tsx",
+  "app/(marketing)/comprar/page.tsx",
 ];
 
 function resolveImport(from: string, spec: string): string | null {

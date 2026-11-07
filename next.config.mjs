@@ -49,7 +49,11 @@ const nextConfig = {
   outputFileTracingRoot: fileURLToPath(new URL(".", import.meta.url)),
   async redirects() {
     // Planners saíram do produto: a rota antiga (ainda indexada) aponta para a página de preços.
-    return [{ source: "/para-planners", destination: "/planos", permanent: true }];
+    return [
+      { source: "/planos", destination: "/comprar", permanent: true },
+      { source: "/para-planners", destination: "/comprar", permanent: true },
+      { source: "/seja-fornecedor", destination: "/", permanent: true },
+    ];
   },
 
   async headers() {

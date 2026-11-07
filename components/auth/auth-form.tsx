@@ -11,7 +11,6 @@ import {
   type AuthActionState,
 } from "@/app/(auth)/actions";
 import { GoogleGisButton } from "@/components/auth/google-gis-button";
-import { InstagramStep } from "@/components/auth/instagram-step";
 import { TermsCheckbox } from "@/components/legal/terms-checkbox";
 import { TERMS_FIELD } from "@/lib/legal/terms";
 
@@ -31,9 +30,9 @@ export function AuthForm({ mode, oauthError }: { mode: AuthMode; oauthError?: st
   );
   const [showPassword, setShowPassword] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [confirmedInstagram, setConfirmedInstagram] = useState(false);
   const termsBlocked = isSignUp && !acceptedTerms;
-  const instagramBlocked = isSignUp && !confirmedInstagram;
+  // Instagram não bloqueia mais o cadastro: o convite aparece no painel, após criar a conta.
+  const instagramBlocked = false;
   const termsHidden =
     isSignUp && acceptedTerms ? <input type="hidden" name={TERMS_FIELD} value="on" /> : null;
   const [gisUnavailable, setGisUnavailable] = useState(false);
@@ -63,14 +62,6 @@ export function AuthForm({ mode, oauthError }: { mode: AuthMode; oauthError?: st
           checked={acceptedTerms}
           onChange={setAcceptedTerms}
           className="mt-6"
-        />
-      ) : null}
-
-      {isSignUp ? (
-        <InstagramStep
-          checked={confirmedInstagram}
-          onChange={setConfirmedInstagram}
-          className="mt-4"
         />
       ) : null}
 

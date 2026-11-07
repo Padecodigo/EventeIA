@@ -31,17 +31,16 @@ describe("landing — proposta inequívoca (beta 31/10: confundiram com B2B entr
     expect([...steps.matchAll(/title: "([^"]+)"/g)].map((m) => m[1])).toEqual(["Conte seu evento", "A EventeIA busca e compara", "Você recebe e decide"]);
     expect(page).toContain("não é uma rede entre fornecedores");
   });
-  it("link para fornecedores existe, separado e discreto (não é CTA)", () => {
-    const line = hero.slice(hero.indexOf("É fornecedor de eventos?") - 80, hero.indexOf('data-testid="link-fornecedor"') + 200);
-    expect(line).toContain('href="/seja-fornecedor"');
-    expect(line).toContain("text-xs");
-    expect(line).not.toMatch(/bg-primaria|rounded-full/);
+  it("não existe nenhum link ou chamada para fornecedores", () => {
+    expect(page).not.toContain("seja-fornecedor");
+    expect(page).not.toMatch(/É fornecedor|receber pedidos de orçamento|para fornecedores/i);
   });
   it("meta description, título e OG explicam o serviço para quem organiza", () => {
     const site = readFileSync(join(process.cwd(), "lib/seo/site.ts"), "utf8");
     const og = readFileSync(join(process.cwd(), "app/og/route.tsx"), "utf8");
     const layout = readFileSync(join(process.cwd(), "app/layout.tsx"), "utf8");
-    expect(site).toMatch(/Vai organizar um casamento.*encontra os fornecedores, compara os preços e entrega o orçamento pronto/);
+    expect(site).toContain("da sua região");
+    expect(site).not.toMatch(/Vale do Paraíba|São Paulo/);
     expect(og).toContain("A gente encontra os fornecedores, compara os preços e entrega o orçamento pronto.");
     expect(layout).toContain("Fornecedores encontrados, preços comparados, orçamento pronto");
   });
@@ -81,12 +80,12 @@ describe("landing — hero", () => {
     expect(hero).not.toMatch(/3 opções|custo-benefício|comodidade/i);
   });
 
-  it("CTA principal e planos (ticket avulso) visíveis", () => {
+  it("CTA principal e ticket visíveis", () => {
     expect(source).toContain("Começar agora");
-    expect(source).toContain('href="#planos"');
-    expect(source).toContain('id="planos"');
-    expect(source).toContain("Ticket avulso");
-    expect(source).not.toContain("PLANS.map"); // planners saíram do produto
+    expect(source).toContain('href="#comprar"');
+    expect(source).toContain('id="comprar"');
+    expect(source).toContain("Ticket por evento");
+    expect(source).not.toContain("PLANS.map");
   });
 
   it("não é focada só em festa infantil", () => {
