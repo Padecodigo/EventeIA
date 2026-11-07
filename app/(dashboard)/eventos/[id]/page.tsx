@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 
 import { z } from "zod";
 
-import { ActivateWithCredit } from "@/components/domain/activate-with-credit";
 import { BudgetTable } from "@/components/domain/budget-table";
 import { BuyTicketForm } from "@/components/domain/buy-ticket-form";
 import { ChoicesPanel } from "@/components/domain/choices-panel";
@@ -389,8 +388,6 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
             </p>
             <TestimonialInvite eventId={event.id} />
           </section>
-        ) : event.workspace_id !== null ? (
-          <ActivateWithCredit eventId={event.id} />
         ) : (
           <BuyTicketForm
             welcome={await welcomeForCheckout(event.owner_profile_id)}
