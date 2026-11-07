@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -93,5 +95,14 @@ describe("confirmEventByDm", () => {
   });
   it("mensagem pendente de ativação menciona a ativação", () => {
     expect(confirmedReply("EVT-7K3Q9A", "X", false)).toContain("ativação");
+  });
+});
+
+
+describe("código do evento só depois do ticket pago", () => {
+  it("a página do evento condiciona o card ao ticket ativo", () => {
+    const page = readFileSync("app/(dashboard)/eventos/[id]/page.tsx", "utf8");
+    expect(page).toContain("unlocked && event.confirmed_at === null");
+    expect(page).toContain("<EventConfirmationCodeCard");
   });
 });

@@ -17,9 +17,6 @@ vi.mock("@/lib/auth/personal-scope-server", () => ({
   personalEventsFilter: () => Promise.resolve("owner_profile_id.eq.user-1"),
 }));
 vi.mock("@/lib/seo/pricing", () => ({ ticketPriceCents: () => 9700 }));
-vi.mock("@/app/(dashboard)/creditos/actions", () => ({
-  startTicketCheckoutAction: vi.fn(),
-}));
 vi.mock("@/components/domain/buy-ticket-form", () => ({
   BuyTicketForm: ({ eventId }: { eventId: string }) => (
     <div data-testid="checkout">checkout {eventId}</div>
@@ -68,7 +65,10 @@ describe("/creditos — comprar ticket do evento", () => {
 
     render(await PaymentPage());
 
-    expect(screen.getByRole("button", { name: /comprar ticket/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /criar meu evento/i })).toHaveAttribute(
+      "href",
+      "/eventos#novo-evento",
+    );
     expect(screen.getAllByText(/pix ou cart\u00e3o/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/assinatura|franquia|créditos/i)).toBeNull();
   });

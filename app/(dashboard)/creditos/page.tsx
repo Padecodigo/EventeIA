@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-import { startTicketCheckoutAction } from "./actions";
 import { requireUser } from "@/lib/auth";
 import { personalEventsFilter } from "@/lib/auth/personal-scope-server";
 import { BuyTicketForm } from "@/components/domain/buy-ticket-form";
@@ -111,16 +110,15 @@ export default async function PaymentPage() {
               <li>2. Pague o ticket — Pix ou cartão</li>
               <li>3. Receba o orçamento pronto</li>
             </ol>
-            <form action={startTicketCheckoutAction}>
-              <button
-                type="submit"
-                className="mt-5 inline-flex min-h-[48px] items-center justify-center rounded-full bg-primaria px-7 py-3 text-sm font-semibold text-on-primary transition hover:bg-primaria-escura"
-              >
-                Comprar ticket
-              </button>
-            </form>
+            <Link
+              prefetch={false}
+              href="/eventos#novo-evento"
+              className="mt-5 inline-flex min-h-[48px] items-center justify-center rounded-full bg-primaria px-7 py-3 text-sm font-semibold text-on-primary transition hover:bg-primaria-escura"
+            >
+              Criar meu evento
+            </Link>
             <p className="mt-3 text-caption text-vinho/60">
-              Escolha Pix ou cartão na etapa seguinte. A entrevista só começa depois do pagamento.
+              O ticket é do evento: você descreve a festa, paga e a entrevista começa com o ticket ativo.
             </p>
           </div>
         )}
