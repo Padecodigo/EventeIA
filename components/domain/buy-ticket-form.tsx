@@ -141,7 +141,7 @@ export function BuyTicketForm({
 
   return (
     <section className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
-      <h2 className="font-serif text-title-1">Liberar este evento</h2>
+      <h2 className="font-serif text-title-1">Comprar ticket do evento</h2>
       <p className="mt-2 text-sm text-vinho/70">
         Tíquete único de <strong className="text-vinho">{priceFormatted}</strong> — pagamento via
         Pix ou cartão de crédito. Inclui orçamento completo e cotações ilimitadas.

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { z } from "zod";
 
@@ -24,6 +24,16 @@ export default async function EventInterviewPage({ params }: { params: Promise<{
     .eq("id", idParsed.data)
     .maybeSingle();
   if (event === null) notFound();
+
+  // Regra do produto: sem ticket pago, o evento não começa (nem a entrevista).
+  const { data: ticket } = await supabase
+    .from("event_tickets")
+    .select("status")
+    .eq("event_id", event.id)
+    .maybeSingle();
+  if (ticket?.status !== "active") {
+    redirect(`/eventos/${event.id}`);
+  }
 
   // 0073: evento iniciado não reabre a entrevista.
   if (isEventStarted(event)) {

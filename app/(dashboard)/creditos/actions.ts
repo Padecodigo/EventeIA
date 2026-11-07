@@ -16,6 +16,7 @@ import {
   getAsaasSubscriptionFirstInvoiceUrl,
 } from "@/lib/asaas/client";
 import { requireUser } from "@/lib/auth";
+import { spDateKey } from "@/lib/search-start";
 import {
   CUSTOM_CREDITS_MAX,
   CUSTOM_CREDITS_MIN,
@@ -660,4 +661,40 @@ export async function cancelSubscriptionAction(
     );
     return { error: "Não foi possível cancelar a renovação. Tente novamente." };
   }
+}
+
+/**
+ * "Comprar ticket" na aba Comprar: cria o evento em `awaiting_payment` e leva
+ * direto ao checkout daquele evento. O evento só começa (entrevista) após o
+ * ticket ficar ativo.
+ */
+export async function startTicketCheckoutAction(): Promise<void> {
+  const user = await requireUser();
+  const supabase = await createSupabaseServerClient();
+  const workspace = await ensureWorkspace(user.id);
+
+  const in45Days = new Date(Date.now() + 45 * 86_400_000).toISOString().slice(0, 10);
+
+  const { data, error } = await supabase
+    .from("events")
+    .insert({
+      owner_profile_id: user.id,
+      workspace_id: workspace?.id ?? null,
+      title: "Meu evento",
+      event_type: "festa_infantil",
+      event_date: in45Days,
+      region_code: "sp",
+      guest_count: 30,
+      search_start_date: spDateKey(new Date()),
+      status: "awaiting_payment",
+    })
+    .select("id")
+    .single();
+
+  if (error !== null || data === null) {
+    redirect("/creditos?erro=1");
+  }
+
+  revalidatePath("/creditos");
+  redirect(`/eventos/${data.id}`);
 }
