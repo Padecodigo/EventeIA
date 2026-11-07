@@ -39,3 +39,8 @@ export function artForEventType(type: string | null | undefined): string {
 export function storyArtForEventType(type: string | null | undefined): string {
   return `/brand/stories/${photoKeyForEventType(type)}.jpg`;
 }
+
+/** Reel vertical 9:16 com a marca, por tipo de evento (assets em /public/brand/reels). */
+export function reelArtForEventType(type: string | null | undefined): string {
+  return `/brand/reels/${photoKeyForEventType(type)}.mp4`;
+}

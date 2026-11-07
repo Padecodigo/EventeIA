@@ -24,6 +24,7 @@
     "workers": "tsx --env-file=.env.local --tsconfig tsconfig.workers.json workers/index.ts",
     "gen:types": "supabase gen types typescript --local > lib/supabase/database.types.ts",
     "brand:art": "node scripts/generate-brand-art.mjs",
+    "brand:reels": "node scripts/generate-brand-reels.mjs",
     "simulate:webhook": "tsx --env-file=.env.local scripts/simulate-webhook.ts",
     "testimonials:publish": "tsx --env-file=.env.local scripts/publish-testimonial.ts",
     "demo:seed": "tsx --env-file=.env.local scripts/seed-demo.ts",

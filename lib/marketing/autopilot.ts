@@ -4,7 +4,7 @@ import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { metaPublishConfigFromEnv } from "@/lib/meta/config";
 import { createMediaContainer, publishContainer, publishToChannels } from "@/lib/meta/publishing";
-import { artForEventType, storyArtForEventType } from "@/lib/prospecting/photos";
+import { artForEventType, reelArtForEventType, storyArtForEventType } from "@/lib/prospecting/photos";
 import { MARKETING_THEMES, themeForHour, type MarketingTheme } from "./themes";
 
 /** Prompt de publicidade (puro, testável). */
@@ -72,6 +72,18 @@ export async function publishAutopilotPost(now: Date = new Date()): Promise<{ po
       if (storyContainer.ok) {
         await publishContainer({ ...config, creationId: storyContainer.id });
         logger.info({ theme: theme.key }, "autopilot: story publicada");
+      }
+      const reelUrl = `${env.NEXT_PUBLIC_APP_URL}${reelArtForEventType(theme.key)}`;
+      const reelContainer = await createMediaContainer({
+        ...config,
+        imageUrl: reelUrl,
+        videoUrl: reelUrl,
+        caption,
+        mediaType: "REELS",
+      });
+      if (reelContainer.ok) {
+        await publishContainer({ ...config, creationId: reelContainer.id });
+        logger.info({ theme: theme.key }, "autopilot: reel publicado");
       }
     } catch (error) {
       logger.warn({ error: String(error) }, "autopilot: falha ao publicar story");
