@@ -1,7 +1,7 @@
 const TRUST_ITEMS = [
   {
     title: "Orçamento explicado",
-    text: "Cada número nasce de uma regra clara — faixa mínima, sugestão e teto.",
+    text: "Cada número nasce de uma regra clara — o menor preço válido, com o que está incluído e o que ficou de fora.",
   },
   {
     title: "Fornecedores prospectados",
