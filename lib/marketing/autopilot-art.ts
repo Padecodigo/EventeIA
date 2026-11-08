@@ -14,7 +14,7 @@ import { EVENT_PHOTOS } from "@/lib/prospecting/photos";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 import { loadUsedMedia, recordMediaUse, type RecordMediaUseInput } from "./autopilot-media";
-import { overlayReceiptCards, RECEIPT_CATEGORIES_BY_THEME } from "./card-overlay";
+import { composeAd, HEADLINES_BY_THEME, RECEIPT_CATEGORIES_BY_THEME } from "./card-overlay";
 import { contentHash, type MediaUse } from "./media-dedup";
 import type { MarketingTheme } from "./themes";
 import type { MarketingPromptVariant } from "./image-prompt";
@@ -142,13 +142,23 @@ function categoriesFor(theme: MarketingTheme): readonly string[] {
   return RECEIPT_CATEGORIES_BY_THEME[theme.key] ?? RECEIPT_CATEGORIES_BY_THEME.infantil;
 }
 
+/** Headline de banner do tema (fallback infantil). */
+function headlineFor(theme: MarketingTheme): readonly string[] {
+  return HEADLINES_BY_THEME[theme.key] ?? HEADLINES_BY_THEME.infantil;
+}
+
 /** Dependências injetáveis do autopilot (testes não rodam rede/ffmpeg/Supabase). */
 export interface AutopilotArtDeps {
   fetchImpl?: typeof fetch;
   loadUsed?: () => Promise<readonly MediaUse[]>;
   recordUse?: (input: RecordMediaUseInput) => Promise<void>;
-  /** Baixa a foto e compõe os cards (default: sharp real). */
-  buildImage?: (bytes: Buffer, categories: readonly string[], size: { width: number; height: number }) => Promise<Buffer>;
+  /** Baixa a foto e compõe banner + cards (default: sharp real). */
+  buildImage?: (
+    bytes: Buffer,
+    headline: readonly string[],
+    categories: readonly string[],
+    size: { width: number; height: number },
+  ) => Promise<Buffer>;
   storeImage?: (bytes: Buffer) => Promise<string>;
   renderReel?: (buffers: readonly Buffer[]) => Promise<Buffer>;
   storeVideo?: (bytes: Buffer) => Promise<string>;
@@ -184,13 +194,14 @@ async function generateUniqueArt(
     const fetchImpl = deps.fetchImpl ?? fetch;
     const buildImage =
       deps.buildImage ??
-      ((bytes, categories, sz) => overlayReceiptCards(bytes, categories, sz));
+      ((bytes, headline, categories, sz) => composeAd(bytes, { headline, categories, ...sz }));
     const storeImage = deps.storeImage ?? storeImageBytes;
     const recordUse = deps.recordUse ?? recordMediaUse;
 
     const raw = await downloadBytes(realPhotoUrl(theme), fetchImpl);
+    const headline = headlineFor(theme);
     const categories = variant === "emotional" ? [] : categoriesFor(theme);
-    const finalBytes = await buildImage(raw, categories, size);
+    const finalBytes = await buildImage(raw, headline, categories, size);
     const key = contentHash(finalBytes);
     if (used.has(key)) return null; // foto repetida → desiste (não repete)
 
@@ -217,14 +228,15 @@ export async function generateReelArt(
     const fetchImpl = deps.fetchImpl ?? fetch;
     const buildImage =
       deps.buildImage ??
-      ((bytes, categories, sz) => overlayReceiptCards(bytes, categories, sz));
+      ((bytes, headline, categories, sz) => composeAd(bytes, { headline, categories, ...sz }));
     const renderReel = deps.renderReel ?? renderReelVideo;
     const storeVideo = deps.storeVideo ?? storeVideoBytes;
     const recordUse = deps.recordUse ?? recordMediaUse;
 
     const raw = await downloadBytes(realPhotoUrl(theme), fetchImpl);
+    const headline = headlineFor(theme);
     const categories = variant === "emotional" ? [] : categoriesFor(theme);
-    const frame = await buildImage(raw, categories, { width: REEL_WIDTH, height: REEL_HEIGHT });
+    const frame = await buildImage(raw, headline, categories, { width: REEL_WIDTH, height: REEL_HEIGHT });
     const key = contentHash(frame);
     if (used.has(key)) return null;
 

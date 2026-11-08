@@ -17,6 +17,8 @@ const THEME: MarketingTheme = {
   angle: "menos correria",
 };
 
+const HEADLINE = ["A festa que ele vai lembrar.", "Você presente em cada momento."];
+
 const PHOTO_URL = "https://app.test/img/eventos/festa-infantil-velas.jpg";
 const bytesA = Buffer.from("foto-real-a");
 
@@ -53,7 +55,7 @@ describe("arte do autopilot com foto real + cards", () => {
     });
 
     expect(result).toEqual({ url: "https://storage/1.jpg" });
-    expect(buildImage).toHaveBeenCalledWith(bytesA, ["Buffet infantil", "Decoração"], {
+    expect(buildImage).toHaveBeenCalledWith(bytesA, HEADLINE, ["Buffet infantil", "Decoração"], {
       width: 1080,
       height: 1080,
     });
@@ -77,7 +79,7 @@ describe("arte do autopilot com foto real + cards", () => {
       fetchImpl: fakeFetch({ [PHOTO_URL]: bytesA }),
     });
 
-    expect(buildImage).toHaveBeenCalledWith(bytesA, ["Buffet infantil", "Decoração"], {
+    expect(buildImage).toHaveBeenCalledWith(bytesA, HEADLINE, ["Buffet infantil", "Decoração"], {
       width: 1080,
       height: 1920,
     });
@@ -98,7 +100,7 @@ describe("arte do autopilot com foto real + cards", () => {
       "emotional",
     );
 
-    expect(buildImage).toHaveBeenCalledWith(bytesA, [], { width: 1080, height: 1080 });
+    expect(buildImage).toHaveBeenCalledWith(bytesA, HEADLINE, [], { width: 1080, height: 1080 });
   });
 
   it("retorna null quando a foto já foi usada", async () => {
@@ -142,7 +144,7 @@ describe("arte do autopilot com foto real + cards", () => {
     });
 
     expect(result).toEqual({ url: "https://storage/reel.mp4" });
-    expect(buildImage).toHaveBeenCalledWith(bytesA, ["Buffet infantil", "Decoração"], {
+    expect(buildImage).toHaveBeenCalledWith(bytesA, HEADLINE, ["Buffet infantil", "Decoração"], {
       width: 1080,
       height: 1920,
     });
