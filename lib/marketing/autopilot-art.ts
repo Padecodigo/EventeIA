@@ -237,10 +237,11 @@ export async function generateReelArt(
     const headline = headlineFor(theme);
     const categories = variant === "emotional" ? [] : categoriesFor(theme);
     const frame = await buildImage(raw, headline, categories, { width: REEL_WIDTH, height: REEL_HEIGHT });
-    const key = contentHash(frame);
-    if (used.has(key)) return null;
 
     const video = await renderReel([frame, frame, frame]);
+    const key = contentHash(video);
+    if (used.has(key)) return null;
+
     const url = await storeVideo(video);
     await recordUse({ mediaKey: key, kind: "reel", theme: theme.key, url });
     return { url };
