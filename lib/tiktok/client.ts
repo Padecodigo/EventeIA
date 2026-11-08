@@ -197,7 +197,8 @@ export function isTrustedTiktokUploadUrl(raw: string): boolean {
     const url = new URL(raw);
     if (url.protocol !== "https:" || url.port !== "") return false;
     if (url.username.length > 0 || url.password.length > 0) return false;
-    if (!url.pathname.startsWith("/video/")) return false;
+    // TikTok devolve tanto /video/ (docs) quanto /upload (resposta real atual).
+    if (!(url.pathname.startsWith("/video/") || url.pathname.startsWith("/upload"))) return false;
     const host = url.hostname.toLowerCase();
     return host === "tiktokapis.com" || host.endsWith(TIKTOK_UPLOAD_HOST_SUFFIX);
   } catch {
