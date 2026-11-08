@@ -34,6 +34,21 @@ export function BuyTicketForm({
   const [state, formAction, pending] = useActionState(buyTicketAction, initialCheckout);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
+  if (state.activated !== undefined) {
+    return (
+      <section className="rounded-card border border-champagne/50 bg-off-white p-6 shadow-soft">
+        <h2 className="font-serif text-title-1">Ticket aplicado.</h2>
+        <p className="mt-2 text-sm text-vinho/70">
+          Usamos um ticket avulso que você já tinha guardado — este evento está ativo, sem nova
+          cobrança.
+        </p>
+        <p className="mt-4 text-caption text-vinho/70">
+          A página será atualizada com o orçamento liberado.
+        </p>
+      </section>
+    );
+  }
+
   if (state.card !== undefined) {
     return (
       <section className="rounded-card border border-champagne/50 bg-off-white p-6 shadow-soft">

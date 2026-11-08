@@ -29,6 +29,7 @@ import { attachUserOffer, releaseUserOffer } from "@/lib/offers/server";
 import { canEditSearchStart, parseSearchStartInput } from "@/lib/search-start";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { consumeAvailableTicket } from "@/lib/tickets/store";
 
 export interface ActionState {
   error?: string;
@@ -160,6 +161,8 @@ export interface CheckoutState {
   };
   /** Cortesia (cupom gratuito): evento ativado sem cobrança. */
   courtesy?: { activated: true };
+  /** Ticket avulso consumido: evento ativado com um ticket já comprado (0085). */
+  activated?: { via: "ticket_credit" };
   /** Cartão de crédito: o pagador conclui na Fatura hospedada do Asaas. */
   card?: { invoiceUrl: string };
   applied?: {
@@ -235,6 +238,38 @@ export async function buyTicketAction(
   try {
     const admin = getSupabaseAdmin();
     const env = serverEnv();
+
+    // Ticket avulso disponível: consome em vez de cobrar (0085). Sem ticket,
+    // segue o checkout por evento existente (pagamento Asaas).
+    const consumedTicketId = await consumeAvailableTicket(user.id, event.id, admin);
+    if (consumedTicketId !== null) {
+      await admin
+        .from("event_tickets")
+        .upsert(
+          { event_id: event.id, status: "active", activated_at: new Date().toISOString() },
+          { onConflict: "event_id" },
+        );
+      await admin.from("events").update({ status: "active" }).eq("id", event.id);
+      await kickoffDiscovery(event.id);
+
+      try {
+        await emitFeed(admin, {
+          type: "event.activated",
+          actorType: "user",
+          actorId: user.id,
+          aggregateType: "event",
+          aggregateId: event.id,
+          payload: { via: "ticket_credit", ticket_purchase_id: consumedTicketId },
+          correlationId: event.id,
+          source: "app",
+        });
+      } catch {
+        // feed não bloqueia a ativação
+      }
+
+      revalidatePath(`/eventos/${event.id}`);
+      return { activated: { via: "ticket_credit" } };
+    }
 
     await admin
       .from("profiles")

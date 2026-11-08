@@ -124,6 +124,17 @@ export interface Database {
         activated_at: string | null;
         created_at: string;
       }>;
+      ticket_purchases: Table<{
+        id: string;
+        owner_profile_id: string;
+        status: "pending" | "active" | "consumed" | "refunded" | "canceled";
+        event_id: string | null;
+        payment_id: string | null;
+        amount_cents: number;
+        idempotency_key: string;
+        created_at: string;
+        consumed_at: string | null;
+      }>;
       quotations: Table<{
         id: string;
         event_id: string;
@@ -199,7 +210,7 @@ export interface Database {
       payments: Table<{
         id: string;
         profile_id: string;
-        purpose: "event_ticket" | "credit_topup" | "subscription_invoice";
+        purpose: "event_ticket" | "credit_topup" | "subscription_invoice" | "ticket_credit";
         event_id: string | null;
         asaas_payment_id: string;
         billing_type: "PIX" | "CREDIT_CARD" | "COURTESY";
@@ -886,6 +897,10 @@ export interface Database {
       process_payment_webhook: {
         Args: { p_webhook_event_id: string };
         Returns: string;
+      };
+      consume_available_ticket: {
+        Args: { p_owner: string; p_event: string };
+        Returns: string | null;
       };
     };
     Enums: { [_ in never]: never };

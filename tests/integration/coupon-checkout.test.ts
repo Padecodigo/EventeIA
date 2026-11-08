@@ -93,8 +93,10 @@ beforeEach(() => {
   reserveStatus = "ok";
   courtesyOutcome = "activated";
   db.rpc = async (fn, args) => {
-    // Consulta da oferta pessoal (0036) não é efeito: sem oferta neste arquivo.
+    // Consultas sem efeito neste arquivo: oferta pessoal (0036) e o consumo de
+    // ticket avulso (0085) — sem ticket disponível aqui, ambos são no-ops.
     if (fn === "user_offer_current") return { data: [], error: null };
+    if (fn === "consume_available_ticket") return { data: null, error: null };
     rpcCalls.push({ fn, args });
     if (fn === "redeem_courtesy_coupon") return { data: courtesyOutcome, error: null };
     if (fn === "reserve_coupon") {
