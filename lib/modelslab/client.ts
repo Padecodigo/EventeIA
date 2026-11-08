@@ -38,6 +38,8 @@ export async function generateImage(input: GenerateImageInput): Promise<ModelsLa
       apiKey: process.env.NVIDIA_NIM_API_KEY,
       prompt: input.prompt,
       model: process.env.NVIDIA_IMAGE_MODEL,
+      width: input.width,
+      height: input.height,
       fetchImpl: input.fetchImpl,
     });
     if (!result.ok) return { ok: false, error: result.error, status: result.status };

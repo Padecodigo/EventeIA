@@ -11,8 +11,8 @@ export { extractNvidiaImage, sniffMime, type ExtractedImage } from "./pure";
  */
 
 const BASE_URL = "https://ai.api.nvidia.com/v1/genai";
-export const DEFAULT_NVIDIA_IMAGE_MODEL = "black-forest-labs/flux-3-image-klein";
-const TIMEOUT_MS = 120_000;
+export const DEFAULT_NVIDIA_IMAGE_MODEL = "black-forest-labs/flux.1-dev";
+const TIMEOUT_MS = 180_000;
 
 export type NvidiaImageResult =
   | { ok: true; bytes: Buffer; mime: string }
@@ -22,7 +22,13 @@ export interface NvidiaImageInput {
   apiKey: string;
   prompt: string;
   model?: string;
-  mode?: "t2i" | "i2i";
+  /** FLUX.1-dev usa `base` (text-to-image). */
+  mode?: "base" | "t2i" | "i2i";
+  width?: number;
+  height?: number;
+  cfgScale?: number;
+  seed?: number;
+  steps?: number;
   fetchImpl?: typeof fetch;
 }
 
@@ -40,7 +46,15 @@ export async function generateNvidiaImage(input: NvidiaImageInput): Promise<Nvid
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ prompt: input.prompt, mode: input.mode ?? "t2i" }),
+      body: JSON.stringify({
+        prompt: input.prompt,
+        mode: input.mode ?? "base",
+        cfg_scale: input.cfgScale ?? 3.5,
+        width: input.width ?? 1024,
+        height: input.height ?? 1024,
+        seed: input.seed ?? 0,
+        steps: input.steps ?? 50,
+      }),
       signal: controller.signal,
     });
 
