@@ -1,18 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { RecordMediaUseInput } from "@/lib/marketing/autopilot-media";
 import { contentHash } from "@/lib/marketing/media-dedup";
 import type { MarketingTheme } from "@/lib/marketing/themes";
 
-const generateImage = vi.fn();
-const serverEnv = vi.fn((): { MODELSLAB_API_KEY: string | undefined } => ({
-  MODELSLAB_API_KEY: "k",
-}));
+const serverEnv = vi.fn(() => ({ NEXT_PUBLIC_APP_URL: "https://app.test" }));
 
 vi.mock("@/lib/env", () => ({ serverEnv }));
-vi.mock("@/lib/modelslab/client", () => ({ generateImage }));
 
-const { buildReelFfmpegArgs, generatePostArt, generateReelArt, generateStoryArt, REEL_IMAGES } =
+const { buildReelFfmpegArgs, generatePostArt, generateReelArt, generateStoryArt } =
   await import("@/lib/marketing/autopilot-art");
 
 const THEME: MarketingTheme = {
@@ -22,12 +17,8 @@ const THEME: MarketingTheme = {
   angle: "menos correria",
 };
 
-const bytesA = Buffer.from("imagem-a");
-const bytesB = Buffer.from("imagem-b");
-const bytesC = Buffer.from("imagem-c");
-const bytesD = Buffer.from("imagem-d");
-const bytesE = Buffer.from("imagem-e");
-const bytesF = Buffer.from("imagem-f");
+const PHOTO_URL = "https://app.test/img/eventos/festa-infantil-velas.jpg";
+const bytesA = Buffer.from("foto-real-a");
 
 function fakeFetch(routes: Record<string, Buffer>): typeof fetch {
   return (async (input: string | URL | Request) => {
@@ -38,36 +29,34 @@ function fakeFetch(routes: Record<string, Buffer>): typeof fetch {
   }) as typeof fetch;
 }
 
-const recordUse = vi.fn(async (_input: RecordMediaUseInput) => undefined);
-/** Marca na imagem simulando a logo (evita sharp real nos testes). */
-const brandIdentity = vi.fn(async (bytes: Buffer) => bytes);
+const recordUse = vi.fn(async () => undefined);
+/** Marca a imagem simulando a composição dos cards (evita sharp real nos testes). */
+const buildImage = vi.fn(async (bytes: Buffer) => bytes);
 
 beforeEach(() => {
-  generateImage.mockReset();
   serverEnv.mockReset();
-  serverEnv.mockReturnValue({ MODELSLAB_API_KEY: "k" });
+  serverEnv.mockReturnValue({ NEXT_PUBLIC_APP_URL: "https://app.test" });
   recordUse.mockClear();
-  brandIdentity.mockClear();
+  buildImage.mockClear();
 });
 
-describe("arte do autopilot com FLUX", () => {
-  it("gera a arte do post em 1080×1080 e registra o hash do conteúdo com a logo", async () => {
-    generateImage.mockResolvedValue({ ok: true, images: ["https://cdn/a.jpg"], id: 1 });
+describe("arte do autopilot com foto real + cards", () => {
+  it("monta o post com foto real + cards e registra o hash do conteúdo", async () => {
     const storeImage = vi.fn(async () => "https://storage/1.jpg");
 
     const result = await generatePostArt(THEME, {
       loadUsed: async () => [],
       recordUse,
-      brandImage: brandIdentity,
+      buildImage,
       storeImage,
-      fetchImpl: fakeFetch({ "https://cdn/a.jpg": bytesA }),
+      fetchImpl: fakeFetch({ [PHOTO_URL]: bytesA }),
     });
 
     expect(result).toEqual({ url: "https://storage/1.jpg" });
-    expect(generateImage).toHaveBeenCalledWith(
-      expect.objectContaining({ width: 1080, height: 1080, samples: 1 }),
-    );
-    expect(brandIdentity).toHaveBeenCalledWith(bytesA);
+    expect(buildImage).toHaveBeenCalledWith(bytesA, ["Buffet infantil", "Decoração"], {
+      width: 1080,
+      height: 1080,
+    });
     expect(storeImage).toHaveBeenCalledWith(bytesA);
     expect(recordUse).toHaveBeenCalledWith({
       mediaKey: contentHash(bytesA),
@@ -77,164 +66,94 @@ describe("arte do autopilot com FLUX", () => {
     });
   });
 
-  it("gera a arte do story em 1080×1920", async () => {
-    generateImage.mockResolvedValue({ ok: true, images: ["https://cdn/a.jpg"], id: 2 });
+  it("story usa 1080×1920", async () => {
     const storeImage = vi.fn(async () => "https://storage/2.jpg");
 
-    const result = await generateStoryArt(THEME, {
+    await generateStoryArt(THEME, {
       loadUsed: async () => [],
       recordUse,
-      brandImage: brandIdentity,
+      buildImage,
       storeImage,
-      fetchImpl: fakeFetch({ "https://cdn/a.jpg": bytesA }),
+      fetchImpl: fakeFetch({ [PHOTO_URL]: bytesA }),
     });
 
-    expect(result).toEqual({ url: "https://storage/2.jpg" });
-    expect(generateImage).toHaveBeenCalledWith(
-      expect.objectContaining({ width: 1080, height: 1920, samples: 1 }),
-    );
+    expect(buildImage).toHaveBeenCalledWith(bytesA, ["Buffet infantil", "Decoração"], {
+      width: 1080,
+      height: 1920,
+    });
   });
 
-  it("regenera quando o conteúdo com a logo colide com uma imagem já usada", async () => {
-    generateImage
-      .mockResolvedValueOnce({ ok: true, images: ["https://cdn/a.jpg"], id: 1 })
-      .mockResolvedValueOnce({ ok: true, images: ["https://cdn/b.jpg"], id: 2 });
+  it("variante emotional não aplica cards", async () => {
     const storeImage = vi.fn(async () => "https://storage/3.jpg");
+
+    await generatePostArt(
+      THEME,
+      {
+        loadUsed: async () => [],
+        recordUse,
+        buildImage,
+        storeImage,
+        fetchImpl: fakeFetch({ [PHOTO_URL]: bytesA }),
+      },
+      "emotional",
+    );
+
+    expect(buildImage).toHaveBeenCalledWith(bytesA, [], { width: 1080, height: 1080 });
+  });
+
+  it("retorna null quando a foto já foi usada", async () => {
+    const storeImage = vi.fn();
 
     const result = await generatePostArt(THEME, {
       loadUsed: async () => [{ key: contentHash(bytesA), usedAtMs: 0 }],
       recordUse,
-      brandImage: brandIdentity,
+      buildImage,
       storeImage,
-      fetchImpl: fakeFetch({ "https://cdn/a.jpg": bytesA, "https://cdn/b.jpg": bytesB }),
+      fetchImpl: fakeFetch({ [PHOTO_URL]: bytesA }),
     });
 
-    expect(result).toEqual({ url: "https://storage/3.jpg" });
-    expect(generateImage).toHaveBeenCalledTimes(2);
-    expect(recordUse).toHaveBeenCalledTimes(1);
-    expect(recordUse).toHaveBeenCalledWith(
-      expect.objectContaining({ mediaKey: contentHash(bytesB) }),
-    );
+    expect(result).toBeNull();
+    expect(storeImage).not.toHaveBeenCalled();
   });
 
-  it("retorna null quando o FLUX falha", async () => {
-    generateImage.mockResolvedValue({ ok: false, error: "erro", status: 500 });
+  it("retorna null quando o download da foto falha", async () => {
+    const result = await generatePostArt(THEME, {
+      loadUsed: async () => [],
+      recordUse,
+      buildImage,
+      fetchImpl: fakeFetch({}),
+    });
 
-    expect(
-      await generatePostArt(THEME, {
-        loadUsed: async () => [],
-        recordUse,
-        brandImage: brandIdentity,
-      }),
-    ).toBeNull();
+    expect(result).toBeNull();
     expect(recordUse).not.toHaveBeenCalled();
   });
 
-  it("retorna null sem API key", async () => {
-    serverEnv.mockReturnValue({ MODELSLAB_API_KEY: undefined });
-
-    expect(
-      await generatePostArt(THEME, {
-        loadUsed: async () => [],
-        recordUse,
-        brandImage: brandIdentity,
-      }),
-    ).toBeNull();
-    expect(generateImage).not.toHaveBeenCalled();
-  });
-
-  it("monta o reel com 3 imagens únicas (com a logo) e registra cada hash", async () => {
-    generateImage.mockResolvedValue({
-      ok: true,
-      images: ["https://cdn/a.jpg", "https://cdn/b.jpg", "https://cdn/c.jpg"],
-      id: 3,
-    });
+  it("monta o reel com 1 frame (foto + cards) e registra o hash", async () => {
     const renderReel = vi.fn(async () => Buffer.from("mp4-bytes"));
     const storeVideo = vi.fn(async () => "https://storage/reel.mp4");
 
     const result = await generateReelArt(THEME, {
       loadUsed: async () => [],
       recordUse,
-      brandImage: brandIdentity,
+      buildImage,
       renderReel,
       storeVideo,
-      fetchImpl: fakeFetch({
-        "https://cdn/a.jpg": bytesA,
-        "https://cdn/b.jpg": bytesB,
-        "https://cdn/c.jpg": bytesC,
-      }),
+      fetchImpl: fakeFetch({ [PHOTO_URL]: bytesA }),
     });
 
     expect(result).toEqual({ url: "https://storage/reel.mp4" });
-    expect(REEL_IMAGES).toBe(3);
-    expect(brandIdentity).toHaveBeenCalledTimes(3);
-    expect(renderReel).toHaveBeenCalledTimes(1);
+    expect(buildImage).toHaveBeenCalledWith(bytesA, ["Buffet infantil", "Decoração"], {
+      width: 1080,
+      height: 1920,
+    });
+    expect(renderReel).toHaveBeenCalledWith([bytesA]);
     expect(storeVideo).toHaveBeenCalledWith(Buffer.from("mp4-bytes"));
-    expect(recordUse).toHaveBeenCalledTimes(3);
-    expect(recordUse.mock.calls.map((c) => c[0]?.mediaKey).sort()).toEqual(
-      [bytesA, bytesB, bytesC].map((b) => contentHash(b)).sort(),
-    );
-  });
-
-  it("regenera o reel quando uma das imagens colide", async () => {
-    generateImage
-      .mockResolvedValueOnce({
-        ok: true,
-        images: ["https://cdn/a.jpg", "https://cdn/b.jpg", "https://cdn/c.jpg"],
-        id: 1,
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        images: ["https://cdn/d.jpg", "https://cdn/e.jpg", "https://cdn/f.jpg"],
-        id: 2,
-      });
-    const renderReel = vi.fn(async () => Buffer.from("mp4-bytes"));
-    const storeVideo = vi.fn(async () => "https://storage/reel.mp4");
-
-    const result = await generateReelArt(THEME, {
-      loadUsed: async () => [{ key: contentHash(bytesB), usedAtMs: 0 }],
-      recordUse,
-      brandImage: brandIdentity,
-      renderReel,
-      storeVideo,
-      fetchImpl: fakeFetch({
-        "https://cdn/a.jpg": bytesA,
-        "https://cdn/b.jpg": bytesB,
-        "https://cdn/c.jpg": bytesC,
-        "https://cdn/d.jpg": bytesD,
-        "https://cdn/e.jpg": bytesE,
-        "https://cdn/f.jpg": bytesF,
-      }),
-    });
-
-    expect(result).toEqual({ url: "https://storage/reel.mp4" });
-    expect(generateImage).toHaveBeenCalledTimes(2);
-    expect(recordUse.mock.calls.map((c) => c[0]?.mediaKey).sort()).toEqual(
-      [bytesD, bytesE, bytesF].map((b) => contentHash(b)).sort(),
-    );
-  });
-
-  it("retorna null no reel quando não há 3 imagens", async () => {
-    generateImage.mockResolvedValue({ ok: false, error: "sem imagem", status: 500 });
-    const renderReel = vi.fn();
-    const storeVideo = vi.fn();
-
-    expect(
-      await generateReelArt(THEME, {
-        loadUsed: async () => [],
-        recordUse,
-        brandImage: brandIdentity,
-        renderReel,
-        storeVideo,
-      }),
-    ).toBeNull();
-    expect(renderReel).not.toHaveBeenCalled();
-    expect(storeVideo).not.toHaveBeenCalled();
+    expect(recordUse).toHaveBeenCalledTimes(1);
   });
 });
 
 describe("argumentos do ffmpeg do reel", () => {
-  it("constrói o slideshow com zoom e concat de 3 entradas", () => {
+  it("constrói o slideshow com zoom e concat", () => {
     const args = buildReelFfmpegArgs(["a.jpg", "b.jpg", "c.jpg"], "out.mp4");
 
     expect(args[0]).toBe("-y");
