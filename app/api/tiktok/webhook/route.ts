@@ -32,9 +32,16 @@ export async function POST(request: Request): Promise<NextResponse> {
   const rawBody = await request.text();
 
   const header = request.headers.get("TikTok-Signature") ?? "";
-  const parts = Object.fromEntries(header.split(",").map((p) => p.trim().split("=")));
-  const timestamp = parts.t ?? "";
-  const signature = parts.s ?? "";
+  let timestamp = "";
+  let signature = "";
+  for (const part of header.split(",")) {
+    const idx = part.indexOf("=");
+    if (idx === -1) continue;
+    const key = part.slice(0, idx).trim();
+    const value = part.slice(idx + 1).trim();
+    if (key === "t") timestamp = value;
+    else if (key === "s") signature = value;
+  }
 
   const env = serverEnv();
   const activeSecret = env.TIKTOK_ENV === "production" ? env.TIKTOK_CLIENT_SECRET : env.TIKTOK_SANDBOX_CLIENT_SECRET;
