@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { listTiktokAccounts, type TiktokConnectedAccount } from "@/lib/tiktok/store";
 
 import { Card, READ_ONLY_NOTE } from "../ui";
+import { TiktokDraftUploadForm } from "./draft-upload-form";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "TikTok" };
@@ -41,7 +42,8 @@ export default async function TiktokAdminPage({
         <div>
           <h1 className="font-serif text-title-2 text-vinho">TikTok</h1>
           <p className="mt-1 text-caption text-vinho/70">
-            Contas conectadas via Login Kit. Publicação em rascunho (inbox) apenas — um humano revisa antes de publicar.
+            Contas conectadas via Login Kit. Publicação em rascunho (inbox) apenas — um humano
+            revisa antes de publicar.
           </p>
         </div>
         <Link
@@ -53,7 +55,9 @@ export default async function TiktokAdminPage({
       </header>
 
       {status !== undefined ? (
-        <p className={`rounded-card border border-line-subtle bg-white/70 p-4 text-sm ${status.tone}`}>
+        <p
+          className={`rounded-card border border-line-subtle bg-white/70 p-4 text-sm ${status.tone}`}
+        >
           {status.label}
         </p>
       ) : null}
@@ -89,6 +93,15 @@ export default async function TiktokAdminPage({
           </div>
         )}
         <p className="mt-3 text-caption text-vinho/50">{READ_ONLY_NOTE}</p>
+      </Card>
+
+      <Card>
+        <p className="text-caption uppercase tracking-wide text-vinho/60">Enviar rascunho</p>
+        <p className="mt-1 text-sm text-vinho/70">
+          Envia um vídeo para o inbox do TikTok da conta do ambiente ativo. O conteúdo fica como
+          rascunho: um humano abre o TikTok, revisa e só então publica.
+        </p>
+        <TiktokDraftUploadForm disabled={accounts.length === 0} />
       </Card>
     </div>
   );

@@ -4,9 +4,10 @@ import {
   creatorInfo,
   exchangeCodeForToken,
   fetchPublishStatus,
+  isTrustedTiktokUploadUrl,
   uploadPhotoInit,
   uploadVideoInit,
-  type TiktokResult,
+  uploadVideoToTiktok,
 } from "@/lib/tiktok/client";
 
 /** Extrai (url, init) da primeira chamada do fetch mockado. */
@@ -40,14 +41,14 @@ describe("exchangeCodeForToken", () => {
       ),
     );
 
-    const result = (await exchangeCodeForToken({
+    const result = await exchangeCodeForToken({
       code: "code-xyz",
       clientKey: "ck",
       clientSecret: "cs",
       redirectUri: "https://app.example/tiktok/callback",
       codeVerifier: "verifier",
-      fetchImpl: fetchMock as unknown as typeof fetch,
-    })) as TiktokResult<{ access_token: string }>;
+      fetchImpl: fetchMock,
+    });
 
     const [url, init] = firstCall(fetchMock);
     expect(url.origin).toBe("https://open.tiktokapis.com");
@@ -81,7 +82,7 @@ describe("exchangeCodeForToken", () => {
       clientSecret: "cs",
       redirectUri: "https://app.example/cb",
       codeVerifier: "v",
-      fetchImpl: fetchMock as unknown as typeof fetch,
+      fetchImpl: fetchMock,
     });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toContain("code ruim");
@@ -96,7 +97,7 @@ describe("creatorInfo", () => {
 
     const result = await creatorInfo({
       accessToken: "at",
-      fetchImpl: fetchMock as unknown as typeof fetch,
+      fetchImpl: fetchMock,
     });
 
     const [url, init] = firstCall(fetchMock);
@@ -115,9 +116,12 @@ describe("creatorInfo", () => {
 });
 
 describe("uploadVideoInit", () => {
-  it("faz POST /v2/post/publish/inbox/video/init/ (draft)", async () => {
+  it("faz POST /v2/post/publish/inbox/video/init/ somente com source_info", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
-      okJson({ publish_id: "p1", upload_url: "https://upload" }),
+      okJson({
+        publish_id: "p1",
+        upload_url: "https://open-upload.tiktokapis.com/video/?upload_id=1",
+      }),
     );
 
     const result = await uploadVideoInit({
@@ -126,7 +130,7 @@ describe("uploadVideoInit", () => {
       videoSizeBytes: 1000,
       chunkSizeBytes: 1000,
       totalChunkCount: 1,
-      fetchImpl: fetchMock as unknown as typeof fetch,
+      fetchImpl: fetchMock,
     });
 
     const [url, init] = firstCall(fetchMock);
@@ -134,34 +138,176 @@ describe("uploadVideoInit", () => {
     expect(init.method).toBe("POST");
     expect((init.headers as Record<string, string>)["Authorization"]).toBe("Bearer at");
 
-    const body = JSON.parse(init.body as string);
-    expect(body.post_info.title).toBe("Meu vídeo");
-    expect(body.post_info.privacy_level).toBe("SELF_ONLY");
-    expect(body.source_info.source).toBe("FILE_UPLOAD");
-    expect(body.source_info.video_size).toBe(1000);
+    const body: unknown = JSON.parse(init.body as string);
+    expect(body).toEqual({
+      source_info: {
+        source: "FILE_UPLOAD",
+        video_size: 1000,
+        chunk_size: 1000,
+        total_chunk_count: 1,
+      },
+    });
 
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.data.publish_id).toBe("p1");
+  });
+
+  it.each([
+    { data: {} },
+    { data: { publish_id: "p1" } },
+    { data: { publish_id: "p1", upload_url: 42 } },
+    { data: { publish_id: "", upload_url: "https://open-upload.tiktokapis.com/video/" } },
+  ])("rejeita resposta de init com shape inválido (%j)", async (payload) => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(payload), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    const result = await uploadVideoInit({
+      accessToken: "at",
+      videoSizeBytes: 1000,
+      chunkSizeBytes: 1000,
+      totalChunkCount: 1,
+      fetchImpl: fetchMock,
+    });
+
+    expect(result).toEqual({ ok: false, error: "resposta de upload inválida", status: null });
+  });
+
+  it("trata HTTP 200 com error.code != ok como falha da aplicação", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error: { code: "spam_risk_too_many_pending_share", message: "limite de rascunhos" },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    const result = await uploadVideoInit({
+      accessToken: "at",
+      videoSizeBytes: 1000,
+      chunkSizeBytes: 1000,
+      totalChunkCount: 1,
+      fetchImpl: fetchMock,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: "limite de rascunhos",
+      status: 200,
+    });
+  });
+});
+
+describe("uploadVideoToTiktok", () => {
+  it("faz PUT no upload_url oficial com headers de chunk único", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 201 }));
+    const bytes = new Uint8Array([1, 2, 3, 4]);
+
+    const result = await uploadVideoToTiktok({
+      uploadUrl: "https://open-upload.tiktokapis.com/video/?upload_id=1&upload_token=x",
+      bytes,
+      contentType: "video/mp4",
+      fetchImpl: fetchMock,
+    });
+
+    const [url, init] = firstCall(fetchMock);
+    expect(url.origin).toBe("https://open-upload.tiktokapis.com");
+    expect(init.method).toBe("PUT");
+    expect(init.headers).toEqual({
+      "Content-Type": "video/mp4",
+      "Content-Length": "4",
+      "Content-Range": "bytes 0-3/4",
+    });
+    expect(init.redirect).toBe("error");
+    expect(init.body).toBeInstanceOf(Blob);
+    const body = init.body as Blob;
+    expect(body.type).toBe("video/mp4");
+    expect(new Uint8Array(await body.arrayBuffer())).toEqual(bytes);
+    expect(result).toEqual({ ok: true, data: { status: 201 } });
+  });
+
+  it.each([307, 308])("não segue redirect %s nem trata como upload concluído", async (status) => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(null, {
+        status,
+        headers: { location: "https://evil.com/video/?upload_id=atacante" },
+      }),
+    );
+
+    const result = await uploadVideoToTiktok({
+      uploadUrl: "https://open-upload.tiktokapis.com/video/?upload_id=1",
+      bytes: new Uint8Array([1, 2, 3, 4]),
+      contentType: "video/mp4",
+      fetchImpl: fetchMock,
+    });
+
+    const [, init] = firstCall(fetchMock);
+    expect(init.redirect).toBe("error");
+    expect(result).toEqual({ ok: false, error: `HTTP ${String(status)}`, status });
+  });
+
+  it.each([
+    "https://evil.com/video/?upload_id=1",
+    "https://tiktokapis.com.evil.com/video/?upload_id=1",
+    "http://open-upload.tiktokapis.com/video/?upload_id=1",
+    "https://open-upload.tiktokapis.com/other/?upload_id=1",
+    "https://user:pass@open-upload.tiktokapis.com/video/?upload_id=1",
+    "not a url",
+  ])("rejeita upload_url não confiável (%s)", (uploadUrl) => {
+    expect(isTrustedTiktokUploadUrl(uploadUrl)).toBe(false);
+  });
+
+  it("não chama fetch quando o upload_url não é confiável", async () => {
+    const fetchMock = vi.fn();
+
+    const result = await uploadVideoToTiktok({
+      uploadUrl: "https://evil.com/video/?upload_id=1",
+      bytes: new Uint8Array([1]),
+      contentType: "video/mp4",
+      fetchImpl: fetchMock,
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result).toEqual({ ok: false, error: "upload_url inválida", status: null });
+  });
+
+  it("propaga falha de status sem expor o corpo da resposta", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("segredo interno", { status: 403 }));
+
+    const result = await uploadVideoToTiktok({
+      uploadUrl: "https://open-upload.tiktokapis.com/video/?upload_id=1",
+      bytes: new Uint8Array([1]),
+      contentType: "video/mp4",
+      fetchImpl: fetchMock,
+    });
+
+    expect(result).toEqual({ ok: false, error: "HTTP 403", status: 403 });
   });
 });
 
 describe("uploadPhotoInit", () => {
   it("faz POST /v2/post/publish/content/init/ com photo_files", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      okJson({ publish_id: "p2", upload_url: "https://upload" }),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(okJson({ publish_id: "p2", upload_url: "https://upload" }));
 
     const result = await uploadPhotoInit({
       accessToken: "at",
       title: "Fotos",
       photoFiles: [{ photoFileSize: 500, chunkSize: 500, totalChunkCount: 1 }],
-      fetchImpl: fetchMock as unknown as typeof fetch,
+      fetchImpl: fetchMock,
     });
 
     const [url, init] = firstCall(fetchMock);
     expect(url.pathname).toBe("/v2/post/publish/content/init/");
-    const body = JSON.parse(init.body as string);
-    expect(body.source_info.photo_files[0].photo_file_size).toBe(500);
+    const body: unknown = JSON.parse(init.body as string);
+    expect(body).toMatchObject({
+      source_info: { photo_files: [{ photo_file_size: 500 }] },
+    });
     expect(result.ok).toBe(true);
   });
 });
@@ -173,7 +319,7 @@ describe("fetchPublishStatus", () => {
     const result = await fetchPublishStatus({
       accessToken: "at",
       publishId: "p9",
-      fetchImpl: fetchMock as unknown as typeof fetch,
+      fetchImpl: fetchMock,
     });
 
     const [url, init] = firstCall(fetchMock);

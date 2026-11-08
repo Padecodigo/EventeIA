@@ -1,17 +1,17 @@
 /**
  * Persistência das contas TikTok conectadas (server-only, service_role).
- * Tokens criptografados em repouso quando TIKTOK_TOKEN_ENCRYPTION_KEY existe;
- * senão em claro com `encrypted = false` (loga e segue — nunca falha o app).
+ * Tokens são gravados criptografados (AES-256-GCM) com TIKTOK_TOKEN_ENCRYPTION_KEY.
+ * Sem a chave, a gravação/leitura falha fechada; nunca persiste token em claro.
  */
 
 import "server-only";
 
-import { serverEnv } from "@/lib/env";
+import { isConfigured, serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 import type { TiktokEnvironment } from "./config";
-import { protectToken } from "./encryption";
+import { decryptToken, deriveKey, protectToken } from "./encryption";
 
 /** Colunas seguras para exibição (nunca inclui access_token/refresh_token). */
 export interface TiktokConnectedAccount {
@@ -45,12 +45,13 @@ export async function saveTiktokAccount(input: SaveTiktokAccountInput): Promise<
   const key = serverEnv().TIKTOK_TOKEN_ENCRYPTION_KEY;
   const access = protectToken(input.accessToken, key);
   const refresh = protectToken(input.refreshToken, key);
-  const encrypted = access.encrypted && refresh.encrypted;
-
-  if (!encrypted) {
-    logger.warn(
+  if (!access.encrypted || !refresh.encrypted) {
+    logger.error(
       { table: "tiktok_oauth_tokens", owner_profile_id: input.ownerProfileId },
-      "TIKTOK_TOKEN_ENCRYPTION_KEY ausente — tokens do TikTok gravados em claro (encrypted=false)",
+      "TIKTOK_TOKEN_ENCRYPTION_KEY ausente — gravação de tokens TikTok bloqueada",
+    );
+    throw new Error(
+      "TIKTOK_TOKEN_ENCRYPTION_KEY ausente — tokens do TikTok não podem ser gravados em claro",
     );
   }
 
@@ -64,7 +65,7 @@ export async function saveTiktokAccount(input: SaveTiktokAccountInput): Promise<
       avatar_url: input.avatarUrl,
       access_token: access.value,
       refresh_token: refresh.value,
-      encrypted,
+      encrypted: true,
       scopes: input.scopes,
       expires_at: input.expiresAt,
       updated_at: new Date().toISOString(),
@@ -93,4 +94,75 @@ export async function listTiktokAccounts(): Promise<TiktokConnectedAccount[]> {
     return [];
   }
   return data ?? [];
+}
+
+export type TiktokAccessTokenReason =
+  "missing_account" | "not_encrypted" | "missing_key" | "decrypt_failed" | "expired";
+
+export type TiktokAccessTokenResult =
+  | {
+      ok: true;
+      accessToken: string;
+      environment: TiktokEnvironment;
+      accountId: string;
+    }
+  | { ok: false; reason: TiktokAccessTokenReason };
+
+/**
+ * Token da conta do ambiente ativo para upload de rascunho (server-only).
+ * Nunca devolve o token criptografado; sem a chave correta falha fechado.
+ */
+export async function getActiveTiktokAccessToken(): Promise<TiktokAccessTokenResult> {
+  const env = serverEnv();
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("tiktok_oauth_tokens")
+    .select("id,environment,access_token,encrypted,expires_at")
+    .eq("environment", env.TIKTOK_ENV)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error !== null) {
+    logger.error({ error, table: "tiktok_oauth_tokens" }, "falha ao ler conta TikTok ativa");
+    return { ok: false, reason: "missing_account" };
+  }
+  if (data === null) {
+    return { ok: false, reason: "missing_account" };
+  }
+
+  if (data.expires_at !== null) {
+    const expiresAt = Date.parse(data.expires_at);
+    if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+      return { ok: false, reason: "expired" };
+    }
+  }
+
+  // Credencial só é utilizável se foi persistida criptografada.
+  if (!data.encrypted) {
+    return { ok: false, reason: "not_encrypted" };
+  }
+
+  const key = deriveKey(env.TIKTOK_TOKEN_ENCRYPTION_KEY);
+  if (key === null) {
+    return { ok: false, reason: "missing_key" };
+  }
+
+  let accessToken: string;
+  try {
+    accessToken = decryptToken(data.access_token, key);
+  } catch {
+    logger.warn({ table: "tiktok_oauth_tokens" }, "falha ao descriptografar token TikTok");
+    return { ok: false, reason: "decrypt_failed" };
+  }
+
+  if (!isConfigured(accessToken)) {
+    return { ok: false, reason: "decrypt_failed" };
+  }
+  return {
+    ok: true,
+    accessToken,
+    environment: data.environment,
+    accountId: data.id,
+  };
 }
