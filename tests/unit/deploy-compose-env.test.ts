@@ -1,10 +1,14 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 // Variáveis lidas só em scripts/dev ou de propósito ausentes em produção.
 const PROD_EXCLUDED = new Set([
-  "NODE_ENV", "DEMO_ADMIN_PASSWORD", "DEMO_ANA_PASSWORD", "DEMO_LOGIN_SECRET",
+  "NODE_ENV",
+  "DEMO_ADMIN_PASSWORD",
+  "DEMO_ANA_PASSWORD",
+  "DEMO_LOGIN_SECRET",
 ]);
 
 function walk(dir: string, out: string[] = []): string[] {
@@ -23,11 +27,34 @@ describe("docker-compose.prod.yml", () => {
     const files = [...walk("app"), ...walk("lib"), ...walk("workers"), "middleware.ts"];
     const used = new Set<string>();
     for (const f of files)
-      for (const m of readFileSync(f, "utf8").matchAll(/process\.env\.([A-Z0-9_]+)/g)) used.add(m[1]);
+      for (const m of readFileSync(f, "utf8").matchAll(/process\.env\.([A-Z0-9_]+)/g))
+        used.add(m[1]);
     const missing = [...used].filter(
       (v) => !PROD_EXCLUDED.has(v) && !new RegExp(`^\\s+${v}:`, "m").test(compose),
     );
     expect(missing).toEqual([]);
+  });
+
+  it("mapeia as variáveis TikTok no env compartilhado por app e worker", () => {
+    const anchor = compose.slice(
+      compose.indexOf("x-app-env: &app-env"),
+      compose.indexOf("x-logging:"),
+    );
+    for (const key of [
+      "TIKTOK_ENV",
+      "TIKTOK_CLIENT_KEY",
+      "TIKTOK_CLIENT_SECRET",
+      "TIKTOK_SANDBOX_CLIENT_KEY",
+      "TIKTOK_SANDBOX_CLIENT_SECRET",
+      "TIKTOK_REDIRECT_URI",
+      "TIKTOK_TOKEN_ENCRYPTION_KEY",
+    ]) {
+      expect(anchor, key).toMatch(new RegExp(`^\\s+${key}: \\$\\{${key}:?-`, "m"));
+    }
+    expect(anchor).toContain("TIKTOK_ENV: ${TIKTOK_ENV:-sandbox}");
+
+    // App e worker usam o mesmo anchor; os dois precisam enxergar as variáveis.
+    expect(compose.match(/^\s+environment: \*app-env$/gm)).toHaveLength(2);
   });
 
   it("nunca habilita login demo em produção", () => {
@@ -56,4 +83,3 @@ describe("Dockerfile", () => {
     expect(dockerfile).toMatch(/^COPY package\.json pnpm-lock\.yaml pnpm-workspace\.yaml \.\/$/m);
   });
 });
-

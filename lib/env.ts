@@ -39,9 +39,14 @@ const serverSchema = z.object({
   META_VERIFY_TOKEN: z.string().optional(),
   META_PAGE_ID: z.string().optional(),
   META_INSTAGRAM_BUSINESS_ID: z.string().optional(),
-  META_API_VERSION: z.string().regex(/^v\d+\.\d+$/).default("v26.0"),
+  META_API_VERSION: z
+    .string()
+    .regex(/^v\d+\.\d+$/)
+    .default("v26.0"),
   // Host da Graph API: Facebook Login usa graph.facebook.com; Instagram Login usa graph.instagram.com.
-  META_API_HOST: z.enum(["graph.facebook.com", "graph.instagram.com"]).default("graph.facebook.com"),
+  META_API_HOST: z
+    .enum(["graph.facebook.com", "graph.instagram.com"])
+    .default("graph.facebook.com"),
   // Palavra-chave que o fornecedor comenta para receber a cotação na DM.
   META_PROSPECT_KEYWORD: z.string().min(1).default("cotação"),
   // Publicação Instagram: graph (API oficial) | browser (sessão logada, grokbot-style).
@@ -55,15 +60,30 @@ const serverSchema = z.object({
     .default("true")
     .transform((v) => v === "true"),
   // Prospecção: posts de isca (aprovação humana por padrão) e imagem SDXL.
-  REQUIRE_APPROVAL: z.enum(["true", "false"]).default("true").transform((v) => v === "true"),
-  MAX_POSTS_PER_DAY: z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).max(50).default(2)),
-  MAX_TAGS_PER_POST: z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).max(20).default(8)),
-  MIN_POST_INTERVAL_MINUTES: z.preprocess(emptyToUndefined, z.coerce.number().int().min(0).default(60)),
+  REQUIRE_APPROVAL: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((v) => v === "true"),
+  MAX_POSTS_PER_DAY: z.preprocess(
+    emptyToUndefined,
+    z.coerce.number().int().min(1).max(50).default(2),
+  ),
+  MAX_TAGS_PER_POST: z.preprocess(
+    emptyToUndefined,
+    z.coerce.number().int().min(1).max(20).default(8),
+  ),
+  MIN_POST_INTERVAL_MINUTES: z.preprocess(
+    emptyToUndefined,
+    z.coerce.number().int().min(0).default(60),
+  ),
   MODELSLAB_API_KEY: z.string().optional(),
   // Notificação de escalonamento da prospecção (opcional).
   TELEGRAM_BOT_TOKEN: z.string().optional(),
   TELEGRAM_CHAT_ID: z.string().optional(),
-  B2C_TICKET_PRICE_CENTS: z.preprocess(emptyToUndefined, z.coerce.number().int().positive().default(9700)),
+  B2C_TICKET_PRICE_CENTS: z.preprocess(
+    emptyToUndefined,
+    z.coerce.number().int().positive().default(9700),
+  ),
   ENGINE_TIMEZONE: z.string().default("America/Sao_Paulo"),
   // Descoberta automática de fornecedores (Fase 2).
   XAI_API_KEY: z.string().optional(),
@@ -96,7 +116,10 @@ const serverSchema = z.object({
   // Folga inicial do Grok (sem histórico qualquer chamada passaria de 25%) e custo estimado por busca ao vivo.
   AI_GROK_BOOTSTRAP_MICROUSD: z.coerce.number().int().min(0).default(200_000),
   AI_GROK_SEARCH_CALL_MICROUSD: z.coerce.number().int().min(0).default(30_000),
-  AI_USE_DEEPSEEK: z.enum(["true", "false", ""]).default("true").transform((v) => v !== "false"),
+  AI_USE_DEEPSEEK: z
+    .enum(["true", "false", ""])
+    .default("true")
+    .transform((v) => v !== "false"),
   // Central de atendimento: destino dos alertas imediatos (problema/urgente). Vazio = sem alerta.
   SUPPORT_ADMIN_EMAIL: z.string().email().optional().or(z.literal("")),
   // Aviso por e-mail ao dono quando um fornecedor responde no IG/Messenger.
@@ -112,7 +135,9 @@ const serverSchema = z.object({
   TIKTOK_SANDBOX_CLIENT_KEY: z.string().optional(),
   TIKTOK_SANDBOX_CLIENT_SECRET: z.string().optional(),
   // Redirect URI exato registrado no app TikTok; vazio = deriva de NEXT_PUBLIC_APP_URL + /tiktok/callback.
-  TIKTOK_REDIRECT_URI: z.string().url().optional().or(z.literal("")),
+  // A validação de esquema/host fica em lib/tiktok/config.ts para uma config
+  // inválida não derrubar o restante do runtime.
+  TIKTOK_REDIRECT_URI: z.string().optional(),
   // Chave (server-only) para criptografar access_token/refresh_token em repouso (AES-256-GCM).
   TIKTOK_TOKEN_ENCRYPTION_KEY: z.string().optional(),
 });
