@@ -15,6 +15,7 @@ import {
   type ProspectingPostRecord,
 } from "@/lib/prospecting/event-post-store";
 import { loadLookingFor } from "@/lib/prospecting/looking-for";
+import { activeImageApiKey } from "@/lib/prospecting/image-key";
 import { artForEventType } from "@/lib/prospecting/photos";
 import { createSupabasePostStore, findImageFor } from "@/lib/prospecting/posts-store";
 import { publishEventPost } from "@/lib/prospecting/publish-event-post";
@@ -123,7 +124,7 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
       caption,
     },
     approved: true,
-    modelslabKey: env.MODELSLAB_API_KEY,
+    modelslabKey: activeImageApiKey(),
     meta,
     store: createSupabasePostStore(),
     eventId,

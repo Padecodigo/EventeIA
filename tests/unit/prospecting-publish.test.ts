@@ -1,8 +1,24 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildPublishPlan } from "@/lib/prospecting/publish-plan";
 import { createSupabasePostStore, findImageFor } from "@/lib/prospecting/posts-store";
 import { publishPlannedPost } from "@/lib/prospecting/publish-runtime";
+
+const mocks = vi.hoisted(() => ({
+  applyBrandLogo: vi.fn(async (bytes: Buffer) => bytes),
+  storeArtBytes: vi.fn(async (_bytes: Buffer, _mime: string) => ({
+    url: "https://storage/branded.jpg",
+    expiresAt: new Date("2026-11-08T00:00:00Z"),
+  })),
+}));
+
+vi.mock("@/lib/marketing/brand-logo", () => ({ applyBrandLogo: mocks.applyBrandLogo }));
+vi.mock("@/lib/prospecting/art-cache", () => ({ storeArtBytes: mocks.storeArtBytes }));
+
+beforeEach(() => {
+  mocks.applyBrandLogo.mockClear();
+  mocks.storeArtBytes.mockClear();
+});
 
 const suppliers = [
   { handle: "buffet_a", category: "buffet" },
@@ -66,9 +82,36 @@ describe("runtime de publicação", () => {
       return {};
     });
     const outcome = await publishPlannedPost({ planned, approved: true, modelslabKey: "k", meta, fetchImpl });
-    expect(outcome).toEqual({ kind: "published", ok: true, mediaId: "media-1", imageUrl: "https://cdn/img.jpg" });
+    expect(outcome).toEqual({
+      kind: "published",
+      ok: true,
+      mediaId: "media-1",
+      imageUrl: "https://storage/branded.jpg",
+    });
     expect(calls.some((u) => u.includes("modelslab.com"))).toBe(true);
     expect(calls.some((u) => u.includes("media_publish"))).toBe(true);
+  });
+
+  it("aplica a logo EventeIA e sobe os bytes com marca quando a geração devolve URL", async () => {
+    const fetchImpl = fakeFetch((url) => {
+      if (url.includes("modelslab.com")) return { status: "success", output: ["https://cdn/img.jpg"], id: 1 };
+      if (url.includes("fields=status_code")) return { status_code: "FINISHED" };
+      if (url.includes("/media?")) return { id: "container-1" };
+      if (url.includes("/media_publish")) return { id: "media-1" };
+      return {};
+    });
+    const outcome = await publishPlannedPost({ planned, approved: true, modelslabKey: "k", meta, fetchImpl });
+
+    expect(outcome).toEqual({
+      kind: "published",
+      ok: true,
+      mediaId: "media-1",
+      imageUrl: "https://storage/branded.jpg",
+    });
+    expect(mocks.applyBrandLogo).toHaveBeenCalledTimes(1);
+    expect(mocks.applyBrandLogo).toHaveBeenCalledWith(expect.any(Buffer));
+    expect(mocks.storeArtBytes).toHaveBeenCalledTimes(1);
+    expect(mocks.storeArtBytes).toHaveBeenCalledWith(expect.any(Buffer), "image/jpeg");
   });
 
   it("para quando a imagem falha", async () => {
