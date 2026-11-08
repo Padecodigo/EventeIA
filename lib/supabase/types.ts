@@ -760,6 +760,14 @@ export interface Database {
         created_at: string;
         updated_at: string;
       }>;
+      autopilot_media: Table<{
+        id: string;
+        media_key: string;
+        kind: "post" | "story" | "reel";
+        theme: string;
+        url: string;
+        created_at: string;
+      }>;
     };
     Views: { [_ in never]: never };
     Functions: {
