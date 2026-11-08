@@ -12,6 +12,7 @@ import {
 
 import { generatePostArt, generateReelArt, generateStoryArt } from "./autopilot-art";
 import { loadUsedMedia, recordMediaUse, type AutopilotMediaKind } from "./autopilot-media";
+import { marketingPromptVariant } from "./image-prompt";
 import { pickFirstUnusedRecently, STATIC_REUSE_WINDOW_MS, staticMediaKey } from "./media-dedup";
 import { MARKETING_THEMES, themeForHour, type MarketingTheme } from "./themes";
 
@@ -91,6 +92,7 @@ export async function publishAutopilotPost(
   // 6 slots/dia (a cada 4h), com ordem embaralhada entre os dias — sem repetir imagem no dia.
   const dayOffset = Math.floor(now.getTime() / 86_400_000) % MARKETING_THEMES.length;
   const theme = themeForHour(now.getHours(), dayOffset);
+  const variant = marketingPromptVariant(now.getHours(), dayOffset);
 
   let caption: string;
   try {
@@ -100,7 +102,7 @@ export async function publishAutopilotPost(
     return { posted: false, reason: "caption_failed" };
   }
 
-  const postArt = await generatePostArt(theme);
+  const postArt = await generatePostArt(theme, {}, variant);
   let imageUrl: string;
   if (postArt !== null) {
     imageUrl = postArt.url;
@@ -124,7 +126,7 @@ export async function publishAutopilotPost(
   // Story (Instagram only): vertical 9:16 com a logo, sem legenda.
   if (result.kind === "published") {
     try {
-      const storyArt = await generateStoryArt(theme);
+      const storyArt = await generateStoryArt(theme, {}, variant);
       let storyUrl: string | null = null;
       if (storyArt !== null) {
         storyUrl = storyArt.url;
@@ -156,7 +158,7 @@ export async function publishAutopilotPost(
           logger.info({ theme: theme.key }, "autopilot: story publicada");
         }
       }
-      const reelArt = await generateReelArt(theme);
+      const reelArt = await generateReelArt(theme, {}, variant);
       let reelUrl: string | null = null;
       if (reelArt !== null) {
         reelUrl = reelArt.url;
