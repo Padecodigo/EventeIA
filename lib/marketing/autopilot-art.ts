@@ -185,6 +185,12 @@ function hasApiKey(key: string | undefined): key is string {
   return key !== undefined && key.length > 0;
 }
 
+/** Chave do provedor de imagem ATIVO (nvidia ou modelslab). */
+function activeImageApiKey(): string | undefined {
+  const env = serverEnv();
+  return env.IMAGE_PROVIDER === "nvidia" ? env.NVIDIA_NIM_API_KEY : env.MODELSLAB_API_KEY;
+}
+
 /** Dependências injetáveis do autopilot (testes não rodam rede/ffmpeg/Supabase). */
 export interface AutopilotArtDeps {
   fetchImpl?: typeof fetch;
@@ -225,7 +231,7 @@ async function generateUniqueArt(
   deps: AutopilotArtDeps,
 ): Promise<{ url: string } | null> {
   try {
-    const apiKey = serverEnv().MODELSLAB_API_KEY;
+    const apiKey = activeImageApiKey();
     if (!hasApiKey(apiKey)) return null;
     const used = new Set((await (deps.loadUsed ?? loadUsedMedia)()).map((use) => use.key));
     const brandImage = deps.brandImage ?? applyBrandLogo;
@@ -280,7 +286,7 @@ export async function generateReelArt(
   deps: AutopilotArtDeps = {},
 ): Promise<{ url: string } | null> {
   try {
-    const apiKey = serverEnv().MODELSLAB_API_KEY;
+    const apiKey = activeImageApiKey();
     if (!hasApiKey(apiKey)) return null;
     const used = new Set((await (deps.loadUsed ?? loadUsedMedia)()).map((use) => use.key));
     const brandImage = deps.brandImage ?? applyBrandLogo;
