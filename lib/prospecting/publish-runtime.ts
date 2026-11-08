@@ -1,9 +1,11 @@
+import { applyBrandLogo } from "@/lib/marketing/brand-logo";
 import {
   publishToChannels,
   type ChannelPublicationIds,
   type MetaPublishConfig,
 } from "@/lib/meta/publishing";
 import { generateImage } from "@/lib/modelslab/client";
+import { storeArtBytes } from "@/lib/prospecting/art-cache";
 
 import type { BaitReservation, PostStore, PostStatus } from "./posts-store";
 import { canPublishForEvent, type EventPublicationState } from "./publish-guard";
@@ -63,6 +65,39 @@ export interface PublishPlannedPostInput {
   /** Persiste a arte gerada (Storage) e devolve URL + validade. */
   persistArt?: (sourceUrl: string) => Promise<{ url: string; expiresAt: Date }>;
   fetchImpl?: typeof fetch;
+}
+
+/** Baixa uma URL de imagem para bytes (I/O injetável nos testes). */
+async function downloadBytes(url: string, fetchImpl: typeof fetch): Promise<Buffer> {
+  const response = await fetchImpl(url);
+  if (!response.ok) throw new Error(`download da imagem falhou (${String(response.status)})`);
+  return Buffer.from(await response.arrayBuffer());
+}
+
+/**
+ * Persiste a arte gerada com a identidade visual. Com `persistArt` injetado,
+ * usa o dep; sem ele (produção), baixa a imagem, aplica a logo EventeIA e sobe
+ * os bytes com marca no Storage. `null` em qualquer falha para o chamador cair
+ * no fallback de arte estática.
+ */
+async function persistGeneratedArt(
+  sourceUrl: string,
+  input: PublishPlannedPostInput,
+): Promise<{ url: string; expiresAt: Date } | null> {
+  if (input.persistArt !== undefined) {
+    try {
+      return await input.persistArt(sourceUrl);
+    } catch {
+      return null;
+    }
+  }
+  try {
+    const bytes = await downloadBytes(sourceUrl, input.fetchImpl ?? fetch);
+    const branded = await applyBrandLogo(bytes);
+    return await storeArtBytes(branded, "image/jpeg");
+  } catch {
+    return null;
+  }
 }
 
 export async function publishPlannedPost(input: PublishPlannedPostInput): Promise<PublishOutcome> {
@@ -142,14 +177,23 @@ export async function publishPlannedPost(input: PublishPlannedPostInput): Promis
       });
       if (image.ok) {
         if (image.images.length > 0) {
-          imageUrl = image.images[0];
-          if (input.persistArt !== undefined) {
-            const stored = await input.persistArt(imageUrl);
+          const stored = await persistGeneratedArt(image.images[0], input);
+          if (stored !== null) {
             imageUrl = stored.url;
             imageExpiresAt = stored.expiresAt;
-          } else if (image.expiresAt !== undefined) {
-            // Provedor já persistiu (ex.: NVIDIA → Storage) e informou a validade.
-            imageExpiresAt = image.expiresAt;
+          } else if (input.fallbackArt !== undefined) {
+            imageUrl = input.fallbackArt.url;
+            imageExpiresAt = null;
+          } else {
+            const reason = "persistência da arte falhou";
+            await input.store?.record({
+              planned: input.planned,
+              eventId: input.eventId,
+              imageExpiresAt: imageExpiresAt ?? undefined,
+              status: "failed",
+              error: reason,
+            });
+            return { kind: "image_failed", ok: false, reason: "image_failed", error: reason };
           }
         } else if (input.fallbackArt !== undefined) {
           imageUrl = input.fallbackArt.url;
