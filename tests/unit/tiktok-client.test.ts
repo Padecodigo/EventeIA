@@ -261,6 +261,14 @@ describe("uploadVideoToTiktok", () => {
     expect(isTrustedTiktokUploadUrl(uploadUrl)).toBe(false);
   });
 
+  it.each([
+    "https://open-upload.tiktokapis.com/video/?upload_id=1&upload_token=x",
+    "https://open-upload-sg.tiktokapis.com/upload?upload_id=1&upload_token=x",
+    "https://upload.us.tiktokapis.com/video/?upload_id=1",
+  ])("aceita upload_url confiável (%s)", (uploadUrl) => {
+    expect(isTrustedTiktokUploadUrl(uploadUrl)).toBe(true);
+  });
+
   it("não chama fetch quando o upload_url não é confiável", async () => {
     const fetchMock = vi.fn();
 
