@@ -228,7 +228,7 @@ export async function generateReelArt(
     const key = contentHash(frame);
     if (used.has(key)) return null;
 
-    const video = await renderReel([frame]);
+    const video = await renderReel([frame, frame, frame]);
     const url = await storeVideo(video);
     await recordUse({ mediaKey: key, kind: "reel", theme: theme.key, url });
     return { url };

@@ -146,7 +146,7 @@ describe("arte do autopilot com foto real + cards", () => {
       width: 1080,
       height: 1920,
     });
-    expect(renderReel).toHaveBeenCalledWith([bytesA]);
+    expect(renderReel).toHaveBeenCalledWith([bytesA, bytesA, bytesA]);
     expect(storeVideo).toHaveBeenCalledWith(Buffer.from("mp4-bytes"));
     expect(recordUse).toHaveBeenCalledTimes(1);
   });
