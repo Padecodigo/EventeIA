@@ -2,7 +2,11 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { isAdminUser, requireUser } from "@/lib/auth";
 import { creatorInfo, exchangeCodeForToken } from "@/lib/tiktok/client";
-import { tiktokCredentials, resolveTiktokRedirectUri } from "@/lib/tiktok/config";
+import {
+  resolveTiktokRedirectUri,
+  tiktokCanonicalOrigin,
+  tiktokCredentials,
+} from "@/lib/tiktok/config";
 import {
   clearTiktokOauthCookies,
   TIKTOK_STATE_COOKIE,
@@ -13,9 +17,20 @@ import { saveTiktokAccount } from "@/lib/tiktok/store";
 
 export const runtime = "nodejs";
 
+function originNotConfigured(): NextResponse {
+  return NextResponse.json({ error: "tiktok_origin_not_configured" }, { status: 500 });
+}
+
+/** Redirect interno só na origem canônica de servidor; bind host nunca é usado. */
+function internalRedirect(path: string): NextResponse {
+  const origin = tiktokCanonicalOrigin();
+  if (origin === null) return originNotConfigured();
+  return NextResponse.redirect(new URL(path, origin));
+}
+
 /** Destino admin + status legível pela página (nunca o code nem tokens). */
-function adminRedirect(request: NextRequest, status: string): NextResponse {
-  return NextResponse.redirect(new URL(`/admin/tiktok?tiktok=${status}`, request.url));
+function adminRedirect(status: string): NextResponse {
+  return internalRedirect(`/admin/tiktok?tiktok=${encodeURIComponent(status)}`);
 }
 
 /**
@@ -29,7 +44,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const oauthError = searchParams.get("error");
   if (oauthError !== null) {
     const status = oauthError === "access_denied" ? "cancelado" : "erro";
-    const response = adminRedirect(request, status);
+    const response = adminRedirect(status);
     clearTiktokOauthCookies(response);
     return response;
   }
@@ -45,25 +60,30 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // Sessão válida + admin (o fluxo é restrito a administradores).
   const user = await requireUser();
   if (!(await isAdminUser(user.id))) {
-    return NextResponse.redirect(new URL("/painel", request.url));
+    return internalRedirect("/painel");
   }
 
   const code = searchParams.get("code");
   const verifier = request.cookies.get(TIKTOK_VERIFIER_COOKIE)?.value ?? "";
   if (code === null || verifier.length === 0) {
-    const response = adminRedirect(request, "erro");
+    const response = adminRedirect("erro");
     clearTiktokOauthCookies(response);
     return response;
   }
 
   const credentials = tiktokCredentials();
   if (credentials === null) {
-    const response = adminRedirect(request, "erro_config");
+    const response = adminRedirect("erro_config");
     clearTiktokOauthCookies(response);
     return response;
   }
 
-  const redirectUri = resolveTiktokRedirectUri(request.headers, request.url);
+  const redirectUri = resolveTiktokRedirectUri();
+  if (redirectUri === null) {
+    const response = originNotConfigured();
+    clearTiktokOauthCookies(response);
+    return response;
+  }
 
   const tokenResult = await exchangeCodeForToken({
     code,
@@ -74,7 +94,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   });
 
   if (!tokenResult.ok) {
-    const response = adminRedirect(request, "erro_troca");
+    const response = adminRedirect("erro_troca");
     clearTiktokOauthCookies(response);
     return response;
   }
@@ -83,8 +103,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   // Dados públicos do criador (best-effort; não bloqueia a conexão).
   const info = await creatorInfo({ accessToken: token.access_token });
-  const displayName = info.ok ? info.data.display_name ?? null : null;
-  const avatarUrl = info.ok ? info.data.avatar_url ?? null : null;
+  const displayName = info.ok ? (info.data.display_name ?? null) : null;
+  const avatarUrl = info.ok ? (info.data.avatar_url ?? null) : null;
 
   const expiresAt =
     typeof token.expires_in === "number" && token.expires_in > 0
@@ -100,16 +120,19 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       avatarUrl,
       accessToken: token.access_token,
       refreshToken: token.refresh_token,
-      scopes: (token.scope ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+      scopes: (token.scope ?? "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
       expiresAt,
     });
   } catch {
-    const response = adminRedirect(request, "erro_gravar");
+    const response = adminRedirect("erro_gravar");
     clearTiktokOauthCookies(response);
     return response;
   }
 
-  const response = adminRedirect(request, "conectado");
+  const response = adminRedirect("conectado");
   clearTiktokOauthCookies(response);
   return response;
 }
