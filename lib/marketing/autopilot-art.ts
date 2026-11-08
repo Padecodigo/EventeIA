@@ -15,7 +15,7 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 import { loadUsedMedia, recordMediaUse, type RecordMediaUseInput } from "./autopilot-media";
 import { applyBrandLogo } from "./brand-logo";
-import { buildMarketingImagePrompt } from "./image-prompt";
+import { buildMarketingImagePrompt, type MarketingPromptVariant } from "./image-prompt";
 import { contentHash, FLUX_MAX_RETRIES, type MediaUse } from "./media-dedup";
 import type { MarketingTheme } from "./themes";
 
@@ -135,8 +135,12 @@ function runFfmpeg(args: readonly string[]): Promise<void> {
 }
 
 /** Prompt base + nonce aleatório: sem seed fixo, cada chamada é única. */
-function variedPrompt(theme: MarketingTheme, vertical: boolean): string {
-  return `${buildMarketingImagePrompt(theme, { vertical })} Variação única ${randomUUID()}.`;
+function variedPrompt(
+  theme: MarketingTheme,
+  vertical: boolean,
+  variant: MarketingPromptVariant,
+): string {
+  return `${buildMarketingImagePrompt(theme, { vertical, variant })} Variação única ${randomUUID()}.`;
 }
 
 interface GenerateImagesInput {
@@ -212,16 +216,18 @@ export interface AutopilotArtDeps {
 export async function generatePostArt(
   theme: MarketingTheme,
   deps: AutopilotArtDeps = {},
+  variant: MarketingPromptVariant = "cards",
 ): Promise<{ url: string } | null> {
-  return generateUniqueArt(theme, POST_SIZE, "post", deps);
+  return generateUniqueArt(theme, POST_SIZE, "post", deps, variant);
 }
 
 /** Arte vertical (1080×1920) do story; `null` em qualquer falha/colisão. */
 export async function generateStoryArt(
   theme: MarketingTheme,
   deps: AutopilotArtDeps = {},
+  variant: MarketingPromptVariant = "cards",
 ): Promise<{ url: string } | null> {
-  return generateUniqueArt(theme, STORY_SIZE, "story", deps);
+  return generateUniqueArt(theme, STORY_SIZE, "story", deps, variant);
 }
 
 async function generateUniqueArt(
@@ -229,6 +235,7 @@ async function generateUniqueArt(
   size: { width: number; height: number },
   kind: "post" | "story",
   deps: AutopilotArtDeps,
+  variant: MarketingPromptVariant,
 ): Promise<{ url: string } | null> {
   try {
     const apiKey = activeImageApiKey();
@@ -240,7 +247,7 @@ async function generateUniqueArt(
     const fetchImpl = deps.fetchImpl ?? fetch;
 
     for (let attempt = 0; attempt < FLUX_MAX_RETRIES; attempt += 1) {
-      const prompt = variedPrompt(theme, size.height > size.width);
+      const prompt = variedPrompt(theme, size.height > size.width, variant);
       const result = await generateImage({
         apiKey,
         prompt,
@@ -284,6 +291,7 @@ async function generateUniqueArt(
 export async function generateReelArt(
   theme: MarketingTheme,
   deps: AutopilotArtDeps = {},
+  variant: MarketingPromptVariant = "cards",
 ): Promise<{ url: string } | null> {
   try {
     const apiKey = activeImageApiKey();
@@ -298,7 +306,7 @@ export async function generateReelArt(
     for (let attempt = 0; attempt < FLUX_MAX_RETRIES; attempt += 1) {
       const images = await generateVerticalImages({
         apiKey,
-        basePrompt: buildMarketingImagePrompt(theme, { vertical: true }),
+        basePrompt: buildMarketingImagePrompt(theme, { vertical: true, variant }),
         count: REEL_IMAGES,
         fetchImpl,
       });

@@ -1,52 +1,151 @@
 import { describe, expect, it } from "vitest";
 
-import { buildMarketingImagePrompt } from "@/lib/marketing/image-prompt";
+import {
+  buildMarketingImagePrompt,
+  marketingPromptVariant,
+} from "@/lib/marketing/image-prompt";
 import { MARKETING_THEMES, type MarketingTheme } from "@/lib/marketing/themes";
 
 const theme = (key: string): MarketingTheme =>
   MARKETING_THEMES.find((t) => t.key === key) ?? MARKETING_THEMES[0];
 
-describe("prompt de imagem do FLUX", () => {
+describe("prompt de imagem do FLUX (estilo lifestyle + cards de orçamento)", () => {
   it("é determinístico: mesma entrada produz a mesma saída", () => {
     const infantil = theme("infantil");
     expect(buildMarketingImagePrompt(infantil)).toBe(buildMarketingImagePrompt(infantil));
-  });
-
-  it("usa enquadramento quadrado por padrão e vertical quando pedido", () => {
-    const infantil = theme("infantil");
-    expect(buildMarketingImagePrompt(infantil)).toContain("enquadramento quadrado 1:1");
-    expect(buildMarketingImagePrompt(infantil, { vertical: true })).toContain(
-      "enquadramento vertical 9:16",
+    expect(buildMarketingImagePrompt(infantil, { variant: "emotional" })).toBe(
+      buildMarketingImagePrompt(infantil, { variant: "emotional" }),
     );
   });
 
-  it("descreve uma cena específica do tema", () => {
-    expect(buildMarketingImagePrompt(theme("infantil"))).toContain("festa infantil");
-    expect(buildMarketingImagePrompt(theme("casamento"))).toContain("casamento");
-    expect(buildMarketingImagePrompt(theme("corporativo"))).toContain("corporativo");
+  it("usa composição quadrada por padrão e vertical quando pedido", () => {
+    const infantil = theme("infantil");
+    expect(buildMarketingImagePrompt(infantil)).toContain(
+      "square composition for social media (1:1)",
+    );
+    expect(buildMarketingImagePrompt(infantil, { vertical: true })).toContain(
+      "vertical composition for social media (9:16)",
+    );
+    expect(buildMarketingImagePrompt(infantil, { variant: "emotional", vertical: true })).toContain(
+      "vertical composition for social media (9:16)",
+    );
   });
 
-  it("proíbe texto, logotipos, marcas d'água e pessoas identificáveis", () => {
-    const prompt = buildMarketingImagePrompt(theme("formatura"));
-    expect(prompt).toContain("Sem texto");
-    expect(prompt).toContain("sem logotipos");
-    expect(prompt).toContain("sem marcas d'água");
-    expect(prompt).toContain("sem pessoas identificáveis");
+  it("mira a estética de referência do variante 'cards'", () => {
+    const prompt = buildMarketingImagePrompt(theme("infantil"));
+    expect(prompt).toContain("lifestyle photograph");
+    expect(prompt).toContain("photorealistic");
+    expect(prompt).toContain("high-end advertising photography");
+    expect(prompt).toContain("UI notification cards");
+    expect(prompt).toContain("rounded corners");
+    expect(prompt).toContain("maroon checkmark icon");
   });
 
-  it("mira a estética editorial elogiada (foto real, não CGI/ilustração)", () => {
-    const prompt = buildMarketingImagePrompt(theme("casamento"));
-    expect(prompt).toContain("editorial realista e sofisticada");
-    expect(prompt).toContain("iluminação natural quente");
-    expect(prompt).toContain("aparência de foto profissional real");
-    expect(prompt).toContain("não ilustração");
-    expect(prompt).toContain("não desenho");
-    expect(prompt).toContain("não CGI");
+  it("descreve os 2 cards no formato exato 'Orçamento recebido - <categoria>'", () => {
+    const prompt = buildMarketingImagePrompt(theme("infantil"));
+    expect(prompt).toContain("Orçamento recebido - Buffet infantil");
+    expect(prompt).toContain("Orçamento recebido - Decoração · via WhatsApp");
+  });
+
+  it("usa as categorias certas por tema (duas mais relevantes)", () => {
+    const cases: Record<string, [string, string]> = {
+      infantil: ["Buffet infantil", "Decoração"],
+      aniversario: ["Buffet", "Bolo"],
+      casamento: ["Buffet", "Decoração"],
+      "15-anos": ["Buffet", "DJ"],
+      formatura: ["Espaço", "DJ"],
+      corporativo: ["Coffee break", "Espaço"],
+    };
+    for (const [key, [a, b]] of Object.entries(cases)) {
+      const prompt = buildMarketingImagePrompt(theme(key));
+      expect(prompt, key).toContain(`Orçamento recebido - ${a}`);
+      expect(prompt, key).toContain(`Orçamento recebido - ${b} · via WhatsApp`);
+    }
+  });
+
+  it("adapta o cenário/decoração ao tema (não é uma cena genérica)", () => {
+    expect(buildMarketingImagePrompt(theme("infantil"))).toContain("balloons");
+    expect(buildMarketingImagePrompt(theme("casamento"))).toContain("event hall");
+    expect(buildMarketingImagePrompt(theme("casamento"))).toContain("burgundy");
+    expect(buildMarketingImagePrompt(theme("15-anos"))).toContain("ballroom");
+    expect(buildMarketingImagePrompt(theme("formatura"))).toContain("cap");
+    expect(buildMarketingImagePrompt(theme("corporativo"))).toContain("event space");
+    expect(buildMarketingImagePrompt(theme("aniversario"))).toContain("birthday cake");
   });
 
   it("distingue temas diferentes", () => {
     expect(buildMarketingImagePrompt(theme("infantil"))).not.toBe(
       buildMarketingImagePrompt(theme("corporativo")),
     );
+    expect(buildMarketingImagePrompt(theme("casamento"))).not.toBe(
+      buildMarketingImagePrompt(theme("formatura")),
+    );
+  });
+
+  it("todos os temas geram um prompt não vazio com os 2 cards", () => {
+    for (const t of MARKETING_THEMES) {
+      const prompt = buildMarketingImagePrompt(t);
+      expect(prompt.length).toBeGreaterThan(0);
+      expect((prompt.match(/Orçamento recebido - /g) ?? []).length).toBe(2);
+    }
+  });
+});
+
+describe("variante 'emotional' (cena pura, sem cards)", () => {
+  it("não tem cards nem texto de orçamento", () => {
+    const prompt = buildMarketingImagePrompt(theme("infantil"), { variant: "emotional" });
+    expect(prompt).not.toContain("Orçamento recebido");
+    expect(prompt).not.toContain("notification card");
+  });
+
+  it("mira a estética cinematográfica/emocional de referência", () => {
+    const prompt = buildMarketingImagePrompt(theme("infantil"), { variant: "emotional" });
+    expect(prompt).toContain("Shallow depth of field");
+    expect(prompt).toContain("cinematic lighting");
+    expect(prompt).toContain("photorealistic commercial advertising");
+    expect(prompt).toContain("8k");
+  });
+
+  it("adapta a cena emocional ao tema", () => {
+    expect(buildMarketingImagePrompt(theme("infantil"), { variant: "emotional" })).toContain(
+      "birthday cake",
+    );
+    expect(buildMarketingImagePrompt(theme("casamento"), { variant: "emotional" })).toContain(
+      "first dance",
+    );
+    expect(buildMarketingImagePrompt(theme("15-anos"), { variant: "emotional" })).toContain(
+      "debutante",
+    );
+    expect(buildMarketingImagePrompt(theme("formatura"), { variant: "emotional" })).toContain(
+      "caps and gowns",
+    );
+    expect(buildMarketingImagePrompt(theme("corporativo"), { variant: "emotional" })).toContain(
+      "team",
+    );
+    expect(buildMarketingImagePrompt(theme("aniversario"), { variant: "emotional" })).toContain(
+      "make a wish",
+    );
+  });
+});
+
+describe("alternância determinística do variante", () => {
+  it("alterna por slot de 4h (par = cards, ímpar = emotional)", () => {
+    expect(marketingPromptVariant(0)).toBe("cards");
+    expect(marketingPromptVariant(4)).toBe("emotional");
+    expect(marketingPromptVariant(8)).toBe("cards");
+    expect(marketingPromptVariant(12)).toBe("emotional");
+    expect(marketingPromptVariant(16)).toBe("cards");
+    expect(marketingPromptVariant(20)).toBe("emotional");
+  });
+
+  it("dayOffset inverte a paridade entre os dias", () => {
+    expect(marketingPromptVariant(0, 0)).toBe("cards");
+    expect(marketingPromptVariant(0, 1)).toBe("emotional");
+    expect(marketingPromptVariant(0, 2)).toBe("cards");
+  });
+
+  it("é determinístico e lida com horas negativas", () => {
+    expect(marketingPromptVariant(-4)).toBe(marketingPromptVariant(4));
+    expect(marketingPromptVariant(7)).toBe(marketingPromptVariant(4));
   });
 });
