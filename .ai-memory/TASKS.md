@@ -1,7 +1,7 @@
 # TASKS — handoff do agente
 
 > Atualize ao encerrar a sessão: o que ficou pronto, o que está travado, qual o próximo passo.
-> Última atualização: 2026-11-07 15h55 (America/Sao_Paulo).
+> Última atualização: 2026-11-07 23h10 (America/Sao_Paulo).
 
 ## Produto hoje (decisões fechadas)
 
@@ -17,11 +17,12 @@
 
 ## Estado do tronco
 
-- `main` = `dba1018` (ver `git log -1`); produção roda o deploy do #219.
+- `main` = `e2b5107` (ver `git log -1`); produção deployada junto (app + worker + Redis).
 - Deploy: `POST /api/v1/deploy?uuid=ozqnl541gzloqhsqvpjtqa8l` no Coolify (token em
   `/root/.coolify_token` na VPS `root@200.141.28.13`, chave `~/.ssh/eventeia_vps`).
   Um único compose sobe app + worker + Redis.
-- **Migração `0083` já aplicada. NÃO reaplicar.** Duas exclusões auditadas já feitas. **NÃO repetir.**
+- **Migrações `0084` (tiktok_oauth_tokens) e `0085` (ticket_purchases) já aplicadas e registradas
+  em `schema_migrations`. NÃO reaplicar.**
 
 ## Verificado em produção (07/11)
 
@@ -37,8 +38,12 @@
       `missing_permission` é inalcançável.
 - [ ] **Limpeza de publicações** — buffet `17875462215638458` sem confirmação; decor
       `18026996645916620` e space `17971549067960951` não tocados. Drinks/cake confirmados: não refazer.
-- [ ] **4 posts + 4 stories + 4 reels/dia por canal**, sem repetir imagem, com logo. Avaliar geração gratuita.
-- [ ] **TikTok**: publicação e busca de fornecedores sem custo.
+- [x] **4 posts + 4 stories + 4 reels/dia por canal**, sem repetir imagem, com logo (autopilot 4h,
+      stories 9:16 e reels ffmpeg — PRs #226/#227/#228).
+- [x] **TikTok — publicidade** (Login Kit + Content Posting API, rascunho inbox): conexão, upload,
+      webhook assinado e verificação de domínio prontos. **Escopo = só publicidade** (decisão #013);
+      descoberta de fornecedores NÃO vai pro TikTok. Falta: gravar demo para review e aprovar o app.
+- [x] **Ticket avulso**: comprar ticket sem evento e consumir na ativação (PR #231, migração `0085`).
 - [ ] **Código de contratante vs. fornecedor** (hoje um código só confirma/publica).
 - [ ] **Pendências do App Review da Meta**.
 
