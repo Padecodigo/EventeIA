@@ -178,7 +178,12 @@ describe("evento avulso", () => {
       discountCents: 1940,
     });
     expect(asaasValue()).toBe(77.6);
-    expect(fns()).toEqual(["user_offer_current", "user_offer_claim", "user_offer_attach"]);
+    expect(fns()).toEqual([
+      "consume_available_ticket",
+      "user_offer_current",
+      "user_offer_claim",
+      "user_offer_attach",
+    ]);
     expect(db.tables.payments?.[0]).toMatchObject({
       amount_cents: 7760,
       discount_cents: 1940,

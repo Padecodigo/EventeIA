@@ -30,6 +30,8 @@ import { attachUserOffer, releaseUserOffer } from "@/lib/offers/server";
 import { CREDIT_PACKAGES, PLANS } from "@/lib/plans";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createPendingTicket } from "@/lib/tickets/store";
+import { serverEnv } from "@/lib/env";
 import { ensureWorkspace } from "@/lib/workspace/server";
 
 export async function createWorkspaceAction(): Promise<void> {
@@ -612,5 +614,162 @@ export async function cancelSubscriptionAction(
       "falha ao cancelar assinatura",
     );
     return { error: "Não foi possível cancelar a renovação. Tente novamente." };
+  }
+}
+
+const buyTicketCreditSchema = z.object({
+  cpf: z.string().regex(/^\d{11}$/),
+  method: z.enum(["pix", "card"]).default("pix"),
+});
+
+/**
+ * Compra de ticket AVULSO (sem evento): cobra R$ 97 (B2C_TICKET_PRICE_CENTS) e
+ * guarda um ticket_purchases pendente; a confirmação do Asaas o torna disponível
+ * (0085). Sem cupom/oferta aqui — preço fixo, para não criar desconto duplo
+ * (o crédito ainda valerá o preço cheio do evento que for ativado).
+ */
+export async function buyTicketCreditAction(
+  _previous: CreditsCheckoutState,
+  formData: FormData,
+): Promise<CreditsCheckoutState> {
+  const user = await requireUser();
+
+  const cpfEntry = formData.get("cpf");
+  const rawCpf = typeof cpfEntry === "string" ? cpfEntry.replace(/\D/g, "") : "";
+  const parsed = buyTicketCreditSchema.safeParse({
+    cpf: rawCpf,
+    method: formData.get("method") ?? undefined,
+  });
+
+  if (!parsed.success) {
+    return { error: "Informe um CPF válido (11 dígitos)." };
+  }
+
+  if (!hasAcceptedTerms(formData)) {
+    return { error: TERMS_ERROR };
+  }
+  await recordTermsAcceptance(user.id, "checkout");
+
+  const supabase = await createSupabaseServerClient();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name,document_number,asaas_customer_id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profile === null) {
+    return { error: "Perfil não encontrado. Saia e entre novamente." };
+  }
+
+  try {
+    const admin = getSupabaseAdmin();
+    const priceCents = serverEnv().B2C_TICKET_PRICE_CENTS;
+    const billingType = parsed.data.method === "card" ? "CREDIT_CARD" : "PIX";
+
+    await admin
+      .from("profiles")
+      .update({ document_number: parsed.data.cpf, document_type: "cpf" })
+      .eq("id", user.id);
+
+    let customerId = profile.asaas_customer_id;
+    if (customerId === null) {
+      customerId = await createAsaasCustomer({
+        name: profile.display_name,
+        cpfCnpj: parsed.data.cpf,
+        email: user.email,
+      });
+      await admin.from("profiles").update({ asaas_customer_id: customerId }).eq("id", user.id);
+    }
+
+    const dueDate = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+    const chargeInput = {
+      customerId,
+      amountCents: priceCents,
+      externalReference: `ticket-credit:${user.id}`,
+      description: "EventeIA — ticket avulso (use em qualquer evento)",
+      dueDate,
+    };
+    const pixPayment = billingType === "PIX" ? await createAsaasPixPayment(chargeInput) : null;
+    const cardPayment =
+      billingType === "CREDIT_CARD" ? await createAsaasCardPayment(chargeInput) : null;
+    const asaasPaymentId = pixPayment?.paymentId ?? cardPayment?.paymentId ?? "";
+
+    const { data: paymentRow, error: paymentError } = await supabase
+      .from("payments")
+      .insert({
+        profile_id: user.id,
+        purpose: "ticket_credit",
+        event_id: null,
+        asaas_payment_id: asaasPaymentId,
+        billing_type: billingType,
+        amount_cents: priceCents,
+        status: "pending",
+      })
+      .select("id")
+      .single();
+
+    if (paymentError !== null || paymentRow === null) {
+      logger.error({ code: paymentError?.code }, "falha ao registrar pagamento do ticket avulso");
+      return { error: "Pagamento criado, mas o registro local falhou. Nossa equipe foi avisada." };
+    }
+
+    try {
+      await createPendingTicket(
+        {
+          ownerProfileId: user.id,
+          paymentId: asaasPaymentId,
+          amountCents: priceCents,
+        },
+        admin,
+      );
+    } catch (caught) {
+      logger.error(
+        { reason: caught instanceof Error ? caught.message : "desconhecido" },
+        "falha ao registrar ticket avulso pendente",
+      );
+      return { error: "Não foi possível registrar o ticket. Tente novamente." };
+    }
+
+    try {
+      await emitFeed(admin, {
+        type: "payment.created",
+        actorType: "user",
+        actorId: user.id,
+        aggregateType: "payment",
+        aggregateId: paymentRow.id,
+        payload: { amount_cents: priceCents, billing_type: billingType, purpose: "ticket_credit" },
+        correlationId: asaasPaymentId,
+        source: "app",
+      });
+    } catch (caught) {
+      logger.warn(
+        { reason: caught instanceof Error ? caught.message : "desconhecido" },
+        "feed payment.created falhou",
+      );
+    }
+
+    revalidatePath("/creditos");
+
+    return {
+      ...(pixPayment !== null
+        ? {
+            pix: {
+              payload: pixPayment.pix.payload,
+              invoiceUrl: pixPayment.invoiceUrl,
+              expirationDate: pixPayment.pix.expirationDate,
+            },
+          }
+        : {}),
+      ...(cardPayment !== null ? { card: { invoiceUrl: cardPayment.invoiceUrl } } : {}),
+    };
+  } catch (caught) {
+    if (caught instanceof AsaasNotConfiguredError) {
+      return { error: "Pagamentos não configurados neste ambiente (ASAAS_API_KEY)." };
+    }
+    logger.error(
+      { reason: caught instanceof Error ? caught.message : "desconhecido" },
+      "falha ao comprar ticket avulso",
+    );
+    return { error: "Não foi possível gerar o pagamento. Tente novamente em instantes." };
   }
 }

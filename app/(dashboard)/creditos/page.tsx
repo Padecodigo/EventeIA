@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { personalEventsFilter } from "@/lib/auth/personal-scope-server";
 import { BuyTicketForm } from "@/components/domain/buy-ticket-form";
+import { BuyTicketCreditForm } from "@/components/domain/buy-ticket-credit-form";
 import { formatBRL } from "@/lib/money";
 import { ticketPriceCents } from "@/lib/seo/pricing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -22,9 +23,9 @@ function dateLabel(iso: string | null): string {
 }
 
 /**
- * Pagamento do painel: o ticket é sempre de um evento (R$ 97, pagamento único).
- * Aqui o usuário vê o que está esperando pagamento e compra o ticket daquele evento —
- * não se cria evento nesta tela.
+ * Aba Comprar: agora é o lugar de COMPRAR um ticket avulso (R$ 97) — sem evento.
+ * O usuário guarda o ticket e o consome ao ativar um evento. Os eventos ainda
+ * aguardando pagamento aparecem em uma seção secundária.
  */
 export default async function PaymentPage() {
   const user = await requireUser();
@@ -57,6 +58,13 @@ export default async function PaymentPage() {
     .maybeSingle();
   const defaultCpf = profile?.document_number ?? "";
 
+  // Tickets avulsos disponíveis (ativos, sem evento). RLS limita ao dono.
+  const { count: availableCount } = await supabase
+    .from("ticket_purchases")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "active")
+    .is("event_id", null);
+
   return (
     <div className="flex flex-col gap-10">
       <section>
@@ -64,8 +72,23 @@ export default async function PaymentPage() {
         <h1 className="mt-3 font-serif text-display-2 font-display">Comprar ticket.</h1>
         <p className="mt-2 max-w-2xl text-sm text-vinho/75">
           Um ticket de <strong className="font-semibold text-vinho">{price}</strong> por evento, pagamento
-          único, sem mensalidade. O ticket libera o orçamento completo e as cotações daquele evento.
+          único, sem mensalidade. Compre agora, sem evento, e use o ticket quando criar a sua festa.
         </p>
+      </section>
+
+      <section aria-labelledby="disponiveis-title">
+        <h2 id="disponiveis-title" className="font-serif text-title-1">
+          Tickets disponíveis: {availableCount ?? 0}
+        </h2>
+        <p className="mt-1 max-w-2xl text-sm text-vinho/70">
+          {availableCount !== null && availableCount > 0
+            ? "Você tem ticket guardado. Ao ativar um evento, ele é consumido automaticamente — sem nova cobrança."
+            : "Você ainda não tem ticket avulso disponível. Compre abaixo e ele fica guardado para o próximo evento."}
+        </p>
+
+        <div className="mt-4">
+          <BuyTicketCreditForm priceFormatted={price} defaultCpf={defaultCpf} />
+        </div>
       </section>
 
       <section aria-labelledby="pendentes-title">
@@ -98,29 +121,10 @@ export default async function PaymentPage() {
             ))}
           </ul>
         ) : (
-          <div className="mt-4 rounded-card border border-line-subtle bg-off-white p-6 shadow-soft">
-            <p className="eyebrow">Ticket por evento</p>
-            <p className="mt-2 font-serif text-title-1">{price}</p>
-            <p className="mt-1 text-sm text-vinho/75">
-              Pagamento único por evento, Pix ou cartão de crédito. Libera o orçamento completo, as
-              cotações ilimitadas e o contato com os fornecedores daquele evento.
-            </p>
-            <ol className="mt-4 space-y-1 text-sm text-vinho/75">
-              <li>1. Conte do evento (30 segundos)</li>
-              <li>2. Pague o ticket — Pix ou cartão</li>
-              <li>3. Receba o orçamento pronto</li>
-            </ol>
-            <Link
-              prefetch={false}
-              href="/eventos#novo-evento"
-              className="mt-5 inline-flex min-h-[48px] items-center justify-center rounded-full bg-primaria px-7 py-3 text-sm font-semibold text-on-primary transition hover:bg-primaria-escura"
-            >
-              Criar meu evento
-            </Link>
-            <p className="mt-3 text-caption text-vinho/60">
-              O ticket é do evento: você descreve a festa, paga e a entrevista começa com o ticket ativo.
-            </p>
-          </div>
+          <p className="mt-3 text-sm text-vinho/70">
+            Nenhum evento aguardando pagamento. Crie um evento para descrever a festa — você pode
+            pagar o ticket do evento na hora ou usar um ticket avulso já comprado.
+          </p>
         )}
 
         <div className="mt-6 flex flex-wrap gap-4 text-sm">

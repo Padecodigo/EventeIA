@@ -22,6 +22,11 @@ vi.mock("@/components/domain/buy-ticket-form", () => ({
     <div data-testid="checkout">checkout {eventId}</div>
   ),
 }));
+vi.mock("@/components/domain/buy-ticket-credit-form", () => ({
+  BuyTicketCreditForm: ({ priceFormatted }: { priceFormatted: string }) => (
+    <div data-testid="credit-checkout">ticket avulso {priceFormatted}</div>
+  ),
+}));
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: () =>
     Promise.resolve({
@@ -33,6 +38,8 @@ vi.mock("@/lib/supabase/server", () => ({
         // `.in(...)` termina a busca de tickets; `.maybeSingle()` a do perfil.
         q.in = () => Promise.resolve({ data: tickets, error: null });
         q.maybeSingle = () => Promise.resolve({ data: null, error: null });
+        // `.is(...)` termina a contagem de tickets avulsos disponíveis.
+        q.is = () => Promise.resolve({ count: 0, data: [], error: null });
         return q;
       },
     }),
@@ -57,6 +64,8 @@ describe("/creditos — comprar ticket do evento", () => {
     expect(screen.queryByText("Casamento Ana")).toBeNull();
     // O checkout do ticket acontece na própria aba, para o evento pendente.
     expect(screen.getByTestId("checkout")).toHaveTextContent("ev-1");
+    // A compra de ticket avulso (sem evento) é sempre oferecida.
+    expect(screen.getByTestId("credit-checkout")).toBeInTheDocument();
   });
 
   it("sem evento pendente, ainda oferece comprar o ticket", async () => {
@@ -65,11 +74,12 @@ describe("/creditos — comprar ticket do evento", () => {
 
     render(await PaymentPage());
 
-    expect(screen.getByRole("link", { name: /criar meu evento/i })).toHaveAttribute(
+    expect(screen.getByRole("heading", { name: /tickets disponíveis/i })).toBeInTheDocument();
+    expect(screen.getByTestId("credit-checkout")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /criar um evento/i })).toHaveAttribute(
       "href",
-      "/eventos#novo-evento",
+      "/eventos",
     );
-    expect(screen.getAllByText(/pix ou cart\u00e3o/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/assinatura|franquia|créditos/i)).toBeNull();
   });
 });
