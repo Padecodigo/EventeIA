@@ -32,10 +32,17 @@ const cspProduction = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Páginas *.dev.tsx (ex.: /dev/estilos) só existem fora do build de produção.
-  pageExtensions: process.env.NODE_ENV === "production" ? ["tsx", "ts", "jsx", "js"] : ["dev.tsx", "tsx", "ts", "jsx", "js"],
+  pageExtensions:
+    process.env.NODE_ENV === "production"
+      ? ["tsx", "ts", "jsx", "js"]
+      : ["dev.tsx", "tsx", "ts", "jsx", "js"],
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
+  experimental: {
+    // Upload de rascunho TikTok: 50 MB de vídeo + multipart (limite local em lib/tiktok/draft-rules.ts).
+    serverActions: { bodySizeLimit: "60mb" },
+  },
   images: {
     formats: ["image/avif", "image/webp"],
     deviceSizes: [360, 414, 640, 750, 828, 1080, 1200, 1920],
@@ -61,7 +68,9 @@ const nextConfig = {
     if (process.env.NODE_ENV === "production") {
       headers.push({ key: "Content-Security-Policy", value: cspProduction });
     }
-    const assetCache = [{ key: "Cache-Control", value: "public, max-age=2592000, stale-while-revalidate=86400" }];
+    const assetCache = [
+      { key: "Cache-Control", value: "public, max-age=2592000, stale-while-revalidate=86400" },
+    ];
     return [
       { source: "/(.*)", headers },
       { source: "/img/:path*", headers: assetCache },

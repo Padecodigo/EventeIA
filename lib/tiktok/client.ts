@@ -9,8 +9,7 @@ import "server-only";
 export const TIKTOK_API_BASE = "https://open.tiktokapis.com";
 
 export type TiktokResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; error: string; status: number | null };
+  { ok: true; data: T } | { ok: false; error: string; status: number | null };
 
 export interface TiktokTokenResponse {
   access_token: string;
@@ -60,12 +59,10 @@ export async function exchangeCodeForToken(
   }
 
   const payload = (await response.json().catch(() => null)) as
-    | (TiktokTokenResponse & { error?: string; error_description?: string })
-    | null;
+    (TiktokTokenResponse & { error?: string; error_description?: string }) | null;
 
   if (!response.ok) {
-    const error =
-      payload?.error_description ?? payload?.error ?? `HTTP ${String(response.status)}`;
+    const error = payload?.error_description ?? payload?.error ?? `HTTP ${String(response.status)}`;
     return { ok: false, error, status: response.status };
   }
 
@@ -104,9 +101,10 @@ export async function creatorInfo(input: CreatorInfoInput): Promise<TiktokResult
     return { ok: false, error: String(error), status: null };
   }
 
-  const payload = (await response.json().catch(() => null)) as
-    | { data?: { user?: CreatorInfo }; error?: { message?: string; code?: string } }
-    | null;
+  const payload = (await response.json().catch(() => null)) as {
+    data?: { user?: CreatorInfo };
+    error?: { message?: string; code?: string };
+  } | null;
 
   if (!response.ok) {
     return {
@@ -128,12 +126,32 @@ export interface UploadInitData {
   upload_url: string;
 }
 
+/** Resposta de /init precisa dos dois campos antes de qualquer upload/uso. */
+function parseUploadInitData(value: unknown): UploadInitData | null {
+  if (typeof value !== "object" || value === null) return null;
+  const data = value as Record<string, unknown>;
+  const publishId = data.publish_id;
+  const uploadUrl = data.upload_url;
+  if (
+    typeof publishId !== "string" ||
+    publishId.length === 0 ||
+    publishId.length > 64 ||
+    typeof uploadUrl !== "string" ||
+    uploadUrl.length === 0 ||
+    uploadUrl.length > 256
+  ) {
+    return null;
+  }
+  return { publish_id: publishId, upload_url: uploadUrl };
+}
+
 export interface VideoUploadInitInput {
   accessToken: string;
-  title: string;
   videoSizeBytes: number;
   chunkSizeBytes: number;
   totalChunkCount: number;
+  /** Legado/compatibilidade: o inbox não usa post_info; o título é definido no app. */
+  title?: string;
   privacyLevel?: string;
   fetchImpl?: typeof fetch;
 }
@@ -142,21 +160,88 @@ export interface VideoUploadInitInput {
 export async function uploadVideoInit(
   input: VideoUploadInitInput,
 ): Promise<TiktokResult<UploadInitData>> {
-  return postJson("/v2/post/publish/inbox/video/init/", input.accessToken, {
-    post_info: {
-      title: input.title,
-      privacy_level: input.privacyLevel ?? "SELF_ONLY",
-      disable_duet: false,
-      disable_comment: false,
-      disable_stitch: false,
+  const result = await postJson<unknown>(
+    "/v2/post/publish/inbox/video/init/",
+    input.accessToken,
+    {
+      source_info: {
+        source: "FILE_UPLOAD",
+        video_size: input.videoSizeBytes,
+        chunk_size: input.chunkSizeBytes,
+        total_chunk_count: input.totalChunkCount,
+      },
     },
-    source_info: {
-      source: "FILE_UPLOAD",
-      video_size: input.videoSizeBytes,
-      chunk_size: input.chunkSizeBytes,
-      total_chunk_count: input.totalChunkCount,
-    },
-  }, input.fetchImpl);
+    input.fetchImpl,
+  );
+  if (!result.ok) return result;
+
+  const data = parseUploadInitData(result.data);
+  if (data === null) {
+    return { ok: false, error: "resposta de upload inválida", status: null };
+  }
+  return { ok: true, data };
+}
+
+export interface VideoUploadInput {
+  uploadUrl: string;
+  bytes: Uint8Array<ArrayBuffer>;
+  contentType: string;
+  fetchImpl?: typeof fetch;
+}
+
+const TIKTOK_UPLOAD_HOST_SUFFIX = ".tiktokapis.com";
+
+/** O upload_url devolvido pelo TikTok é a única URL externa que recebe o arquivo. */
+export function isTrustedTiktokUploadUrl(raw: string): boolean {
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== "https:" || url.port !== "") return false;
+    if (url.username.length > 0 || url.password.length > 0) return false;
+    if (!url.pathname.startsWith("/video/")) return false;
+    const host = url.hostname.toLowerCase();
+    return host === "tiktokapis.com" || host.endsWith(TIKTOK_UPLOAD_HOST_SUFFIX);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * PUT do arquivo inteiro para o upload_url do TikTok (até 64 MB é permitido em
+ * um único chunk). Valida o host para não transformar a resposta da API em SSRF.
+ */
+export async function uploadVideoToTiktok(
+  input: VideoUploadInput,
+): Promise<TiktokResult<{ status: number }>> {
+  if (!isTrustedTiktokUploadUrl(input.uploadUrl)) {
+    return { ok: false, error: "upload_url inválida", status: null };
+  }
+  const size = input.bytes.byteLength;
+  if (size === 0) {
+    return { ok: false, error: "arquivo vazio", status: null };
+  }
+
+  const fetcher = input.fetchImpl ?? fetch;
+  let response: Response;
+  try {
+    response = await fetcher(input.uploadUrl, {
+      method: "PUT",
+      // Nunca seguir 3xx: 307/308 reenviariam o vídeo para o Location.
+      redirect: "error",
+      headers: {
+        "Content-Type": input.contentType,
+        "Content-Length": String(size),
+        "Content-Range": `bytes 0-${String(size - 1)}/${String(size)}`,
+      },
+      body: new Blob([input.bytes], { type: input.contentType }),
+    });
+  } catch (error) {
+    return { ok: false, error: String(error), status: null };
+  }
+
+  if (response.status !== 201) {
+    return { ok: false, error: `HTTP ${String(response.status)}`, status: response.status };
+  }
+  return { ok: true, data: { status: response.status } };
 }
 
 export interface PhotoFileInput {
@@ -178,24 +263,29 @@ export interface PhotoUploadInitInput {
 export async function uploadPhotoInit(
   input: PhotoUploadInitInput,
 ): Promise<TiktokResult<UploadInitData>> {
-  return postJson("/v2/post/publish/content/init/", input.accessToken, {
-    post_info: {
-      title: input.title,
-      privacy_level: input.privacyLevel ?? "SELF_ONLY",
-      disable_duet: false,
-      disable_comment: false,
-      disable_stitch: false,
+  return postJson(
+    "/v2/post/publish/content/init/",
+    input.accessToken,
+    {
+      post_info: {
+        title: input.title,
+        privacy_level: input.privacyLevel ?? "SELF_ONLY",
+        disable_duet: false,
+        disable_comment: false,
+        disable_stitch: false,
+      },
+      source_info: {
+        source: "FILE_UPLOAD",
+        photo_cover_index: input.photoCoverIndex ?? 0,
+        photo_files: input.photoFiles.map((file) => ({
+          photo_file_size: file.photoFileSize,
+          chunk_size: file.chunkSize,
+          total_chunk_count: file.totalChunkCount,
+        })),
+      },
     },
-    source_info: {
-      source: "FILE_UPLOAD",
-      photo_cover_index: input.photoCoverIndex ?? 0,
-      photo_files: input.photoFiles.map((file) => ({
-        photo_file_size: file.photoFileSize,
-        chunk_size: file.chunkSize,
-        total_chunk_count: file.totalChunkCount,
-      })),
-    },
-  }, input.fetchImpl);
+    input.fetchImpl,
+  );
 }
 
 export interface PublishStatus {
@@ -213,9 +303,14 @@ export interface PublishStatusInput {
 export async function fetchPublishStatus(
   input: PublishStatusInput,
 ): Promise<TiktokResult<PublishStatus>> {
-  return postJson("/v2/post/publish/status/fetch/", input.accessToken, {
-    publish_id: input.publishId,
-  }, input.fetchImpl);
+  return postJson(
+    "/v2/post/publish/status/fetch/",
+    input.accessToken,
+    {
+      publish_id: input.publishId,
+    },
+    input.fetchImpl,
+  );
 }
 
 /** POST JSON autenticado (Bearer) com corpo `data` envelopado na resposta. */
@@ -240,9 +335,10 @@ async function postJson<T>(
     return { ok: false, error: String(error), status: null };
   }
 
-  const payload = (await response.json().catch(() => null)) as
-    | { data?: T; error?: { message?: string; code?: string } }
-    | null;
+  const payload = (await response.json().catch(() => null)) as {
+    data?: T;
+    error?: { message?: string; code?: string };
+  } | null;
 
   if (!response.ok) {
     return {
@@ -252,7 +348,16 @@ async function postJson<T>(
     };
   }
 
-  if (payload?.data === undefined) {
+  // A API pode devolver HTTP 200 com error.code != "ok"; isso não é sucesso.
+  if (payload?.error?.code !== undefined && payload.error.code !== "ok") {
+    return {
+      ok: false,
+      error: payload.error.message ?? payload.error.code,
+      status: response.status,
+    };
+  }
+
+  if (payload?.data === undefined || payload.data === null) {
     return { ok: false, error: "resposta sem data", status: response.status };
   }
   return { ok: true, data: payload.data };
