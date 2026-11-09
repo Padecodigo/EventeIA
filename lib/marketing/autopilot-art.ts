@@ -6,23 +6,28 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import {
+  generateImage as generateSceneImage,
+  type GenerateImageInput,
+  type ModelsLabResult,
+} from "@/lib/modelslab/client";
 import { sniffMime } from "@/lib/nvidia/pure";
 import { ART_BUCKET, storeArtBytes } from "@/lib/prospecting/art-cache";
-import { EVENT_PHOTOS } from "@/lib/prospecting/photos";
+import { activeImageApiKey } from "@/lib/prospecting/image-key";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 import { loadUsedMedia, recordMediaUse, type RecordMediaUseInput } from "./autopilot-media";
 import { composeAd, HEADLINES_BY_THEME, RECEIPT_CATEGORIES_BY_THEME } from "./card-overlay";
+import { buildMarketingImagePrompt, type MarketingPromptVariant } from "./image-prompt";
 import { contentHash, type MediaUse } from "./media-dedup";
 import type { MarketingTheme } from "./themes";
-import type { MarketingPromptVariant } from "./image-prompt";
 
 /**
- * Arte do autopilot: foto REAL (Unsplash/Pexels) + composição sharp do banner
- * (headline no topo) e dos cards "Orçamento recebido" (rodapé). Texto nítido e
- * determinístico — nada de IA (sem FLUX, sem logo colada).
+ * Arte do autopilot: híbrido FLUX + sharp.
+ * O FLUX gera uma CENA ÚNICA (sem texto no prompt — nunca repete a mesma foto);
+ * o sharp sobrepõe o banner (headline no topo) e os cards "Orçamento recebido"
+ * (rodapé). Texto nítido e determinístico, sem "texto atrás de texto".
  * Dedup por sha256 do conteúdo final; qualquer falha retorna `null` (fallback).
  */
 
@@ -33,6 +38,9 @@ export const REEL_SECONDS_PER_IMAGE = 3;
 
 const POST_SIZE = { width: 1080, height: 1080 } as const;
 const STORY_SIZE = { width: 1080, height: 1920 } as const;
+
+/** Quantas cenas distintas o reel gera (cada uma via FLUX, sem repetição). */
+const REEL_SCENE_COUNT = 3;
 
 export interface ReelFfmpegOptions {
   fps?: number;
@@ -130,13 +138,6 @@ function runFfmpeg(args: readonly string[]): Promise<void> {
   });
 }
 
-/** URL absoluta da foto real do tema (arquivo em /public, servido pelo app). */
-function realPhotoUrl(theme: MarketingTheme): string {
-  const appUrl = serverEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
-  const photo = EVENT_PHOTOS[theme.key] ?? "/img/eventos/festa-infantil-velas.jpg";
-  return `${appUrl}${photo}`;
-}
-
 /** Headline de banner do tema (fallback infantil). */
 function headlineFor(theme: MarketingTheme): readonly string[] {
   return HEADLINES_BY_THEME[theme.key] ?? HEADLINES_BY_THEME.infantil;
@@ -152,7 +153,9 @@ export interface AutopilotArtDeps {
   fetchImpl?: typeof fetch;
   loadUsed?: () => Promise<readonly MediaUse[]>;
   recordUse?: (input: RecordMediaUseInput) => Promise<void>;
-  /** Baixa a foto e compõe banner + cards (default: sharp real). */
+  /** Gera a cena via FLUX (modelslab/nvidia); injetável nos testes. */
+  generateImage?: (input: GenerateImageInput) => Promise<ModelsLabResult>;
+  /** Compõe banner + cards sobre a cena (default: sharp). */
   buildImage?: (
     bytes: Buffer,
     headline: readonly string[],
@@ -190,20 +193,44 @@ async function generateUniqueArt(
   variant: MarketingPromptVariant,
 ): Promise<{ url: string } | null> {
   try {
+    const apiKey = activeImageApiKey();
+    if (apiKey === undefined) {
+      logger.warn({ theme: theme.key, kind }, "autopilot-art: sem chave de imagem configurada");
+      return null;
+    }
+
     const used = new Set((await (deps.loadUsed ?? loadUsedMedia)()).map((use) => use.key));
     const fetchImpl = deps.fetchImpl ?? fetch;
+    const generate = deps.generateImage ?? generateSceneImage;
     const buildImage =
       deps.buildImage ??
       ((bytes, headline, categories, sz) => composeAd(bytes, { headline, categories, ...sz }));
     const storeImage = deps.storeImage ?? storeImageBytes;
     const recordUse = deps.recordUse ?? recordMediaUse;
 
-    const raw = await downloadBytes(realPhotoUrl(theme), fetchImpl);
+    const prompt = buildMarketingImagePrompt(theme, {
+      vertical: size.height > size.width,
+      variant,
+    });
+    const generated = await generate({
+      apiKey,
+      prompt,
+      width: size.width,
+      height: size.height,
+      fetchImpl,
+    });
+    if (!generated.ok || generated.images.length === 0) {
+      throw new Error(
+        `geração da cena falhou (${generated.ok ? "sem imagem" : generated.error})`,
+      );
+    }
+
+    const raw = await downloadBytes(generated.images[0], fetchImpl);
     const headline = headlineFor(theme);
     const categories = variant === "emotional" ? [] : categoriesFor(theme);
     const finalBytes = await buildImage(raw, headline, categories, size);
     const key = contentHash(finalBytes);
-    if (used.has(key)) return null; // foto repetida → desiste (não repete)
+    if (used.has(key)) return null; // cena repetida → desiste (não repete)
 
     const url = await storeImage(finalBytes);
     await recordUse({ mediaKey: key, kind, theme: theme.key, url });
@@ -217,15 +244,22 @@ async function generateUniqueArt(
   }
 }
 
-/** Reel: foto real + cards, vídeo vertical com Ken Burns. `null` em falha. */
+/** Reel: 3 cenas FLUX + cards, vídeo vertical com Ken Burns. `null` em falha. */
 export async function generateReelArt(
   theme: MarketingTheme,
   deps: AutopilotArtDeps = {},
   variant: MarketingPromptVariant = "cards",
 ): Promise<{ url: string } | null> {
   try {
+    const apiKey = activeImageApiKey();
+    if (apiKey === undefined) {
+      logger.warn({ theme: theme.key }, "autopilot-art: sem chave de imagem configurada");
+      return null;
+    }
+
     const used = new Set((await (deps.loadUsed ?? loadUsedMedia)()).map((use) => use.key));
     const fetchImpl = deps.fetchImpl ?? fetch;
+    const generate = deps.generateImage ?? generateSceneImage;
     const buildImage =
       deps.buildImage ??
       ((bytes, headline, categories, sz) => composeAd(bytes, { headline, categories, ...sz }));
@@ -233,12 +267,31 @@ export async function generateReelArt(
     const storeVideo = deps.storeVideo ?? storeVideoBytes;
     const recordUse = deps.recordUse ?? recordMediaUse;
 
-    const raw = await downloadBytes(realPhotoUrl(theme), fetchImpl);
+    const prompt = buildMarketingImagePrompt(theme, { vertical: true, variant });
     const headline = headlineFor(theme);
     const categories = variant === "emotional" ? [] : categoriesFor(theme);
-    const frame = await buildImage(raw, headline, categories, { width: REEL_WIDTH, height: REEL_HEIGHT });
 
-    const video = await renderReel([frame, frame, frame]);
+    const frames: Buffer[] = [];
+    for (let i = 0; i < REEL_SCENE_COUNT; i += 1) {
+      const generated = await generate({
+        apiKey,
+        prompt,
+        width: REEL_WIDTH,
+        height: REEL_HEIGHT,
+        fetchImpl,
+      });
+      if (!generated.ok || generated.images.length === 0) {
+        throw new Error(
+          `geração da cena falhou (${generated.ok ? "sem imagem" : generated.error})`,
+        );
+      }
+      const raw = await downloadBytes(generated.images[0], fetchImpl);
+      frames.push(
+        await buildImage(raw, headline, categories, { width: REEL_WIDTH, height: REEL_HEIGHT }),
+      );
+    }
+
+    const video = await renderReel(frames);
     const key = contentHash(video);
     if (used.has(key)) return null;
 

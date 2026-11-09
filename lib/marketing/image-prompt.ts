@@ -1,17 +1,16 @@
-import { HEADLINES_BY_THEME } from "./card-overlay";
 import type { MarketingTheme } from "./themes";
 
 /**
  * Prompt de imagem para o FLUX (diffusor de imagem) — puro e determinístico.
- * Estilo de referência do dono (out/2026): fotografia lifestyle comercial com
- * uma pessoa consultando o celular, cenário/decoração do evento ao fundo e
- * 1–2 cards de notificação de UI flutuando sobre a cena. O texto do card vive
- * NA imagem renderizada pela IA (não é sobreposto por sharp depois), no formato
- * exato `Orçamento recebido - <categoria>`.
+ * Gera APENAS a CENA (sem banner, sem cards, sem texto): o texto do anúncio
+ * (headline do banner + "Orçamento recebido") é sobreposto DEPOIS pelo sharp em
+ * `lib/marketing/card-overlay.ts`. Renderizar texto na IA causava HTTP 500 em
+ * prompts complexos e rate limits — por isso o FLUX faz só a cena e o sharp faz
+ * todo o texto (nítido, sem "texto atrás de texto").
  *
  * Dois variantes determinísticos (o dono quer variedade, não só card):
- * - `cards`: cena lifestyle + cards de UI (posts de proposta de valor);
- * - `emotional`: cena emocional pura, sem cards (posts de vínculo afetivo).
+ * - `cards`: cena lifestyle (pessoa + smartphone + decoração do evento);
+ * - `emotional`: cena emocional pura (posts de vínculo afetivo).
  *
  * Mesma entrada → mesma saída.
  */
@@ -24,18 +23,6 @@ export interface MarketingImagePromptOptions {
   /** Variante da cena. Default `cards`. */
   variant?: MarketingPromptVariant;
 }
-
-/** Categorias dos cards de notificação por tema (as 2 mais relevantes). */
-const CARD_CATEGORIES_BY_THEME: Record<string, readonly [string, string]> = {
-  infantil: ["Buffet infantil", "Decoração"],
-  aniversario: ["Buffet", "Bolo"],
-  casamento: ["Buffet", "Decoração"],
-  "15-anos": ["Buffet", "DJ"],
-  formatura: ["Espaço", "DJ"],
-  corporativo: ["Coffee break", "Espaço"],
-};
-
-const DEFAULT_CATEGORIES = CARD_CATEGORIES_BY_THEME.infantil;
 
 /** Cenário lifestyle (pessoa + decoração do evento) por tema — variante `cards`. */
 const SCENE_BY_THEME: Record<string, string> = {
@@ -95,33 +82,33 @@ function compositionFor(vertical: boolean): string {
 const EMOTIONAL_STYLE =
   "Shallow depth of field focusing on the emotional expressions, soft blurred background, cinematic lighting with warm candle highlights, moody dark tones contrasting warm highlights, organic candid style, 8k, photorealistic commercial advertising.";
 
+/**
+ * Proíbe a IA de desenhar qualquer texto/logo/UI na cena — o texto entra via
+ * sharp depois (banner + cards). É a instrução que elimina o "texto atrás de
+ * texto" e o HTTP 500 dos prompts com texto literal.
+ */
+const NO_TEXT =
+  "No text, no words, no letters, no logos, no watermarks, no typography, no UI elements.";
+
 export function buildMarketingImagePrompt(
   theme: MarketingTheme,
   opts: MarketingImagePromptOptions = {},
 ): string {
   const composition = compositionFor(opts.vertical === true);
-  const headline = HEADLINES_BY_THEME[theme.key] ?? HEADLINES_BY_THEME.infantil;
 
   if (opts.variant === "emotional") {
     const scene = EMOTIONAL_SCENE_BY_THEME[theme.key] ?? DEFAULT_EMOTIONAL_SCENE;
-    return [
-      `${scene}.`,
-      `At the top, a bold white banner headline reads '${headline[0]} ${headline[1]}'.`,
-      EMOTIONAL_STYLE,
-      `${composition}.`,
-    ].join(" ");
+    return [`${scene}.`, NO_TEXT, EMOTIONAL_STYLE, `${composition}.`].join(" ");
   }
 
-  const [categoryA, categoryB] = CARD_CATEGORIES_BY_THEME[theme.key] ?? DEFAULT_CATEGORIES;
   const scene = SCENE_BY_THEME[theme.key] ?? DEFAULT_SCENE;
   const palette = PALETTE_BY_THEME[theme.key] ?? DEFAULT_PALETTE;
   return [
     "A high-end commercial lifestyle photograph for a modern AI event planning service.",
     `${scene}.`,
-    `At the top of the image, a bold white advertising banner headline reads '${headline[0]} ${headline[1]}'.`,
-    `Floating over the scene are two modern white UI notification cards with rounded corners and a maroon checkmark icon: one reads 'Orçamento recebido - ${categoryA}' and the other reads 'Orçamento recebido - ${categoryB} · via WhatsApp'.`,
     "Warm, sophisticated, cozy, minimalist mood, soft lighting, photorealistic, high-end advertising photography.",
     `${palette}.`,
+    NO_TEXT,
     `${composition}.`,
   ].join(" ");
 }

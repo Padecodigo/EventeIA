@@ -9,7 +9,7 @@ import { MARKETING_THEMES, type MarketingTheme } from "@/lib/marketing/themes";
 const theme = (key: string): MarketingTheme =>
   MARKETING_THEMES.find((t) => t.key === key) ?? MARKETING_THEMES[0];
 
-describe("prompt de imagem do FLUX (estilo lifestyle + cards de orçamento)", () => {
+describe("prompt de imagem do FLUX (cena pura, sem texto)", () => {
   it("é determinístico: mesma entrada produz a mesma saída", () => {
     const infantil = theme("infantil");
     expect(buildMarketingImagePrompt(infantil)).toBe(buildMarketingImagePrompt(infantil));
@@ -31,36 +31,22 @@ describe("prompt de imagem do FLUX (estilo lifestyle + cards de orçamento)", ()
     );
   });
 
-  it("mira a estética de referência do variante 'cards'", () => {
+  it("mira a estética de referência do variante 'cards' (cena lifestyle, sem cards)", () => {
     const prompt = buildMarketingImagePrompt(theme("infantil"));
     expect(prompt).toContain("lifestyle photograph");
     expect(prompt).toContain("photorealistic");
     expect(prompt).toContain("high-end advertising photography");
-    expect(prompt).toContain("UI notification cards");
-    expect(prompt).toContain("rounded corners");
-    expect(prompt).toContain("maroon checkmark icon");
+    expect(prompt).toContain("smartphone");
   });
 
-  it("descreve os 2 cards no formato exato 'Orçamento recebido - <categoria>'", () => {
+  it("NÃO descreve banner, cards nem texto 'Orçamento recebido' (cena pura)", () => {
     const prompt = buildMarketingImagePrompt(theme("infantil"));
-    expect(prompt).toContain("Orçamento recebido - Buffet infantil");
-    expect(prompt).toContain("Orçamento recebido - Decoração · via WhatsApp");
-  });
-
-  it("usa as categorias certas por tema (duas mais relevantes)", () => {
-    const cases: Record<string, [string, string]> = {
-      infantil: ["Buffet infantil", "Decoração"],
-      aniversario: ["Buffet", "Bolo"],
-      casamento: ["Buffet", "Decoração"],
-      "15-anos": ["Buffet", "DJ"],
-      formatura: ["Espaço", "DJ"],
-      corporativo: ["Coffee break", "Espaço"],
-    };
-    for (const [key, [a, b]] of Object.entries(cases)) {
-      const prompt = buildMarketingImagePrompt(theme(key));
-      expect(prompt, key).toContain(`Orçamento recebido - ${a}`);
-      expect(prompt, key).toContain(`Orçamento recebido - ${b} · via WhatsApp`);
-    }
+    expect(prompt).not.toContain("Orçamento recebido");
+    expect(prompt).not.toContain("banner headline");
+    expect(prompt).not.toContain("notification card");
+    expect(prompt).not.toContain("checkmark");
+    expect(prompt).not.toContain("A festa que ele vai lembrar");
+    expect(prompt).toContain("No text");
   });
 
   it("adapta o cenário/decoração ao tema (não é uma cena genérica)", () => {
@@ -82,11 +68,12 @@ describe("prompt de imagem do FLUX (estilo lifestyle + cards de orçamento)", ()
     );
   });
 
-  it("todos os temas geram um prompt não vazio com os 2 cards", () => {
+  it("todos os temas geram um prompt não vazio SEM texto de orçamento", () => {
     for (const t of MARKETING_THEMES) {
       const prompt = buildMarketingImagePrompt(t);
       expect(prompt.length).toBeGreaterThan(0);
-      expect((prompt.match(/Orçamento recebido - /g) ?? []).length).toBe(2);
+      expect(prompt).not.toContain("Orçamento recebido");
+      expect(prompt).toContain("No text");
     }
   });
 });
@@ -96,6 +83,7 @@ describe("variante 'emotional' (cena pura, sem cards)", () => {
     const prompt = buildMarketingImagePrompt(theme("infantil"), { variant: "emotional" });
     expect(prompt).not.toContain("Orçamento recebido");
     expect(prompt).not.toContain("notification card");
+    expect(prompt).not.toContain("banner headline");
   });
 
   it("mira a estética cinematográfica/emocional de referência", () => {
@@ -104,6 +92,7 @@ describe("variante 'emotional' (cena pura, sem cards)", () => {
     expect(prompt).toContain("cinematic lighting");
     expect(prompt).toContain("photorealistic commercial advertising");
     expect(prompt).toContain("8k");
+    expect(prompt).toContain("No text");
   });
 
   it("adapta a cena emocional ao tema", () => {
