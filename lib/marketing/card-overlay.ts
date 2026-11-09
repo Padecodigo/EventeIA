@@ -41,12 +41,14 @@ function escapeXml(text: string): string {
 
 /** Banner (topo): degradê + marca + headline. */
 export function buildBannerSvg(headline: readonly string[], width: number, height: number): string {
-  const bandH = Math.round(height * 0.3);
+  const bandH = Math.round(height * 0.34);
   const padX = Math.round(width * 0.055);
   const brandSize = Math.max(16, Math.round(width * 0.02));
   const font = Math.max(32, Math.round(width * 0.04));
-  const lineH = Math.round(font * 1.3);
-  const headlineTop = Math.round(brandSize * 2.2);
+  const lineH = Math.round(font * 1.28);
+  const brandY = Math.round(brandSize * 1.7);
+  // Headline começa bem abaixo da marca (evita sobreposição com a logo).
+  const headlineTop = brandY + brandSize + Math.round(font * 0.9);
   const lines = headline
     .map(
       (line, i) =>
@@ -62,7 +64,7 @@ export function buildBannerSvg(headline: readonly string[], width: number, heigh
     </linearGradient>
   </defs>
   <rect x="0" y="0" width="${width}" height="${bandH}" fill="url(#banner)"/>
-  <text x="${padX}" y="${Math.round(brandSize * 1.7)}" font-family="Liberation Sans, Arial, sans-serif" font-size="${brandSize}" font-weight="bold" fill="${ACCENT}">EVENTEIA</text>
+  <text x="${padX}" y="${brandY}" font-family="Liberation Sans, Arial, sans-serif" font-size="${brandSize}" font-weight="bold" fill="${ACCENT}">EVENTEIA</text>
   ${lines}
 </svg>`;
 }
