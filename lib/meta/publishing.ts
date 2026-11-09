@@ -204,7 +204,15 @@ export async function createMediaContainer(
     params.set("image_url", input.imageUrl);
   }
   const tags = limitUserTags(input.userTags ?? []);
-  if (tags.length > 0) params.set("user_tags", JSON.stringify(tags));
+  if (tags.length > 0) {
+    // A Graph API do Instagram exige objetos { username, x, y } (coordenadas 0–1),
+    // não uma lista de handles. Sem isso o container falha com
+    // "(#100) Param user_tags[0] must be a JSON object".
+    params.set(
+      "user_tags",
+      JSON.stringify(tags.map((username) => ({ username, x: 0.5, y: 0.5 }))),
+    );
+  }
 
   return postJson(
     `${baseUrl(input)}/media?${params.toString()}`,
