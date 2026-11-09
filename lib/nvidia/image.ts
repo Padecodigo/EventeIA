@@ -14,6 +14,13 @@ const BASE_URL = "https://ai.api.nvidia.com/v1/genai";
 export const DEFAULT_NVIDIA_IMAGE_MODEL = "black-forest-labs/flux.1-dev";
 const TIMEOUT_MS = 180_000;
 
+/** Dimensões aceitas pelo FLUX.1-dev no endpoint genai. */
+function resolveSize(width: number, height: number): { width: number; height: number } {
+  if (height > width * 1.2) return { width: 768, height: 1344 }; // vertical (story/reel)
+  if (width > height * 1.2) return { width: 1344, height: 768 }; // horizontal
+  return { width: 1024, height: 1024 }; // quadrado
+}
+
 export type NvidiaImageResult =
   | { ok: true; bytes: Buffer; mime: string }
   | { ok: false; error: string; status: number | null };
@@ -50,8 +57,8 @@ export async function generateNvidiaImage(input: NvidiaImageInput): Promise<Nvid
         prompt: input.prompt,
         mode: input.mode ?? "base",
         cfg_scale: input.cfgScale ?? 3.5,
-        width: input.width ?? 1024,
-        height: input.height ?? 1024,
+        width: resolveSize(input.width ?? 1024, input.height ?? 1024).width,
+        height: resolveSize(input.width ?? 1024, input.height ?? 1024).height,
         seed: input.seed ?? 0,
         steps: input.steps ?? 50,
       }),
