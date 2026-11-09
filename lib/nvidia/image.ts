@@ -50,11 +50,11 @@ export interface NvidiaImageInput {
 /** Payload específico de cada modelo (formatos não são compatíveis entre si). */
 function buildNvidiaPayload(model: string, input: NvidiaImageInput): Record<string, unknown> {
   if (model.endsWith("flux.2-klein-4b")) {
-    // Destilado: rejeita `mode`/`cfg_scale`/`width`/`height`; payload mínimo.
+    // Destilado: rejeita `mode`/`cfg_scale`/`width`/`height` e exige `steps ≤ 4`.
     return {
       prompt: input.prompt,
       seed: input.seed ?? 0,
-      steps: input.steps ?? 30,
+      steps: Math.min(input.steps ?? 4, 4),
     };
   }
   return {
