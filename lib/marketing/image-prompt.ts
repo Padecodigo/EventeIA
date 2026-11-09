@@ -1,3 +1,4 @@
+import { HEADLINES_BY_THEME } from "./card-overlay";
 import type { MarketingTheme } from "./themes";
 
 /**
@@ -99,10 +100,16 @@ export function buildMarketingImagePrompt(
   opts: MarketingImagePromptOptions = {},
 ): string {
   const composition = compositionFor(opts.vertical === true);
+  const headline = HEADLINES_BY_THEME[theme.key] ?? HEADLINES_BY_THEME.infantil;
 
   if (opts.variant === "emotional") {
     const scene = EMOTIONAL_SCENE_BY_THEME[theme.key] ?? DEFAULT_EMOTIONAL_SCENE;
-    return [`${scene}.`, EMOTIONAL_STYLE, `${composition}.`].join(" ");
+    return [
+      `${scene}.`,
+      `At the top, a bold white banner headline reads '${headline[0]} ${headline[1]}'.`,
+      EMOTIONAL_STYLE,
+      `${composition}.`,
+    ].join(" ");
   }
 
   const [categoryA, categoryB] = CARD_CATEGORIES_BY_THEME[theme.key] ?? DEFAULT_CATEGORIES;
@@ -111,6 +118,7 @@ export function buildMarketingImagePrompt(
   return [
     "A high-end commercial lifestyle photograph for a modern AI event planning service.",
     `${scene}.`,
+    `At the top of the image, a bold white advertising banner headline reads '${headline[0]} ${headline[1]}'.`,
     `Floating over the scene are two modern white UI notification cards with rounded corners and a maroon checkmark icon: one reads 'Orçamento recebido - ${categoryA}' and the other reads 'Orçamento recebido - ${categoryB} · via WhatsApp'.`,
     "Warm, sophisticated, cozy, minimalist mood, soft lighting, photorealistic, high-end advertising photography.",
     `${palette}.`,
