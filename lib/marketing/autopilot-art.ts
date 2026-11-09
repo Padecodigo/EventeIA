@@ -26,8 +26,8 @@ import type { MarketingTheme } from "./themes";
 /**
  * Arte do autopilot: híbrido FLUX + sharp.
  * O FLUX gera uma CENA ÚNICA (sem texto no prompt — nunca repete a mesma foto);
- * o sharp sobrepõe o banner (headline no topo) e os cards "Orçamento recebido"
- * (rodapé). Texto nítido e determinístico, sem "texto atrás de texto".
+ * o sharp sobrepõe o anúncio (título serifado, pílula e cards, ou quadro editorial
+ * quando não há cards). Texto nítido, sem letter-spacing (evita glifo duplicado).
  * Dedup por sha256 do conteúdo final; qualquer falha retorna `null` (fallback).
  */
 
@@ -226,9 +226,7 @@ async function generateUniqueArt(
       fetchImpl,
     });
     if (!generated.ok || generated.images.length === 0) {
-      throw new Error(
-        `geração da cena falhou (${generated.ok ? "sem imagem" : generated.error})`,
-      );
+      throw new Error(`geração da cena falhou (${generated.ok ? "sem imagem" : generated.error})`);
     }
 
     const raw = await downloadBytes(generated.images[0], fetchImpl);

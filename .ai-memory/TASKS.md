@@ -1,7 +1,7 @@
 # TASKS — handoff do agente
 
 > Atualize ao encerrar a sessão: o que ficou pronto, o que está travado, qual o próximo passo.
-> Última atualização: 2026-11-09 01h (America/Sao_Paulo).
+> Última atualização: 2026-11-09 12h (America/Sao_Paulo).
 
 ## Produto hoje (decisões fechadas)
 
@@ -44,9 +44,11 @@
       webhook assinado e verificação de domínio prontos. **Escopo = só publicidade** (decisão #013);
       descoberta de fornecedores NÃO vai pro TikTok. Falta: gravar demo para review e aprovar o app.
 - [x] **Ticket avulso**: comprar ticket sem evento e consumir na ativação (PR #231, migração `0085`).
-- [x] **Arte publicitária híbrida** (decisão #015): FLUX gera só a cena (única), sharp sobrepõe banner
-      (headline) + cards "Orçamento recebido". Merge `0456290` + seed aleatório; cleanup `bac69f2`
-      removeu `photoForEventType`/`EVENT_PHOTOS` órfãos.
+- [x] **Arte publicitária híbrida** (decisão #015): FLUX gera só a cena (única), sharp sobrepõe o
+      anúncio (título serifado + cards, ou quadro editorial sem cards). Sem `letter-spacing` no SVG.
+- [x] **Criativos de rede**: posts 1080×1350 restaurados de `7bf6f98` (o chip de `7df7e97` era a
+      regressão). Stories e quadros de reel 1080×1920 no mesmo padrão editorial (`pnpm brand:art` /
+      `pnpm brand:reels`). Publicação continua nos mesmos caminhos.
 - [ ] **FLUX.1-dev em rate limit** (HTTP 500 no endpoint grátis) — quando voltar, o híbrido gera cena
       única; enquanto isso, a publicidade cai no fallback estático (`artForEventType`).
 - [ ] **Código de contratante vs. fornecedor** (hoje um código só confirma/publica).

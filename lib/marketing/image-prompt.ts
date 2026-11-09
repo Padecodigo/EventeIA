@@ -3,7 +3,7 @@ import type { MarketingTheme } from "./themes";
 /**
  * Prompt de imagem para o FLUX (diffusor de imagem) — puro e determinístico.
  * Gera APENAS a CENA (sem banner, sem cards, sem texto): o texto do anúncio
- * (headline do banner + "Orçamento recebido") é sobreposto DEPOIS pelo sharp em
+ * (título e "Orçamento recebido") é sobreposto DEPOIS pelo sharp em
  * `lib/marketing/card-overlay.ts`. Renderizar texto na IA causava HTTP 500 em
  * prompts complexos e rate limits — por isso o FLUX faz só a cena e o sharp faz
  * todo o texto (nítido, sem "texto atrás de texto").

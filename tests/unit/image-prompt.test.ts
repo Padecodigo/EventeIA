@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  buildMarketingImagePrompt,
-  marketingPromptVariant,
-} from "@/lib/marketing/image-prompt";
+import { buildMarketingImagePrompt, marketingPromptVariant } from "@/lib/marketing/image-prompt";
 import { MARKETING_THEMES, type MarketingTheme } from "@/lib/marketing/themes";
 
 const theme = (key: string): MarketingTheme =>
@@ -45,7 +42,7 @@ describe("prompt de imagem do FLUX (cena pura, sem texto)", () => {
     expect(prompt).not.toContain("banner headline");
     expect(prompt).not.toContain("notification card");
     expect(prompt).not.toContain("checkmark");
-    expect(prompt).not.toContain("A festa que ele vai lembrar");
+    expect(prompt).not.toContain("A festa que ele");
     expect(prompt).toContain("No text");
   });
 
