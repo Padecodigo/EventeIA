@@ -1,7 +1,7 @@
 # TASKS — handoff do agente
 
 > Atualize ao encerrar a sessão: o que ficou pronto, o que está travado, qual o próximo passo.
-> Última atualização: 2026-11-07 23h10 (America/Sao_Paulo).
+> Última atualização: 2026-11-09 01h (America/Sao_Paulo).
 
 ## Produto hoje (decisões fechadas)
 
@@ -17,7 +17,7 @@
 
 ## Estado do tronco
 
-- `main` = `e2b5107` (ver `git log -1`); produção deployada junto (app + worker + Redis).
+- `main` = `bac69f2` (ver `git log -1`); produção deployada junto (app + worker + Redis).
 - Deploy: `POST /api/v1/deploy?uuid=ozqnl541gzloqhsqvpjtqa8l` no Coolify (token em
   `/root/.coolify_token` na VPS `root@200.141.28.13`, chave `~/.ssh/eventeia_vps`).
   Um único compose sobe app + worker + Redis.
@@ -44,6 +44,11 @@
       webhook assinado e verificação de domínio prontos. **Escopo = só publicidade** (decisão #013);
       descoberta de fornecedores NÃO vai pro TikTok. Falta: gravar demo para review e aprovar o app.
 - [x] **Ticket avulso**: comprar ticket sem evento e consumir na ativação (PR #231, migração `0085`).
+- [x] **Arte publicitária híbrida** (decisão #015): FLUX gera só a cena (única), sharp sobrepõe banner
+      (headline) + cards "Orçamento recebido". Merge `0456290` + seed aleatório; cleanup `bac69f2`
+      removeu `photoForEventType`/`EVENT_PHOTOS` órfãos.
+- [ ] **FLUX.1-dev em rate limit** (HTTP 500 no endpoint grátis) — quando voltar, o híbrido gera cena
+      única; enquanto isso, a publicidade cai no fallback estático (`artForEventType`).
 - [ ] **Código de contratante vs. fornecedor** (hoje um código só confirma/publica).
 - [ ] **Pendências do App Review da Meta**.
 
@@ -54,6 +59,11 @@
 - `next/image` com `quality` fora de `images.qualities` (70/75) devolve **400** e a imagem nasce
   quebrada em produção. Guarda em `tests/unit/image-quality.test.ts`.
 - Coral `#E8575A` com texto branco dá **3,53:1** e reprova AA: o CTA usa `#C24145` (5,08:1).
+- FLUX.1-dev (nuvem NVIDIA) só aceita dimensões fixas **768–1344**; o código mapeia quadrado→`1024×1024`
+  e vertical→`768×1344` em `lib/nvidia/image.ts`.
+- NVIDIA `seed:0` é determinístico → `randomSeed()` por chamada em `lib/marketing/autopilot-art.ts`
+  (senão post/story/reel repetem a mesma cena e o dedup bloqueia).
+- SVG com `letter-spacing` no banner causa **"texto atrás do texto"** no sharp/librsvg — removido.
 - Arquivos temporários de teste (`*.mjs`, cookies de sessão) **nunca** dentro do repo: ele é público.
   Usar `os.tmpdir()` — um `.ck.json` foi commitado por engano e a sessão precisou ser revogada.
 
