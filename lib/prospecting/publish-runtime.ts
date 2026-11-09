@@ -2,14 +2,15 @@ import { randomInt } from "node:crypto";
 
 import { composeAd } from "@/lib/marketing/card-overlay";
 import {
-  publishToChannels,
+  publishFacebookPagePost,
+  publishInstagramImage,
   type ChannelPublicationIds,
   type MetaPublishConfig,
 } from "@/lib/meta/publishing";
 import { generateImage } from "@/lib/modelslab/client";
 import { storeArtBytes } from "@/lib/prospecting/art-cache";
 
-import type { BaitReservation, PostStore, PostStatus } from "./posts-store";
+import type { BaitReservation, PostStore } from "./posts-store";
 import type { PublicationState } from "./publication-state";
 import { canPublishForEvent, type EventPublicationState } from "./publish-guard";
 import type { PlannedPost } from "./publish-plan";
@@ -255,51 +256,81 @@ export async function publishPlannedPost(input: PublishPlannedPostInput): Promis
     reservation = reserved.reservation;
   }
 
-  const statusFor = (state: PublicationState): PostStatus => {
-    if (state.instagram.kind === "published" && state.facebook.kind === "published") {
-      return "published";
-    }
-    if (state.instagram.kind === "uncertain" || state.facebook.kind === "uncertain") {
-      return "failed";
-    }
-    if (state.instagram.kind === "failed" || state.facebook.kind === "failed") {
-      return "failed";
-    }
-    return "approved";
+  // Publica SEPARADAMENTE: Instagram e Facebook são independentes. Uma falha em
+  // um canal não contamina o outro (sem o `publishToChannels` acoplado, que virava
+  // "uncertain" quando o Instagram falhava por formato de tag).
+  // Reusa o estado já persistido (retry/reconciliação) para NÃO republicar o
+  // canal que já foi publicado — só tenta o que ainda falta.
+  const reservedIg =
+    reservation?.state.instagram.kind === "published" ? reservation.state.instagram.id : null;
+  const reservedFb =
+    reservation?.state.facebook.kind === "published" ? reservation.state.facebook.id : null;
+  const existingIg = input.existing?.igMediaId ?? reservedIg;
+  const existingFb = input.existing?.fbPostId ?? reservedFb;
+
+  const igResult =
+    existingIg !== null
+      ? ({ ok: true as const, id: existingIg } as const)
+      : await publishInstagramImage({
+          ...input.meta,
+          imageUrl,
+          caption: input.planned.caption,
+          userTags: input.planned.handles,
+          fetchImpl: input.fetchImpl,
+        });
+
+  const fbResult =
+    input.requireFacebook === true
+      ? existingFb !== null
+        ? ({ ok: true as const, id: existingFb } as const)
+        : await publishFacebookPagePost({
+            ...input.meta,
+            imageUrl,
+            caption: input.planned.caption,
+            fetchImpl: input.fetchImpl,
+          })
+      : null;
+
+  const igId = igResult.ok ? igResult.id : null;
+  const fbId = fbResult !== null && fbResult.ok ? fbResult.id : null;
+  const fbRequired = input.requireFacebook === true;
+  const published = igResult.ok && (!fbRequired || (fbResult !== null && fbResult.ok));
+
+  const finalState: PublicationState = {
+    version: 1,
+    instagram: igResult.ok
+      ? { kind: "published", id: igResult.id }
+      : { kind: "failed", error: igResult.error },
+    facebook:
+      fbResult === null
+        ? { kind: "pending" }
+        : fbResult.ok
+          ? { kind: "published", id: fbResult.id }
+          : { kind: "failed", error: fbResult.error },
   };
 
-  const reservationId = reservation?.id ?? null;
-  let latestState: PublicationState | null = reservation?.state ?? null;
-  const dual = await publishToChannels({
-    ...input.meta,
-    imageUrl,
-    caption: input.planned.caption,
-    userTags: input.planned.handles,
-    existing: reservation === null ? input.existing : undefined,
-    initialState: reservation?.state,
-    onState:
-      reservationId === null || input.store?.saveState === undefined
-        ? undefined
-        : async (state, previous) => {
-            latestState = state;
-            const saved = await input.store!.saveState!(
-              reservationId,
-              state,
-              statusFor(state),
-              previous,
-            );
-            if (saved.kind === "saved") return { kind: "saved" as const };
-            if (saved.kind === "conflict") {
-              return { kind: "conflict" as const, error: saved.error };
-            }
-            if (saved.kind === "migration_required") {
-              return { kind: "migration_required" as const, missing: saved.missing };
-            }
-            return { kind: "failed" as const, error: saved.error };
-          },
-    requireFacebook: input.requireFacebook,
-    fetchImpl: input.fetchImpl,
-  });
+  if (reservation !== null && input.store?.saveState !== undefined) {
+    await input.store.saveState(reservation.id, finalState, published ? "published" : "failed");
+  } else {
+    await input.store?.record({
+      planned: input.planned,
+      eventId: input.eventId,
+      imageExpiresAt: imageExpiresAt ?? undefined,
+      status: published ? "published" : "failed",
+      imageUrl,
+      ...(igId !== null ? { igMediaId: igId } : {}),
+      ...(fbId !== null ? { fbPostId: fbId } : {}),
+      ...(published
+        ? {}
+        : {
+            error: igResult.ok
+              ? fbResult !== null && !fbResult.ok
+                ? fbResult.error
+                : "Facebook não publicou"
+              : igResult.error,
+          }),
+    });
+  }
 
   if (input.recheckEvent !== undefined) {
     const after = await input.recheckEvent();
@@ -308,69 +339,28 @@ export async function publishPlannedPost(input: PublishPlannedPostInput): Promis
     }
   }
 
-  const igId = dual.instagram.kind === "published" ? dual.instagram.id : null;
-  const fbId = dual.facebook.kind === "published" ? dual.facebook.id : null;
-
-  if (dual.kind === "uncertain") {
+  if (published) {
     return {
-      kind: "uncertain",
-      ok: false,
-      reason: "uncertain",
-      error: dual.error,
-      ...(igId !== null ? { igMediaId: igId } : {}),
-      ...(fbId !== null ? { fbPostId: fbId } : {}),
-    };
-  }
-
-  if (dual.kind !== "published" || igId === null) {
-    const reason: PublishFailure =
-      dual.kind === "failed" && dual.instagram.kind === "failed"
-        ? dual.instagram.stage === "container"
-          ? "container_failed"
-          : "publish_failed"
-        : "facebook_failed";
-    const error = dual.kind === "published" ? "Instagram não devolveu id" : dual.error;
-
-    if (reservation !== null && input.store?.saveState !== undefined && latestState !== null) {
-      await input.store.saveState(reservation.id, latestState, "failed");
-    } else {
-      await input.store?.record({
-        planned: input.planned,
-        eventId: input.eventId,
-        imageExpiresAt: imageExpiresAt ?? undefined,
-        status: "failed",
-        imageUrl,
-        error,
-        ...(igId !== null ? { igMediaId: igId } : {}),
-        ...(fbId !== null ? { fbPostId: fbId } : {}),
-      });
-    }
-    return {
-      kind: "failed",
-      ok: false,
-      reason,
-      error,
-      ...(igId !== null ? { igMediaId: igId } : {}),
-      ...(fbId !== null ? { fbPostId: fbId } : {}),
-    };
-  }
-
-  if (reservation === null) {
-    await input.store?.record({
-      planned: input.planned,
-      eventId: input.eventId,
-      imageExpiresAt: imageExpiresAt ?? undefined,
-      status: "published",
+      kind: "published",
+      ok: true,
+      mediaId: igId as string,
       imageUrl,
-      igMediaId: igId,
       ...(fbId !== null ? { fbPostId: fbId } : {}),
-    });
+    };
   }
+
+  const reason: PublishFailure = igResult.ok ? "facebook_failed" : "publish_failed";
+  const error = igResult.ok
+    ? fbResult !== null && !fbResult.ok
+      ? fbResult.error
+      : "Facebook não publicou"
+    : igResult.error;
   return {
-    kind: "published",
-    ok: true,
-    mediaId: igId,
-    imageUrl,
+    kind: "failed",
+    ok: false,
+    reason,
+    error,
+    ...(igId !== null ? { igMediaId: igId } : {}),
     ...(fbId !== null ? { fbPostId: fbId } : {}),
   };
 }
