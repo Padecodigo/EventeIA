@@ -2,6 +2,8 @@ import "server-only";
 
 import sharp from "sharp";
 
+import { trimmedBrandMonogram } from "@/lib/marketing/brand-logo";
+
 /**
  * Composição de post publicitário sobre a cena (sharp, sem texto da IA):
  *   - com cards: anúncio claro (título serifado vinho, pílula, cartões);
@@ -49,47 +51,73 @@ function fitFont(text: string, width: number, preferred: number, min: number): n
   return Math.max(min, Math.floor(avail / (text.length * 0.52)));
 }
 
-/** Anúncio claro: degradê de papel no canto, selo, título serifado e pílula. */
-function buildLifestyleBanner(headline: readonly string[], width: number, height: number): string {
-  const padX = Math.round(width * 0.055);
-  const padTop = Math.max(48, Math.round(Math.min(height * 0.06, width * 0.07)));
-  const seal = Math.max(64, Math.round(width * 0.07));
-  const word = fitFont("EventeIA", width - seal - padX, Math.round(width * 0.04), 22);
+interface LogoBox {
+  width: number;
+  height: number;
+}
+
+/** Medidas do anúncio claro. O monograma entra depois, no mesmo retângulo. */
+function lifestyleFrame(width: number, height: number, headline: readonly string[], logo: LogoBox) {
+  const padX = Math.round(width * 0.06);
+  const padTop = Math.max(52, Math.round(width * 0.058));
   const title = headline[0] ?? "";
   const support = headline[1] ?? "";
-  const titleSize = fitFont(title, width, Math.round(width * 0.048), 28);
-  const supportSize = fitFont(support, width, Math.round(width * 0.026), 18);
-  const sealY = padTop;
-  const sealBaseline = sealY + Math.round(seal * 0.7);
-  const textX = padX + seal + Math.round(width * 0.02);
-  const sloganY = sealBaseline + Math.round(word * 1.05);
-  const titleY = sealY + seal + Math.round(titleSize * 1.35);
-  const supportY = titleY + Math.round(supportSize * 1.7);
-  const pillH = Math.max(48, Math.round(width * 0.048));
-  const pillFont = Math.round(pillH * 0.4);
+  const titleSize = fitFont(title, width - padX, Math.round(width * 0.052), 30);
+  const supportSize = fitFont(support, width - padX, Math.round(width * 0.026), 18);
+  const word = Math.round(logo.height * 0.58);
+  const textX = padX + logo.width + Math.round(width * 0.02);
+  const wordBaseline = padTop + Math.round(logo.height * 0.72);
+  const titleY = padTop + logo.height + Math.round(titleSize * 1.28);
+  const supportY = titleY + Math.round(supportSize * 1.85);
+  const pillH = Math.max(50, Math.round(width * 0.05));
+  const pillFont = Math.round(pillH * 0.38);
   const pillLabel = "eventeia.com.br";
-  const pillW = Math.round(pillLabel.length * pillFont * 0.58 + pillH);
-  const pillY = (support.length > 0 ? supportY : titleY) + Math.round(pillH * 0.55);
-  const pillTextY = pillY + Math.round(pillH * 0.66);
+  const pillW = Math.round(pillLabel.length * pillFont * 0.56 + pillH * 1.15);
+  const pillY = (support.length > 0 ? supportY : titleY) + Math.round(pillH * 0.42);
+  return {
+    padX,
+    padTop,
+    title,
+    support,
+    titleSize,
+    supportSize,
+    word,
+    textX,
+    wordBaseline,
+    titleY,
+    supportY,
+    pillH,
+    pillFont,
+    pillLabel,
+    pillW,
+    pillY,
+    pillTextY: pillY + Math.round(pillH * 0.67),
+  };
+}
 
+/** Anúncio claro: monograma + título serifado vinho, apoio, pílula. Sem véu opaco. */
+function buildLifestyleBanner(
+  headline: readonly string[],
+  width: number,
+  height: number,
+  logo: LogoBox,
+): string {
+  const frame = lifestyleFrame(width, height, headline, logo);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
   <defs>
-    <linearGradient id="wash" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="rgba(255,253,250,0.92)"/>
-      <stop offset="0.22" stop-color="rgba(255,253,250,0.55)"/>
-      <stop offset="0.42" stop-color="rgba(255,253,250,0)"/>
+    <linearGradient id="wash" x1="0" y1="0" x2="1" y2="0.7">
+      <stop offset="0" stop-color="rgba(255,253,250,0.78)"/>
+      <stop offset="0.28" stop-color="rgba(255,253,250,0.28)"/>
+      <stop offset="0.58" stop-color="rgba(255,253,250,0)"/>
       <stop offset="1" stop-color="rgba(255,253,250,0)"/>
     </linearGradient>
   </defs>
   <rect x="0" y="0" width="${width}" height="${height}" fill="url(#wash)"/>
-  <rect x="${padX}" y="${sealY}" width="${seal}" height="${seal}" rx="${Math.round(seal * 0.22)}" fill="${GOLD}"/>
-  <text x="${padX + seal / 2}" y="${sealBaseline}" text-anchor="middle" font-family="${SERIF}" font-size="${Math.round(seal * 0.58)}" font-weight="bold" fill="${WINE_DEEP}">E</text>
-  <text x="${textX}" y="${sealBaseline - Math.round(word * 0.15)}" font-family="${SERIF}" font-size="${word}" font-weight="bold" fill="${WINE}">EventeIA</text>
-  <text x="${textX}" y="${sloganY}" font-family="${SANS}" font-size="${Math.max(14, Math.round(word * 0.42))}" fill="${WINE}">Você imagina. A EventeIA faz acontecer.</text>
-  <text x="${padX}" y="${titleY}" font-family="${SERIF}" font-size="${titleSize}" font-weight="bold" fill="${WINE}">${escapeXml(title)}</text>
-  ${support.length > 0 ? `<text x="${padX}" y="${supportY}" font-family="${SANS}" font-size="${supportSize}" fill="${WINE}">${escapeXml(support)}</text>` : ""}
-  <rect x="${padX}" y="${pillY}" width="${pillW}" height="${pillH}" rx="${pillH / 2}" fill="${WINE}"/>
-  <text x="${padX + pillW / 2}" y="${pillTextY}" text-anchor="middle" font-family="${SANS}" font-size="${pillFont}" font-weight="bold" fill="${PAPER}">${pillLabel}</text>
+  <text x="${frame.textX}" y="${frame.wordBaseline}" font-family="${SERIF}" font-size="${frame.word}" font-weight="bold" fill="${WINE}">EventeIA</text>
+  <text x="${frame.padX}" y="${frame.titleY}" font-family="${SERIF}" font-size="${frame.titleSize}" font-weight="bold" fill="${WINE}">${escapeXml(frame.title)}</text>
+  ${frame.support.length > 0 ? `<text x="${frame.padX}" y="${frame.supportY}" font-family="${SANS}" font-size="${frame.supportSize}" fill="${WINE}">${escapeXml(frame.support)}</text>` : ""}
+  <rect x="${frame.padX}" y="${frame.pillY}" width="${frame.pillW}" height="${frame.pillH}" rx="${frame.pillH / 2}" fill="${WINE}"/>
+  <text x="${frame.padX + frame.pillW / 2}" y="${frame.pillTextY}" text-anchor="middle" font-family="${SANS}" font-size="${frame.pillFont}" font-weight="bold" fill="${PAPER}">${frame.pillLabel}</text>
 </svg>`;
 }
 
@@ -142,9 +170,13 @@ export function buildBannerSvg(
   height: number,
   mode: "lifestyle" | "editorial" = "lifestyle",
 ): string {
+  const logo =
+    mode === "lifestyle"
+      ? { width: Math.round(width * 0.12), height: Math.round(width * 0.072) }
+      : { width: 0, height: 0 };
   return mode === "editorial"
     ? buildEditorialBanner(headline, width, height)
-    : buildLifestyleBanner(headline, width, height);
+    : buildLifestyleBanner(headline, width, height, logo);
 }
 
 /** Cards "Orçamento recebido" no rodapé (puro, testável). */
@@ -209,13 +241,36 @@ export async function composeAd(imageBytes: Buffer, input: ComposeAdInput): Prom
   const width = input.width ?? 1080;
   const height = input.height ?? 1080;
   const mode = input.categories.length > 0 ? "lifestyle" : "editorial";
-  const banner = Buffer.from(buildBannerSvg(input.headline, width, height, mode));
+  const padX = Math.round(width * 0.06);
+  const padTop = Math.max(52, Math.round(width * 0.058));
+  const logoH = Math.round(width * 0.072);
+  const logo = mode === "lifestyle" ? await trimmedBrandMonogram(logoH) : null;
+  const logoMeta = logo === null ? null : await sharp(logo).metadata();
+  const logoBox = {
+    width: logoMeta?.width ?? Math.round(width * 0.12),
+    height: logoMeta?.height ?? logoH,
+  };
+  const banner = Buffer.from(
+    mode === "editorial"
+      ? buildEditorialBanner(input.headline, width, height)
+      : buildLifestyleBanner(input.headline, width, height, logoBox),
+  );
   const cards = Buffer.from(buildReceiptCardSvg(input.categories, width, height));
-  return sharp(imageBytes)
-    .resize(width, height, { fit: "cover", position: "attention" })
+  const base = sharp(imageBytes).resize(width, height, { fit: "cover", position: "attention" });
+  if (logo === null) {
+    return base
+      .composite([
+        { input: banner, top: 0, left: 0 },
+        { input: cards, top: 0, left: 0 },
+      ])
+      .jpeg({ quality: 88 })
+      .toBuffer();
+  }
+  return base
     .composite([
       { input: banner, top: 0, left: 0 },
       { input: cards, top: 0, left: 0 },
+      { input: logo, left: padX, top: padTop },
     ])
     .jpeg({ quality: 88 })
     .toBuffer();

@@ -97,6 +97,20 @@ async function logoOverlays(imgW: number, imgH: number): Promise<Overlay[]> {
   ];
 }
 
+/** PNG do monograma (transparente), para o anúncio claro compor sem o chip. */
+export function brandMonogramPng(): Buffer {
+  return Buffer.from(LOGO_PNG_BASE64, "base64");
+}
+
+/** Monograma aparado e na altura pedida. */
+export async function trimmedBrandMonogram(height: number): Promise<Buffer> {
+  const trimmed = await sharp(brandMonogramPng()).trim().png().toBuffer();
+  return sharp(trimmed)
+    .resize({ height: Math.max(1, height) })
+    .png()
+    .toBuffer();
+}
+
 /** Aplica a logo (chip branco) à imagem e devolve JPEG com a marca. */
 export async function applyBrandLogo(imageBytes: Buffer): Promise<Buffer> {
   const normalized = await sharp(imageBytes).png().toBuffer({ resolveWithObject: true });
