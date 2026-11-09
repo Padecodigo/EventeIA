@@ -274,7 +274,6 @@ export async function generateReelArt(
     const apiKey = activeImageApiKey();
     if (!hasApiKey(apiKey)) return null;
     const used = new Set((await (deps.loadUsed ?? loadUsedMedia)()).map((use) => use.key));
-    const generate = deps.generateImage ?? generateImage;
     const renderReel = deps.renderReel ?? renderReelVideo;
     const storeVideo = deps.storeVideo ?? storeVideoBytes;
     const recordUse = deps.recordUse ?? recordMediaUse;
