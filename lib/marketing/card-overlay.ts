@@ -62,7 +62,7 @@ export function buildBannerSvg(headline: readonly string[], width: number, heigh
     </linearGradient>
   </defs>
   <rect x="0" y="0" width="${width}" height="${bandH}" fill="url(#banner)"/>
-  <text x="${padX}" y="${Math.round(brandSize * 1.7)}" font-family="Liberation Sans, Arial, sans-serif" font-size="${brandSize}" font-weight="bold" fill="${ACCENT}" letter-spacing="${Math.round(brandSize * 0.3)}">EVENTEIA</text>
+  <text x="${padX}" y="${Math.round(brandSize * 1.7)}" font-family="Liberation Sans, Arial, sans-serif" font-size="${brandSize}" font-weight="bold" fill="${ACCENT}">EVENTEIA</text>
   ${lines}
 </svg>`;
 }
