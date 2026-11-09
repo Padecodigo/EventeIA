@@ -13,8 +13,6 @@ const USER_FACING_FILES = [
   "lib/quotes/export.ts",
   "lib/notifications/quotations-ready.ts",
   "lib/notifications/toast.ts",
-  "lib/marketing/autopilot.ts",
-  "lib/marketing/themes.ts",
 ] as const;
 
 const REMOVED_SCENARIOS =

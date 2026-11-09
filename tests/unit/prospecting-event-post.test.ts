@@ -87,6 +87,18 @@ describe("post de prospecção por evento", () => {
     });
   });
 
+  it("prompt visual segue o tema do evento e não inclui pessoas", () => {
+    const casamento = buildEventPostContent(source);
+    const corporativo = buildEventPostContent({ ...source, eventType: "corporativo" });
+    expect(casamento.imagePrompt).toContain("wedding table");
+    expect(corporativo.imagePrompt).toContain("corporate buffet table");
+    for (const content of [casamento, corporativo]) {
+      expect(content.imagePrompt).toContain("No people at all");
+      expect(content.imagePrompt).toContain("Static photograph");
+      expect(content.imagePrompt).not.toContain("bride");
+    }
+  });
+
   it("legenda termina com a assinatura de marca (sem logo sobreposta)", () => {
     const caption = buildEventPostCaption(source);
     expect(caption.endsWith("— EventeIA · Você imagina. A EventeIA faz acontecer.")).toBe(true);

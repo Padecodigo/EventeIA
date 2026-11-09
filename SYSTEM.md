@@ -65,7 +65,7 @@ app/            → Server Components / Route Handlers / Server Actions (só I/O
        ├─ supabase/       clientes tipados (Admin/RLS)
        ├─ asaas/          pagamentos + webhooks idempotentes
        ├─ meta/           Graph API (IG/FB), limites, token-health
-       ├─ marketing/      autopilot de publicidade + arte (FLUX + sharp)
+       ├─ marketing/      arte editorial (FLUX + sharp) usada pelas iscas
        ├─ prospecting/    iscas, descoberta de fornecedores, publicações
        ├─ discovery/      buscadores de fornecedores (Overpass, DeepSeek, Grok, NIM, places)
        ├─ events/         ciclo de vida do evento + confirmação por DM
@@ -115,17 +115,13 @@ Ver [`.context/COMMERCIAL_MODEL.md`](.context/COMMERCIAL_MODEL.md) e [`.context/
 4. **Escopo social**: fornecedores só **Facebook + Instagram** (decisão #013). TikTok é só
    publicidade (não busca fornecedores).
 
-### 5.4 Publicidade automática (autopilot)
+### 5.4 Publicidade automática (removida)
 
-1. Cron **`0 */4 * * *`** (`workers/index.ts`) = **6× por dia** (00,04,08,12,16,20h).
-2. Cada run: **1 post + 1 story + 1 reel**, tema rotativo (`lib/marketing/themes.ts`),
-   legenda via DeepSeek, e **nunca repete imagem** (dedup sha256 em `autopilot_media`).
-3. **Arte híbrida** (decisão #015): `flux.1-dev` gera a **cena** (única) → sharp sobrepõe o
-   **banner (headline) + cards "Orçamento recebido"** → fallback `flux.2-klein-4b` em rate limit.
-   A cena pede lugar parado (mesa, flores, comida); pessoas são raras. O sharp aplica grão, calor e vinheta antes do layout.
-   Sem imagem nova, a peça não publica (não reaproveita foto estática nem cache).
-   A isca do acervo geral (sem evento) reserva a linha com `event_id` nulo.
-4. Publicações vinculadas ao ciclo de vida do evento: excluir evento exclui os posts (Meta).
+O antigo autopilot de publicidade foi removido do código e a flag
+`marketing_autopilot` foi desativada pela migração `0088`. A única publicação
+automática é o **post de isca** da prospecção (§5.3). Nenhuma tabela foi
+removida: `app_settings` e `autopilot_media` seguem existindo por
+compatibilidade, sem uso pelo produto.
 
 ### 5.5 Orçamento (motor determinístico)
 
@@ -152,7 +148,7 @@ Ver [`.context/COMMERCIAL_MODEL.md`](.context/COMMERCIAL_MODEL.md) e [`.context/
 | Clientes Supabase            | `lib/supabase/`                                   |
 | Pagamento Asaas              | `lib/asaas/`                                      |
 | Meta Graph API               | `lib/meta/`                                       |
-| Publicidade + arte           | `lib/marketing/`                                  |
+| Publicidade + arte           | `lib/marketing/` (arte) + `lib/prospecting/` (iscas) |
 | Iscas/fornecedores           | `lib/prospecting/` + `lib/discovery/`             |
 | Confirmação por DM           | `lib/events/`                                     |
 | Workers + cron               | `workers/index.ts`                                |
@@ -182,12 +178,12 @@ Ver [`.context/COMMERCIAL_MODEL.md`](.context/COMMERCIAL_MODEL.md) e [`.context/
 
 ## 8. Decisões de arquitetura (índice)
 
-Consulte [`.ai-memory/DECISIONS.md`](.ai-memory/DECISIONS.md) para o histórico curto (#001–#015).
+Consulte [`.ai-memory/DECISIONS.md`](.ai-memory/DECISIONS.md) para o histórico curto (#001–#016).
 Destaques recentes:
 
 - **#009** — só tíquete por evento (R$ 97); planos/assinatura/franquia saíram da superfície.
 - **#013** — TikTok = só publicidade; busca de fornecedores só FB + IG.
-- **#014** — dois tipos de publicidade: diária (autopilot) e isca (prospecção).
+- **#014** — publicidade automática removida; a única publicação é a isca da prospecção.
 - **#015** — arte híbrida: FLUX gera a cena, sharp sobrepõe o texto.
 
 ---

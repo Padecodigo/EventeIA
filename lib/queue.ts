@@ -19,7 +19,6 @@ export const QUEUE_NAMES = {
   financeBalanceCheck: "finance-balance-check",
   metaTokenHealth: "meta-token-health",
   artCleanup: "art-cleanup",
-  marketingAutopilot: "marketing-autopilot",
   prospectPostDelete: "prospect-post-delete",
   instagramPublish: "instagram-publish",
   metaWebhooks: "meta-webhooks",

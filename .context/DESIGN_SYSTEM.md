@@ -173,7 +173,7 @@ Peças por tipo de evento. O post de feed é o conjunto canônico 1080×1350 (fo
 | Story         | `public/brand/stories/{tipo}.jpg`                                       | A mesma hierarquia. Logo abaixo da barra superior; texto acima da barra inferior.                                                                                                 |
 | Quadro / reel | `public/brand/reel-frames/{tipo}.jpg` → `public/brand/reels/{tipo}.mp4` | A mesma hierarquia, com o título no recorte central do grid. Zoom do vídeo curto, para o texto não sair do quadro.                                                                |
 
-O chip branco com o monograma no canto **não** é arte de prospecção. Anúncios gerados por cena (autopilot) usam o anúncio claro: título serifado vinho em até duas linhas, margem lateral de 7%, degradê de papel suave no topo, pílula e cartões “Orçamento recebido”. O apoio é uma frase completa. Sem `letter-spacing` no SVG (o rasterizador duplica o glifo).
+O chip branco com o monograma no canto **não** é arte de prospecção. As cenas geradas para as iscas usam o anúncio claro: título serifado vinho em até duas linhas, margem lateral de 7%, degradê de papel suave no topo, pílula e cartões “Orçamento recebido”. O apoio é uma frase completa. Sem `letter-spacing` no SVG (o rasterizador duplica o glifo).
 
 ---
 

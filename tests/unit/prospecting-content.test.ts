@@ -1,9 +1,19 @@
 import { describe, expect, it } from "vitest";
 
 import { validateCaption } from "@/lib/meta/publishing";
-import { BRAND_SIGNATURE, buildCaption, buildImagePrompt, buildPostContent } from "@/lib/prospecting/content";
+import {
+  BRAND_SIGNATURE,
+  buildCaption,
+  buildImagePrompt,
+  buildPostContent,
+} from "@/lib/prospecting/content";
 
-const base = { category: "Buffet", keyword: "cotação", handles: ["buffet_a", "foto_b"], variant: 0 };
+const base = {
+  category: "Buffet",
+  keyword: "cotação",
+  handles: ["buffet_a", "foto_b"],
+  variant: 0,
+};
 
 describe("conteúdo do post de isca", () => {
   it("legenda tem CTA com a palavra-chave, menções e aviso de ilustrativa", () => {
@@ -28,10 +38,31 @@ describe("conteúdo do post de isca", () => {
   });
 
   it("prompt visual inclui categoria, cidade e convidados", () => {
-    const prompt = buildImagePrompt({ category: "buffet", city: "Taubaté", guestCount: 120, variant: 0 });
+    const prompt = buildImagePrompt({
+      category: "buffet",
+      city: "Taubaté",
+      guestCount: 120,
+      variant: 0,
+    });
     expect(prompt).toContain("buffet");
     expect(prompt).toContain("Taubaté");
     expect(prompt).toContain("120 convidados");
+  });
+
+  it("prompt visual usa o tipo do evento e não inclui pessoas", () => {
+    const casamento = buildImagePrompt({ category: "buffet", eventType: "casamento", variant: 0 });
+    const corporativo = buildImagePrompt({
+      category: "buffet",
+      eventType: "corporativo",
+      variant: 0,
+    });
+    expect(casamento).toContain("wedding table");
+    expect(corporativo).toContain("corporate buffet table");
+    for (const prompt of [casamento, corporativo]) {
+      expect(prompt).toContain("No people at all");
+      expect(prompt).toContain("Static photograph");
+      expect(prompt).not.toContain("cast");
+    }
   });
 
   it("não gera menções acima do limite e mantém a legenda válida com muitas tags", () => {

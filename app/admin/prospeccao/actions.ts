@@ -10,8 +10,6 @@ import { serverEnv } from "@/lib/env";
 import { cleanupEventPublicationsById } from "@/lib/events/social-cleanup";
 import { logger } from "@/lib/logger";
 import { composeAd } from "@/lib/marketing/card-overlay";
-import { recentPublicationCount } from "@/lib/marketing/recent-scenes";
-import { IMAGE_NEGATIVE } from "@/lib/marketing/scene-rules";
 import { metaPublishConfigFromEnv } from "@/lib/meta/config";
 import { generateImage } from "@/lib/modelslab/client";
 import { storeArtBytes } from "@/lib/prospecting/art-cache";
@@ -31,6 +29,8 @@ import { createSupabasePostStore } from "@/lib/prospecting/posts-store";
 import { publishEventPost } from "@/lib/prospecting/publish-event-post";
 import { choosePublishPath } from "@/lib/prospecting/publish-path";
 import { publishPlannedPost } from "@/lib/prospecting/publish-runtime";
+import { recentPublicationCount } from "@/lib/prospecting/recent-publications";
+import { IMAGE_NEGATIVE } from "@/lib/prospecting/scene-rules";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 /**
@@ -71,6 +71,7 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
   const eventIdRaw = form.get("eventId");
   const eventId = typeof eventIdRaw === "string" && eventIdRaw.length > 0 ? eventIdRaw : undefined;
   const dayIndex = Number(form.get("dayIndex"));
+  let eventType: string | undefined;
   let eventState: {
     status: string | null;
     closed_at: string | null;
@@ -82,6 +83,7 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
       .select("event_type,status,closed_at,user_deleted_at")
       .eq("id", eventId)
       .maybeSingle();
+    eventType = data?.event_type ?? undefined;
     eventState =
       data === null
         ? null
@@ -119,6 +121,7 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
       handles,
       imagePrompt,
       caption,
+      eventType,
     },
     approved: true,
     modelslabKey: activeImageApiKey(),

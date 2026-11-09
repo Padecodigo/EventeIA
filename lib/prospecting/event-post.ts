@@ -1,6 +1,7 @@
 import { EVENT_TYPE_LABELS } from "@/lib/catalog/v1";
-import { sceneDirective } from "@/lib/marketing/scene-rules";
-import { BRAND_SIGNATURE } from "@/lib/prospecting/content";
+
+import { BRAND_SIGNATURE } from "./content";
+import { sceneDirective } from "./scene-rules";
 
 /**
  * Conteúdo do post de prospecção por evento.
@@ -132,7 +133,7 @@ export function buildEventPostImagePrompt(input: EventPostSource, castIndex = 0)
     .slice(0, 4)
     .join(", ");
   const needLine = needs.length > 0 ? ` Procura: ${needs}.` : "";
-  return `fotografia editorial parada de ${typeLabel} em ${location}, data ${date}.${needLine} ${sceneDirective(castIndex)} sem texto, sem números, sem nomes, sem logotipos de terceiros e sem marca d'água`;
+  return `fotografia editorial parada de ${typeLabel} em ${location}, data ${date}.${needLine} ${sceneDirective(castIndex, input.eventType)} sem pessoas, sem texto, sem números, sem nomes, sem logotipos de terceiros e sem marca d'água`;
 }
 
 /** Legenda exata da prospecção por evento + dados públicos + código. */

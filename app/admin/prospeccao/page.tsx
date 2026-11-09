@@ -97,6 +97,7 @@ export default async function ProspeccaoPage({
         typeLabel:
           EVENT_TYPE_LABELS[selected.event_type as keyof typeof EVENT_TYPE_LABELS] ??
           selected.event_type,
+        eventType: selected.event_type,
         guestCount: selected.guest_count,
       };
       eventPost = buildEventPostContent({
@@ -136,6 +137,7 @@ export default async function ProspeccaoPage({
     const template = buildPostContent({
       category: post.category,
       guestCount: eventInfo?.guestCount,
+      eventType: eventInfo?.eventType,
       keyword: env.META_PROSPECT_KEYWORD,
       handles: post.handles,
       variant: post.dayIndex,

@@ -1,9 +1,9 @@
 import { randomInt } from "node:crypto";
 
-import { IMAGE_NEGATIVE } from "@/lib/marketing/scene-rules";
 import { MODELSLAB } from "@/lib/meta/limits";
 import { generateNvidiaImage } from "@/lib/nvidia/image";
 import { storeArtBytes } from "@/lib/prospecting/art-cache";
+import { IMAGE_NEGATIVE } from "@/lib/prospecting/scene-rules";
 
 /**
  * Cliente ModelsLab — FLUX, endpoint oficial `POST /api/v6/images/text2img`

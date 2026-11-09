@@ -1,5 +1,6 @@
-import { sceneDirective } from "@/lib/marketing/scene-rules";
 import { CAPTION } from "@/lib/meta/limits";
+
+import { sceneDirective } from "./scene-rules";
 
 /**
  * Conteúdo do post de isca: prompt visual (SDXL) e legenda com CTA, menções e
@@ -11,6 +12,8 @@ export interface ContentInput {
   category: string;
   city?: string;
   guestCount?: number;
+  /** Tipo do evento: define o tema da cena (casamento, corporativo etc.). */
+  eventType?: string;
   /** Palavra-chave que o fornecedor comenta (ex.: COTAÇÃO). */
   keyword: string;
   /** @handles dos fornecedores do lote. */
@@ -43,6 +46,7 @@ export function buildImagePrompt(input: {
   category: string;
   city?: string;
   guestCount?: number;
+  eventType?: string;
   variant?: number;
 }): string {
   const category = categoryPhrase(input.category);
@@ -53,7 +57,7 @@ export function buildImagePrompt(input: {
       ? ` para ${String(input.guestCount)} convidados`
       : "";
   const index = input.variant ?? 0;
-  return `fotografia editorial parada de ${category}${where}${guests}. ${sceneDirective(index)} estilo editorial, alta qualidade, foco no lugar na mesa nas flores e na comida, sem texto, sem números, sem preços, sem logotipos, sem marca d'água`;
+  return `fotografia editorial parada de ${category}${where}${guests}. ${sceneDirective(index, input.eventType)} estilo editorial, alta qualidade, foco no lugar na mesa nas flores e na comida, sem pessoas, sem texto, sem números, sem preços, sem logotipos, sem marca d'água`;
 }
 
 export function buildCaption(input: ContentInput): string {

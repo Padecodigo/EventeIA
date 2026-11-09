@@ -2,7 +2,7 @@ import "server-only";
 
 import { randomInt } from "node:crypto";
 
-import { withNvidiaAvoidance } from "@/lib/marketing/scene-rules";
+import { withNvidiaAvoidance } from "@/lib/prospecting/scene-rules";
 
 import { extractNvidiaImage, sniffMime } from "./pure";
 

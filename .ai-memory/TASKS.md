@@ -38,8 +38,8 @@
       `missing_permission` é inalcançável.
 - [ ] **Limpeza de publicações** — buffet `17875462215638458` sem confirmação; decor
       `18026996645916620` e space `17971549067960951` não tocados. Drinks/cake confirmados: não refazer.
-- [x] **4 posts + 4 stories + 4 reels/dia por canal**, sem repetir imagem, com logo (autopilot 4h,
-      stories 9:16 e reels ffmpeg — PRs #226/#227/#228).
+- [x] **4 posts + 4 stories + 4 reels/dia por canal**, sem repetir imagem, com logo (autopilot 4h —
+      removido pela decisão #016; stories 9:16 e reels ffmpeg — PRs #226/#227/#228).
 - [x] **TikTok — publicidade** (Login Kit + Content Posting API, rascunho inbox): conexão, upload,
       webhook assinado e verificação de domínio prontos. **Escopo = só publicidade** (decisão #013);
       descoberta de fornecedores NÃO vai pro TikTok. Falta: gravar demo para review e aprovar o app.
@@ -49,7 +49,7 @@
 - [x] **Criativos de rede**: posts 1080×1350 restaurados de `7bf6f98` (o chip de `7df7e97` era a
       regressão). Stories e quadros de reel 1080×1920 no mesmo padrão editorial (`pnpm brand:art` /
       `pnpm brand:reels`). Publicação continua nos mesmos caminhos.
-- [ ] **FLUX sempre novo** — acervo geral reserva com `event_id` nulo. Cena parada, semente aleatória, rotação por publicações recentes e film look no sharp. Biotipo brasileiro só quando a cena pede pessoas.
+- [ ] **FLUX sempre novo** — acervo geral reserva com `event_id` nulo. Cena estática, sem pessoas, tema pelo tipo do evento, semente aleatória, rotação por publicações recentes e film look no sharp.
 - [ ] **Código de contratante vs. fornecedor** (hoje um código só confirma/publica).
 - [ ] **Pendências do App Review da Meta**.
 
@@ -62,8 +62,8 @@
 - Coral `#E8575A` com texto branco dá **3,53:1** e reprova AA: o CTA usa `#C24145` (5,08:1).
 - FLUX.1-dev (nuvem NVIDIA) só aceita dimensões fixas **768–1344**; o código mapeia quadrado→`1024×1024`
   e vertical→`768×1344` em `lib/nvidia/image.ts`.
-- NVIDIA `seed:0` é determinístico → `randomSeed()` por chamada em `lib/marketing/autopilot-art.ts`
-  (senão post/story/reel repetem a mesma cena e o dedup bloqueia).
+- NVIDIA `seed:0` é determinístico → semente aleatória por chamada na geração de imagem
+  (`lib/nvidia/image.ts` e `lib/prospecting/publish-runtime.ts`).
 - SVG com `letter-spacing` no banner causa **"texto atrás do texto"** no sharp/librsvg — removido.
 - Arquivos temporários de teste (`*.mjs`, cookies de sessão) **nunca** dentro do repo: ele é público.
   Usar `os.tmpdir()` — um `.ck.json` foi commitado por engano e a sessão precisou ser revogada.

@@ -98,7 +98,7 @@ async function logoOverlays(imgW: number, imgH: number): Promise<Overlay[]> {
 }
 
 /** PNG do monograma (transparente), para o anúncio claro compor sem o chip. */
-export function brandMonogramPng(): Buffer {
+function brandMonogramPng(): Buffer {
   return Buffer.from(LOGO_PNG_BASE64, "base64");
 }
 
