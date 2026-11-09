@@ -163,6 +163,18 @@ Carregamento: **`next/font`** (self-hosted, sem FOUT). Fraunces com eixos `opsz`
 - Wordmark em texto usa Fraunces 600 com `letter-spacing: 0.02em`.
 - Favicon deve derivar do mesmo PNG (otimizado), sem variação criativa.
 
+### 5.1 Criativos de rede (post, story, reel)
+
+Peças por tipo de evento. O post de feed é o conjunto canônico 1080×1350 (foto em tela cheia). Story e quadro de reel são 1080×1920, com a mesma hierarquia e respiro para a interface do Instagram.
+
+| Peça | Arquivo | Composição |
+|---|---|---|
+| Post | `public/brand/posts/{tipo}.jpg` | Degradê vinho `#2A1119` na base, selo dourado “E” + wordmark no topo, rótulo “NOVO EVENTO”, título serifado do tipo, filete `#D4AF37`, “Comente **COTAÇÃO** e receba o briefing.” |
+| Story | `public/brand/stories/{tipo}.jpg` | A mesma hierarquia. Logo abaixo da barra superior; texto acima da barra inferior. |
+| Quadro / reel | `public/brand/reel-frames/{tipo}.jpg` → `public/brand/reels/{tipo}.mp4` | A mesma hierarquia, com o título no recorte central do grid. Zoom do vídeo curto, para o texto não sair do quadro. |
+
+O chip branco com o monograma no canto **não** é arte de prospecção. Anúncios gerados por cena (autopilot) usam o anúncio claro: título serifado vinho, pílula e cartões “Orçamento recebido”. Sem `letter-spacing` no SVG (o rasterizador duplica o glifo).
+
 ---
 
 ## 6. Componentes — regras visuais
