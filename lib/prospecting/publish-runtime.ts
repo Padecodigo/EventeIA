@@ -1,8 +1,6 @@
 import { randomInt } from "node:crypto";
 
 import { composeAd } from "@/lib/marketing/card-overlay";
-import { recentPublicationCount } from "@/lib/marketing/recent-scenes";
-import { IMAGE_NEGATIVE, withFreshScene } from "@/lib/marketing/scene-rules";
 import {
   publishToChannels,
   type ChannelPublicationIds,
@@ -12,9 +10,11 @@ import { generateImage } from "@/lib/modelslab/client";
 import { storeArtBytes } from "@/lib/prospecting/art-cache";
 
 import type { BaitReservation, PostStore, PostStatus } from "./posts-store";
+import type { PublicationState } from "./publication-state";
 import { canPublishForEvent, type EventPublicationState } from "./publish-guard";
 import type { PlannedPost } from "./publish-plan";
-import type { PublicationState } from "./publication-state";
+import { recentPublicationCount } from "./recent-publications";
+import { IMAGE_NEGATIVE, withFreshScene } from "./scene-rules";
 
 /**
  * Publica um post planejado: gera a imagem (SDXL), cria o container e publica.
@@ -189,6 +189,7 @@ export async function publishPlannedPost(input: PublishPlannedPostInput): Promis
       prompt: withFreshScene(
         input.planned.imagePrompt,
         sceneBias + input.planned.dayIndex + attempt,
+        input.planned.eventType,
       ),
       negativePrompt: IMAGE_NEGATIVE,
       seed: randomInt(1, 2_147_483_647),

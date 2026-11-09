@@ -1,12 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  buildBannerSvg,
-  buildReceiptCardSvg,
-  HEADLINES_BY_THEME,
-} from "@/lib/marketing/card-overlay";
+import { buildBannerSvg, buildReceiptCardSvg } from "@/lib/marketing/card-overlay";
 
-const headline = HEADLINES_BY_THEME.casamento ?? ["Casamento", "com calma"];
+const headline = ["O orçamento claro", "para viver o amor.", "Sem planilha no grande dia."];
 
 describe("overlay publicitário", () => {
   it("anúncio claro usa serif, pílula e não aplica letter-spacing", () => {

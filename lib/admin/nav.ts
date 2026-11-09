@@ -17,7 +17,6 @@ export const ADMIN_NAV = [
   { href: "/admin/instagram", label: "Instagram", description: "Sessão do navegador: logar, deslogar e trocar conta." },
   { href: "/admin/tiktok", label: "TikTok", description: "Contas conectadas via Login Kit (rascunho/inbox)." },
   { href: "/admin/metricas", label: "Métricas", description: "Acessos, logins e cadastros do site." },
-  { href: "/admin/marketing", label: "Publicações", description: "Autopilot de publicidade: ligar/desligar e temas." },
   { href: "/admin/lixeira", label: "Lixeira", description: "Itens excluídos: ver e restaurar." },
   { href: "/admin/busca", label: "Busca", description: "Busca geral: clientes, eventos, chamados e fornecedores." },
 ] as const;

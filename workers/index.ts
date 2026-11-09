@@ -23,8 +23,6 @@ import { requeueStaleMetaWebhooks } from "@/lib/jobs/meta-webhook-requeue";
 import { handleProspectReplyJob, type ProspectReplyJobData } from "@/lib/jobs/prospect-reply";
 import { logger } from "@/lib/logger";
 import { metaPublishConfigFromEnv } from "@/lib/meta/config";
-import { publishAutopilotPost } from "@/lib/marketing/autopilot";
-import { isAutopilotEnabled } from "@/lib/marketing/settings";
 import type { MetaPublishConfig } from "@/lib/meta/publishing";
 import { runMetaTokenHealthCheck } from "@/lib/meta/token-health-monitor";
 import { OutsideBusinessHoursError } from "@/lib/outreach/business-defer";
@@ -187,16 +185,6 @@ const prospectWindowReminderWorker = new Worker(
   { connection, concurrency: 1 },
 );
 
-// Publicidade automática (só quando o botão do admin está ligado).
-const marketingAutopilotWorker = new Worker(
-  QUEUE_NAMES.marketingAutopilot,
-  async () => {
-    if (!(await isAutopilotEnabled())) return;
-    await publishAutopilotPost();
-  },
-  { connection, concurrency: 1 },
-);
-
 // Limpeza da arte em cache (TTL de 1h).
 const artCleanupWorker = new Worker(
   QUEUE_NAMES.artCleanup,
@@ -290,11 +278,6 @@ void getQueue(QUEUE_NAMES.asaasReconcile).add(
   {},
   { repeat: { pattern: "30 9 * * *", tz: "America/Sao_Paulo" }, attempts: 3 },
 );
-void getQueue(QUEUE_NAMES.marketingAutopilot).add(
-  "slot",
-  {},
-  { repeat: { pattern: "0 */4 * * *", tz: "America/Sao_Paulo" }, attempts: 2 },
-);
 void getQueue(QUEUE_NAMES.artCleanup).add(
   "sweep",
   {},
@@ -362,7 +345,6 @@ const workers = [
   artCleanupWorker,
   prospectPostDeleteWorker,
   instagramPublishWorker,
-  marketingAutopilotWorker,
   eventHistoryPurgeWorker,
   costArchivePurgeWorker,
   discoveryWorker,

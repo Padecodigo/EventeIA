@@ -17,7 +17,7 @@ export const REQUIRED_META_SCOPES = [
   // e a base do IG user para publicar (lib/meta/publishing.ts).
   "instagram_basic",
   // Publicação no feed do Instagram: lib/meta/publishing.ts createMediaContainer/publishContainer
-  // (POST /{igUserId}/media e /media_publish) — usada por autopilot e posts de isca.
+  // (POST /{igUserId}/media e /media_publish) — usada pelos posts de isca.
   "instagram_content_publish",
   // Respostas na DM do Instagram: lib/meta/client.ts sendInstagramText (POST /messages) e
   // lib/meta/publishing.ts sendPrivateReply (POST /messages).

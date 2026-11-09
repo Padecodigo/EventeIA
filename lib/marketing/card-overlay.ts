@@ -20,29 +20,6 @@ const TEXT_DARK = "#2B2724";
 const SERIF = "Liberation Serif, Times New Roman, serif";
 const SANS = "Liberation Sans, Arial, sans-serif";
 
-/** As 2 categorias mais relevantes por tema (texto dos cards). */
-export const RECEIPT_CATEGORIES_BY_THEME: Record<string, readonly [string, string]> = {
-  infantil: ["Buffet infantil", "Decoração"],
-  aniversario: ["Buffet", "Bolo"],
-  casamento: ["Buffet", "Decoração"],
-  "15-anos": ["Buffet", "DJ"],
-  formatura: ["Espaço", "DJ"],
-  corporativo: ["Coffee break", "Espaço"],
-};
-
-/**
- * Copy do anúncio. Até duas linhas de título (serif) e, por último, o apoio:
- * frase completa, com inicial maiúscula. Três itens = título + título + apoio.
- */
-export const HEADLINES_BY_THEME: Record<string, readonly string[]> = {
-  infantil: ["A festa que ele", "vai lembrar.", "Você presente em cada momento."],
-  aniversario: ["Celebrar quem", "você ama.", "Sem correria no grande dia."],
-  casamento: ["O orçamento claro", "para viver o amor.", "Sem planilha no grande dia."],
-  "15-anos": ["A noite que marca", "a vida dela.", "Tudo organizado com clareza."],
-  formatura: ["A conquista é sua.", "A conta, a gente deixa clara."],
-  corporativo: ["Um evento que", "une a equipe.", "Orçamento claro, no menor preço."],
-};
-
 function escapeXml(text: string): string {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }

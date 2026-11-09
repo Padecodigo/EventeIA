@@ -2,32 +2,58 @@ import { describe, expect, it } from "vitest";
 
 import {
   IMAGE_NEGATIVE,
-  nextSceneIndex,
+  eventScene,
+  eventSceneKey,
   sceneDirective,
   sceneRecipe,
-  sceneStorageKey,
+  withFreshScene,
   withNvidiaAvoidance,
-} from "@/lib/marketing/scene-rules";
+} from "@/lib/prospecting/scene-rules";
 
-describe("regras de cena", () => {
-  it("troca assunto entre índices seguidos e só inclui pessoas a cada 5", () => {
-    const first = sceneRecipe(0);
-    const second = sceneRecipe(1);
-    expect(first.subject).not.toBe(second.subject);
-    expect(first.includePeople).toBe(true);
-    expect(second.includePeople).toBe(false);
-    expect(sceneRecipe(5).includePeople).toBe(true);
-    expect(sceneDirective(1)).toContain("No people");
-    expect(sceneDirective(0)).toContain("Avoid:");
-    expect(sceneDirective(0)).toContain(IMAGE_NEGATIVE);
+describe("regras da cena da isca", () => {
+  it("usa o tipo do evento como tema (casamento, corporativo, festa infantil)", () => {
+    expect(eventSceneKey("casamento")).toBe("casamento");
+    expect(eventSceneKey("Corporativo (confraternização)")).toBe("corporativo");
+    expect(eventSceneKey("Festa infantil")).toBe("festa_infantil");
+    expect(eventSceneKey("15 anos")).toBe("quinze_anos");
+    expect(eventSceneKey("aniversário")).toBe("aniversario");
+    expect(eventSceneKey("batizado")).toBe("batizado");
+    expect(eventSceneKey("formatura")).toBe("formatura");
+    expect(eventScene("casamento")).toContain("wedding table");
+    expect(eventScene("corporativo")).toContain("buffet");
+    expect(eventScene("festa_infantil")).toContain("birthday cake");
   });
 
-  it("pula a cena já publicada e afasta a tentativa seguinte", () => {
-    const used = new Set([sceneStorageKey("casamento", 0)]);
-    expect(nextSceneIndex(0, used, "casamento", 0)).not.toBe(0);
-    expect(nextSceneIndex(0, new Set(), "casamento", 0)).not.toBe(
-      nextSceneIndex(0, new Set(), "casamento", 1),
-    );
+  it("nunca inclui pessoas e sempre pede uma cena estática", () => {
+    for (const eventType of ["casamento", "corporativo", "festa_infantil", "15 anos"]) {
+      const prompt = sceneDirective(0, eventType);
+      expect(prompt).toContain("No people at all");
+      expect(prompt).toContain("Static photograph");
+      expect(prompt).toContain("no motion");
+      expect(prompt).not.toContain("bride");
+      expect(prompt).not.toContain("cast");
+    }
+    expect(IMAGE_NEGATIVE).toContain("people");
+    expect(IMAGE_NEGATIVE).toContain("person");
+    expect(IMAGE_NEGATIVE).toContain("hands");
+    expect(IMAGE_NEGATIVE).toContain("faces");
+  });
+
+  it("rotaciona ângulo e paleta sem repetir a mesma composição", () => {
+    const first = sceneRecipe(0, "casamento");
+    const second = sceneRecipe(1, "casamento");
+    expect(first.id).not.toBe(second.id);
+    expect(first.angle).not.toBe(second.angle);
+    expect(first.subject).toBe(second.subject);
+    expect(sceneDirective(0, "casamento")).not.toBe(sceneDirective(1, "casamento"));
+    expect(sceneDirective(0, "casamento")).toBe(sceneDirective(0, "casamento"));
+  });
+
+  it("acrescenta a cena e mantém o tipo do evento no prompt", () => {
+    const prompt = withFreshScene("fotografia de buffet", 3, "corporativo");
+    expect(prompt).toContain("fotografia de buffet");
+    expect(prompt).toContain("corporate buffet table");
+    expect(prompt).toContain("No text.");
   });
 
   it("grava Avoid no texto quando o provedor não tem campo negativo", () => {

@@ -20,7 +20,6 @@ describe("menu admin (superusuário)", () => {
       "/admin/instagram",
       "/admin/tiktok",
       "/admin/metricas",
-      "/admin/marketing",
       "/admin/lixeira",
       "/admin/busca",
     ]);

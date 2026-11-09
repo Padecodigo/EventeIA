@@ -6,7 +6,7 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 const WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 
 /**
- * Quantas iscas e anúncios saíram na janela recente.
+ * Quantas iscas saíram na janela recente.
  * Sem credencial de servidor (testes), devolve 0 e a rotação fica a cargo da semente.
  */
 export async function recentPublicationCount(): Promise<number> {
@@ -23,11 +23,7 @@ export async function recentPublicationCount(): Promise<number> {
       .from("prospect_posts")
       .select("id", { count: "exact", head: true })
       .gte("created_at", since);
-    const ads = await db
-      .from("autopilot_media")
-      .select("id", { count: "exact", head: true })
-      .gte("created_at", since);
-    return (posts.count ?? 0) + (ads.count ?? 0);
+    return posts.count ?? 0;
   } catch {
     return 0;
   }
