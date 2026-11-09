@@ -2,6 +2,8 @@ import "server-only";
 
 import { randomInt } from "node:crypto";
 
+import { withNvidiaAvoidance } from "@/lib/marketing/scene-rules";
+
 import { extractNvidiaImage, sniffMime } from "./pure";
 
 export { extractNvidiaImage, sniffMime, type ExtractedImage } from "./pure";
@@ -44,22 +46,25 @@ export interface NvidiaImageInput {
   height?: number;
   cfgScale?: number;
   seed?: number;
+  /** A NVIDIA não tem campo negativo: entra no texto como `Avoid:`. */
+  negativePrompt?: string;
   steps?: number;
   fetchImpl?: typeof fetch;
 }
 
 /** Payload específico de cada modelo (formatos não são compatíveis entre si). */
 function buildNvidiaPayload(model: string, input: NvidiaImageInput): Record<string, unknown> {
+  const prompt = withNvidiaAvoidance(input.prompt, input.negativePrompt);
   if (model.endsWith("flux.2-klein-4b")) {
     // Destilado: rejeita `mode`/`cfg_scale`/`width`/`height` e exige `steps ≤ 4`.
     return {
-      prompt: input.prompt,
+      prompt,
       seed: input.seed !== undefined && input.seed > 0 ? input.seed : randomInt(1, 2_147_483_647),
       steps: Math.min(input.steps ?? 4, 4),
     };
   }
   return {
-    prompt: input.prompt,
+    prompt,
     mode: input.mode ?? "base",
     cfg_scale: input.cfgScale ?? 3.5,
     width: resolveSize(input.width ?? 1024, input.height ?? 1024).width,

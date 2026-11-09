@@ -3,6 +3,7 @@ import "server-only";
 import sharp from "sharp";
 
 import { trimmedBrandMonogram } from "@/lib/marketing/brand-logo";
+import { applyFilmLook } from "@/lib/marketing/film-look";
 
 /**
  * Composição de post publicitário sobre a cena (sharp, sem texto da IA):
@@ -277,6 +278,11 @@ export interface ComposeAdInput {
 export async function composeAd(imageBytes: Buffer, input: ComposeAdInput): Promise<Buffer> {
   const width = input.width ?? 1080;
   const height = input.height ?? 1080;
+  const graded = await applyFilmLook(
+    await sharp(imageBytes)
+      .resize(width, height, { fit: "cover", position: "attention" })
+      .toBuffer(),
+  );
   const mode = input.categories.length > 0 ? "lifestyle" : "editorial";
   const padX = Math.round(width * 0.07);
   const padTop = Math.max(56, Math.round(width * 0.06));
@@ -293,7 +299,7 @@ export async function composeAd(imageBytes: Buffer, input: ComposeAdInput): Prom
       : buildLifestyleBanner(input.headline, width, height, logoBox),
   );
   const cards = Buffer.from(buildReceiptCardSvg(input.categories, width, height));
-  const base = sharp(imageBytes).resize(width, height, { fit: "cover", position: "attention" });
+  const base = sharp(graded);
   if (logo === null) {
     return base
       .composite([

@@ -1,7 +1,8 @@
 import { randomInt } from "node:crypto";
 
-import { withFreshScene } from "@/lib/marketing/brazilian-cast";
 import { composeAd } from "@/lib/marketing/card-overlay";
+import { recentPublicationCount } from "@/lib/marketing/recent-scenes";
+import { IMAGE_NEGATIVE, withFreshScene } from "@/lib/marketing/scene-rules";
 import {
   publishToChannels,
   type ChannelPublicationIds,
@@ -139,14 +140,6 @@ export async function publishPlannedPost(input: PublishPlannedPostInput): Promis
         error: "persistência por canal (fb_post_id/publication) não disponível",
       };
     }
-    if (input.eventId === undefined) {
-      return {
-        kind: "persistence_failed",
-        ok: false,
-        reason: "persistence_failed",
-        error: "publicação de isca exige eventId para reserva durável",
-      };
-    }
     const probe = await input.store.probe();
     if (probe.kind === "migration_required") {
       return {
@@ -189,10 +182,15 @@ export async function publishPlannedPost(input: PublishPlannedPostInput): Promis
   }
 
   let lastError = "geração da imagem falhou";
+  const sceneBias = (await recentPublicationCount()) + randomInt(0, 48);
   for (let attempt = 0; attempt < FRESH_ATTEMPTS && imageUrl === null; attempt += 1) {
     const image = await generateImage({
       apiKey: input.modelslabKey as string,
-      prompt: withFreshScene(input.planned.imagePrompt, input.planned.dayIndex + attempt),
+      prompt: withFreshScene(
+        input.planned.imagePrompt,
+        sceneBias + input.planned.dayIndex + attempt,
+      ),
+      negativePrompt: IMAGE_NEGATIVE,
       seed: randomInt(1, 2_147_483_647),
       width: 1080,
       height: 1350,
@@ -225,7 +223,7 @@ export async function publishPlannedPost(input: PublishPlannedPostInput): Promis
   if (input.requireFacebook === true) {
     const reserved = await input.store?.reserve?.({
       planned: input.planned,
-      eventId: input.eventId as string,
+      eventId: input.eventId ?? null,
       imageUrl,
       imageExpiresAt: imageExpiresAt ?? undefined,
     });

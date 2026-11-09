@@ -49,7 +49,7 @@
 - [x] **Criativos de rede**: posts 1080×1350 restaurados de `7bf6f98` (o chip de `7df7e97` era a
       regressão). Stories e quadros de reel 1080×1920 no mesmo padrão editorial (`pnpm brand:art` /
       `pnpm brand:reels`). Publicação continua nos mesmos caminhos.
-- [ ] **FLUX sempre novo** — sem foto estática, cache ou semente fixa. Se a geração falha, a peça não publica. Biotipo brasileiro varia por post (lista em `lib/marketing/brazilian-cast.ts`).
+- [ ] **FLUX sempre novo** — acervo geral reserva com `event_id` nulo. Cena parada, semente aleatória, rotação por publicações recentes e film look no sharp. Biotipo brasileiro só quando a cena pede pessoas.
 - [ ] **Código de contratante vs. fornecedor** (hoje um código só confirma/publica).
 - [ ] **Pendências do App Review da Meta**.
 

@@ -10,6 +10,8 @@ import { serverEnv } from "@/lib/env";
 import { cleanupEventPublicationsById } from "@/lib/events/social-cleanup";
 import { logger } from "@/lib/logger";
 import { composeAd } from "@/lib/marketing/card-overlay";
+import { recentPublicationCount } from "@/lib/marketing/recent-scenes";
+import { IMAGE_NEGATIVE } from "@/lib/marketing/scene-rules";
 import { metaPublishConfigFromEnv } from "@/lib/meta/config";
 import { generateImage } from "@/lib/modelslab/client";
 import { storeArtBytes } from "@/lib/prospecting/art-cache";
@@ -227,11 +229,12 @@ export async function approveEventPostAction(
     };
   }
   let imageUrl: string | null = null;
-  const castBase = Math.floor(Date.now() / 60_000);
+  const castBase = (await recentPublicationCount()) + randomInt(0, 48);
   for (let attempt = 0; attempt < 3 && imageUrl === null; attempt += 1) {
     const image = await generateImage({
       apiKey: imageKey,
       prompt: buildEventPostImagePrompt(source, castBase + attempt),
+      negativePrompt: IMAGE_NEGATIVE,
       seed: randomInt(1, 2_147_483_647),
       width: 1080,
       height: 1350,

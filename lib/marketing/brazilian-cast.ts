@@ -40,8 +40,3 @@ export function brazilianCastAt(index: number): string {
 export function sceneMomentAt(index: number): string {
   return SCENE_MOMENTS[slot(index + 3, SCENE_MOMENTS.length)] ?? SCENE_MOMENTS[0];
 }
-
-/** Acrescenta elenco e momento ao prompt da cena, sem pedir texto na imagem. */
-export function withFreshScene(prompt: string, index: number): string {
-  return `${prompt.trim()} ${brazilianCastAt(index)} Distinct moment: ${sceneMomentAt(index)}. No text.`;
-}

@@ -1,4 +1,4 @@
-import { brazilianCastAt, sceneMomentAt } from "./brazilian-cast";
+import { sceneDirective, sceneRecipe } from "./scene-rules";
 import type { MarketingTheme } from "./themes";
 
 /**
@@ -27,38 +27,42 @@ export interface MarketingImagePromptOptions {
   castIndex?: number;
 }
 
-/** Cenário lifestyle (pessoa + decoração do evento) por tema — variante `cards`. */
+/** Cenário parado (lugar, mesa, flores, comida) por tema — variante `cards`. */
 const SCENE_BY_THEME: Record<string, string> = {
   infantil:
-    "at a Brazilian home celebration, someone looks down at a smartphone, in a warmly lit room with pastel pink and blush balloons, floral arrangements and a small cake stand on the table",
+    "a Brazilian home celebration at rest, pastel pink and blush balloons, floral arrangements and a small cake stand on the table",
   aniversario:
-    "at a cozy Brazilian party table, someone looks at a smartphone, surrounded by colorful balloons, a decorated birthday cake and warm festive decor",
+    "a cozy Brazilian party table at rest, colorful balloons, a decorated birthday cake and warm festive decor",
   casamento:
-    "inside a luxurious Brazilian event hall, someone looks at a smartphone, with decorated banquet tables, elegant white, cream and deep burgundy floral arrangements, glass goblets and candles in soft bokeh",
+    "a luxurious Brazilian event hall, decorated banquet tables, elegant white, cream and deep burgundy floral arrangements, glass goblets and candles",
   "15-anos":
-    "inside a glamorous Brazilian ballroom, someone in an elegant dress looks at a smartphone, with a decorated main table, rosé flowers and soft dramatic lighting",
+    "a glamorous Brazilian ballroom, a decorated main table, rosé flowers and soft still lighting",
   formatura:
-    "inside a Brazilian celebration hall, a graduate looks at a smartphone, with themed decor, confetti, a cap and diploma on the table and festive lighting",
+    "a Brazilian celebration hall, themed decor, a cap and diploma resting on the table, festive lighting",
   corporativo:
-    "inside a modern Brazilian event space, someone looks at a smartphone, with a stage, scenic lighting and a sleek registration area",
+    "a modern Brazilian event space, a still stage, scenic lighting and a sleek registration area",
 };
 
 const DEFAULT_SCENE = SCENE_BY_THEME.infantil;
 
-/** Cena emocional pura por tema — variante `emotional` (sem cards, sem texto). */
+/** Cena emocional parada por tema — variante `emotional` (sem cards, sem texto). */
 const EMOTIONAL_SCENE_BY_THEME: Record<string, string> = {
-  infantil:
-    "a heartwarming high-end commercial photograph of three young children around a birthday cake indoors in Brazil, the child in the center blowing out the glowing candles on a frosted birthday cake while two other children watch with joy and excitement",
-  aniversario:
-    "a heartwarming commercial photograph of friends and family gathered around a birthday cake, the celebrant closing their eyes to make a wish before blowing the candles, warm candlelight and affectionate smiles",
-  casamento:
-    "a romantic high-end commercial photograph of a bride and groom sharing an emotional first dance under warm string lights, guests softly blurred in the background, tender expressions",
-  "15-anos":
-    "a glamorous commercial photograph of a debutante in an elegant gown dancing with her father in a decorated ballroom, both smiling with emotion under warm spotlights",
-  formatura:
-    "a joyful commercial photograph of graduates in caps and gowns hugging and tossing their caps in the air, confetti falling, genuine celebratory emotion",
-  corporativo:
-    "a candid commercial photograph of a team celebrating in a modern event space, colleagues applauding and high-fiving with genuine smiles",
+  infantil: "a still birthday cake with steady candles on a quiet table indoors in Brazil",
+  aniversario: "a birthday cake waiting on a quiet table, candles steady, warm candlelight",
+  casamento: "a dressed wedding table under warm string lights, chairs still, guests out of frame",
+  "15-anos": "a ballroom table dressed in rosé, warm spotlights, chairs still",
+  formatura: "caps and gowns folded on a table, confetti already settled, a quiet celebration hall",
+  corporativo: "a quiet meeting table in a modern event space, chairs aligned, glasses still",
+};
+
+/** Pessoas paradas, só quando o índice pede elenco. */
+const STILL_PEOPLE_BY_THEME: Record<string, string> = {
+  infantil: "three young children seated still beside the birthday cake",
+  aniversario: "one person seated still, about to make a wish, not moving",
+  casamento: "a bride and groom seated still",
+  "15-anos": "a debutante standing still beside the table",
+  formatura: "graduates in caps and gowns standing still",
+  corporativo: "a team seated still around the table",
 };
 
 const DEFAULT_EMOTIONAL_SCENE = EMOTIONAL_SCENE_BY_THEME.infantil;
@@ -99,23 +103,24 @@ export function buildMarketingImagePrompt(
 ): string {
   const composition = compositionFor(opts.vertical === true);
   const castIndex = opts.castIndex ?? 0;
-  const people = brazilianCastAt(castIndex);
-  const moment = `Distinct moment: ${sceneMomentAt(castIndex)}.`;
+  const directive = sceneDirective(castIndex);
 
   if (opts.variant === "emotional") {
     const scene = EMOTIONAL_SCENE_BY_THEME[theme.key] ?? DEFAULT_EMOTIONAL_SCENE;
-    return [`${people}.`, `${scene}.`, moment, NO_TEXT, EMOTIONAL_STYLE, `${composition}.`].join(
-      " ",
-    );
+    const people = sceneRecipe(castIndex).includePeople
+      ? (STILL_PEOPLE_BY_THEME[theme.key] ?? STILL_PEOPLE_BY_THEME.infantil)
+      : "";
+    return [`${scene}.`, people, directive, NO_TEXT, EMOTIONAL_STYLE, `${composition}.`]
+      .filter((part) => part.length > 0)
+      .join(" ");
   }
 
   const scene = SCENE_BY_THEME[theme.key] ?? DEFAULT_SCENE;
   const palette = PALETTE_BY_THEME[theme.key] ?? DEFAULT_PALETTE;
   return [
     "A high-end commercial lifestyle photograph for a modern AI event planning service.",
-    `${people}.`,
     `${scene}.`,
-    moment,
+    directive,
     "Warm, sophisticated, cozy, minimalist mood, soft lighting, photorealistic, high-end advertising photography.",
     `${palette}.`,
     NO_TEXT,
