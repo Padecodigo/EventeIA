@@ -12,8 +12,11 @@ describe("overlay publicitário", () => {
   it("anúncio claro usa serif, pílula e não aplica letter-spacing", () => {
     const svg = buildBannerSvg(headline, 1080, 1080, "lifestyle");
     expect(svg).toContain("Liberation Serif");
-    expect(svg).toContain("O orçamento claro para você");
-    expect(svg).toContain("viver o amor — não a planilha.");
+    expect(svg).toContain("O orçamento claro");
+    expect(svg).toContain("para viver o amor.");
+    expect(svg).toContain("Sem planilha no grande dia.");
+    expect(svg).toContain(`x="${Math.round(1080 * 0.07)}"`);
+    expect(svg).toContain('x2="0" y2="1"');
     expect(svg).toContain("eventeia.com.br");
     expect(svg).toContain("EventeIA");
     expect(svg).not.toContain("letter-spacing");
@@ -21,7 +24,8 @@ describe("overlay publicitário", () => {
 
   it("quadro editorial mantém o título claro sobre o degradê, sem letter-spacing", () => {
     const svg = buildBannerSvg(headline, 1080, 1920, "editorial");
-    expect(svg).toContain("O orçamento claro para você");
+    expect(svg).toContain("O orçamento claro");
+    expect(svg).not.toContain("Sem planilha no grande dia.");
     expect(svg).toContain("#FFFDFA");
     expect(svg).toContain("#D4AF37");
     expect(svg).not.toContain("letter-spacing");

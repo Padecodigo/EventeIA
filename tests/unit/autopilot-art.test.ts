@@ -18,7 +18,7 @@ const THEME: MarketingTheme = {
   angle: "menos correria",
 };
 
-const HEADLINE = ["A festa que ele vai lembrar.", "Você presente em cada momento."];
+const HEADLINE = ["A festa que ele", "vai lembrar.", "Você presente em cada momento."];
 const SCENE_URL = "https://flux.test/scene-1.jpg";
 const bytesScene = Buffer.from("cena-flux-a");
 const bytesComposed = Buffer.from("cena-com-banner-e-cards");
@@ -72,10 +72,15 @@ describe("arte do autopilot com FLUX (cena) + sharp (banner + cards)", () => {
     expect(gen.prompt).not.toContain("Orçamento recebido");
     expect(gen.prompt).not.toContain(HEADLINE[0]);
 
-    expect(buildImage).toHaveBeenCalledWith(bytesScene, HEADLINE, ["Buffet infantil", "Decoração"], {
-      width: 1080,
-      height: 1080,
-    });
+    expect(buildImage).toHaveBeenCalledWith(
+      bytesScene,
+      HEADLINE,
+      ["Buffet infantil", "Decoração"],
+      {
+        width: 1080,
+        height: 1080,
+      },
+    );
     expect(storeImage).toHaveBeenCalledWith(bytesComposed);
     expect(recordUse).toHaveBeenCalledWith({
       mediaKey: contentHash(bytesComposed),
@@ -101,10 +106,15 @@ describe("arte do autopilot com FLUX (cena) + sharp (banner + cards)", () => {
     expect(gen.width).toBe(1080);
     expect(gen.height).toBe(1920);
     expect(gen.prompt).toContain("vertical composition for social media (9:16)");
-    expect(buildImage).toHaveBeenCalledWith(bytesScene, HEADLINE, ["Buffet infantil", "Decoração"], {
-      width: 1080,
-      height: 1920,
-    });
+    expect(buildImage).toHaveBeenCalledWith(
+      bytesScene,
+      HEADLINE,
+      ["Buffet infantil", "Decoração"],
+      {
+        width: 1080,
+        height: 1920,
+      },
+    );
   });
 
   it("variante emotional não aplica cards", async () => {
@@ -124,7 +134,10 @@ describe("arte do autopilot com FLUX (cena) + sharp (banner + cards)", () => {
     );
 
     expect(generateImage.mock.calls[0][0].prompt).not.toContain("Orçamento recebido");
-    expect(buildImage).toHaveBeenCalledWith(bytesScene, HEADLINE, [], { width: 1080, height: 1080 });
+    expect(buildImage).toHaveBeenCalledWith(bytesScene, HEADLINE, [], {
+      width: 1080,
+      height: 1080,
+    });
   });
 
   it("retorna null quando a cena já foi usada (colisão de hash)", async () => {

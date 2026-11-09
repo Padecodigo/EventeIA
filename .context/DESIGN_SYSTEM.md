@@ -8,13 +8,13 @@
 
 ## 1. Tom de voz e princípios editoriais
 
-| Princípio | Prática |
-|---|---|
-| Editorial | Composição tipográfica de revista: títulos serifados grandes, muito respiro, ritmo de coluna |
-| Sofisticado | Restração: poucas cores, nenhuma saturação excessiva, nada de gradientes berrantes além do sheen champagne |
-| Humanizado | Frases em primeira pessoa, cordiais e diretas; números sempre explicados, nunca "mágicos" |
+| Princípio               | Prática                                                                                                                                                                                   |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Editorial               | Composição tipográfica de revista: títulos serifados grandes, muito respiro, ritmo de coluna                                                                                              |
+| Sofisticado             | Restração: poucas cores, nenhuma saturação excessiva, nada de gradientes berrantes além do sheen champagne                                                                                |
+| Humanizado              | Frases em primeira pessoa, cordiais e diretas; números sempre explicados, nunca "mágicos"                                                                                                 |
 | Acolhedor, não elitista | Falamos com quem organiza a festa com orçamento real: do salão do bairro ao espaço mais bonito da cidade. Sofisticação sem exclusão — nunca sugerir que só alguns eventos merecem clareza |
-| Inteligência | Dados financeiros são protagonistas: tabelas limpas, hierarquia clara, breakdown transparente |
+| Inteligência            | Dados financeiros são protagonistas: tabelas limpas, hierarquia clara, breakdown transparente                                                                                             |
 
 - **Slogan**: “Você imagina. A EventeIA faz acontecer.”
 - **Frase humanizada**: “A clareza financeira e a inteligência que o seu evento merece.”
@@ -25,44 +25,44 @@
 
 ## 2. Paleta de cores (OFICIAL — não inventar tons)
 
-| Token | Nome | Hex | Papel |
-|---|---|---|---|
-| `vinho` | Vinho Leve | `#4A2031` | Cor de marca dominante: fundos de seção editorial, texto primário, botões primários |
-| `champagne` | Champagne | `#D4AF37` | Destaque/acento: links, filetes, bordas, ícones, texto sobre vinho |
-| `champagne-claro` | Champagne Claro | `#EADBBD` | Acento suave (tint derivado), chips, estados de hover, sheen |
-| `areia-quente` | Areia Quente | `#F7F3EE` | Fundo padrão de página/seções claras |
-| `areia-secundaria` | Areia Secundária | `#EEE7DF` | Superfícies alternadas, linhas de tabela, faixas divisórias |
-| `off-white` | Off-White | `#FFFDFA` | Cards, campos, superfícies sobre areia |
+| Token              | Nome             | Hex       | Papel                                                                               |
+| ------------------ | ---------------- | --------- | ----------------------------------------------------------------------------------- |
+| `vinho`            | Vinho Leve       | `#4A2031` | Cor de marca dominante: fundos de seção editorial, texto primário, botões primários |
+| `champagne`        | Champagne        | `#D4AF37` | Destaque/acento: links, filetes, bordas, ícones, texto sobre vinho                  |
+| `champagne-claro`  | Champagne Claro  | `#EADBBD` | Acento suave (tint derivado), chips, estados de hover, sheen                        |
+| `areia-quente`     | Areia Quente     | `#F7F3EE` | Fundo padrão de página/seções claras                                                |
+| `areia-secundaria` | Areia Secundária | `#EEE7DF` | Superfícies alternadas, linhas de tabela, faixas divisórias                         |
+| `off-white`        | Off-White        | `#FFFDFA` | Cards, campos, superfícies sobre areia                                              |
 
 ### 2.1 Tokens semânticos
 
-| Token semântico | Valor | Uso |
-|---|---|---|
-| `brand.primary` | `#3D1B28` | Identidade, botões primários |
-| `brand.accent` | `#C5A56F` | Acento, foco, destaques |
-| `brand.accentSoft` | `#EADBBD` | Acento suave |
-| `surface.canvas` | `#FFFDFA` | Fundo máximo (cards) |
-| `surface.warm` | `#F7F3EE` | Fundo de página |
-| `surface.muted` | `#EEE7DF` | Fundo alternado |
-| `surface.dark` | `#3D1B28` | Seções escuras editoriais |
-| `ink.primary` | `#3D1B28` | Texto sobre claro |
-| `ink.inverse` | `#FFFDFA` | Texto sobre vinho |
-| `ink.accent` | `#C5A56F` | Texto de destaque (apenas sobre vinho) |
-| `line.subtle` | `rgba(74,32,49,0.12)` | Bordas de cards, divisores |
-| `line.strong` | `rgba(74,32,49,0.28)` | Bordas de inputs, ênfase |
-| `ring.focus` | `#C5A56F` | Anel de foco acessível |
+| Token semântico    | Valor                 | Uso                                    |
+| ------------------ | --------------------- | -------------------------------------- |
+| `brand.primary`    | `#3D1B28`             | Identidade, botões primários           |
+| `brand.accent`     | `#C5A56F`             | Acento, foco, destaques                |
+| `brand.accentSoft` | `#EADBBD`             | Acento suave                           |
+| `surface.canvas`   | `#FFFDFA`             | Fundo máximo (cards)                   |
+| `surface.warm`     | `#F7F3EE`             | Fundo de página                        |
+| `surface.muted`    | `#EEE7DF`             | Fundo alternado                        |
+| `surface.dark`     | `#3D1B28`             | Seções escuras editoriais              |
+| `ink.primary`      | `#3D1B28`             | Texto sobre claro                      |
+| `ink.inverse`      | `#FFFDFA`             | Texto sobre vinho                      |
+| `ink.accent`       | `#C5A56F`             | Texto de destaque (apenas sobre vinho) |
+| `line.subtle`      | `rgba(74,32,49,0.12)` | Bordas de cards, divisores             |
+| `line.strong`      | `rgba(74,32,49,0.28)` | Bordas de inputs, ênfase               |
+| `ring.focus`       | `#C5A56F`             | Anel de foco acessível                 |
 
 ### 2.2 Variáveis CSS (copiar para `app/globals.css`)
 
 ```css
 :root {
   /* Paleta oficial — fonte da verdade: .context/DESIGN_SYSTEM.md */
-  --color-vinho: #3D1B28;
-  --color-areia-quente: #F7F3EE;
-  --color-areia-secundaria: #EEE7DF;
-  --color-off-white: #FFFDFA;
-  --color-champagne: #C5A56F;
-  --color-champagne-claro: #EADBBD;
+  --color-vinho: #3d1b28;
+  --color-areia-quente: #f7f3ee;
+  --color-areia-secundaria: #eee7df;
+  --color-off-white: #fffdfa;
+  --color-champagne: #c5a56f;
+  --color-champagne-claro: #eadbbd;
 
   /* Tokens semânticos */
   --color-primary: var(--color-vinho);
@@ -85,7 +85,7 @@
   /* Ritmo */
   --radius-card: 1rem;
   --shadow-soft: 0 1px 2px rgba(74, 32, 49, 0.06), 0 8px 24px rgba(74, 32, 49, 0.06);
-  --shadow-raised: 0 2px 4px rgba(74, 32, 49, 0.08), 0 16px 40px rgba(74, 32, 49, 0.10);
+  --shadow-raised: 0 2px 4px rgba(74, 32, 49, 0.08), 0 16px 40px rgba(74, 32, 49, 0.1);
   --ease-editorial: cubic-bezier(0.2, 0, 0, 1);
 }
 ```
@@ -98,17 +98,17 @@
 
 Razões de contraste medidas (WCAG, arredondadas):
 
-| Par (texto sobre fundo) | Ratio | Veredito | Uso permitido |
-|---|---|---|---|
-| Vinho Leve sobre Areia Quente | ≈ 12,3:1 | AAA | Corpo de texto padrão |
-| Vinho Leve sobre Off-White | ≈ 13,4:1 | AAA | Texto em cards |
-| Off-White sobre Vinho Leve | ≈ 13,4:1 | AAA | Texto em seções vinho |
-| Areia Quente sobre Vinho Leve | ≈ 12,3:1 | AAA | Idem |
-| Champagne Claro sobre Vinho Leve | ≈ 10,0:1 | AAA | Destaques em seções vinho |
-| Champagne sobre Vinho Leve | ≈ 6,5:1 | AA | Títulos, labels e acentos sobre vinho |
-| Vinho Leve sobre Champagne | ≈ 6,5:1 | AA | Botão champagne com texto vinho |
+| Par (texto sobre fundo)          | Ratio       | Veredito    | Uso permitido                                                       |
+| -------------------------------- | ----------- | ----------- | ------------------------------------------------------------------- |
+| Vinho Leve sobre Areia Quente    | ≈ 12,3:1    | AAA         | Corpo de texto padrão                                               |
+| Vinho Leve sobre Off-White       | ≈ 13,4:1    | AAA         | Texto em cards                                                      |
+| Off-White sobre Vinho Leve       | ≈ 13,4:1    | AAA         | Texto em seções vinho                                               |
+| Areia Quente sobre Vinho Leve    | ≈ 12,3:1    | AAA         | Idem                                                                |
+| Champagne Claro sobre Vinho Leve | ≈ 10,0:1    | AAA         | Destaques em seções vinho                                           |
+| Champagne sobre Vinho Leve       | ≈ 6,5:1     | AA          | Títulos, labels e acentos sobre vinho                               |
+| Vinho Leve sobre Champagne       | ≈ 6,5:1     | AA          | Botão champagne com texto vinho                                     |
 | **Champagne sobre Areia Quente** | **≈ 1,9:1** | **✗ FALHA** | **Proibido em texto** — decorativo apenas (filetes, ícones grandes) |
-| **Champagne sobre Off-White** | **≈ 2,1:1** | **✗ FALHA** | **Proibido em texto** |
+| **Champagne sobre Off-White**    | **≈ 2,1:1** | **✗ FALHA** | **Proibido em texto**                                               |
 
 Regras:
 
@@ -125,27 +125,27 @@ Regras:
 
 ### 4.1 Famílias
 
-| Token | Família | Papel |
-|---|---|---|
-| `font-serif` | **Fraunces** (fallback: Georgia, serif) | Títulos, números-editoriais, citações |
-| `font-sans` | **DM Sans** (fallback: system-ui) | UI, corpo de texto, labels, tabelas, botões |
+| Token        | Família                                  | Papel                                                                                                                   |
+| ------------ | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `font-serif` | **Fraunces** (fallback: Georgia, serif)  | Títulos, números-editoriais, citações                                                                                   |
+| `font-sans`  | **DM Sans** (fallback: system-ui)        | UI, corpo de texto, labels, tabelas, botões                                                                             |
 | `font-brand` | **Bodoni Moda** (fallback: Didot, Times) | **Exceção de marca**: exclusivamente o wordmark “EventeIA” (tracking negativo). Nunca usar em corpo de texto ou títulos |
 
 Carregamento: **`next/font`** (self-hosted, sem FOUT). Fraunces com eixos `opsz` + `SOFT` ativados via `font-variation-settings` quando disponíveis.
 
 ### 4.2 Escala tipográfica (canônica)
 
-| Token | Família | Tamanho/linha | Peso | Uso |
-|---|---|---|---|---|
-| `display-1` | Fraunces | 64px / 1.05 · ls −0.02em | 600 | Hero, abertura editorial |
-| `display-2` | Fraunces | 48px / 1.10 · ls −0.015em | 600 | Títulos de seção |
-| `title-1` | Fraunces | 32px / 1.20 | 600 | Título de página do dashboard |
-| `title-2` | Fraunces | 24px / 1.30 | 600 | Título de card/orçamento |
-| `title-3` | DM Sans | 20px / 1.40 | 500 | Subtítulos, itens de breakdown |
-| `body-lg` | DM Sans | 18px / 1.60 | 400 | Lead paragraphs |
-| `body` | DM Sans | 16px / 1.60 | 400 | Corpo padrão |
-| `caption` | DM Sans | 13px / 1.50 | 400 | Notas, ajuda de campo |
-| `overline` | DM Sans | 12px / 1.40 · ls 0.14em | 500 (maiusculas) | Eyebrows, rótulos de tabela |
+| Token       | Família  | Tamanho/linha             | Peso             | Uso                            |
+| ----------- | -------- | ------------------------- | ---------------- | ------------------------------ |
+| `display-1` | Fraunces | 64px / 1.05 · ls −0.02em  | 600              | Hero, abertura editorial       |
+| `display-2` | Fraunces | 48px / 1.10 · ls −0.015em | 600              | Títulos de seção               |
+| `title-1`   | Fraunces | 32px / 1.20               | 600              | Título de página do dashboard  |
+| `title-2`   | Fraunces | 24px / 1.30               | 600              | Título de card/orçamento       |
+| `title-3`   | DM Sans  | 20px / 1.40               | 500              | Subtítulos, itens de breakdown |
+| `body-lg`   | DM Sans  | 18px / 1.60               | 400              | Lead paragraphs                |
+| `body`      | DM Sans  | 16px / 1.60               | 400              | Corpo padrão                   |
+| `caption`   | DM Sans  | 13px / 1.50               | 400              | Notas, ajuda de campo          |
+| `overline`  | DM Sans  | 12px / 1.40 · ls 0.14em   | 500 (maiusculas) | Eyebrows, rótulos de tabela    |
 
 - Números monetários usam **`font-variant-numeric: tabular-nums`** (colunas alinhadas) e sempre `Intl.NumberFormat("pt-BR", { currency: "BRL" })` a partir de centavos inteiros.
 - Máx. 70–75 caracteres por linha em texto corrido.
@@ -167,13 +167,13 @@ Carregamento: **`next/font`** (self-hosted, sem FOUT). Fraunces com eixos `opsz`
 
 Peças por tipo de evento. O post de feed é o conjunto canônico 1080×1350 (foto em tela cheia). Story e quadro de reel são 1080×1920, com a mesma hierarquia e respiro para a interface do Instagram.
 
-| Peça | Arquivo | Composição |
-|---|---|---|
-| Post | `public/brand/posts/{tipo}.jpg` | Degradê vinho `#2A1119` na base, selo dourado “E” + wordmark no topo, rótulo “NOVO EVENTO”, título serifado do tipo, filete `#D4AF37`, “Comente **COTAÇÃO** e receba o briefing.” |
-| Story | `public/brand/stories/{tipo}.jpg` | A mesma hierarquia. Logo abaixo da barra superior; texto acima da barra inferior. |
-| Quadro / reel | `public/brand/reel-frames/{tipo}.jpg` → `public/brand/reels/{tipo}.mp4` | A mesma hierarquia, com o título no recorte central do grid. Zoom do vídeo curto, para o texto não sair do quadro. |
+| Peça          | Arquivo                                                                 | Composição                                                                                                                                                                        |
+| ------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Post          | `public/brand/posts/{tipo}.jpg`                                         | Degradê vinho `#2A1119` na base, selo dourado “E” + wordmark no topo, rótulo “NOVO EVENTO”, título serifado do tipo, filete `#D4AF37`, “Comente **COTAÇÃO** e receba o briefing.” |
+| Story         | `public/brand/stories/{tipo}.jpg`                                       | A mesma hierarquia. Logo abaixo da barra superior; texto acima da barra inferior.                                                                                                 |
+| Quadro / reel | `public/brand/reel-frames/{tipo}.jpg` → `public/brand/reels/{tipo}.mp4` | A mesma hierarquia, com o título no recorte central do grid. Zoom do vídeo curto, para o texto não sair do quadro.                                                                |
 
-O chip branco com o monograma no canto **não** é arte de prospecção. Anúncios gerados por cena (autopilot) usam o anúncio claro: título serifado vinho, pílula e cartões “Orçamento recebido”. Sem `letter-spacing` no SVG (o rasterizador duplica o glifo).
+O chip branco com o monograma no canto **não** é arte de prospecção. Anúncios gerados por cena (autopilot) usam o anúncio claro: título serifado vinho em até duas linhas, margem lateral de 7%, degradê de papel suave no topo, pílula e cartões “Orçamento recebido”. O apoio é uma frase completa. Sem `letter-spacing` no SVG (o rasterizador duplica o glifo).
 
 ---
 
@@ -181,12 +181,12 @@ O chip branco com o monograma no canto **não** é arte de prospecção. Anúnci
 
 ### 6.1 Botões
 
-| Variante | Estilo | Estados |
-|---|---|---|
-| Primário | Fundo `vinho`, texto `off-white`, raio `0.75rem`, `px-6 py-3`, DM Sans 500 | hover: leve clareamento (`areia` no texto); active: translateY(1px) |
-| Secundário | Borda 1.5px `champagne`, texto `vinho`, fundo transparente | hover: fundo `champagne-claro` 40% |
-| Champagne | Fundo `champagne`, texto `vinho` (contraste AA) | hover: `champagne-claro` |
-| Fantasma | Texto `vinho`, underline `champagne` | hover: underline `champagne-claro` |
+| Variante   | Estilo                                                                     | Estados                                                             |
+| ---------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Primário   | Fundo `vinho`, texto `off-white`, raio `0.75rem`, `px-6 py-3`, DM Sans 500 | hover: leve clareamento (`areia` no texto); active: translateY(1px) |
+| Secundário | Borda 1.5px `champagne`, texto `vinho`, fundo transparente                 | hover: fundo `champagne-claro` 40%                                  |
+| Champagne  | Fundo `champagne`, texto `vinho` (contraste AA)                            | hover: `champagne-claro`                                            |
+| Fantasma   | Texto `vinho`, underline `champagne`                                       | hover: underline `champagne-claro`                                  |
 
 - Foco visível sempre (anel champagne, offset 2px). Desabilitado: opacidade 40% + `cursor-not-allowed` + **não remove da tab order** (usa `aria-disabled`).
 - Um único botão primário por bloco visual. CTA monetário (comprar tíquete) nunca disputa destaque com CTA de cadastro.
@@ -283,17 +283,17 @@ Motivo: o visual vinho + serifada lia como "casamento"; o público é amplo (fes
 
 Tokens no `tailwind.config.ts`, escopados ao marketing. Máximo de dois acentos (ameixa + coral) mais verde funcional.
 
-| Token | Hex | Uso |
-|---|---|---|
-| `ameixa` | `#5B2A4E` | títulos, links e acento sobre fundo claro |
-| `coral-cta` | `#C24145` | fundo do CTA com texto branco (5,08:1) — mesma cor em hover/focus |
-| `coral-vivo` | `#E8575A` | só texto grande (≥24 px), ícones e bordas decorativas |
-| `lilas-claro` | `#EFE6F7` | fundo de cards e badges |
-| `pessego` | `#FFE7DC` | fundo de destaque (festa infantil) |
-| `papel` | `#FFFAF6` | fundo de página |
-| `tinta` | `#2B2230` | texto principal |
-| `tinta-suave` | `#6E6275` | texto secundário (5,52:1 sobre papel) |
-| `verde-preco` | `#1E7A50` | "menor preço"/sucesso (5,31:1 sobre branco) |
-| `borda-suave` | `#EDE3EA` | bordas |
+| Token         | Hex       | Uso                                                               |
+| ------------- | --------- | ----------------------------------------------------------------- |
+| `ameixa`      | `#5B2A4E` | títulos, links e acento sobre fundo claro                         |
+| `coral-cta`   | `#C24145` | fundo do CTA com texto branco (5,08:1) — mesma cor em hover/focus |
+| `coral-vivo`  | `#E8575A` | só texto grande (≥24 px), ícones e bordas decorativas             |
+| `lilas-claro` | `#EFE6F7` | fundo de cards e badges                                           |
+| `pessego`     | `#FFE7DC` | fundo de destaque (festa infantil)                                |
+| `papel`       | `#FFFAF6` | fundo de página                                                   |
+| `tinta`       | `#2B2230` | texto principal                                                   |
+| `tinta-suave` | `#6E6275` | texto secundário (5,52:1 sobre papel)                             |
+| `verde-preco` | `#1E7A50` | "menor preço"/sucesso (5,31:1 sobre branco)                       |
+| `borda-suave` | `#EDE3EA` | bordas                                                            |
 
 Regra: nenhum par texto/fundo abaixo de 4,5:1. O Lighthouse (`color-contrast`) bloqueia o merge.

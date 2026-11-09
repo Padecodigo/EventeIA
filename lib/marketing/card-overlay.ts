@@ -29,14 +29,17 @@ export const RECEIPT_CATEGORIES_BY_THEME: Record<string, readonly [string, strin
   corporativo: ["Coffee break", "Espaço"],
 };
 
-/** Headline de banner por tema (2 linhas, emocional e direcionada). */
-export const HEADLINES_BY_THEME: Record<string, readonly [string, string]> = {
-  infantil: ["A festa que ele vai lembrar.", "Você presente em cada momento."],
-  aniversario: ["Celebrar quem você ama,", "sem correria no grande dia."],
-  casamento: ["O orçamento claro para você", "viver o amor — não a planilha."],
-  "15-anos": ["A noite que marca a vida dela.", "Organizada com clareza."],
+/**
+ * Copy do anúncio. Até duas linhas de título (serif) e, por último, o apoio:
+ * frase completa, com inicial maiúscula. Três itens = título + título + apoio.
+ */
+export const HEADLINES_BY_THEME: Record<string, readonly string[]> = {
+  infantil: ["A festa que ele", "vai lembrar.", "Você presente em cada momento."],
+  aniversario: ["Celebrar quem", "você ama.", "Sem correria no grande dia."],
+  casamento: ["O orçamento claro", "para viver o amor.", "Sem planilha no grande dia."],
+  "15-anos": ["A noite que marca", "a vida dela.", "Tudo organizado com clareza."],
   formatura: ["A conquista é sua.", "A conta, a gente deixa clara."],
-  corporativo: ["Um evento que une sua equipe,", "com orçamento no menor preço."],
+  corporativo: ["Um evento que", "une a equipe.", "Orçamento claro, no menor preço."],
 };
 
 function escapeXml(text: string): string {
@@ -56,35 +59,61 @@ interface LogoBox {
   height: number;
 }
 
+/** Título (até 2 linhas) e apoio. Três ou mais itens: as duas primeiras são o título. */
+function splitLifestyleCopy(headline: readonly string[]): { title: string[]; support: string } {
+  const lines = headline.map((line) => line.trim()).filter((line) => line.length > 0);
+  if (lines.length >= 3) {
+    return { title: lines.slice(0, 2), support: lines[lines.length - 1] ?? "" };
+  }
+  if (lines.length === 2) return { title: [lines[0] ?? ""], support: lines[1] ?? "" };
+  return { title: lines, support: "" };
+}
+
+/** Fonte que cabe na largura útil, sem invadir a margem. */
+function fitLine(text: string, contentWidth: number, preferred: number, min: number): number {
+  if (text.length === 0) return preferred;
+  const estimated = text.length * preferred * 0.56;
+  if (estimated <= contentWidth) return preferred;
+  return Math.max(min, Math.floor(contentWidth / (text.length * 0.56)));
+}
+
 /** Medidas do anúncio claro. O monograma entra depois, no mesmo retângulo. */
 function lifestyleFrame(width: number, height: number, headline: readonly string[], logo: LogoBox) {
-  const padX = Math.round(width * 0.06);
-  const padTop = Math.max(52, Math.round(width * 0.058));
-  const title = headline[0] ?? "";
-  const support = headline[1] ?? "";
-  const titleSize = fitFont(title, width - padX, Math.round(width * 0.052), 30);
-  const supportSize = fitFont(support, width - padX, Math.round(width * 0.026), 18);
+  const padX = Math.round(width * 0.07);
+  const padTop = Math.max(56, Math.round(width * 0.06));
+  const contentWidth = width - padX * 2;
+  const copy = splitLifestyleCopy(headline);
+  const longest = copy.title.reduce((max, line) => Math.max(max, line.length), 1);
+  const titleSize = fitLine("x".repeat(longest), contentWidth, Math.round(width * 0.078), 48);
+  const supportSize = fitLine(copy.support, contentWidth, Math.round(width * 0.028), 18);
   const word = Math.round(logo.height * 0.58);
   const textX = padX + logo.width + Math.round(width * 0.02);
   const wordBaseline = padTop + Math.round(logo.height * 0.72);
-  const titleY = padTop + logo.height + Math.round(titleSize * 1.28);
-  const supportY = titleY + Math.round(supportSize * 1.85);
+  const lineH = Math.round(titleSize * 1.16);
+  const firstTitleY = padTop + logo.height + Math.round(titleSize * 0.95);
+  const titleYs = copy.title.map((_, index) => firstTitleY + index * lineH);
+  const lastTitleY = titleYs[titleYs.length - 1] ?? firstTitleY;
+  const supportY = lastTitleY + Math.round(Math.max(supportSize, 20) * 1.85);
   const pillH = Math.max(50, Math.round(width * 0.05));
   const pillFont = Math.round(pillH * 0.38);
   const pillLabel = "eventeia.com.br";
-  const pillW = Math.round(pillLabel.length * pillFont * 0.56 + pillH * 1.15);
-  const pillY = (support.length > 0 ? supportY : titleY) + Math.round(pillH * 0.42);
+  const pillW = Math.min(
+    contentWidth,
+    Math.round(pillLabel.length * pillFont * 0.56 + pillH * 1.15),
+  );
+  const anchorY = copy.support.length > 0 ? supportY : lastTitleY;
+  const pillY = anchorY + Math.round(pillH * 0.55);
   return {
     padX,
     padTop,
-    title,
-    support,
+    title: copy.title,
+    titleYs,
+    support: copy.support,
     titleSize,
     supportSize,
     word,
     textX,
     wordBaseline,
-    titleY,
     supportY,
     pillH,
     pillFont,
@@ -95,7 +124,7 @@ function lifestyleFrame(width: number, height: number, headline: readonly string
   };
 }
 
-/** Anúncio claro: monograma + título serifado vinho, apoio, pílula. Sem véu opaco. */
+/** Anúncio claro: degradê de papel no topo, título serifado em até duas linhas e pílula. */
 function buildLifestyleBanner(
   headline: readonly string[],
   width: number,
@@ -103,18 +132,27 @@ function buildLifestyleBanner(
   logo: LogoBox,
 ): string {
   const frame = lifestyleFrame(width, height, headline, logo);
+  const at = (px: number) => Math.min(0.92, px / Math.max(height, 1)).toFixed(3);
+  const titles = frame.title
+    .map(
+      (line, index) =>
+        `<text x="${frame.padX}" y="${frame.titleYs[index]}" font-family="${SERIF}" font-size="${frame.titleSize}" font-weight="bold" fill="${WINE}">${escapeXml(line)}</text>`,
+    )
+    .join("");
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
   <defs>
-    <linearGradient id="wash" x1="0" y1="0" x2="1" y2="0.7">
-      <stop offset="0" stop-color="rgba(255,253,250,0.78)"/>
-      <stop offset="0.28" stop-color="rgba(255,253,250,0.28)"/>
-      <stop offset="0.58" stop-color="rgba(255,253,250,0)"/>
+    <linearGradient id="wash" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="rgba(255,253,250,0.92)"/>
+      <stop offset="${at(frame.titleYs[0] ?? frame.padTop)}" stop-color="rgba(255,253,250,0.82)"/>
+      <stop offset="${at(frame.supportY)}" stop-color="rgba(255,253,250,0.62)"/>
+      <stop offset="${at(frame.pillY + frame.pillH)}" stop-color="rgba(255,253,250,0.22)"/>
+      <stop offset="${at(frame.pillY + frame.pillH + Math.round(height * 0.1))}" stop-color="rgba(255,253,250,0)"/>
       <stop offset="1" stop-color="rgba(255,253,250,0)"/>
     </linearGradient>
   </defs>
   <rect x="0" y="0" width="${width}" height="${height}" fill="url(#wash)"/>
   <text x="${frame.textX}" y="${frame.wordBaseline}" font-family="${SERIF}" font-size="${frame.word}" font-weight="bold" fill="${WINE}">EventeIA</text>
-  <text x="${frame.padX}" y="${frame.titleY}" font-family="${SERIF}" font-size="${frame.titleSize}" font-weight="bold" fill="${WINE}">${escapeXml(frame.title)}</text>
+  ${titles}
   ${frame.support.length > 0 ? `<text x="${frame.padX}" y="${frame.supportY}" font-family="${SANS}" font-size="${frame.supportSize}" fill="${WINE}">${escapeXml(frame.support)}</text>` : ""}
   <rect x="${frame.padX}" y="${frame.pillY}" width="${frame.pillW}" height="${frame.pillH}" rx="${frame.pillH / 2}" fill="${WINE}"/>
   <text x="${frame.padX + frame.pillW / 2}" y="${frame.pillTextY}" text-anchor="middle" font-family="${SANS}" font-size="${frame.pillFont}" font-weight="bold" fill="${PAPER}">${frame.pillLabel}</text>
@@ -170,13 +208,12 @@ export function buildBannerSvg(
   height: number,
   mode: "lifestyle" | "editorial" = "lifestyle",
 ): string {
-  const logo =
-    mode === "lifestyle"
-      ? { width: Math.round(width * 0.12), height: Math.round(width * 0.072) }
-      : { width: 0, height: 0 };
-  return mode === "editorial"
-    ? buildEditorialBanner(headline, width, height)
-    : buildLifestyleBanner(headline, width, height, logo);
+  if (mode === "editorial") {
+    const lines = headline.length >= 3 ? headline.slice(0, 2) : headline;
+    return buildEditorialBanner(lines, width, height);
+  }
+  const logo = { width: Math.round(width * 0.12), height: Math.round(width * 0.072) };
+  return buildLifestyleBanner(headline, width, height, logo);
 }
 
 /** Cards "Orçamento recebido" no rodapé (puro, testável). */
@@ -192,7 +229,7 @@ export function buildReceiptCardSvg(
   const cardW = Math.round(width * 0.46);
   const cardH = Math.max(96, Math.round(cardW * 0.24));
   const gap = 16;
-  const marginX = Math.round(width * 0.05);
+  const marginX = Math.round(width * 0.07);
   const marginBottom = Math.round(height * 0.055);
   const totalH = categories.length * cardH + (categories.length - 1) * gap;
   const startY = height - marginBottom - totalH;
@@ -241,8 +278,8 @@ export async function composeAd(imageBytes: Buffer, input: ComposeAdInput): Prom
   const width = input.width ?? 1080;
   const height = input.height ?? 1080;
   const mode = input.categories.length > 0 ? "lifestyle" : "editorial";
-  const padX = Math.round(width * 0.06);
-  const padTop = Math.max(52, Math.round(width * 0.058));
+  const padX = Math.round(width * 0.07);
+  const padTop = Math.max(56, Math.round(width * 0.06));
   const logoH = Math.round(width * 0.072);
   const logo = mode === "lifestyle" ? await trimmedBrandMonogram(logoH) : null;
   const logoMeta = logo === null ? null : await sharp(logo).metadata();
