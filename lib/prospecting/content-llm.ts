@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { DeepSeekClient } from "@/lib/deepseek/client";
+import { BRAZILIAN_CASTS } from "@/lib/marketing/brazilian-cast";
 
 import { buildPostContent } from "./content";
 
@@ -57,7 +58,9 @@ export function buildContentSystemPrompt(keyword: string): string {
     "Para CADA item da lista, escreva: (1) imagePrompt — cena visual profissional do evento (sem texto, sem logos, sem nomes) para gerar imagem; (2) caption — legenda em português do Brasil que diga quem somos, o que estamos buscando naquela necessidade e como o fornecedor fala com a gente.",
     `Na legenda: mencione os @ recebidos, inclua a chamada "Comente ${keyword} e a EventeIA te chama no Direct." e termine com "Imagens ilustrativas."`,
     "NUNCA invente preço, prazo ou promessa; não use emojis; tom editorial e humano.",
-    "Responda SOMENTE JSON: {\"posts\":[{\"index\":0,\"imagePrompt\":\"\",\"caption\":\"\"}]}",
+    "No imagePrompt, se houver pessoas, use o elenco do índice do post (não repita o do post anterior) e um ambiente brasileiro, nunca cara de banco de imagem estrangeiro: " +
+      BRAZILIAN_CASTS.map((cast, index) => `${String(index)}=${cast}`).join(" | "),
+    'Responda SOMENTE JSON: {"posts":[{"index":0,"imagePrompt":"","caption":""}]}',
   ].join("\n");
 }
 

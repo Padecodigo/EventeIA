@@ -5,18 +5,18 @@ import { createSupabasePostStore, findImageFor } from "@/lib/prospecting/posts-s
 import { publishPlannedPost } from "@/lib/prospecting/publish-runtime";
 
 const mocks = vi.hoisted(() => ({
-  applyBrandLogo: vi.fn(async (bytes: Buffer) => bytes),
+  composeAd: vi.fn(async (bytes: Buffer) => bytes),
   storeArtBytes: vi.fn(async (_bytes: Buffer, _mime: string) => ({
     url: "https://storage/branded.jpg",
     expiresAt: new Date("2026-11-08T00:00:00Z"),
   })),
 }));
 
-vi.mock("@/lib/marketing/brand-logo", () => ({ applyBrandLogo: mocks.applyBrandLogo }));
+vi.mock("@/lib/marketing/card-overlay", () => ({ composeAd: mocks.composeAd }));
 vi.mock("@/lib/prospecting/art-cache", () => ({ storeArtBytes: mocks.storeArtBytes }));
 
 beforeEach(() => {
-  mocks.applyBrandLogo.mockClear();
+  mocks.composeAd.mockClear();
   mocks.storeArtBytes.mockClear();
 });
 
@@ -37,7 +37,11 @@ function fakeFetch(route: (url: string) => unknown, status = 200): typeof fetch 
 
 describe("plano de publicação", () => {
   it("gera um post por lote com legenda e prompt", () => {
-    const plan = buildPublishPlan(suppliers, { keyword: "cotação", maxTagsPerPost: 2, maxPostsPerDay: 1 });
+    const plan = buildPublishPlan(suppliers, {
+      keyword: "cotação",
+      maxTagsPerPost: 2,
+      maxPostsPerDay: 1,
+    });
     expect(plan).toHaveLength(3);
     expect(plan[0]?.handles).toEqual(["buffet_a", "buffet_b"]);
     expect(plan[0]?.caption).toContain("COTAÇÃO");
@@ -45,14 +49,24 @@ describe("plano de publicação", () => {
   });
 
   it("respeita maxPostsPerDay no dayIndex", () => {
-    const plan = buildPublishPlan(suppliers, { keyword: "cotação", maxTagsPerPost: 1, maxPostsPerDay: 2 });
+    const plan = buildPublishPlan(suppliers, {
+      keyword: "cotação",
+      maxTagsPerPost: 1,
+      maxPostsPerDay: 2,
+    });
     expect(plan[0]?.dayIndex).toBe(0);
     expect(plan[2]?.dayIndex).toBe(1);
   });
 });
 
 describe("runtime de publicação", () => {
-  const planned = { dayIndex: 0, category: "buffet", handles: ["buffet_a"], imagePrompt: "salao", caption: "Comente COTAÇÃO" };
+  const planned = {
+    dayIndex: 0,
+    category: "buffet",
+    handles: ["buffet_a"],
+    imagePrompt: "salao",
+    caption: "Comente COTAÇÃO",
+  };
   const meta = { igUserId: "1784", accessToken: "tok" };
 
   it("sem aprovação não chama nenhuma API", async () => {
@@ -75,13 +89,20 @@ describe("runtime de publicação", () => {
     const calls: string[] = [];
     const fetchImpl = fakeFetch((url) => {
       calls.push(url);
-      if (url.includes("modelslab.com")) return { status: "success", output: ["https://cdn/img.jpg"], id: 1 };
+      if (url.includes("modelslab.com"))
+        return { status: "success", output: ["https://cdn/img.jpg"], id: 1 };
       if (url.includes("fields=status_code")) return { status_code: "FINISHED" };
       if (url.includes("/media?")) return { id: "container-1" };
       if (url.includes("/media_publish")) return { id: "media-1" };
       return {};
     });
-    const outcome = await publishPlannedPost({ planned, approved: true, modelslabKey: "k", meta, fetchImpl });
+    const outcome = await publishPlannedPost({
+      planned,
+      approved: true,
+      modelslabKey: "k",
+      meta,
+      fetchImpl,
+    });
     expect(outcome).toEqual({
       kind: "published",
       ok: true,
@@ -92,15 +113,22 @@ describe("runtime de publicação", () => {
     expect(calls.some((u) => u.includes("media_publish"))).toBe(true);
   });
 
-  it("aplica a logo EventeIA e sobe os bytes com marca quando a geração devolve URL", async () => {
+  it("aplica o layout sobre a cena nova e sobe os bytes quando a geração devolve URL", async () => {
     const fetchImpl = fakeFetch((url) => {
-      if (url.includes("modelslab.com")) return { status: "success", output: ["https://cdn/img.jpg"], id: 1 };
+      if (url.includes("modelslab.com"))
+        return { status: "success", output: ["https://cdn/img.jpg"], id: 1 };
       if (url.includes("fields=status_code")) return { status_code: "FINISHED" };
       if (url.includes("/media?")) return { id: "container-1" };
       if (url.includes("/media_publish")) return { id: "media-1" };
       return {};
     });
-    const outcome = await publishPlannedPost({ planned, approved: true, modelslabKey: "k", meta, fetchImpl });
+    const outcome = await publishPlannedPost({
+      planned,
+      approved: true,
+      modelslabKey: "k",
+      meta,
+      fetchImpl,
+    });
 
     expect(outcome).toEqual({
       kind: "published",
@@ -108,25 +136,43 @@ describe("runtime de publicação", () => {
       mediaId: "media-1",
       imageUrl: "https://storage/branded.jpg",
     });
-    expect(mocks.applyBrandLogo).toHaveBeenCalledTimes(1);
-    expect(mocks.applyBrandLogo).toHaveBeenCalledWith(expect.any(Buffer));
+    expect(mocks.composeAd).toHaveBeenCalledTimes(1);
+    expect(mocks.composeAd).toHaveBeenCalledWith(
+      expect.any(Buffer),
+      expect.objectContaining({ categories: [] }),
+    );
     expect(mocks.storeArtBytes).toHaveBeenCalledTimes(1);
     expect(mocks.storeArtBytes).toHaveBeenCalledWith(expect.any(Buffer), "image/jpeg");
   });
 
   it("para quando a imagem falha", async () => {
     const fetchImpl = fakeFetch(() => ({ status: "error", message: "sem crédito" }), 401);
-    const outcome = await publishPlannedPost({ planned, approved: true, modelslabKey: "k", meta, fetchImpl });
+    const outcome = await publishPlannedPost({
+      planned,
+      approved: true,
+      modelslabKey: "k",
+      meta,
+      fetchImpl,
+    });
     expect(outcome.ok).toBe(false);
     if (!outcome.ok) expect(outcome.reason).toBe("image_failed");
   });
 });
 
 describe("persistência do post", () => {
-  const planned = { dayIndex: 0, category: "buffet", handles: ["buffet_a"], imagePrompt: "salao", caption: "Comente COTAÇÃO" };
+  const planned = {
+    dayIndex: 0,
+    category: "buffet",
+    handles: ["buffet_a"],
+    imagePrompt: "salao",
+    caption: "Comente COTAÇÃO",
+  };
   const meta = { igUserId: "1784", accessToken: "tok" };
 
-  function fakeStore(): { store: { record: (i: { status: string }) => Promise<void> }; statuses: string[] } {
+  function fakeStore(): {
+    store: { record: (i: { status: string }) => Promise<void> };
+    statuses: string[];
+  } {
     const statuses: string[] = [];
     return {
       statuses,
@@ -140,31 +186,51 @@ describe("persistência do post", () => {
 
   it("registra pending_approval quando não aprovado", async () => {
     const { store, statuses } = fakeStore();
-    await publishPlannedPost({ planned, approved: false, modelslabKey: "k", meta, store: store as never });
+    await publishPlannedPost({
+      planned,
+      approved: false,
+      modelslabKey: "k",
+      meta,
+      store: store as never,
+    });
     expect(statuses).toEqual(["pending_approval"]);
   });
 
   it("registra failed quando a imagem falha", async () => {
     const { store, statuses } = fakeStore();
     const fetchImpl = fakeFetch(() => ({ status: "error", message: "x" }), 401);
-    await publishPlannedPost({ planned, approved: true, modelslabKey: "k", meta, store: store as never, fetchImpl });
+    await publishPlannedPost({
+      planned,
+      approved: true,
+      modelslabKey: "k",
+      meta,
+      store: store as never,
+      fetchImpl,
+    });
     expect(statuses).toEqual(["failed"]);
   });
 
   it("registra published ao concluir", async () => {
     const { store, statuses } = fakeStore();
     const fetchImpl = fakeFetch((url) => {
-      if (url.includes("modelslab.com")) return { status: "success", output: ["https://cdn/img.jpg"] };
+      if (url.includes("modelslab.com"))
+        return { status: "success", output: ["https://cdn/img.jpg"] };
       if (url.includes("fields=status_code")) return { status_code: "FINISHED" };
       if (url.includes("/media?")) return { id: "container-1" };
       if (url.includes("/media_publish")) return { id: "media-1" };
       return {};
     });
-    await publishPlannedPost({ planned, approved: true, modelslabKey: "k", meta, store: store as never, fetchImpl });
+    await publishPlannedPost({
+      planned,
+      approved: true,
+      modelslabKey: "k",
+      meta,
+      store: store as never,
+      fetchImpl,
+    });
     expect(statuses).toEqual(["published"]);
   });
 });
-
 
 describe("createSupabasePostStore", () => {
   it("grava os campos do post na tabela prospect_posts", async () => {
@@ -183,18 +249,32 @@ describe("createSupabasePostStore", () => {
       imageUrl: "https://cdn/x.jpg",
       igMediaId: "m1",
     });
-    expect(values).toMatchObject({ status: "published", day_index: 2, categories: ["buffet"], ig_media_id: "m1" });
+    expect(values).toMatchObject({
+      status: "published",
+      day_index: 2,
+      categories: ["buffet"],
+      ig_media_id: "m1",
+    });
   });
 });
 
 describe("cache de imagem por necessidade", () => {
-  const planned = { dayIndex: 0, category: "buffet", handles: ["buffet_b"], imagePrompt: "salao", caption: "Comente COTAÇÃO" };
+  const planned = {
+    dayIndex: 0,
+    category: "buffet",
+    handles: ["buffet_b"],
+    imagePrompt: "salao",
+    caption: "Comente COTAÇÃO",
+  };
   const meta = { igUserId: "1784", accessToken: "tok" };
 
-  it("com imagem em cache, NÃO chama o gerador", async () => {
+  it("ignora imagem em cache e chama o gerador", async () => {
     let chamouModelsLab = false;
     const fetchImpl = fakeFetch((url) => {
-      if (url.includes("modelslab.com")) chamouModelsLab = true;
+      if (url.includes("modelslab.com")) {
+        chamouModelsLab = true;
+        return { status: "success", output: ["https://cdn/nova.jpg"] };
+      }
       if (url.includes("fields=status_code")) return { status_code: "FINISHED" };
       if (url.includes("/media?")) return { id: "container-1" };
       if (url.includes("/media_publish")) return { id: "media-1" };
@@ -208,8 +288,13 @@ describe("cache de imagem por necessidade", () => {
       cachedArt: { url: "https://cdn/cache.jpg", expiresAt: new Date(Date.now() + 3_600_000) },
       fetchImpl,
     });
-    expect(chamouModelsLab).toBe(false);
-    expect(outcome).toEqual({ kind: "published", ok: true, mediaId: "media-1", imageUrl: "https://cdn/cache.jpg" });
+    expect(chamouModelsLab).toBe(true);
+    expect(outcome).toEqual({
+      kind: "published",
+      ok: true,
+      mediaId: "media-1",
+      imageUrl: "https://storage/branded.jpg",
+    });
   });
 
   it("sem cache, gera a imagem", async () => {
@@ -240,7 +325,10 @@ describe("findImageFor (cache por evento+necessidade)", () => {
                 order: () => ({
                   limit: () => ({
                     maybeSingle: async () => ({
-                      data: { image_url: "https://cdn/x.jpg", image_expires_at: new Date(Date.now() + 3_600_000).toISOString() },
+                      data: {
+                        image_url: "https://cdn/x.jpg",
+                        image_expires_at: new Date(Date.now() + 3_600_000).toISOString(),
+                      },
                     }),
                   }),
                 }),

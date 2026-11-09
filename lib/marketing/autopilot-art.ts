@@ -28,7 +28,9 @@ import type { MarketingTheme } from "./themes";
  * O FLUX gera uma CENA ÚNICA (sem texto no prompt — nunca repete a mesma foto);
  * o sharp sobrepõe o anúncio (título serifado, pílula e cards, ou quadro editorial
  * quando não há cards). Texto nítido, sem letter-spacing (evita glifo duplicado).
- * Dedup por sha256 do conteúdo final; qualquer falha retorna `null` (fallback).
+ * Cada chamada pede uma cena nova (elenco, momento e semente). Se a cena
+ * repetir ou o Flux falhar, tenta de novo. Esgotadas as tentativas, devolve
+ * `null` — o chamador não publica foto antiga.
  */
 
 export const REEL_WIDTH = 1080;
@@ -148,9 +150,11 @@ function categoriesFor(theme: MarketingTheme): readonly string[] {
   return RECEIPT_CATEGORIES_BY_THEME[theme.key] ?? RECEIPT_CATEGORIES_BY_THEME.infantil;
 }
 
-/** Semente aleatória (int 31-bit) para o provedor NVIDIA — cenas únicas por chamada. */
+const FRESH_ATTEMPTS = 3;
+
+/** Semente aleatória (int 31-bit), nunca zero. */
 function randomSeed(): number {
-  return Math.floor(Math.random() * 2_147_483_647);
+  return 1 + Math.floor(Math.random() * 2_147_483_646);
 }
 
 /** Dependências injetáveis do autopilot (testes não rodam rede/ffmpeg/Supabase). */
@@ -170,6 +174,8 @@ export interface AutopilotArtDeps {
   storeImage?: (bytes: Buffer) => Promise<string>;
   renderReel?: (buffers: readonly Buffer[]) => Promise<Buffer>;
   storeVideo?: (bytes: Buffer) => Promise<string>;
+  /** Índice do post na rotação de biotipos. Tentativas seguintes avançam. */
+  castIndex?: number;
 }
 
 /** Arte quadrada (1080×1080) do post; `null` em qualquer falha/colisão. */
@@ -212,33 +218,38 @@ async function generateUniqueArt(
       ((bytes, headline, categories, sz) => composeAd(bytes, { headline, categories, ...sz }));
     const storeImage = deps.storeImage ?? storeImageBytes;
     const recordUse = deps.recordUse ?? recordMediaUse;
-
-    const prompt = buildMarketingImagePrompt(theme, {
-      vertical: size.height > size.width,
-      variant,
-    });
-    const generated = await generate({
-      apiKey,
-      prompt,
-      width: size.width,
-      height: size.height,
-      seed: randomSeed(),
-      fetchImpl,
-    });
-    if (!generated.ok || generated.images.length === 0) {
-      throw new Error(`geração da cena falhou (${generated.ok ? "sem imagem" : generated.error})`);
-    }
-
-    const raw = await downloadBytes(generated.images[0], fetchImpl);
     const headline = headlineFor(theme);
     const categories = variant === "emotional" ? [] : categoriesFor(theme);
-    const finalBytes = await buildImage(raw, headline, categories, size);
-    const key = contentHash(finalBytes);
-    if (used.has(key)) return null; // cena repetida → desiste (não repete)
+    let lastError = "geração da cena falhou";
 
-    const url = await storeImage(finalBytes);
-    await recordUse({ mediaKey: key, kind, theme: theme.key, url });
-    return { url };
+    for (let attempt = 0; attempt < FRESH_ATTEMPTS; attempt += 1) {
+      const prompt = buildMarketingImagePrompt(theme, {
+        vertical: size.height > size.width,
+        variant,
+        castIndex: (deps.castIndex ?? 0) + attempt,
+      });
+      const generated = await generate({
+        apiKey,
+        prompt,
+        width: size.width,
+        height: size.height,
+        seed: randomSeed(),
+        fetchImpl,
+      });
+      if (!generated.ok || generated.images.length === 0) {
+        lastError = generated.ok ? "sem imagem" : generated.error;
+        continue;
+      }
+      const raw = await downloadBytes(generated.images[0], fetchImpl);
+      const finalBytes = await buildImage(raw, headline, categories, size);
+      const key = contentHash(finalBytes);
+      if (used.has(key)) continue;
+      const url = await storeImage(finalBytes);
+      await recordUse({ mediaKey: key, kind, theme: theme.key, url });
+      return { url };
+    }
+
+    throw new Error(lastError);
   } catch (error) {
     logger.warn(
       { theme: theme.key, kind, error: String(error) },
@@ -271,29 +282,40 @@ export async function generateReelArt(
     const storeVideo = deps.storeVideo ?? storeVideoBytes;
     const recordUse = deps.recordUse ?? recordMediaUse;
 
-    const prompt = buildMarketingImagePrompt(theme, { vertical: true, variant });
     const headline = headlineFor(theme);
     const categories = variant === "emotional" ? [] : categoriesFor(theme);
+    const baseCast = deps.castIndex ?? 0;
 
     const frames: Buffer[] = [];
     for (let i = 0; i < REEL_SCENE_COUNT; i += 1) {
-      const generated = await generate({
-        apiKey,
-        prompt,
-        width: REEL_WIDTH,
-        height: REEL_HEIGHT,
-        seed: randomSeed(),
-        fetchImpl,
-      });
-      if (!generated.ok || generated.images.length === 0) {
-        throw new Error(
-          `geração da cena falhou (${generated.ok ? "sem imagem" : generated.error})`,
-        );
+      let frame: Buffer | null = null;
+      for (let attempt = 0; attempt < FRESH_ATTEMPTS && frame === null; attempt += 1) {
+        const prompt = buildMarketingImagePrompt(theme, {
+          vertical: true,
+          variant,
+          castIndex: baseCast + i + attempt,
+        });
+        const generated = await generate({
+          apiKey,
+          prompt,
+          width: REEL_WIDTH,
+          height: REEL_HEIGHT,
+          seed: randomSeed(),
+          fetchImpl,
+        });
+        if (!generated.ok || generated.images.length === 0) continue;
+        const raw = await downloadBytes(generated.images[0], fetchImpl);
+        const composed = await buildImage(raw, headline, categories, {
+          width: REEL_WIDTH,
+          height: REEL_HEIGHT,
+        });
+        const key = contentHash(composed);
+        if (used.has(key)) continue;
+        used.add(key);
+        frame = composed;
       }
-      const raw = await downloadBytes(generated.images[0], fetchImpl);
-      frames.push(
-        await buildImage(raw, headline, categories, { width: REEL_WIDTH, height: REEL_HEIGHT }),
-      );
+      if (frame === null) throw new Error("geração da cena do reel falhou");
+      frames.push(frame);
     }
 
     const video = await renderReel(frames);

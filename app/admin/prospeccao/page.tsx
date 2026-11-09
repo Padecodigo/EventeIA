@@ -191,8 +191,8 @@ export default async function ProspeccaoPage({
             Post de prospecção do evento
           </p>
           <p className="mt-1 text-caption text-vinho/70">
-            Imagem da marca por tipo de evento, data e cidade/região. A legenda não usa dados
-            pessoais do cliente.
+            A imagem nasce no Flux para este evento, com o layout da marca por cima. A legenda não
+            usa dados pessoais do cliente. O botão publica no Instagram e no Facebook.
           </p>
           <div className="mt-3">
             <EventPostApproval

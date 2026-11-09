@@ -71,8 +71,10 @@ describe("post de prospecção por evento", () => {
       city: "Taubaté",
       region: "SP",
       eventCode: eventCodeFromId(eventId),
-      artPath: "/brand/posts/casamento.jpg",
     });
+    expect(content.imagePrompt).toContain("Taubaté/SP");
+    expect(content.imagePrompt).toContain("10/12/2026");
+    expect(content.imagePrompt).not.toContain("/brand/posts/");
   });
 
   it("parâmetros de imagem contêm tipo, data e cidade/região", () => {

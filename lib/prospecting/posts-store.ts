@@ -360,8 +360,8 @@ interface PostLookupDb {
 }
 
 /**
- * Imagem já gerada para o mesmo evento + necessidade (cache).
- * Só gera imagem nova quando muda o evento ou o tipo de fornecedor.
+ * Consulta antiga de imagem por evento + necessidade.
+ * A publicação não usa este retorno: cada post pede uma cena nova ao Flux.
  */
 export interface CachedArt {
   url: string;

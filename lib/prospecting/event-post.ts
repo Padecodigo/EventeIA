@@ -1,6 +1,6 @@
 import { EVENT_TYPE_LABELS } from "@/lib/catalog/v1";
+import { brazilianCastAt, sceneMomentAt } from "@/lib/marketing/brazilian-cast";
 import { BRAND_SIGNATURE } from "@/lib/prospecting/content";
-import { artForEventType } from "@/lib/prospecting/photos";
 
 /**
  * Conteúdo do post de prospecção por evento.
@@ -44,8 +44,6 @@ export interface EventPostImageParams {
   city: string | null;
   region: string | null;
   eventCode: string;
-  /** Arte da marca por tipo de evento (asset público, sem PII). */
-  artPath: string;
 }
 
 export interface EventPostContent {
@@ -120,15 +118,21 @@ export function buildEventPostImageParams(input: EventPostSource): EventPostImag
     city: clean(input.city),
     region: formatRegion(clean(input.region)),
     eventCode: eventCodeFromId(input.eventId),
-    artPath: artForEventType(input.eventType),
   };
 }
 
-/** Prompt visual seguro: usa apenas o tipo do evento (sem título/nome/PII). */
-export function buildEventPostImagePrompt(input: EventPostSource): string {
+/** Prompt visual seguro: dados públicos do evento (sem título/nome/PII). */
+export function buildEventPostImagePrompt(input: EventPostSource, castIndex = 0): string {
   const typeLabel = eventTypeLabel(input.eventType);
   const location = eventLocationLabel(input);
-  return `arte editorial da EventeIA para evento do tipo ${typeLabel}, referência visual de ${location}, sem texto, sem números, sem nomes, sem logotipos de terceiros e sem marca d'água`;
+  const date = formatEventDate(input.eventDate);
+  const needs = (input.lookingFor ?? [])
+    .map((item) => item.canonical.trim())
+    .filter((name) => name.length > 0)
+    .slice(0, 4)
+    .join(", ");
+  const needLine = needs.length > 0 ? ` Procura: ${needs}.` : "";
+  return `fotografia editorial de ${typeLabel} em ${location}, data ${date}.${needLine} ${brazilianCastAt(castIndex)} Momento: ${sceneMomentAt(castIndex)}. sem texto, sem números, sem nomes, sem logotipos de terceiros e sem marca d'água`;
 }
 
 /** Legenda exata da prospecção por evento + dados públicos + código. */

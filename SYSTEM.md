@@ -15,23 +15,23 @@ o sistema dispara **prospecção automática de fornecedores** (as "iscas") no F
 O motor de orçamento é **determinístico e versionado** (`lib/engine/`); o dinheiro é sempre
 **inteiro em centavos**.
 
-Slogan: *"Você imagina. A EventeIA faz acontecer."* · Tom editorial, sofisticado, humanizado.
+Slogan: _"Você imagina. A EventeIA faz acontecer."_ · Tom editorial, sofisticado, humanizado.
 
 ---
 
 ## 2. Stack
 
-| Camada | Tecnologia |
-|---|---|
-| Web | Next.js (App Router), React, TypeScript `strict` |
-| Estilo | Tailwind CSS (tokens em `tailwind.config.ts`) |
-| Banco | Supabase (PostgreSQL + Auth + RLS) |
-| Pagamento | Asaas (Pix dinâmico e cartão) |
-| Filas/worker | BullMQ + Redis |
-| Redes sociais | Meta Graph API (IG/FB) · TikTok (só publicidade) |
-| Automação de navegador | Playwright (publicação de iscas quando a Graph API não cobre) |
-| Testes | Vitest (unit) · pgTAP (RLS) |
-| Deploy | Coolify (stack `eventeia-prod`: app + worker + Redis num compose) |
+| Camada                 | Tecnologia                                                        |
+| ---------------------- | ----------------------------------------------------------------- |
+| Web                    | Next.js (App Router), React, TypeScript `strict`                  |
+| Estilo                 | Tailwind CSS (tokens em `tailwind.config.ts`)                     |
+| Banco                  | Supabase (PostgreSQL + Auth + RLS)                                |
+| Pagamento              | Asaas (Pix dinâmico e cartão)                                     |
+| Filas/worker           | BullMQ + Redis                                                    |
+| Redes sociais          | Meta Graph API (IG/FB) · TikTok (só publicidade)                  |
+| Automação de navegador | Playwright (publicação de iscas quando a Graph API não cobre)     |
+| Testes                 | Vitest (unit) · pgTAP (RLS)                                       |
+| Deploy                 | Coolify (stack `eventeia-prod`: app + worker + Redis num compose) |
 
 ---
 
@@ -85,6 +85,7 @@ Ver [`.context/ARCHITECTURE.md`](.context/ARCHITECTURE.md).
 ## 5. Fluxos passo a passo
 
 ### 5.1 Compra do tíquete (B2C)
+
 1. Cliente **descreve o evento** (sem login obrigatório para começar).
 2. Paga o **tíquete de R$ 97** (`9700` centavos) via Asaas — Pix ou cartão.
 3. Webhook do Asaas (idempotente, com `idempotency_key`) registra → deduplica → processa na fila.
@@ -96,6 +97,7 @@ Ver [`.context/ARCHITECTURE.md`](.context/ARCHITECTURE.md).
 Ver [`.context/COMMERCIAL_MODEL.md`](.context/COMMERCIAL_MODEL.md) e [`.context/PAYMENTS.md`](.context/PAYMENTS.md).
 
 ### 5.2 Confirmação do evento (código EVT por DM)
+
 1. O **contratante** (dono do evento) recebe o código `EVT-XXXXXX` (6 chars, gerado no banco,
    migração `0082`, alfabeto sem ambíguos).
 2. Envia por **DM no Instagram** para `@eventeia`.
@@ -104,6 +106,7 @@ Ver [`.context/COMMERCIAL_MODEL.md`](.context/COMMERCIAL_MODEL.md) e [`.context/
 4. Anti força-bruta: 5 tentativas falhas/remetente/hora.
 
 ### 5.3 Descoberta de fornecedores (as "iscas")
+
 1. Evento confirmado + entrevista concluída → `lib/discovery/kickoff.ts` dispara a busca.
 2. `lib/discovery/providers/*` (Overpass, DeepSeek, Grok, NIM, places pagos) retornam
    **candidatos a fornecedor** (nome, telefone, URL).
@@ -113,15 +116,17 @@ Ver [`.context/COMMERCIAL_MODEL.md`](.context/COMMERCIAL_MODEL.md) e [`.context/
    publicidade (não busca fornecedores).
 
 ### 5.4 Publicidade automática (autopilot)
+
 1. Cron **`0 */4 * * *`** (`workers/index.ts`) = **6× por dia** (00,04,08,12,16,20h).
 2. Cada run: **1 post + 1 story + 1 reel**, tema rotativo (`lib/marketing/themes.ts`),
    legenda via DeepSeek, e **nunca repete imagem** (dedup sha256 em `autopilot_media`).
 3. **Arte híbrida** (decisão #015): `flux.1-dev` gera a **cena** (única) → sharp sobrepõe o
-   **banner (headline) + cards "Orçamento recebido"** → fallback `flux.2-klein-4b` em rate limit
-   → fallback estático (`artForEventType`).
+   **banner (headline) + cards "Orçamento recebido"** → fallback `flux.2-klein-4b` em rate limit.
+   Sem imagem nova, a peça não publica (não reaproveita foto estática nem cache).
 4. Publicações vinculadas ao ciclo de vida do evento: excluir evento exclui os posts (Meta).
 
 ### 5.5 Orçamento (motor determinístico)
+
 - `lib/engine/` calcula, para a mesma entrada, a **mesma saída** (versionado por `ENGINE_VERSION`).
 - Único orçamento no **menor preço válido**, taxas incluídas, arredondamento half-up em centavos.
 
@@ -129,28 +134,28 @@ Ver [`.context/COMMERCIAL_MODEL.md`](.context/COMMERCIAL_MODEL.md) e [`.context/
 
 ## 6. Mapa de arquivos (onde mora cada coisa)
 
-| Assunto | Onde |
-|---|---|
-| Regras de conduta (LEIA) | `AGENTS.md` |
-| Guia de bordo (este) | `SYSTEM.md` |
-| Arquitetura/detalhes | `.context/ARCHITECTURE.md` |
-| Design system (cores/tokens) | `.context/DESIGN_SYSTEM.md` |
-| Pagamentos Asaas | `.context/PAYMENTS.md` |
-| Schema + RLS | `.context/DATABASE_RLS.md` |
-| Modelo comercial | `.context/COMMERCIAL_MODEL.md` |
-| Segurança/sanitização | `.context/SECURITY.md` |
-| Feed de eventos (auditoria) | `.context/FEEDS.md` |
-| Ferramentas do agente | `.context/AGENT_TOOLING.md` + `.ai-memory/` |
-| Motor financeiro (puro) | `lib/engine/` |
-| Clientes Supabase | `lib/supabase/` |
-| Pagamento Asaas | `lib/asaas/` |
-| Meta Graph API | `lib/meta/` |
-| Publicidade + arte | `lib/marketing/` |
-| Iscas/fornecedores | `lib/prospecting/` + `lib/discovery/` |
-| Confirmação por DM | `lib/events/` |
-| Workers + cron | `workers/index.ts` |
-| Migrações | `supabase/migrations/` |
-| Testes | `tests/unit/` (Vitest) · RLS em `supabase/tests/` |
+| Assunto                      | Onde                                              |
+| ---------------------------- | ------------------------------------------------- |
+| Regras de conduta (LEIA)     | `AGENTS.md`                                       |
+| Guia de bordo (este)         | `SYSTEM.md`                                       |
+| Arquitetura/detalhes         | `.context/ARCHITECTURE.md`                        |
+| Design system (cores/tokens) | `.context/DESIGN_SYSTEM.md`                       |
+| Pagamentos Asaas             | `.context/PAYMENTS.md`                            |
+| Schema + RLS                 | `.context/DATABASE_RLS.md`                        |
+| Modelo comercial             | `.context/COMMERCIAL_MODEL.md`                    |
+| Segurança/sanitização        | `.context/SECURITY.md`                            |
+| Feed de eventos (auditoria)  | `.context/FEEDS.md`                               |
+| Ferramentas do agente        | `.context/AGENT_TOOLING.md` + `.ai-memory/`       |
+| Motor financeiro (puro)      | `lib/engine/`                                     |
+| Clientes Supabase            | `lib/supabase/`                                   |
+| Pagamento Asaas              | `lib/asaas/`                                      |
+| Meta Graph API               | `lib/meta/`                                       |
+| Publicidade + arte           | `lib/marketing/`                                  |
+| Iscas/fornecedores           | `lib/prospecting/` + `lib/discovery/`             |
+| Confirmação por DM           | `lib/events/`                                     |
+| Workers + cron               | `workers/index.ts`                                |
+| Migrações                    | `supabase/migrations/`                            |
+| Testes                       | `tests/unit/` (Vitest) · RLS em `supabase/tests/` |
 
 ---
 
@@ -185,4 +190,4 @@ Destaques recentes:
 
 ---
 
-*EventeIA — Você imagina. A EventeIA faz acontecer.*
+_EventeIA — Você imagina. A EventeIA faz acontecer._
