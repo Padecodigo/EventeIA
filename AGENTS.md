@@ -26,6 +26,7 @@ A pasta [`.context/`](.context/) é a **fonte da verdade** do produto e da arqui
 
 | Documento | Conteúdo |
 |---|---|
+| [`SYSTEM.md`](SYSTEM.md) | **Guia de bordo** — leia primeiro: produto, stack, regras, arquitetura e fluxos passo a passo |
 | [`.context/ARCHITECTURE.md`](.context/ARCHITECTURE.md) | Estrutura do projeto, App Router, camadas, motor determinístico financeiro |
 | [`.context/DESIGN_SYSTEM.md`](.context/DESIGN_SYSTEM.md) | Paleta, tipografia, tokens CSS e regras de componentes visuais |
 | [`.context/PAYMENTS.md`](.context/PAYMENTS.md) | Asaas, webhooks idempotentes, fluxos B2C e B2B |
