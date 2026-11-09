@@ -22,6 +22,8 @@ const BASE_URL = "https://ai.api.nvidia.com/v1/genai";
 export const DEFAULT_NVIDIA_IMAGE_MODEL = "black-forest-labs/flux.1-dev";
 const FALLBACK_MODELS = ["black-forest-labs/flux.2-klein-4b"];
 const TIMEOUT_MS = 180_000;
+/** O `flux.2-klein-4b` recusa prompt acima de 800 caracteres. */
+const MAX_KLEIN_PROMPT_CHARS = 800;
 
 /** Status que indicam rate limit/instabilidade → vale tentar o modelo de reserva. */
 const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
@@ -56,9 +58,15 @@ export interface NvidiaImageInput {
 function buildNvidiaPayload(model: string, input: NvidiaImageInput): Record<string, unknown> {
   const prompt = withNvidiaAvoidance(input.prompt, input.negativePrompt);
   if (model.endsWith("flux.2-klein-4b")) {
-    // Destilado: rejeita `mode`/`cfg_scale`/`width`/`height` e exige `steps ≤ 4`.
+    // Destilado: rejeita `mode`/`cfg_scale`/`width`/`height`, exige `steps ≤ 4`
+    // e aceita no máximo 800 caracteres de prompt (422 `string_too_long`).
+    const cut = prompt.lastIndexOf(" ", MAX_KLEIN_PROMPT_CHARS);
+    const limited =
+      prompt.length > MAX_KLEIN_PROMPT_CHARS
+        ? prompt.slice(0, cut > 0 ? cut : MAX_KLEIN_PROMPT_CHARS)
+        : prompt;
     return {
-      prompt,
+      prompt: limited,
       seed: input.seed !== undefined && input.seed > 0 ? input.seed : randomInt(1, 2_147_483_647),
       steps: Math.min(input.steps ?? 4, 4),
     };
