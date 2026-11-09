@@ -1,5 +1,7 @@
 import "server-only";
 
+import { randomInt } from "node:crypto";
+
 import { extractNvidiaImage, sniffMime } from "./pure";
 
 export { extractNvidiaImage, sniffMime, type ExtractedImage } from "./pure";
@@ -30,8 +32,7 @@ function resolveSize(width: number, height: number): { width: number; height: nu
 }
 
 export type NvidiaImageResult =
-  | { ok: true; bytes: Buffer; mime: string }
-  | { ok: false; error: string; status: number | null };
+  { ok: true; bytes: Buffer; mime: string } | { ok: false; error: string; status: number | null };
 
 export interface NvidiaImageInput {
   apiKey: string;
@@ -53,7 +54,7 @@ function buildNvidiaPayload(model: string, input: NvidiaImageInput): Record<stri
     // Destilado: rejeita `mode`/`cfg_scale`/`width`/`height` e exige `steps ≤ 4`.
     return {
       prompt: input.prompt,
-      seed: input.seed ?? 0,
+      seed: input.seed !== undefined && input.seed > 0 ? input.seed : randomInt(1, 2_147_483_647),
       steps: Math.min(input.steps ?? 4, 4),
     };
   }
@@ -63,7 +64,7 @@ function buildNvidiaPayload(model: string, input: NvidiaImageInput): Record<stri
     cfg_scale: input.cfgScale ?? 3.5,
     width: resolveSize(input.width ?? 1024, input.height ?? 1024).width,
     height: resolveSize(input.width ?? 1024, input.height ?? 1024).height,
-    seed: input.seed ?? 0,
+    seed: input.seed !== undefined && input.seed > 0 ? input.seed : randomInt(1, 2_147_483_647),
     steps: input.steps ?? 50,
   };
 }
@@ -89,20 +90,27 @@ async function requestNvidiaImage(
 
   if (!response.ok) {
     const detail = (await response.text().catch(() => "")).slice(0, 300);
-    return { ok: false, error: `HTTP ${String(response.status)}: ${detail}`, status: response.status };
+    return {
+      ok: false,
+      error: `HTTP ${String(response.status)}: ${detail}`,
+      status: response.status,
+    };
   }
 
   const body = (await response.json().catch(() => null)) as unknown;
   const extracted = extractNvidiaImage(body);
-  if (extracted === null) return { ok: false, error: "resposta sem imagem", status: response.status };
+  if (extracted === null)
+    return { ok: false, error: "resposta sem imagem", status: response.status };
 
   let base64 = extracted.base64;
   if (base64 === null && extracted.url !== null) {
     const download = await fetcher(extracted.url);
-    if (!download.ok) return { ok: false, error: "falha ao baixar a arte", status: download.status };
+    if (!download.ok)
+      return { ok: false, error: "falha ao baixar a arte", status: download.status };
     base64 = Buffer.from(await download.arrayBuffer()).toString("base64");
   }
-  if (base64 === null) return { ok: false, error: "resposta sem base64 nem URL", status: response.status };
+  if (base64 === null)
+    return { ok: false, error: "resposta sem base64 nem URL", status: response.status };
 
   const cleaned = base64.replace(/\s/g, "");
   const bytes = Buffer.from(cleaned + "=".repeat((4 - (cleaned.length % 4)) % 4), "base64");
@@ -124,7 +132,13 @@ export async function generateNvidiaImage(input: NvidiaImageInput): Promise<Nvid
     let lastError: NvidiaImageResult = { ok: false, error: "nenhum modelo tentado", status: null };
     for (const model of models) {
       const payload = buildNvidiaPayload(model, input);
-      const result = await requestNvidiaImage(fetcher, model, input.apiKey, payload, controller.signal);
+      const result = await requestNvidiaImage(
+        fetcher,
+        model,
+        input.apiKey,
+        payload,
+        controller.signal,
+      );
       if (result.ok) return result;
       lastError = result;
       // Só tenta o reserva em rate limit/instabilidade; erro de formato/autenticação para.

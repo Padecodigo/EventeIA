@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { BRAZILIAN_CASTS, brazilianCastAt } from "@/lib/marketing/brazilian-cast";
 import { buildMarketingImagePrompt, marketingPromptVariant } from "@/lib/marketing/image-prompt";
 import { MARKETING_THEMES, type MarketingTheme } from "@/lib/marketing/themes";
 
@@ -7,6 +8,20 @@ const theme = (key: string): MarketingTheme =>
   MARKETING_THEMES.find((t) => t.key === key) ?? MARKETING_THEMES[0];
 
 describe("prompt de imagem do FLUX (cena pura, sem texto)", () => {
+  it("troca o biotipo a cada post e não fixa um único tom nem aparência estrangeira", () => {
+    const infantil = theme("infantil");
+    const first = buildMarketingImagePrompt(infantil, { castIndex: 0 });
+    const second = buildMarketingImagePrompt(infantil, { castIndex: 1 });
+    expect(first).not.toBe(second);
+    expect(first).toContain(brazilianCastAt(0));
+    expect(second).toContain(brazilianCastAt(1));
+    expect(first).not.toContain("blonde");
+    expect(second).not.toContain("blonde");
+    for (let index = 0; index < BRAZILIAN_CASTS.length; index += 1) {
+      expect(brazilianCastAt(index)).not.toBe(brazilianCastAt(index + 1));
+    }
+  });
+
   it("é determinístico: mesma entrada produz a mesma saída", () => {
     const infantil = theme("infantil");
     expect(buildMarketingImagePrompt(infantil)).toBe(buildMarketingImagePrompt(infantil));

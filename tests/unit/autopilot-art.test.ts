@@ -140,7 +140,7 @@ describe("arte do autopilot com FLUX (cena) + sharp (banner + cards)", () => {
     });
   });
 
-  it("retorna null quando a cena já foi usada (colisão de hash)", async () => {
+  it("não republica cena repetida: tenta de novo e desiste sem gravar a foto antiga", async () => {
     const storeImage = vi.fn();
 
     const result = await generatePostArt(THEME, {
@@ -153,7 +153,10 @@ describe("arte do autopilot com FLUX (cena) + sharp (banner + cards)", () => {
     });
 
     expect(result).toBeNull();
+    expect(generateImage).toHaveBeenCalledTimes(3);
     expect(storeImage).not.toHaveBeenCalled();
+    const prompts = generateImage.mock.calls.map((call) => call[0].prompt);
+    expect(new Set(prompts).size).toBe(3);
   });
 
   it("retorna null quando a geração FLUX falha", async () => {
@@ -201,12 +204,13 @@ describe("arte do autopilot com FLUX (cena) + sharp (banner + cards)", () => {
 
     const renderReel = vi.fn(async () => Buffer.from("mp4-bytes"));
     const storeVideo = vi.fn(async () => "https://storage/reel.mp4");
+    const reelBuild = vi.fn(async (bytes: Buffer) => Buffer.concat([Buffer.from("reel-"), bytes]));
 
     const result = await generateReelArt(THEME, {
       loadUsed: async () => [],
       recordUse,
       generateImage: reelGenerate,
-      buildImage,
+      buildImage: reelBuild,
       renderReel,
       storeVideo,
       fetchImpl: fakeFetch({
@@ -225,12 +229,16 @@ describe("arte do autopilot com FLUX (cena) + sharp (banner + cards)", () => {
       expect(call[0].prompt).not.toContain("Orçamento recebido");
     }
 
-    expect(buildImage).toHaveBeenCalledTimes(3);
-    expect(buildImage.mock.calls[0][0]).toEqual(Buffer.from("s1"));
-    expect(buildImage.mock.calls[1][0]).toEqual(Buffer.from("s2"));
-    expect(buildImage.mock.calls[2][0]).toEqual(Buffer.from("s3"));
+    expect(reelBuild).toHaveBeenCalledTimes(3);
+    expect(reelBuild.mock.calls[0][0]).toEqual(Buffer.from("s1"));
+    expect(reelBuild.mock.calls[1][0]).toEqual(Buffer.from("s2"));
+    expect(reelBuild.mock.calls[2][0]).toEqual(Buffer.from("s3"));
 
-    expect(renderReel).toHaveBeenCalledWith([bytesComposed, bytesComposed, bytesComposed]);
+    expect(renderReel).toHaveBeenCalledWith([
+      Buffer.concat([Buffer.from("reel-"), Buffer.from("s1")]),
+      Buffer.concat([Buffer.from("reel-"), Buffer.from("s2")]),
+      Buffer.concat([Buffer.from("reel-"), Buffer.from("s3")]),
+    ]);
     expect(storeVideo).toHaveBeenCalledWith(Buffer.from("mp4-bytes"));
     expect(recordUse).toHaveBeenCalledWith({
       mediaKey: contentHash(Buffer.from("mp4-bytes")),

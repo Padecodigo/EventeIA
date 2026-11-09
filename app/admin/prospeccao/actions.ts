@@ -1,23 +1,31 @@
 "use server";
 
+import { randomInt } from "node:crypto";
+
 import { revalidatePath } from "next/cache";
 
 import type { OpResult } from "@/lib/admin/suppliers";
 import { requireAdmin } from "@/lib/auth";
-import { cleanupEventPublicationsById } from "@/lib/events/social-cleanup";
 import { serverEnv } from "@/lib/env";
+import { cleanupEventPublicationsById } from "@/lib/events/social-cleanup";
 import { logger } from "@/lib/logger";
+import { composeAd } from "@/lib/marketing/card-overlay";
 import { metaPublishConfigFromEnv } from "@/lib/meta/config";
-import { buildEventPostContent } from "@/lib/prospecting/event-post";
+import { generateImage } from "@/lib/modelslab/client";
+import { storeArtBytes } from "@/lib/prospecting/art-cache";
+import {
+  buildEventPostContent,
+  buildEventPostImagePrompt,
+  eventTypeLabel,
+} from "@/lib/prospecting/event-post";
 import {
   createSupabaseProspectingPostStore,
   PublicationConflictError,
   type ProspectingPostRecord,
 } from "@/lib/prospecting/event-post-store";
-import { loadLookingFor } from "@/lib/prospecting/looking-for";
 import { activeImageApiKey } from "@/lib/prospecting/image-key";
-import { artForEventType } from "@/lib/prospecting/photos";
-import { createSupabasePostStore, findImageFor } from "@/lib/prospecting/posts-store";
+import { loadLookingFor } from "@/lib/prospecting/looking-for";
+import { createSupabasePostStore } from "@/lib/prospecting/posts-store";
 import { publishEventPost } from "@/lib/prospecting/publish-event-post";
 import { choosePublishPath } from "@/lib/prospecting/publish-path";
 import { publishPlannedPost } from "@/lib/prospecting/publish-runtime";
@@ -61,10 +69,6 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
   const eventIdRaw = form.get("eventId");
   const eventId = typeof eventIdRaw === "string" && eventIdRaw.length > 0 ? eventIdRaw : undefined;
   const dayIndex = Number(form.get("dayIndex"));
-  // Cache: reusa a imagem do mesmo evento + necessidade (novo contexto => nova imagem).
-  const cachedArt = eventId !== undefined ? await findImageFor(eventId, category) : null;
-  // Arte com a identidade da EventeIA, por tipo de evento (sem valores no post).
-  let eventType: string | null = null;
   let eventState: {
     status: string | null;
     closed_at: string | null;
@@ -76,7 +80,6 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
       .select("event_type,status,closed_at,user_deleted_at")
       .eq("id", eventId)
       .maybeSingle();
-    eventType = data?.event_type ?? null;
     eventState =
       data === null
         ? null
@@ -86,14 +89,6 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
             user_deleted_at: data.user_deleted_at ?? null,
           };
   }
-  const brandedArt =
-    eventId !== undefined
-      ? {
-          url: `${env.NEXT_PUBLIC_APP_URL}${artForEventType(eventType)}`,
-          expiresAt: new Date(Date.now() + 365 * 86_400_000),
-        }
-      : null;
-
   // O navegador só publica Instagram e não devolve media id. Como o fluxo
   // exige Facebook + Instagram via Graph, recusamos em vez de enfileirar.
   if (path === "browser") {
@@ -151,8 +146,6 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
             await cleanupEventPublicationsById([eventId]);
           },
         }),
-    cachedArt,
-    fallbackArt: brandedArt !== null ? { url: brandedArt.url } : undefined,
     persistArt: undefined,
   });
 
@@ -210,12 +203,11 @@ export async function approveEventPostAction(
   };
   const content = buildEventPostContent(source);
   const path = choosePublishPath(env);
-  const imageUrl = `${env.NEXT_PUBLIC_APP_URL}${artForEventType(event.event_type)}`;
   const store = createSupabaseProspectingPostStore();
 
   let post: ProspectingPostRecord;
   try {
-    post = await store.upsert({ ...source, imageUrl, status: "pending_approval" });
+    post = await store.upsert({ ...source, imageUrl: null, status: "pending_approval" });
   } catch (caught) {
     if (caught instanceof PublicationConflictError) {
       return {
@@ -225,6 +217,48 @@ export async function approveEventPostAction(
     }
     return { ok: false, error: "Não foi possível gerar o post de prospecção." };
   }
+
+  const imageKey = activeImageApiKey();
+  if (imageKey === undefined) {
+    return {
+      ok: false,
+      error:
+        "Geração indisponível. Configure IMAGE_PROVIDER e MODELSLAB_API_KEY ou NVIDIA_NIM_API_KEY. Nada foi publicado.",
+    };
+  }
+  let imageUrl: string | null = null;
+  const castBase = Math.floor(Date.now() / 60_000);
+  for (let attempt = 0; attempt < 3 && imageUrl === null; attempt += 1) {
+    const image = await generateImage({
+      apiKey: imageKey,
+      prompt: buildEventPostImagePrompt(source, castBase + attempt),
+      seed: randomInt(1, 2_147_483_647),
+      width: 1080,
+      height: 1350,
+    });
+    if (!image.ok || image.images.length === 0) continue;
+    try {
+      const response = await fetch(image.images[0]);
+      if (!response.ok) continue;
+      const composed = await composeAd(Buffer.from(await response.arrayBuffer()), {
+        headline: [eventTypeLabel(event.event_type)],
+        categories: [],
+        width: 1080,
+        height: 1350,
+      });
+      imageUrl = (await storeArtBytes(composed, "image/jpeg")).url;
+    } catch (error) {
+      logger.warn({ error: String(error) }, "falha ao compor a imagem do post de evento");
+    }
+  }
+  if (imageUrl === null) {
+    await store.updateStatus(post.id, {
+      status: "failed",
+      error: "Flux não gerou imagem nova",
+    });
+    return { ok: false, error: "O Flux não gerou uma imagem nova. Nada foi publicado." };
+  }
+  await store.updateStatus(post.id, { imageUrl, status: "pending_approval" });
 
   // O provedor de navegador não publica Facebook nem expõe media id; o fluxo
   // de evento exige Graph API para os dois canais.

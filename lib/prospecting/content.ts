@@ -1,3 +1,4 @@
+import { brazilianCastAt, sceneMomentAt } from "@/lib/marketing/brazilian-cast";
 import { CAPTION } from "@/lib/meta/limits";
 
 /**
@@ -45,11 +46,16 @@ export function buildImagePrompt(input: {
   variant?: number;
 }): string {
   const category = categoryPhrase(input.category);
-  const where = input.city !== undefined && input.city.trim().length > 0 ? ` em ${input.city.trim()}` : "";
+  const where =
+    input.city !== undefined && input.city.trim().length > 0 ? ` em ${input.city.trim()}` : "";
   const guests =
-    input.guestCount !== undefined && input.guestCount > 0 ? ` para ${String(input.guestCount)} convidados` : "";
-  const scene = (input.variant ?? 0) % 2 === 0 ? "ambiente decorado, luz natural" : "mesa posta, detalhes em close";
-  return `fotografia profissional de ${category}${where}${guests}, ${scene}, estilo editorial, alta qualidade, foco no produto, sem texto, sem números, sem preços, sem logotipos, sem marca d'água`;
+    input.guestCount !== undefined && input.guestCount > 0
+      ? ` para ${String(input.guestCount)} convidados`
+      : "";
+  const index = input.variant ?? 0;
+  const scene =
+    index % 2 === 0 ? "ambiente decorado, luz natural" : "mesa posta, detalhes em close";
+  return `fotografia profissional de ${category}${where}${guests}, ${scene}, ${brazilianCastAt(index)} Momento: ${sceneMomentAt(index)}. estilo editorial, alta qualidade, foco no produto, sem texto, sem números, sem preços, sem logotipos, sem marca d'água`;
 }
 
 export function buildCaption(input: ContentInput): string {

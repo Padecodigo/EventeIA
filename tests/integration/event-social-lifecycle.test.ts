@@ -66,6 +66,9 @@ describe("integração publicação de isca + retry", () => {
   it("reserva UMA linha antes de publicar e retry reusa a mesma linha sem republicar o IG", async () => {
     let fbShouldFail = true;
     const { fetchImpl, calls } = fakeFetch((url) => {
+      if (url.includes("modelslab.com")) {
+        return { body: { status: "success", output: ["https://cdn/fresh.jpg"] } };
+      }
       if (url.includes("fields=status_code")) return { body: { status_code: "FINISHED" } };
       if (url.includes("/media?")) return { body: { id: "container-1" } };
       if (url.includes("/media_publish")) return { body: { id: "17841400000000001" } };
@@ -83,7 +86,12 @@ describe("integração publicação de isca + retry", () => {
       meta,
       eventId: "ev1",
       requireFacebook: true,
-      cachedArt: { url: "https://cdn/cache.jpg", expiresAt: new Date("2026-11-08T00:00:00Z") },
+      modelslabKey: "k",
+      persistArt: () =>
+        Promise.resolve({
+          url: "https://cdn/fresh.jpg",
+          expiresAt: new Date("2026-12-01T00:00:00Z"),
+        }),
       store,
       fetchImpl,
     });
@@ -104,7 +112,12 @@ describe("integração publicação de isca + retry", () => {
       meta,
       eventId: "ev1",
       requireFacebook: true,
-      cachedArt: { url: "https://cdn/cache.jpg", expiresAt: new Date("2026-11-08T00:00:00Z") },
+      modelslabKey: "k",
+      persistArt: () =>
+        Promise.resolve({
+          url: "https://cdn/fresh.jpg",
+          expiresAt: new Date("2026-12-01T00:00:00Z"),
+        }),
       store,
       fetchImpl,
     });

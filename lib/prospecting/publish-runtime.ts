@@ -1,4 +1,7 @@
-import { applyBrandLogo } from "@/lib/marketing/brand-logo";
+import { randomInt } from "node:crypto";
+
+import { withFreshScene } from "@/lib/marketing/brazilian-cast";
+import { composeAd } from "@/lib/marketing/card-overlay";
 import {
   publishToChannels,
   type ChannelPublicationIds,
@@ -42,7 +45,7 @@ export type PublishOutcome =
 export interface PublishPlannedPostInput {
   planned: PlannedPost;
   approved: boolean;
-  /** Chave do gerador de imagem (ModelsLab/NVIDIA). Sem chave, usa o fallback. */
+  /** Chave do gerador de imagem (ModelsLab/NVIDIA). Sem chave, a publicação falha. */
   modelslabKey?: string;
   meta: MetaPublishConfig;
   store?: PostStore;
@@ -58,9 +61,12 @@ export interface PublishPlannedPostInput {
   recheckEvent?: () => Promise<EventPublicationState | null>;
   /** Dispara limpeza quando o evento fechou durante a publicação. */
   onEventClosed?: () => Promise<void>;
-  /** Arte em cache (mesmo evento + necessidade) com validade. */
+  /**
+   * Ignorado. Cada publicação gera uma cena nova no Flux.
+   * O campo permanece para chamadas antigas não republicarem a foto em cache.
+   */
   cachedArt?: { url: string; expiresAt: Date } | null;
-  /** Arte da marca usada quando não há chave de geração ou a geração falha. */
+  /** Ignorado. Foto estática não substitui uma geração que falhou. */
   fallbackArt?: { url: string };
   /** Persiste a arte gerada (Storage) e devolve URL + validade. */
   persistArt?: (sourceUrl: string) => Promise<{ url: string; expiresAt: Date }>;
@@ -74,11 +80,11 @@ async function downloadBytes(url: string, fetchImpl: typeof fetch): Promise<Buff
   return Buffer.from(await response.arrayBuffer());
 }
 
+const FRESH_ATTEMPTS = 3;
+
 /**
- * Persiste a arte gerada com a identidade visual. Com `persistArt` injetado,
- * usa o dep; sem ele (produção), baixa a imagem, aplica a logo EventeIA e sobe
- * os bytes com marca no Storage. `null` em qualquer falha para o chamador cair
- * no fallback de arte estática.
+ * Persiste a cena do Flux com o quadro editorial por cima.
+ * `persistArt` injetado só nos testes. Falha devolve `null` (nova tentativa).
  */
 async function persistGeneratedArt(
   sourceUrl: string,
@@ -93,16 +99,21 @@ async function persistGeneratedArt(
   }
   try {
     const bytes = await downloadBytes(sourceUrl, input.fetchImpl ?? fetch);
-    const branded = await applyBrandLogo(bytes);
-    return await storeArtBytes(branded, "image/jpeg");
+    const composed = await composeAd(bytes, {
+      headline: [input.planned.category],
+      categories: [],
+      width: 1080,
+      height: 1350,
+    });
+    return await storeArtBytes(composed, "image/jpeg");
   } catch {
     return null;
   }
 }
 
 export async function publishPlannedPost(input: PublishPlannedPostInput): Promise<PublishOutcome> {
-  let imageUrl = input.cachedArt?.url ?? null;
-  let imageExpiresAt: Date | null = input.cachedArt?.expiresAt ?? null;
+  let imageUrl: string | null = null;
+  let imageExpiresAt: Date | null = null;
 
   if (!input.approved) {
     await input.store?.record({
@@ -167,72 +178,47 @@ export async function publishPlannedPost(input: PublishPlannedPostInput): Promis
     return { kind: "event_closed", ok: false, reason: "event_closed", error };
   }
 
-  if (imageUrl === null) {
-    const hasGenerationKey = (input.modelslabKey ?? "").length > 0;
-    if (hasGenerationKey) {
-      const image = await generateImage({
-        apiKey: input.modelslabKey as string,
-        prompt: input.planned.imagePrompt,
-        fetchImpl: input.fetchImpl,
-      });
-      if (image.ok) {
-        if (image.images.length > 0) {
-          const stored = await persistGeneratedArt(image.images[0], input);
-          if (stored !== null) {
-            imageUrl = stored.url;
-            imageExpiresAt = stored.expiresAt;
-          } else if (input.fallbackArt !== undefined) {
-            imageUrl = input.fallbackArt.url;
-            imageExpiresAt = null;
-          } else {
-            const reason = "persistência da arte falhou";
-            await input.store?.record({
-              planned: input.planned,
-              eventId: input.eventId,
-              imageExpiresAt: imageExpiresAt ?? undefined,
-              status: "failed",
-              error: reason,
-            });
-            return { kind: "image_failed", ok: false, reason: "image_failed", error: reason };
-          }
-        } else if (input.fallbackArt !== undefined) {
-          imageUrl = input.fallbackArt.url;
-          imageExpiresAt = null;
-        } else {
-          const reason = "resposta sem URL de imagem";
-          await input.store?.record({
-            planned: input.planned,
-            eventId: input.eventId,
-            imageExpiresAt: imageExpiresAt ?? undefined,
-            status: "failed",
-            error: reason,
-          });
-          return { kind: "image_failed", ok: false, reason: "image_failed", error: reason };
-        }
-      } else if (input.fallbackArt !== undefined) {
-        imageUrl = input.fallbackArt.url;
-        imageExpiresAt = null;
-      } else {
-        await input.store?.record({
-          planned: input.planned,
-          eventId: input.eventId,
-          imageExpiresAt: imageExpiresAt ?? undefined,
-          status: "failed",
-          error: image.error,
-        });
-        return { kind: "image_failed", ok: false, reason: "image_failed", error: image.error };
-      }
-    } else if (input.fallbackArt !== undefined) {
-      imageUrl = input.fallbackArt.url;
-      imageExpiresAt = null;
-    } else {
-      return {
-        kind: "image_failed",
-        ok: false,
-        reason: "image_failed",
-        error: "sem chave de geração e sem arte de fallback",
-      };
+  const hasGenerationKey = (input.modelslabKey ?? "").length > 0;
+  if (!hasGenerationKey) {
+    return {
+      kind: "image_failed",
+      ok: false,
+      reason: "image_failed",
+      error: "sem chave de geração (IMAGE_PROVIDER, MODELSLAB_API_KEY ou NVIDIA_NIM_API_KEY)",
+    };
+  }
+
+  let lastError = "geração da imagem falhou";
+  for (let attempt = 0; attempt < FRESH_ATTEMPTS && imageUrl === null; attempt += 1) {
+    const image = await generateImage({
+      apiKey: input.modelslabKey as string,
+      prompt: withFreshScene(input.planned.imagePrompt, input.planned.dayIndex + attempt),
+      seed: randomInt(1, 2_147_483_647),
+      width: 1080,
+      height: 1350,
+      fetchImpl: input.fetchImpl,
+    });
+    if (!image.ok || image.images.length === 0) {
+      lastError = image.ok ? "resposta sem URL de imagem" : image.error;
+      continue;
     }
+    const stored = await persistGeneratedArt(image.images[0], input);
+    if (stored === null) {
+      lastError = "persistência da arte falhou";
+      continue;
+    }
+    imageUrl = stored.url;
+    imageExpiresAt = stored.expiresAt;
+  }
+
+  if (imageUrl === null) {
+    await input.store?.record({
+      planned: input.planned,
+      eventId: input.eventId,
+      status: "failed",
+      error: lastError,
+    });
+    return { kind: "image_failed", ok: false, reason: "image_failed", error: lastError };
   }
 
   let reservation: BaitReservation | null = null;

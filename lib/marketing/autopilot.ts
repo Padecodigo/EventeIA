@@ -4,16 +4,9 @@ import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { metaPublishConfigFromEnv } from "@/lib/meta/config";
 import { createMediaContainer, publishContainer, publishToChannels } from "@/lib/meta/publishing";
-import {
-  artForEventType,
-  reelArtForEventType,
-  storyArtForEventType,
-} from "@/lib/prospecting/photos";
 
 import { generatePostArt, generateReelArt, generateStoryArt } from "./autopilot-art";
-import { loadUsedMedia, recordMediaUse, type AutopilotMediaKind } from "./autopilot-media";
 import { marketingPromptVariant } from "./image-prompt";
-import { pickFirstUnusedRecently, STATIC_REUSE_WINDOW_MS, staticMediaKey } from "./media-dedup";
 import { MARKETING_THEMES, themeForHour, type MarketingTheme } from "./themes";
 
 /** Prompt de publicidade (puro, testável). */
@@ -47,40 +40,7 @@ async function captionFor(theme: MarketingTheme): Promise<string> {
   return data.choices?.[0]?.message?.content?.trim() ?? `${theme.label}.`;
 }
 
-/**
- * Arte estática (fallback) com dedup: usa o asset se ele não foi publicado nos
- * últimos 24h e registra o uso. Devolve `null` quando o asset já foi usado
- * recentemente (o chamador deve pular a publicação).
- */
-async function staticArtUrl(
-  theme: MarketingTheme,
-  kind: AutopilotMediaKind,
-  staticPath: string,
-  baseUrl: string,
-): Promise<string | null> {
-  const url = `${baseUrl}${staticPath}`;
-  try {
-    const uses = await loadUsedMedia();
-    const chosen = pickFirstUnusedRecently(
-      [staticPath],
-      uses,
-      (path) => staticMediaKey(path),
-      STATIC_REUSE_WINDOW_MS,
-      Date.now(),
-    );
-    if (chosen === null) return null;
-    await recordMediaUse({ mediaKey: staticMediaKey(chosen), kind, theme: theme.key, url });
-  } catch (error) {
-    // Sem o registro de dedup (DB indisponível) publicamos a estática mesmo assim.
-    logger.warn(
-      { error: String(error), theme: theme.key },
-      "autopilot: dedup de mídia indisponível; usando arte estática sem garantia de unicidade",
-    );
-  }
-  return url;
-}
-
-/** Publica uma peça de publicidade (rotação por tema). Desligado => no-op. */
+/** Publica uma peça de publicidade (rotação por tema). Sem Flux, não publica. */
 export async function publishAutopilotPost(
   now: Date = new Date(),
 ): Promise<{ posted: boolean; reason?: string }> {
@@ -102,49 +62,22 @@ export async function publishAutopilotPost(
     return { posted: false, reason: "caption_failed" };
   }
 
-  const postArt = await generatePostArt(theme, {}, variant);
-  let imageUrl: string;
-  if (postArt !== null) {
-    imageUrl = postArt.url;
-  } else {
-    const staticUrl = await staticArtUrl(
-      theme,
-      "post",
-      artForEventType(theme.key),
-      env.NEXT_PUBLIC_APP_URL,
-    );
-    if (staticUrl === null) {
-      logger.warn({ theme: theme.key }, "autopilot: sem arte única para o post; cancelando");
-      return { posted: false, reason: "no_unique_art" };
-    }
-    imageUrl = staticUrl;
-    logger.warn({ theme: theme.key }, "autopilot: FLUX indisponível no post; usando arte estática");
+  const slot = Math.floor(now.getTime() / 3_600_000);
+  const postArt = await generatePostArt(theme, { castIndex: slot * 5 }, variant);
+  if (postArt === null) {
+    logger.warn({ theme: theme.key }, "autopilot: Flux não gerou imagem nova; post cancelado");
+    return { posted: false, reason: "image_failed" };
   }
 
-  const result = await publishToChannels({ ...config, imageUrl, caption });
+  const result = await publishToChannels({ ...config, imageUrl: postArt.url, caption });
 
   // Story (Instagram only): vertical 9:16 com a logo, sem legenda.
   if (result.kind === "published") {
     try {
-      const storyArt = await generateStoryArt(theme, {}, variant);
-      let storyUrl: string | null = null;
-      if (storyArt !== null) {
-        storyUrl = storyArt.url;
-      } else {
-        storyUrl = await staticArtUrl(
-          theme,
-          "story",
-          storyArtForEventType(theme.key),
-          env.NEXT_PUBLIC_APP_URL,
-        );
-        if (storyUrl !== null) {
-          logger.warn(
-            { theme: theme.key },
-            "autopilot: FLUX indisponível no story; usando arte estática",
-          );
-        } else {
-          logger.warn({ theme: theme.key }, "autopilot: sem arte única para o story; pulando");
-        }
+      const storyArt = await generateStoryArt(theme, { castIndex: slot * 5 + 1 }, variant);
+      const storyUrl = storyArt?.url ?? null;
+      if (storyUrl === null) {
+        logger.warn({ theme: theme.key }, "autopilot: Flux não gerou o story; peça pulada");
       }
       if (storyUrl !== null) {
         const storyContainer = await createMediaContainer({
@@ -158,25 +91,10 @@ export async function publishAutopilotPost(
           logger.info({ theme: theme.key }, "autopilot: story publicada");
         }
       }
-      const reelArt = await generateReelArt(theme, {}, variant);
-      let reelUrl: string | null = null;
-      if (reelArt !== null) {
-        reelUrl = reelArt.url;
-      } else {
-        reelUrl = await staticArtUrl(
-          theme,
-          "reel",
-          reelArtForEventType(theme.key),
-          env.NEXT_PUBLIC_APP_URL,
-        );
-        if (reelUrl !== null) {
-          logger.warn(
-            { theme: theme.key },
-            "autopilot: FLUX indisponível no reel; usando arte estática",
-          );
-        } else {
-          logger.warn({ theme: theme.key }, "autopilot: sem arte única para o reel; pulando");
-        }
+      const reelArt = await generateReelArt(theme, { castIndex: slot * 5 + 2 }, variant);
+      const reelUrl = reelArt?.url ?? null;
+      if (reelUrl === null) {
+        logger.warn({ theme: theme.key }, "autopilot: Flux não gerou o reel; peça pulada");
       }
       if (reelUrl !== null) {
         const reelContainer = await createMediaContainer({
