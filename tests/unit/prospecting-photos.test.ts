@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { artForEventType, photoForEventType, photoKeyForEventType } from "@/lib/prospecting/photos";
+import { artForEventType, photoKeyForEventType } from "@/lib/prospecting/photos";
 
-describe("foto por tipo de evento", () => {
-  it("mapeia os tipos para o acervo", () => {
+describe("arte por tipo de evento", () => {
+  it("mapeia os tipos para a chave do acervo", () => {
     expect(photoKeyForEventType("infantil")).toBe("infantil");
     expect(photoKeyForEventType("Festa de 15 anos")).toBe("15-anos");
     expect(photoKeyForEventType("casamento")).toBe("casamento");
@@ -18,6 +18,6 @@ describe("foto por tipo de evento", () => {
   });
 
   it("tem fallback para tipo desconhecido", () => {
-    expect(photoForEventType("batizado")).toContain("/img/eventos/");
+    expect(artForEventType("batizado")).toBe("/brand/posts/infantil.jpg");
   });
 });
