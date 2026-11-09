@@ -1,7 +1,7 @@
 import "server-only";
 
 import { execFile } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -21,6 +21,7 @@ import { loadUsedMedia, recordMediaUse, type RecordMediaUseInput } from "./autop
 import { composeAd, HEADLINES_BY_THEME, RECEIPT_CATEGORIES_BY_THEME } from "./card-overlay";
 import { buildMarketingImagePrompt, type MarketingPromptVariant } from "./image-prompt";
 import { contentHash, type MediaUse } from "./media-dedup";
+import { IMAGE_NEGATIVE, nextSceneIndex, sceneStorageKey } from "./scene-rules";
 import type { MarketingTheme } from "./themes";
 
 /**
@@ -154,7 +155,7 @@ const FRESH_ATTEMPTS = 3;
 
 /** Semente aleatória (int 31-bit), nunca zero. */
 function randomSeed(): number {
-  return 1 + Math.floor(Math.random() * 2_147_483_646);
+  return randomInt(1, 2_147_483_647);
 }
 
 /** Dependências injetáveis do autopilot (testes não rodam rede/ffmpeg/Supabase). */
@@ -210,7 +211,8 @@ async function generateUniqueArt(
       return null;
     }
 
-    const used = new Set((await (deps.loadUsed ?? loadUsedMedia)()).map((use) => use.key));
+    const usedList = await (deps.loadUsed ?? loadUsedMedia)();
+    const used = new Set(usedList.map((use) => use.key));
     const fetchImpl = deps.fetchImpl ?? fetch;
     const generate = deps.generateImage ?? generateSceneImage;
     const buildImage =
@@ -223,14 +225,21 @@ async function generateUniqueArt(
     let lastError = "geração da cena falhou";
 
     for (let attempt = 0; attempt < FRESH_ATTEMPTS; attempt += 1) {
+      const sceneIndex = nextSceneIndex(
+        (deps.castIndex ?? 0) + usedList.length,
+        used,
+        theme.key,
+        attempt,
+      );
       const prompt = buildMarketingImagePrompt(theme, {
         vertical: size.height > size.width,
         variant,
-        castIndex: (deps.castIndex ?? 0) + attempt,
+        castIndex: sceneIndex,
       });
       const generated = await generate({
         apiKey,
         prompt,
+        negativePrompt: IMAGE_NEGATIVE,
         width: size.width,
         height: size.height,
         seed: randomSeed(),
@@ -246,6 +255,12 @@ async function generateUniqueArt(
       if (used.has(key)) continue;
       const url = await storeImage(finalBytes);
       await recordUse({ mediaKey: key, kind, theme: theme.key, url });
+      await recordUse({
+        mediaKey: sceneStorageKey(theme.key, sceneIndex),
+        kind,
+        theme: theme.key,
+        url,
+      });
       return { url };
     }
 
@@ -272,7 +287,8 @@ export async function generateReelArt(
       return null;
     }
 
-    const used = new Set((await (deps.loadUsed ?? loadUsedMedia)()).map((use) => use.key));
+    const usedList = await (deps.loadUsed ?? loadUsedMedia)();
+    const used = new Set(usedList.map((use) => use.key));
     const fetchImpl = deps.fetchImpl ?? fetch;
     const generate = deps.generateImage ?? generateSceneImage;
     const buildImage =
@@ -287,17 +303,21 @@ export async function generateReelArt(
     const baseCast = deps.castIndex ?? 0;
 
     const frames: Buffer[] = [];
+    const freshSceneKeys: string[] = [];
     for (let i = 0; i < REEL_SCENE_COUNT; i += 1) {
       let frame: Buffer | null = null;
+      let sceneIndex = baseCast + i;
       for (let attempt = 0; attempt < FRESH_ATTEMPTS && frame === null; attempt += 1) {
+        sceneIndex = nextSceneIndex(baseCast + usedList.length + i, used, theme.key, attempt);
         const prompt = buildMarketingImagePrompt(theme, {
           vertical: true,
           variant,
-          castIndex: baseCast + i + attempt,
+          castIndex: sceneIndex,
         });
         const generated = await generate({
           apiKey,
           prompt,
+          negativePrompt: IMAGE_NEGATIVE,
           width: REEL_WIDTH,
           height: REEL_HEIGHT,
           seed: randomSeed(),
@@ -312,6 +332,9 @@ export async function generateReelArt(
         const key = contentHash(composed);
         if (used.has(key)) continue;
         used.add(key);
+        const sceneKey = sceneStorageKey(theme.key, sceneIndex);
+        used.add(sceneKey);
+        freshSceneKeys.push(sceneKey);
         frame = composed;
       }
       if (frame === null) throw new Error("geração da cena do reel falhou");
@@ -324,6 +347,9 @@ export async function generateReelArt(
 
     const url = await storeVideo(video);
     await recordUse({ mediaKey: key, kind: "reel", theme: theme.key, url });
+    for (const sceneKey of freshSceneKeys) {
+      await recordUse({ mediaKey: sceneKey, kind: "reel", theme: theme.key, url });
+    }
     return { url };
   } catch (error) {
     logger.warn({ theme: theme.key, error: String(error) }, "autopilot-art: falha ao gerar reel");

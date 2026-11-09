@@ -1,4 +1,4 @@
-import { brazilianCastAt, sceneMomentAt } from "@/lib/marketing/brazilian-cast";
+import { sceneDirective } from "@/lib/marketing/scene-rules";
 import { CAPTION } from "@/lib/meta/limits";
 
 /**
@@ -53,9 +53,7 @@ export function buildImagePrompt(input: {
       ? ` para ${String(input.guestCount)} convidados`
       : "";
   const index = input.variant ?? 0;
-  const scene =
-    index % 2 === 0 ? "ambiente decorado, luz natural" : "mesa posta, detalhes em close";
-  return `fotografia profissional de ${category}${where}${guests}, ${scene}, ${brazilianCastAt(index)} Momento: ${sceneMomentAt(index)}. estilo editorial, alta qualidade, foco no produto, sem texto, sem números, sem preços, sem logotipos, sem marca d'água`;
+  return `fotografia editorial parada de ${category}${where}${guests}. ${sceneDirective(index)} estilo editorial, alta qualidade, foco no lugar na mesa nas flores e na comida, sem texto, sem números, sem preços, sem logotipos, sem marca d'água`;
 }
 
 export function buildCaption(input: ContentInput): string {

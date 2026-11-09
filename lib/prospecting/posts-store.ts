@@ -57,7 +57,8 @@ export type SavePostStateResult =
 
 export interface ReservePostInput {
   planned: PlannedPost;
-  eventId: string;
+  /** Nulo no acervo geral (isca sem evento). */
+  eventId: string | null;
   imageUrl: string;
   imageExpiresAt?: Date;
 }
@@ -88,12 +89,21 @@ interface ExistingRow {
   updated_at?: string | null;
 }
 
+interface ReservationSelect {
+  limit(n: number): Promise<{ data: Record<string, unknown>[] | null; error: DbError | null }>;
+  eq(column: string, value: unknown): PostSelectQuery;
+  is(column: string, value: null): PostSelectQuery;
+}
+
+/** `event_id` nulo não casa com `.eq`; o acervo geral usa `.is`. */
+function scopeReservation(query: ReservationSelect, eventId: string | null): PostSelectQuery {
+  if (eventId === null || eventId.length === 0) return query.is("event_id", null);
+  return query.eq("event_id", eventId);
+}
+
 interface PostDb {
   from(table: "prospect_posts"): {
-    select(columns: string): {
-      limit(n: number): Promise<{ data: Record<string, unknown>[] | null; error: DbError | null }>;
-      eq(column: string, value: unknown): PostSelectQuery;
-    };
+    select(columns: string): ReservationSelect;
     insert(values: Record<string, unknown>): PromiseLike<{ error: DbError | null }> & {
       select(columns: string): {
         single(): Promise<{ data: { id: string } | null; error: DbError | null }>;
@@ -175,10 +185,10 @@ export function createSupabasePostStore(
     },
 
     async reserve(input) {
-      const existing = await db
-        .from("prospect_posts")
-        .select("id,ig_media_id,fb_post_id,publication,status")
-        .eq("event_id", input.eventId)
+      const existing = await scopeReservation(
+        db.from("prospect_posts").select("id,ig_media_id,fb_post_id,publication,status"),
+        input.eventId,
+      )
         .eq("day_index", input.planned.dayIndex)
         .contains("categories", [input.planned.category])
         .order("created_at", { ascending: false })
@@ -212,7 +222,7 @@ export function createSupabasePostStore(
           ig_media_id: null,
           fb_post_id: null,
           publication: initialPublicationState(),
-          event_id: input.eventId,
+          event_id: input.eventId ?? null,
           image_expires_at: input.imageExpiresAt?.toISOString() ?? null,
           tagged_handles: normalizeHandles(input.planned.handles),
         })
@@ -224,10 +234,10 @@ export function createSupabasePostStore(
         }
         // Corrida de reserva: outra worker inseriu a mesma chave única.
         if (error?.code === "23505") {
-          const raced = await db
-            .from("prospect_posts")
-            .select("id,ig_media_id,fb_post_id,publication,status")
-            .eq("event_id", input.eventId)
+          const raced = await scopeReservation(
+            db.from("prospect_posts").select("id,ig_media_id,fb_post_id,publication,status"),
+            input.eventId,
+          )
             .eq("day_index", input.planned.dayIndex)
             .contains("categories", [input.planned.category])
             .order("created_at", { ascending: false })

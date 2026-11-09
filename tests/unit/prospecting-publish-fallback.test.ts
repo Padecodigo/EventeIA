@@ -78,4 +78,47 @@ describe("publicação sem reaproveitar foto", () => {
     if (!outcome.ok) expect(outcome.reason).toBe("image_failed");
     expect(outcome).not.toMatchObject({ imageUrl: staticUrl });
   });
+
+  it("acervo geral sem eventId passa da sonda e reserva com eventId nulo", async () => {
+    let probed = false;
+    let reservedEventId: string | null | undefined;
+    const fetchImpl = fakeFetch((url) => {
+      if (url.includes("modelslab.com"))
+        return { status: "success", output: ["https://cdn/img.jpg"], id: 1 };
+      return {};
+    });
+    const outcome = await publishPlannedPost({
+      planned,
+      approved: true,
+      modelslabKey: "k",
+      meta,
+      requireFacebook: true,
+      fetchImpl,
+      persistArt: () =>
+        Promise.resolve({
+          url: "https://storage/fresh.jpg",
+          expiresAt: new Date("2026-12-01T00:00:00Z"),
+        }),
+      store: {
+        async probe() {
+          probed = true;
+          return { kind: "ready" };
+        },
+        async reserve(input: { eventId: string | null }) {
+          reservedEventId = input.eventId;
+          return { kind: "failed", error: "parada de teste" };
+        },
+        async saveState() {
+          return { kind: "saved" };
+        },
+        async record() {
+          return undefined;
+        },
+      },
+    });
+
+    expect(probed).toBe(true);
+    expect(reservedEventId).toBeNull();
+    expect(outcome).toMatchObject({ ok: false, reason: "persistence_failed" });
+  });
 });

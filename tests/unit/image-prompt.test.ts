@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { BRAZILIAN_CASTS, brazilianCastAt } from "@/lib/marketing/brazilian-cast";
 import { buildMarketingImagePrompt, marketingPromptVariant } from "@/lib/marketing/image-prompt";
+import { sceneDirective } from "@/lib/marketing/scene-rules";
 import { MARKETING_THEMES, type MarketingTheme } from "@/lib/marketing/themes";
 
 const theme = (key: string): MarketingTheme =>
@@ -14,9 +15,13 @@ describe("prompt de imagem do FLUX (cena pura, sem texto)", () => {
     const second = buildMarketingImagePrompt(infantil, { castIndex: 1 });
     expect(first).not.toBe(second);
     expect(first).toContain(brazilianCastAt(0));
-    expect(second).toContain(brazilianCastAt(1));
+    expect(first).toContain(sceneDirective(0));
+    expect(second).toContain("No people");
+    expect(second).not.toContain(brazilianCastAt(1));
     expect(first).not.toContain("blonde");
     expect(second).not.toContain("blonde");
+    expect(first).toContain("Static, calm composition");
+    expect(first).toContain("Avoid:");
     for (let index = 0; index < BRAZILIAN_CASTS.length; index += 1) {
       expect(brazilianCastAt(index)).not.toBe(brazilianCastAt(index + 1));
     }
@@ -48,7 +53,10 @@ describe("prompt de imagem do FLUX (cena pura, sem texto)", () => {
     expect(prompt).toContain("lifestyle photograph");
     expect(prompt).toContain("photorealistic");
     expect(prompt).toContain("high-end advertising photography");
-    expect(prompt).toContain("smartphone");
+    expect(prompt).toContain("balloons");
+    expect(prompt.split("Avoid:")[0] ?? prompt).not.toMatch(
+      /\b(dancing|running|jumping|high-fiving)\b/,
+    );
   });
 
   it("NÃO descreve banner, cards nem texto 'Orçamento recebido' (cena pura)", () => {
@@ -112,7 +120,7 @@ describe("variante 'emotional' (cena pura, sem cards)", () => {
       "birthday cake",
     );
     expect(buildMarketingImagePrompt(theme("casamento"), { variant: "emotional" })).toContain(
-      "first dance",
+      "bride and groom",
     );
     expect(buildMarketingImagePrompt(theme("15-anos"), { variant: "emotional" })).toContain(
       "debutante",
@@ -126,6 +134,12 @@ describe("variante 'emotional' (cena pura, sem cards)", () => {
     expect(buildMarketingImagePrompt(theme("aniversario"), { variant: "emotional" })).toContain(
       "make a wish",
     );
+    for (const t of MARKETING_THEMES) {
+      const prompt = buildMarketingImagePrompt(t, { variant: "emotional" });
+      expect(prompt.split("Avoid:")[0] ?? prompt).not.toMatch(
+        /\b(dancing|running|jumping|high-fiving|tossing)\b/,
+      );
+    }
   });
 });
 

@@ -122,7 +122,9 @@ Ver [`.context/COMMERCIAL_MODEL.md`](.context/COMMERCIAL_MODEL.md) e [`.context/
    legenda via DeepSeek, e **nunca repete imagem** (dedup sha256 em `autopilot_media`).
 3. **Arte híbrida** (decisão #015): `flux.1-dev` gera a **cena** (única) → sharp sobrepõe o
    **banner (headline) + cards "Orçamento recebido"** → fallback `flux.2-klein-4b` em rate limit.
+   A cena pede lugar parado (mesa, flores, comida); pessoas são raras. O sharp aplica grão, calor e vinheta antes do layout.
    Sem imagem nova, a peça não publica (não reaproveita foto estática nem cache).
+   A isca do acervo geral (sem evento) reserva a linha com `event_id` nulo.
 4. Publicações vinculadas ao ciclo de vida do evento: excluir evento exclui os posts (Meta).
 
 ### 5.5 Orçamento (motor determinístico)

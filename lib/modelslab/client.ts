@@ -1,3 +1,6 @@
+import { randomInt } from "node:crypto";
+
+import { IMAGE_NEGATIVE } from "@/lib/marketing/scene-rules";
 import { MODELSLAB } from "@/lib/meta/limits";
 import { generateNvidiaImage } from "@/lib/nvidia/image";
 import { storeArtBytes } from "@/lib/prospecting/art-cache";
@@ -34,15 +37,19 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 export async function generateImage(input: GenerateImageInput): Promise<ModelsLabResult> {
+  const negativePrompt = input.negativePrompt ?? IMAGE_NEGATIVE;
+  const seed =
+    input.seed !== undefined && input.seed > 0 ? input.seed : randomInt(1, 2_147_483_647);
   // Provedor de imagem por env: nvidia (NIM) ou modelslab (padrão).
   if (process.env.IMAGE_PROVIDER === "nvidia" && process.env.NVIDIA_NIM_API_KEY !== undefined) {
     const result = await generateNvidiaImage({
       apiKey: process.env.NVIDIA_NIM_API_KEY,
       prompt: input.prompt,
+      negativePrompt,
       model: process.env.NVIDIA_IMAGE_MODEL,
       width: input.width,
       height: input.height,
-      seed: input.seed,
+      seed,
       fetchImpl: input.fetchImpl,
     });
     if (!result.ok) return { ok: false, error: result.error, status: result.status };
@@ -63,7 +70,8 @@ export async function generateImage(input: GenerateImageInput): Promise<ModelsLa
         key: input.apiKey,
         model_id: MODELSLAB.modelId,
         prompt: input.prompt,
-        ...(input.negativePrompt !== undefined ? { negative_prompt: input.negativePrompt } : {}),
+        negative_prompt: negativePrompt,
+        seed,
         width: clamp(input.width ?? MODELSLAB.maxWidthPx, 64, MODELSLAB.maxWidthPx),
         height: clamp(input.height ?? MODELSLAB.maxHeightPx, 64, MODELSLAB.maxHeightPx),
         samples: clamp(input.samples ?? 1, 1, MODELSLAB.maxSamples),
@@ -82,11 +90,23 @@ export async function generateImage(input: GenerateImageInput): Promise<ModelsLa
     } | null;
 
     if (!response.ok) {
-      return { ok: false, error: payload?.message ?? `HTTP ${String(response.status)}`, status: response.status };
+      return {
+        ok: false,
+        error: payload?.message ?? `HTTP ${String(response.status)}`,
+        status: response.status,
+      };
     }
 
-    if (payload?.status !== "success" || !Array.isArray(payload.output) || payload.output.length === 0) {
-      return { ok: false, error: payload?.message ?? "resposta sem imagens", status: response.status };
+    if (
+      payload?.status !== "success" ||
+      !Array.isArray(payload.output) ||
+      payload.output.length === 0
+    ) {
+      return {
+        ok: false,
+        error: payload?.message ?? "resposta sem imagens",
+        status: response.status,
+      };
     }
 
     return { ok: true, images: payload.output, id: payload.id ?? null };
