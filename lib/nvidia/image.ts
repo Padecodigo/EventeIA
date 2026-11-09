@@ -21,7 +21,8 @@ export { extractNvidiaImage, sniffMime, type ExtractedImage } from "./pure";
 const BASE_URL = "https://ai.api.nvidia.com/v1/genai";
 export const DEFAULT_NVIDIA_IMAGE_MODEL = "black-forest-labs/flux.1-dev";
 const FALLBACK_MODELS = ["black-forest-labs/flux.2-klein-4b"];
-const TIMEOUT_MS = 180_000;
+/** Timeout POR MODELO: um modelo travado não impede o fallback de rodar. */
+const PER_MODEL_TIMEOUT_MS = 90_000;
 /** O `flux.2-klein-4b` recusa prompt acima de 800 caracteres. */
 const MAX_KLEIN_PROMPT_CHARS = 800;
 
@@ -138,12 +139,13 @@ export async function generateNvidiaImage(input: NvidiaImageInput): Promise<Nvid
   const primary = input.model ?? DEFAULT_NVIDIA_IMAGE_MODEL;
   const models = [primary, ...FALLBACK_MODELS.filter((m) => m !== primary)];
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
-  try {
-    let lastError: NvidiaImageResult = { ok: false, error: "nenhum modelo tentado", status: null };
-    for (const model of models) {
+  let lastError: NvidiaImageResult = { ok: false, error: "nenhum modelo tentado", status: null };
+  for (const model of models) {
+    // AbortController próprio por modelo: se o principal travar no timeout,
+    // o fallback ainda roda com o tempo dele.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), PER_MODEL_TIMEOUT_MS);
+    try {
       const payload = buildNvidiaPayload(model, input);
       const result = await requestNvidiaImage(
         fetcher,
@@ -154,13 +156,14 @@ export async function generateNvidiaImage(input: NvidiaImageInput): Promise<Nvid
       );
       if (result.ok) return result;
       lastError = result;
-      // Só tenta o reserva em rate limit/instabilidade; erro de formato/autenticação para.
-      if (!RETRYABLE_STATUSES.has(result.status ?? 0)) return result;
+      // Erro não-retentável (formato/auth) para; timeout (status null) e
+      // rate limit (429/5xx) tentam o próximo modelo.
+      if (result.status !== null && !RETRYABLE_STATUSES.has(result.status)) return result;
+    } catch (error) {
+      lastError = { ok: false, error: String(error), status: null };
+    } finally {
+      clearTimeout(timer);
     }
-    return lastError;
-  } catch (error) {
-    return { ok: false, error: String(error), status: null };
-  } finally {
-    clearTimeout(timer);
   }
+  return lastError;
 }
