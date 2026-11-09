@@ -21,6 +21,8 @@ export interface GenerateImageInput {
   width?: number;
   height?: number;
   samples?: number;
+  /** Semente para o provedor NVIDIA (não-determinístico no ModelsLab). */
+  seed?: number;
   fetchImpl?: typeof fetch;
 }
 
@@ -40,6 +42,7 @@ export async function generateImage(input: GenerateImageInput): Promise<ModelsLa
       model: process.env.NVIDIA_IMAGE_MODEL,
       width: input.width,
       height: input.height,
+      seed: input.seed,
       fetchImpl: input.fetchImpl,
     });
     if (!result.ok) return { ok: false, error: result.error, status: result.status };

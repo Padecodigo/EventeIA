@@ -148,6 +148,11 @@ function categoriesFor(theme: MarketingTheme): readonly string[] {
   return RECEIPT_CATEGORIES_BY_THEME[theme.key] ?? RECEIPT_CATEGORIES_BY_THEME.infantil;
 }
 
+/** Semente aleatória (int 31-bit) para o provedor NVIDIA — cenas únicas por chamada. */
+function randomSeed(): number {
+  return Math.floor(Math.random() * 2_147_483_647);
+}
+
 /** Dependências injetáveis do autopilot (testes não rodam rede/ffmpeg/Supabase). */
 export interface AutopilotArtDeps {
   fetchImpl?: typeof fetch;
@@ -217,6 +222,7 @@ async function generateUniqueArt(
       prompt,
       width: size.width,
       height: size.height,
+      seed: randomSeed(),
       fetchImpl,
     });
     if (!generated.ok || generated.images.length === 0) {
@@ -278,6 +284,7 @@ export async function generateReelArt(
         prompt,
         width: REEL_WIDTH,
         height: REEL_HEIGHT,
+        seed: randomSeed(),
         fetchImpl,
       });
       if (!generated.ok || generated.images.length === 0) {
