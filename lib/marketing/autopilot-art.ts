@@ -8,28 +8,28 @@ import path from "node:path";
 
 import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { generateImage } from "@/lib/modelslab/client";
 import { sniffMime } from "@/lib/nvidia/pure";
 import { ART_BUCKET, storeArtBytes } from "@/lib/prospecting/art-cache";
+import { EVENT_PHOTOS } from "@/lib/prospecting/photos";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 import { loadUsedMedia, recordMediaUse, type RecordMediaUseInput } from "./autopilot-media";
-import { buildMarketingImagePrompt, type MarketingPromptVariant } from "./image-prompt";
-import { contentHash, FLUX_MAX_RETRIES, type MediaUse } from "./media-dedup";
+import { composeAd, HEADLINES_BY_THEME, RECEIPT_CATEGORIES_BY_THEME } from "./card-overlay";
+import { contentHash, type MediaUse } from "./media-dedup";
 import type { MarketingTheme } from "./themes";
+import type { MarketingPromptVariant } from "./image-prompt";
 
 /**
- * Arte do autopilot gerada com o FLUX (via NVIDIA/ModelsLab). O prompt inclui
- * a cena lifestyle + o banner de headline + os cards "Orçamento recebido", tudo
- * renderizado pela IA (texto nítido no FLUX.1-dev). Sem logo chip, sem sharp.
- * Dedup por sha256 do conteúdo; qualquer falha retorna `null` (fallback).
+ * Arte do autopilot: foto REAL (Unsplash/Pexels) + composição sharp do banner
+ * (headline no topo) e dos cards "Orçamento recebido" (rodapé). Texto nítido e
+ * determinístico — nada de IA (sem FLUX, sem logo colada).
+ * Dedup por sha256 do conteúdo final; qualquer falha retorna `null` (fallback).
  */
 
 export const REEL_WIDTH = 1080;
 export const REEL_HEIGHT = 1920;
 export const REEL_FPS = 30;
-export const REEL_SECONDS_PER_IMAGE = 2.5;
-export const REEL_IMAGES = 3;
+export const REEL_SECONDS_PER_IMAGE = 3;
 
 const POST_SIZE = { width: 1080, height: 1080 } as const;
 const STORY_SIZE = { width: 1080, height: 1920 } as const;
@@ -130,61 +130,21 @@ function runFfmpeg(args: readonly string[]): Promise<void> {
   });
 }
 
-/** Prompt base + nonce aleatório: sem seed fixo, cada chamada é única. */
-function variedPrompt(
-  theme: MarketingTheme,
-  vertical: boolean,
-  variant: MarketingPromptVariant,
-): string {
-  return `${buildMarketingImagePrompt(theme, { vertical, variant })} Variação única ${randomUUID()}.`;
+/** URL absoluta da foto real do tema (arquivo em /public, servido pelo app). */
+function realPhotoUrl(theme: MarketingTheme): string {
+  const appUrl = serverEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  const photo = EVENT_PHOTOS[theme.key] ?? "/img/eventos/festa-infantil-velas.jpg";
+  return `${appUrl}${photo}`;
 }
 
-function variedPromptFromBase(base: string): string {
-  return `${base} Variação única ${randomUUID()}.`;
+/** Headline de banner do tema (fallback infantil). */
+function headlineFor(theme: MarketingTheme): readonly string[] {
+  return HEADLINES_BY_THEME[theme.key] ?? HEADLINES_BY_THEME.infantil;
 }
 
-function hasApiKey(key: string | undefined): key is string {
-  return key !== undefined && key.length > 0;
-}
-
-/** Chave do provedor de imagem ATIVO (nvidia ou modelslab). */
-function activeImageApiKey(): string | undefined {
-  const env = serverEnv();
-  return env.IMAGE_PROVIDER === "nvidia" ? env.NVIDIA_NIM_API_KEY : env.MODELSLAB_API_KEY;
-}
-
-interface GenerateImagesInput {
-  apiKey: string;
-  basePrompt: string;
-  count: number;
-  fetchImpl?: typeof fetch;
-}
-
-/** Gera `count` imagens (ModelsLab devolve várias; NVIDIA devolve 1 por chamada). */
-async function generateVerticalImages(input: GenerateImagesInput): Promise<string[]> {
-  const images: string[] = [];
-  const first = await generateImage({
-    apiKey: input.apiKey,
-    prompt: variedPromptFromBase(input.basePrompt),
-    width: REEL_WIDTH,
-    height: REEL_HEIGHT,
-    samples: input.count,
-    fetchImpl: input.fetchImpl,
-  });
-  if (first.ok) images.push(...first.images);
-  while (images.length < input.count) {
-    const extra = await generateImage({
-      apiKey: input.apiKey,
-      prompt: variedPromptFromBase(input.basePrompt),
-      width: REEL_WIDTH,
-      height: REEL_HEIGHT,
-      samples: input.count - images.length,
-      fetchImpl: input.fetchImpl,
-    });
-    if (!extra.ok) break;
-    images.push(...extra.images);
-  }
-  return images.slice(0, input.count);
+/** Categorias dos cards do tema (fallback infantil). */
+function categoriesFor(theme: MarketingTheme): readonly string[] {
+  return RECEIPT_CATEGORIES_BY_THEME[theme.key] ?? RECEIPT_CATEGORIES_BY_THEME.infantil;
 }
 
 /** Dependências injetáveis do autopilot (testes não rodam rede/ffmpeg/Supabase). */
@@ -192,7 +152,13 @@ export interface AutopilotArtDeps {
   fetchImpl?: typeof fetch;
   loadUsed?: () => Promise<readonly MediaUse[]>;
   recordUse?: (input: RecordMediaUseInput) => Promise<void>;
-  generateImage?: typeof generateImage;
+  /** Baixa a foto e compõe banner + cards (default: sharp real). */
+  buildImage?: (
+    bytes: Buffer,
+    headline: readonly string[],
+    categories: readonly string[],
+    size: { width: number; height: number },
+  ) => Promise<Buffer>;
   storeImage?: (bytes: Buffer) => Promise<string>;
   renderReel?: (buffers: readonly Buffer[]) => Promise<Buffer>;
   storeVideo?: (bytes: Buffer) => Promise<string>;
@@ -224,85 +190,61 @@ async function generateUniqueArt(
   variant: MarketingPromptVariant,
 ): Promise<{ url: string } | null> {
   try {
-    const apiKey = activeImageApiKey();
-    if (!hasApiKey(apiKey)) return null;
     const used = new Set((await (deps.loadUsed ?? loadUsedMedia)()).map((use) => use.key));
-    const generate = deps.generateImage ?? generateImage;
+    const fetchImpl = deps.fetchImpl ?? fetch;
+    const buildImage =
+      deps.buildImage ??
+      ((bytes, headline, categories, sz) => composeAd(bytes, { headline, categories, ...sz }));
     const storeImage = deps.storeImage ?? storeImageBytes;
     const recordUse = deps.recordUse ?? recordMediaUse;
-    const fetchImpl = deps.fetchImpl ?? fetch;
 
-    for (let attempt = 0; attempt < FLUX_MAX_RETRIES; attempt += 1) {
-      const prompt = variedPrompt(theme, size.height > size.width, variant);
-      const result = await generate({
-        apiKey,
-        prompt,
-        width: size.width,
-        height: size.height,
-        samples: 1,
-        fetchImpl,
-      });
-      if (!result.ok) {
-        logger.warn({ theme: theme.key, kind, error: result.error }, "autopilot-art: FLUX sem imagem");
-        return null;
-      }
-      const sourceUrl = result.images[0];
-      if (sourceUrl === undefined) return null;
-      const bytes = await downloadBytes(sourceUrl, fetchImpl);
-      const key = contentHash(bytes);
-      if (used.has(key)) continue;
-      const url = await storeImage(bytes);
-      await recordUse({ mediaKey: key, kind, theme: theme.key, url });
-      return { url };
-    }
+    const raw = await downloadBytes(realPhotoUrl(theme), fetchImpl);
+    const headline = headlineFor(theme);
+    const categories = variant === "emotional" ? [] : categoriesFor(theme);
+    const finalBytes = await buildImage(raw, headline, categories, size);
+    const key = contentHash(finalBytes);
+    if (used.has(key)) return null; // foto repetida → desiste (não repete)
 
-    logger.warn({ theme: theme.key, kind }, "autopilot-art: colisões esgotaram as tentativas");
-    return null;
+    const url = await storeImage(finalBytes);
+    await recordUse({ mediaKey: key, kind, theme: theme.key, url });
+    return { url };
   } catch (error) {
-    logger.warn({ theme: theme.key, kind, error: String(error) }, "autopilot-art: falha ao gerar arte");
+    logger.warn(
+      { theme: theme.key, kind, error: String(error) },
+      "autopilot-art: falha ao montar arte",
+    );
     return null;
   }
 }
 
-/** Reel: 3 imagens verticais únicas + slideshow ffmpeg. `null` em falha. */
+/** Reel: foto real + cards, vídeo vertical com Ken Burns. `null` em falha. */
 export async function generateReelArt(
   theme: MarketingTheme,
   deps: AutopilotArtDeps = {},
   variant: MarketingPromptVariant = "cards",
 ): Promise<{ url: string } | null> {
   try {
-    const apiKey = activeImageApiKey();
-    if (!hasApiKey(apiKey)) return null;
     const used = new Set((await (deps.loadUsed ?? loadUsedMedia)()).map((use) => use.key));
+    const fetchImpl = deps.fetchImpl ?? fetch;
+    const buildImage =
+      deps.buildImage ??
+      ((bytes, headline, categories, sz) => composeAd(bytes, { headline, categories, ...sz }));
     const renderReel = deps.renderReel ?? renderReelVideo;
     const storeVideo = deps.storeVideo ?? storeVideoBytes;
     const recordUse = deps.recordUse ?? recordMediaUse;
-    const fetchImpl = deps.fetchImpl ?? fetch;
 
-    for (let attempt = 0; attempt < FLUX_MAX_RETRIES; attempt += 1) {
-      const urls = await generateVerticalImages({
-        apiKey,
-        basePrompt: buildMarketingImagePrompt(theme, { vertical: true, variant }),
-        count: REEL_IMAGES,
-        fetchImpl,
-      });
-      if (urls.length < REEL_IMAGES) return null;
+    const raw = await downloadBytes(realPhotoUrl(theme), fetchImpl);
+    const headline = headlineFor(theme);
+    const categories = variant === "emotional" ? [] : categoriesFor(theme);
+    const frame = await buildImage(raw, headline, categories, { width: REEL_WIDTH, height: REEL_HEIGHT });
 
-      const buffers: Buffer[] = [];
-      for (const url of urls) buffers.push(await downloadBytes(url, fetchImpl));
-      const keys = buffers.map((buffer) => contentHash(buffer));
-      if (keys.some((key) => used.has(key))) continue;
+    const video = await renderReel([frame, frame, frame]);
+    const key = contentHash(video);
+    if (used.has(key)) return null;
 
-      const video = await renderReel(buffers);
-      const url = await storeVideo(video);
-      for (const key of keys) {
-        await recordUse({ mediaKey: key, kind: "reel", theme: theme.key, url });
-      }
-      return { url };
-    }
-
-    logger.warn({ theme: theme.key }, "autopilot-art: colisões do reel esgotaram as tentativas");
-    return null;
+    const url = await storeVideo(video);
+    await recordUse({ mediaKey: key, kind: "reel", theme: theme.key, url });
+    return { url };
   } catch (error) {
     logger.warn({ theme: theme.key, error: String(error) }, "autopilot-art: falha ao gerar reel");
     return null;
