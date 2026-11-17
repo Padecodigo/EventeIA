@@ -4,7 +4,7 @@
 > Complementa `docs/DEPLOY-PRODUCAO.md` (escrito para Hetzner; a arquitetura é a mesma).
 
 ## Infra
-- Hostinger KVM 2 (2 vCPU / 8 GB), Ubuntu 24.04, IP `200.141.28.13`, Coolify v4.5.0 (UI :8000).
+- Hostinger KVM 2 (2 vCPU / 8 GB), Ubuntu 24.04, IP `<IP_DA_VPS>`, Coolify v4.5.0 (UI :8000).
 - Estado em 24/10 16:28 (BRT): coolify, coolify-db, coolify-redis `healthy`; admin do Coolify já registrado (`/register` → `/login`).
 - KVM 2 tem 2 vCPU: os limites de CPU do compose (app 2.0, worker 1.5) são tetos, não reservas — ok, mas observar carga.
 
@@ -14,9 +14,9 @@ app (Next.js standalone) · worker (`node workers.cjs`, mesma imagem) · redis 7
 ## Cloudflare DNS (zona `eventeia.com.br`, hoje **pending** — trocar NS no registro.br para `todd.ns.cloudflare.com` / `zainab.ns.cloudflare.com`)
 | Tipo | Nome | Conteúdo | Proxy |
 |---|---|---|---|
-| A | `@` | 200.141.28.13 | Proxied |
+| A | `@` | <IP_DA_VPS> | Proxied |
 | CNAME | `www` | eventeia.com.br | Proxied (redirect 301 → apex) |
-| A | `painel` | 200.141.28.13 | Proxied (UI do Coolify; configurar domínio em Settings) |
+| A | `painel` | <IP_DA_VPS> | Proxied (UI do Coolify; configurar domínio em Settings) |
 | — | registros Resend (SPF/DKIM/MX `send`) | conforme painel Resend | DNS only |
 
 `APP_DOMAIN=eventeia.com.br`, `NEXT_PUBLIC_APP_URL=NEXT_PUBLIC_SITE_URL=https://eventeia.com.br`.

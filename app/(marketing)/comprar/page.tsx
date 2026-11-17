@@ -4,6 +4,8 @@ import { formatBRL } from "@/lib/money";
 import { WELCOME_PERCENT } from "@/lib/offers/pure";
 import { pageMetadata } from "@/lib/seo/site";
 
+// TODO(Allan): definir prazo de entrega do orçamento e garantia antes de exibir nesta página (decisão de produto pendente).
+
 const ticketPriceCents = Number(process.env.B2C_TICKET_PRICE_CENTS ?? "9700");
 
 export const metadata = pageMetadata({

@@ -18,8 +18,7 @@
 ## Estado do tronco
 
 - `main` = `bac69f2` (ver `git log -1`); produção deployada junto (app + worker + Redis).
-- Deploy: `POST /api/v1/deploy?uuid=ozqnl541gzloqhsqvpjtqa8l` no Coolify (token em
-  `/root/.coolify_token` na VPS `root@200.141.28.13`, chave `~/.ssh/eventeia_vps`).
+- Deploy: webhook de deploy do Coolify (`POST /api/v1/deploy?uuid=<COOLIFY_APP_UUID>`). UUID, token e acesso SSH à VPS ficam fora do repositório (repo público), no cofre do dono.
   Um único compose sobe app + worker + Redis.
 - **Migrações `0084` (tiktok_oauth_tokens) e `0085` (ticket_purchases) já aplicadas e registradas
   em `schema_migrations`. NÃO reaplicar.**

@@ -8,7 +8,7 @@ export const PRIVACY_SECTIONS: readonly LegalSection[] = [
     title: "O que o EventeIA faz",
     paragraphs: [
       "O EventeIA é um serviço autônomo de prospecção de fornecedores para eventos. Você descreve o seu evento (tipo, data, cidade, número de convidados e o que precisa). O EventeIA busca fornecedores compatíveis, pede orçamentos a eles por Instagram, Messenger e e-mail em dias úteis, das 9h às 18h, e organiza as respostas para você comparar.",
-      "O serviço é vendido por créditos, avulsos ou em pacotes. Os créditos não vencem. Há também a opção de renovação mensal. O pagamento é feito por Pix ou cartão de crédito, processado pelo Asaas.",
+      "O serviço é vendido como um ticket por evento (R$ 97, pagamento único por evento), com 30% de desconto de boas-vindas nas primeiras 48h após o primeiro acesso. Um ticket ativa um evento e dá acesso permanente ao orçamento e às cotações daquele evento. O pagamento é feito por Pix ou cartão de crédito, processado pelo Asaas.",
     ],
   },
   {
@@ -26,7 +26,7 @@ export const PRIVACY_SECTIONS: readonly LegalSection[] = [
     id: "uso-e-base-legal",
     title: "Como usamos os dados e a base legal (LGPD)",
     items: [
-      "Execução de contrato: criar e manter a sua conta, buscar fornecedores, pedir e organizar orçamentos, processar pagamentos e liberar créditos.",
+      "Execução de contrato: criar e manter a sua conta, buscar fornecedores, pedir e organizar orçamentos, processar pagamentos e liberar o ticket do evento.",
       "Legítimo interesse: contato comercial com fornecedores para pedir orçamentos, prevenção de fraudes e melhoria do serviço.",
       "Consentimento, quando aplicável: por exemplo, para receber mensagens que dependam da sua autorização. Você pode retirar o consentimento a qualquer momento.",
       "Obrigação legal e fiscal: guardar registros de pagamentos e cumprir exigências de autoridades.",
@@ -109,7 +109,7 @@ export const TERMS_SECTIONS: readonly LegalSection[] = [
     title: "O serviço",
     paragraphs: [
       "O EventeIA ajuda você a orçar o seu evento: você descreve o que precisa, o sistema busca fornecedores, pede orçamentos por Instagram, Messenger e e-mail em dias úteis, das 9h às 18h, e organiza as respostas para comparação.",
-      "Ao criar uma conta ou comprar créditos, você declara que leu e aceita estes Termos e a Política de Privacidade.",
+      "Ao criar uma conta ou comprar um ticket, você declara que leu e aceita estes Termos e a Política de Privacidade.",
     ],
   },
   {
@@ -135,13 +135,14 @@ export const TERMS_SECTIONS: readonly LegalSection[] = [
   },
   {
     id: "creditos-pagamentos",
-    title: "Créditos e pagamentos",
+    title: "Ticket e pagamentos",
     items: [
-      "O serviço é vendido por créditos: avulsos ou em pacotes. Cada crédito libera um evento.",
-      "Os créditos não vencem.",
-      "Há a opção de renovação mensal: os créditos do plano entram a cada pagamento confirmado. Você pode cancelar a renovação quando quiser na página de créditos; os créditos já recebidos continuam com você.",
-      "O pagamento é feito por Pix ou cartão de crédito, processado pelo Asaas. Os créditos são liberados após a confirmação do pagamento.",
-      "Cupons e ofertas seguem as condições informadas no momento da compra e não se acumulam.",
+      "O serviço é vendido como um ticket por evento (R$ 97), com pagamento único. Cada ticket ativa um evento.",
+      "O acesso ao orçamento e às cotações do evento ativado é permanente.",
+      "O ticket pode ser comprado sem evento e consumido na ativação: um ticket avulso comprado e não usado continua disponível na sua conta.",
+      "Oferta de boas-vindas: 30% de desconto no ticket nas primeiras 48h após o primeiro acesso (R$ 97 passa a R$ 67,90), aplicada automaticamente no checkout.",
+      "O pagamento é feito por Pix ou cartão de crédito, processado pelo Asaas. O ticket é liberado após a confirmação do pagamento.",
+      "Cupons são usados apenas em campanhas sazonais, com desconto máximo de 30%, seguem as condições informadas no momento da compra e não se acumulam.",
     ],
   },
   {

@@ -73,6 +73,7 @@ describe("páginas legais", () => {
     expect(text).toContain("não é parte do contrato");
     expect(text).toContain("7 dias");
     expect(text).toContain("foro");
-    expect(text).toContain("não vencem");
+    expect(text).toContain("por evento");
+    expect(text).not.toMatch(/créditos|pacotes|renovação mensal/i);
   });
 });
