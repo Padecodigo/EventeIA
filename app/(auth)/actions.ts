@@ -126,10 +126,15 @@ export async function signUpAction(
   }
 
   const supabase = await createSupabaseServerClient();
+  const h = await headers();
+  const origin = publicOrigin(h, "http://localhost:3000");
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
-    options: { data: { full_name: parsed.data.fullName } },
+    options: {
+      data: { full_name: parsed.data.fullName },
+      emailRedirectTo: buildCallbackUrl(origin),
+    },
   });
 
   if (error !== null) {

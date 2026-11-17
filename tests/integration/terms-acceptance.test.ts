@@ -72,6 +72,24 @@ describe("cadastro por e-mail", () => {
       context: "signup",
     });
   });
+  it("com aceite: envia emailRedirectTo para o callback e preserva o nome", async () => {
+    signUp.mockResolvedValue({
+      data: { user: { id: "u-new" }, session: null },
+      error: null,
+    });
+
+    await signUpAction({}, signUpForm(true));
+
+    expect(signUp).toHaveBeenCalledTimes(1);
+    expect(signUp).toHaveBeenCalledWith({
+      email: "ana@teste.com",
+      password: "senha-forte-123",
+      options: {
+        data: { full_name: "Ana Silva" },
+        emailRedirectTo: "http://localhost:3100/auth/callback",
+      },
+    });
+  });
 });
 
 describe("cadastro com Google", () => {
