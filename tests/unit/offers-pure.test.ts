@@ -17,29 +17,29 @@ const welcome = { avulsoOffCents: WELCOME_AVULSO_OFF_CENTS, packPercent: WELCOME
 const personal = { avulsoOffCents: PERSONAL_AVULSO_OFF_CENTS, packPercent: PERSONAL_PACK_PERCENT };
 
 describe("ofertas pessoais — valores do produto", () => {
-  it("boas-vindas: 20% no avulso e em pacotes; pessoal legado: R$ 20 e 20%", () => {
-    expect(WELCOME_PERCENT).toBe(20);
-    expect(WELCOME_AVULSO_OFF_CENTS).toBe(1940);
-    expect(WELCOME_PACK_PERCENT).toBe(20);
+  it("boas-vindas: 30% no avulso e em pacotes; pessoal legado: R$ 20 e 30%", () => {
+    expect(WELCOME_PERCENT).toBe(30);
+    expect(WELCOME_AVULSO_OFF_CENTS).toBe(2910);
+    expect(WELCOME_PACK_PERCENT).toBe(30);
     expect(PERSONAL_AVULSO_OFF_CENTS).toBe(2000);
-    expect(PERSONAL_PACK_PERCENT).toBe(20);
+    expect(PERSONAL_PACK_PERCENT).toBe(30);
   });
 
-  it("avulso R$ 97 ⇒ R$ 77,60 (boas-vindas e pessoal, ambos limitados a 20%)", () => {
-    expect(9700 - offerDiscountCents(welcome, "avulso", 9700)).toBe(7760);
-    expect(9700 - offerDiscountCents(personal, "avulso", 9700)).toBe(7760);
+  it("avulso R$ 97 ⇒ R$ 67,90 (boas-vindas) e R$ 77,00 (pessoal limitado a R$ 20)", () => {
+    expect(9700 - offerDiscountCents(welcome, "avulso", 9700)).toBe(6790);
+    expect(9700 - offerDiscountCents(personal, "avulso", 9700)).toBe(7700);
   });
 
-  it("avulso nunca passa de 20% — protege ofertas antigas gravadas com R$ 40", () => {
+  it("avulso nunca passa de 30% — protege ofertas antigas gravadas com R$ 40", () => {
     const legacy = { avulsoOffCents: 4000, packPercent: WELCOME_PACK_PERCENT };
-    expect(offerDiscountCents(legacy, "avulso", 9700)).toBe(1940);
-    expect(9700 - offerDiscountCents(legacy, "avulso", 9700)).toBe(7760);
+    expect(offerDiscountCents(legacy, "avulso", 9700)).toBe(2910);
+    expect(9700 - offerDiscountCents(legacy, "avulso", 9700)).toBe(6790);
   });
 
-  it("pacotes: 20% com arredondamento half-up", () => {
-    expect(offerDiscountCents(welcome, "pack", 19_700)).toBe(3940);
-    expect(offerDiscountCents(personal, "pack", 11_700)).toBe(2340);
-    expect(offerDiscountCents(welcome, "pack", 45_000)).toBe(9000);
+  it("pacotes: 30% com arredondamento half-up", () => {
+    expect(offerDiscountCents(welcome, "pack", 19_700)).toBe(5910);
+    expect(offerDiscountCents(personal, "pack", 11_700)).toBe(3510);
+    expect(offerDiscountCents(welcome, "pack", 45_000)).toBe(13500);
   });
 
   it("piso de R$ 47 sempre respeitado", () => {
@@ -73,7 +73,7 @@ describe("contagem dd:hh:mm:ss e texto honesto", () => {
     expect(formatCountdownDays(-5)).toBe("00:00:00:00");
   });
   it("headline cita apenas o benefício real", () => {
-    expect(offerHeadline()).toBe("20% de desconto nas primeiras 48h após o primeiro acesso.");
+    expect(offerHeadline()).toBe("30% de desconto nas primeiras 48h após o primeiro acesso.");
     expect(offerHeadline()).not.toMatch(/últim|corra|só hoje|cupom/i);
   });
 });

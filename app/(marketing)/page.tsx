@@ -4,7 +4,8 @@ import Link from "next/link";
 import { HowItWorksAnimation } from "@/components/marketing/how-it-works-animation";
 import { Testimonials } from "@/components/marketing/testimonials";
 import { JsonLd } from "@/components/seo/json-ld";
-import { formatBRL } from "@/lib/money";
+import { formatBRL, roundHalfUpDiv } from "@/lib/money";
+import { WELCOME_PERCENT } from "@/lib/offers/pure";
 import { buildFaq } from "@/lib/seo/faq";
 import { faqLd, graph, localBusinessLd, organizationLd, serviceLd, websiteLd } from "@/lib/seo/jsonld";
 import { SITE_DESCRIPTION, pageMetadata } from "@/lib/seo/site";
@@ -20,6 +21,7 @@ export const metadata = pageMetadata({
 });
 
 const ticketPriceCents = Number(process.env.B2C_TICKET_PRICE_CENTS ?? "9700");
+const welcomeOffCents = roundHalfUpDiv(ticketPriceCents * WELCOME_PERCENT, 100);
 
 /** Festa infantil primeiro — é o que metade de quem chega está procurando. */
 const PRIMARY_TYPE = { label: "Festa infantil", hint: "Buffet, decoração, bolo e recreação para os pequenos" } as const;
@@ -130,8 +132,8 @@ export default async function LandingPage() {
             <span className="font-normal text-tinta-suave"> · Pix ou cartão.</span>
           </p>
           <p className="mt-2 text-[13px] text-tinta-suave">
-            Primeiras 48h após o primeiro acesso: {formatBRL(4000)} de desconto — de {formatBRL(ticketPriceCents)} por{" "}
-            {formatBRL(ticketPriceCents - 4000)}. Aplicado automaticamente no checkout, 1 por pessoa, aparelho e conta.
+            Primeiras 48h após o primeiro acesso: {WELCOME_PERCENT}% de desconto — de {formatBRL(ticketPriceCents)} por{" "}
+            {formatBRL(ticketPriceCents - welcomeOffCents)}. Aplicado automaticamente no checkout, 1 por pessoa, aparelho e conta.
           </p>
 
           <ul className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-tinta-suave">
@@ -367,11 +369,11 @@ export default async function LandingPage() {
                   {formatBRL(ticketPriceCents)}
                 </span>
                 <span className="rounded-full bg-lilas-claro px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-ameixa">
-                  Primeiras 48h: {formatBRL(4000)} de desconto
+                  Primeiras 48h: {WELCOME_PERCENT}% de desconto
                 </span>
               </p>
               <p className="mt-2 text-sm text-tinta-suave">
-                De {formatBRL(ticketPriceCents)} por {formatBRL(ticketPriceCents - 4000)} nas primeiras 48h após o
+                De {formatBRL(ticketPriceCents)} por {formatBRL(ticketPriceCents - welcomeOffCents)} nas primeiras 48h após o
                 primeiro acesso, aplicado automaticamente no checkout. Pagamento único por evento.
               </p>
               <ul className="mt-4 grid grid-cols-1 gap-1.5 text-sm text-tinta sm:grid-cols-2">

@@ -3,8 +3,8 @@ import type { WelcomeAdminData } from "@/lib/welcome/admin";
 
 const SOURCE_LABELS = { new_ip: "Novo visitante", convite: "Convite", promo: "Promo/anúncio" } as const;
 
-/** Uso da oferta de boas-vindas (R$ 47, prazo de 24h no banco). Server component. */
-export function WelcomeStats({ data, title = "Boas-vindas (R$ 47 · 24h)" }: { data: WelcomeAdminData; title?: string }) {
+/** Uso da oferta de boas-vindas (R$ 67,90, prazo de 24h no banco). Server component. */
+export function WelcomeStats({ data, title = "Boas-vindas (R$ 67,90 · 24h)" }: { data: WelcomeAdminData; title?: string }) {
   const items: [string, string][] = [
     ["Emitidos", String(data.issued)],
     ["Ativos agora", String(data.active)],
