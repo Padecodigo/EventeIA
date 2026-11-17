@@ -15,9 +15,9 @@ describe("piso de desconto único (R$ 47)", () => {
     expect(OFFER_MIN_FINAL_CENTS).toBe(DISCOUNT_FLOOR_CENTS);
     expect(PRICING_ASSUMPTIONS.costPerEventCents).toBe(900);
   });
-  it("avulso R$ 97 inalterado: boas-vindas e pessoal limitados a 20% (R$ 77,60)", () => {
-    expect(9700 - offerDiscountCents(welcome, "avulso", 9700)).toBe(7760);
-    expect(9700 - offerDiscountCents(personal, "avulso", 9700)).toBe(7760);
+  it("avulso R$ 97: boas-vindas 30% (R$ 67,90) e pessoal limitados a R$ 20 (R$ 77,00)", () => {
+    expect(9700 - offerDiscountCents(welcome, "avulso", 9700)).toBe(6790);
+    expect(9700 - offerDiscountCents(personal, "avulso", 9700)).toBe(7700);
   });
   it("desconto que furaria o piso para exatamente em R$ 47", () => {
     expect(5000 - offerDiscountCents(welcome, "avulso", 5000)).toBe(4700);

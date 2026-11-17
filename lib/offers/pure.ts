@@ -4,11 +4,11 @@ import { DISCOUNT_FLOOR_CENTS } from "@/lib/pricing";
 /**
  * Ofertas do usuário logado (migração 0036) — regras puras.
  * Valores gravados no banco por oferta; estas constantes espelham a migração.
- * A oferta de boas-vindas é o único desconto do produto: 20% do ticket.
+ * A oferta de boas-vindas é o único desconto do produto: 30% do ticket.
  */
-export const WELCOME_PERCENT = 20;
-/** 20% do ticket avulso (R$ 97) — o banco pode ter gravado mais; o app limita a 20%. */
-export const WELCOME_AVULSO_OFF_CENTS = 1_940;
+export const WELCOME_PERCENT = 30;
+/** 30% do ticket avulso (R$ 97) — o banco pode ter gravado mais; o app limita a 30%. */
+export const WELCOME_AVULSO_OFF_CENTS = 2_910;
 export const WELCOME_PACK_PERCENT = WELCOME_PERCENT;
 /** Oferta pessoal legada (0036): valores de referência; o app não emite mais. */
 export const PERSONAL_AVULSO_OFF_CENTS = 2_000;

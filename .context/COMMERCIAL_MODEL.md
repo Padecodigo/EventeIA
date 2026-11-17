@@ -202,11 +202,11 @@ create table public.credit_ledger (
 
 ## Oferta de boas-vindas (novo visitante)
 
-Visitante novo (novo IP, link `?convite=`, ou promo `utm_source`/`utm_campaign`/`?ref=`) recebe na hora um cupom que leva o **tíquete único a R$ 47** (`WELCOME_FINAL_PRICE_CENTS`), válido por **24h a partir da emissão** (prazo no banco). Vinculado à conta no cadastro (e-mail ou Google). Auto-aplicado no checkout Asaas; preço calculado no servidor. A contagem nunca reinicia e não reaparece após expirar. Prova social só com dado real (ofertas pagas em 30 dias). Uso em `/admin/cupons` e `/admin/financeiro`.
+Visitante novo (novo IP, link `?convite=`, ou promo `utm_source`/`utm_campaign`/`?ref=`) recebe na hora um cupom de **30% de desconto** que leva o **tíquete único de R$ 97,00 a R$ 67,90** (`WELCOME_PERCENT`/`WELCOME_AVULSO_OFF_CENTS`, com `WELCOME_FINAL_PRICE_CENTS` = 6790), válido por **48h a partir do primeiro acesso** (prazo no banco). Vinculado à conta no cadastro (e-mail ou Google). Auto-aplicado no checkout Asaas; preço calculado no servidor. A contagem nunca reinicia e não reaparece após expirar. Prova social só com dado real (ofertas pagas em 30 dias). Uso em `/admin/cupons` e `/admin/financeiro`.
 
 ## Cupom sorteado — "Quer cupom?" (migração 0025)
 
-- A oferta de R$ 47 vale **só na 1ª visita** (cookie de sessão `ev_visit`, gravado como HMAC). Numa visita posterior ou após expirar, é perdida para sempre (`forfeited_at`).
+- A oferta de boas-vindas vale **só na 1ª visita** (cookie de sessão `ev_visit`, gravado como HMAC). Numa visita posterior ou após expirar, é perdida para sempre (`forfeited_at`).
 - Sem boas-vindas ativa, aparece o botão **"Quer cupom?"**: o servidor sorteia (crypto `randomInt`) um desconto inteiro de **20% a 40%** no tíquete único.
 - **Um sorteio a cada 48h** (`LUCKY_REDRAW_WINDOW_HOURS`): dentro da janela, tentar de novo devolve o mesmo cupom. Depois dela, novo sorteio invalida o anterior. Validade do cupom: 24h (`LUCKY_VALIDITY_HOURS`, nunca maior que a janela).
 - Checkout aplica o percentual **gravado no banco** (`lucky_coupon_reserve`). As duas ofertas nunca aparecem juntas.

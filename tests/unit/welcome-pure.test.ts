@@ -14,9 +14,9 @@ import {
 const SALT = "salt-de-teste-com-16+";
 
 describe("oferta de boas-vindas — regras puras", () => {
-  it("leva o ticket de R$ 97 a R$ 47", () => {
-    expect(WELCOME_FINAL_PRICE_CENTS).toBe(4700);
-    expect(welcomeDiscountCents(9700)).toBe(5000);
+  it("leva o ticket de R$ 97 a R$ 67,90", () => {
+    expect(WELCOME_FINAL_PRICE_CENTS).toBe(6790);
+    expect(welcomeDiscountCents(9700)).toBe(2910);
     expect(welcomeDiscountCents(4000)).toBe(0);
     expect(() => welcomeDiscountCents(97.5)).toThrow();
   });

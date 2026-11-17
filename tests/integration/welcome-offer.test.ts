@@ -84,7 +84,7 @@ describe("/api/boas-vindas", () => {
       created: true,
       remainingMs: 86_400_000,
       fullPriceCents: 9700,
-      finalPriceCents: 4700,
+      finalPriceCents: 6790,
       recentRedemptions: 0,
     });
     expect(JSON.stringify(json)).not.toContain("BEMVINDO");

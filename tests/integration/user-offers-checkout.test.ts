@@ -3,7 +3,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createFakeDb, fakeClient, type FakeDb } from "./helpers/fake-supabase";
 
 /**
- * Ofertas (0036) no checkout: boas-vindas limitada a 20% do avulso (o banco ainda
+ * Ofertas (0036) no checkout: boas-vindas limitada a 30% do avulso (o banco ainda
  * grava R$ 40) e 30% em pacotes; sem acumular com cupom digitado (redenção dormente),
  * prazo e uso único no servidor.
  */
@@ -168,16 +168,16 @@ describe("evento avulso", () => {
     await import("@/app/(dashboard)/eventos/actions");
   }, 60_000);
 
-  it("boas-vindas ativa ⇒ 20% do avulso (R$ 97 − R$ 19,40 = R$ 77,60), resgata e vincula", async () => {
+  it("boas-vindas ativa ⇒ 30% do avulso (R$ 97 − R$ 29,10 = R$ 67,90), resgata e vincula", async () => {
     const { buyTicketAction } = await import("@/app/(dashboard)/eventos/actions");
     const state = await buyTicketAction({}, ticketForm());
     expect(state.error).toBeUndefined();
     expect(state.applied).toEqual({
       code: "BOASVINDAS-AAAA1111",
-      finalCents: 7760,
-      discountCents: 1940,
+      finalCents: 6790,
+      discountCents: 2910,
     });
-    expect(asaasValue()).toBe(77.6);
+    expect(asaasValue()).toBe(67.9);
     expect(fns()).toEqual([
       "consume_available_ticket",
       "user_offer_current",
@@ -185,24 +185,24 @@ describe("evento avulso", () => {
       "user_offer_attach",
     ]);
     expect(db.tables.payments?.[0]).toMatchObject({
-      amount_cents: 7760,
-      discount_cents: 1940,
+      amount_cents: 6790,
+      discount_cents: 2910,
       coupon_code: "BOASVINDAS-AAAA1111",
     });
     expect(legacyWelcome).not.toHaveBeenCalled();
   });
 
-  it("oferta pessoal legada ⇒ também limitada a 20% do avulso", async () => {
+  it("oferta pessoal legada ⇒ limitada a R$ 20 do avulso", async () => {
     offer = activeOffer("personal");
     const { buyTicketAction } = await import("@/app/(dashboard)/eventos/actions");
     const state = await buyTicketAction({}, ticketForm());
-    expect(state.applied).toMatchObject({ finalCents: 7760, discountCents: 1940 });
+    expect(state.applied).toMatchObject({ finalCents: 7700, discountCents: 2000 });
   });
 
   it("sem acumular: cupom menor (10%) ⇒ vale a oferta e o cupom NÃO é reservado", async () => {
     const { buyTicketAction } = await import("@/app/(dashboard)/eventos/actions");
     const state = await buyTicketAction({}, ticketForm("dez"));
-    expect(state.applied).toMatchObject({ code: "BOASVINDAS-AAAA1111", finalCents: 7760 });
+    expect(state.applied).toMatchObject({ code: "BOASVINDAS-AAAA1111", finalCents: 6790 });
     expect(fns()).not.toContain("reserve_coupon");
   });
 
