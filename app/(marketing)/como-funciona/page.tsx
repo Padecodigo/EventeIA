@@ -7,6 +7,8 @@ import {
 import { TrustStrip } from "@/components/marketing/trust-strip";
 import { pageMetadata } from "@/lib/seo/site";
 
+// TODO(Allan): definir prazo de entrega do orçamento e garantia antes de exibir nesta página (decisão de produto pendente).
+
 const STEPS = [
   {
     number: "01",

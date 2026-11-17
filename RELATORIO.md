@@ -109,7 +109,7 @@ pnpm test                                # testes · pnpm e2e:local · bash scri
 ```
 
 **Demo:** `ana@eventeia.com` / senha definida em `DEMO_SEED_PASSWORD` · **Admin:** `admin@eventeia.com` / senha definida em `DEMO_SEED_ADMIN_PASSWORD`
-**Atalhos:** `/demo/entrar?secret=dev-demo-2026&user=ana` · `?…user=admin` (⚠️ remover antes de produção)
+**Atalhos:** `/demo/entrar?secret=<DEMO_LOGIN_SECRET>&user=ana` · `?…user=admin` (só local; a rota responde 404 em produção)
 
 ---
 

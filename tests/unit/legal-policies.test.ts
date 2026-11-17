@@ -27,16 +27,15 @@ describe("políticas de estorno e retenção", () => {
       "chargeback",
       "MED",
       "suspensos",
-      "Essencial",
-      "Atelier",
-      "Maison",
       "R$ 97",
       "30% de desconto",
+      "por evento",
       "/chamados",
       "/contato",
     ]) {
       expect(t).toContain(w);
     }
+    expect(t).not.toMatch(/Essencial|Atelier|Maison|renovação mensal|créditos/i);
   });
 
   it("retenção cobre 90 dias, 5 anos, conta ativa, direitos e LGPD", () => {

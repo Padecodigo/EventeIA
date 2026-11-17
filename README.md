@@ -278,14 +278,11 @@ PORT=3100 pnpm start      # app em http://localhost:3100
 | Anfitriã (B2C)    | `ana@eventeia.com`   | definida em `DEMO_SEED_PASSWORD` |
 | Admin (moderação) | `admin@eventeia.com` | definida em `DEMO_SEED_ADMIN_PASSWORD` |
 
-**Login automático local**
+**Login automático local (opcional)**
 
-- Anfitriã: `http://localhost:3100/demo/entrar?secret=dev-demo-2026&user=ana`
-- Admin: `http://localhost:3100/demo/entrar?secret=dev-demo-2026&user=admin`
+- `/demo/entrar?secret=<DEMO_LOGIN_SECRET>&user=ana|admin`, só com `DEMO_LOGIN_ENABLED=true` e `DEMO_LOGIN_SECRET` definidos no `.env.local` (que não é versionado).
 
-> ⚠️ A rota `/demo/entrar` é um atalho **exclusivo de demonstração local**, habilitado por
-> `DEMO_LOGIN_ENABLED=true` + `DEMO_LOGIN_SECRET` no `.env.local`. **Remova a rota e essas
-> variáveis antes de qualquer deploy público.** O `.env.local` não é versionado.
+> ⚠️ A rota `/demo/entrar` é um atalho **exclusivo de demonstração local** e responde 404 em produção (`NODE_ENV=production`), independentemente das variáveis. Nunca escreva o segredo no repositório.
 
 Os dados demo incluem: evento ativo com 3 cotações, evento concluído com depoimento pendente,
 pagamentos confirmados e histórico de atividades no painel.

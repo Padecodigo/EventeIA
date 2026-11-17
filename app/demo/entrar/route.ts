@@ -7,12 +7,16 @@ export const dynamic = "force-dynamic";
 
 /**
  * Login de demonstração (SOMENTE LOCAL).
- * Protegido por segredo em env e pensado para abrir o dashboard já autenticado.
- * REMOVER antes de qualquer deploy público.
+ * Retorna 404 sempre em produção (NODE_ENV === "production").
+ * Fora de produção, exige DEMO_LOGIN_ENABLED=true e segredo válido em DEMO_LOGIN_SECRET.
  *
  * Uso: /demo/entrar?secret=<DEMO_LOGIN_SECRET>&user=ana|admin
  */
 export async function GET(request: Request): Promise<NextResponse> {
+  if (process.env.NODE_ENV === "production") {
+    return new NextResponse("Not found", { status: 404 });
+  }
+
   const url = new URL(request.url);
   const secret = process.env.DEMO_LOGIN_SECRET;
   const enabled = process.env.DEMO_LOGIN_ENABLED === "true";

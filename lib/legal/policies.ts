@@ -6,7 +6,7 @@ export const REFUND_SECTIONS: readonly LegalSection[] = [
     id: "abrangencia",
     title: "A quem esta política se aplica",
     paragraphs: [
-      "Esta política vale para todas as compras feitas no EventeIA: o ticket avulso (R$ 97, com 30% de desconto de boas-vindas nas primeiras 48h após o primeiro acesso) e os pacotes Essencial, Atelier e Maison, além da renovação mensal. Os valores de cada pacote são os informados na página de planos no momento da compra.",
+      "Esta política vale para todas as compras feitas no EventeIA: um ticket por evento, R$ 97, com 30% de desconto de boas-vindas nas primeiras 48h após o primeiro acesso. O valor do ticket é o informado na página de compra no momento da compra.",
       "O pagamento é feito por Pix ou cartão de crédito, processado pelo Asaas.",
     ],
   },
@@ -21,7 +21,7 @@ export const REFUND_SECTIONS: readonly LegalSection[] = [
     id: "ticket-nao-usado",
     title: "Ticket comprado e não usado",
     paragraphs: [
-      "Se você comprou um ticket (avulso ou de um pacote), não o usou e a busca de fornecedores do evento não começou, você tem direito ao reembolso integral do valor pago por ele.",
+      "Se você comprou um ticket, não o usou e a busca de fornecedores do evento não começou, você tem direito ao reembolso integral do valor pago por ele.",
     ],
   },
   {
