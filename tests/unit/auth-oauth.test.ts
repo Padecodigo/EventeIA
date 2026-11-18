@@ -32,6 +32,6 @@ describe("oauthErrorMessage", () => {
   it("traduz cancelamento e erro genérico", () => {
     expect(oauthErrorMessage(undefined)).toBeUndefined();
     expect(oauthErrorMessage("access_denied")).toMatch(/cancelado/);
-    expect(oauthErrorMessage("oauth")).toMatch(/Google/);
+    expect(oauthErrorMessage("oauth")).toMatch(/conta social/);
   });
 });

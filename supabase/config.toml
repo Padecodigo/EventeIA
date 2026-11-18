@@ -45,6 +45,13 @@ secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
 redirect_uri = ""
 skip_nonce_check = true
 
+# Login com Facebook (docs/FACEBOOK-LOGIN.md). Credenciais só via env — nunca no repo.
+[auth.external.facebook]
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_FACEBOOK_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_FACEBOOK_SECRET)"
+redirect_uri = ""
+
 [storage]
 enabled = true
 file_size_limit = "5MiB"

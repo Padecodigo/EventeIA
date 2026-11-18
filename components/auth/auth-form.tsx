@@ -6,6 +6,7 @@ import { useActionState, useCallback, useState } from "react";
 
 import {
   signInAction,
+  signInWithFacebookAction,
   signInWithGoogleAction,
   signUpAction,
   type AuthActionState,
@@ -18,7 +19,15 @@ type AuthMode = "entrar" | "registrar";
 
 const initialState: AuthActionState = {};
 
-export function AuthForm({ mode, oauthError }: { mode: AuthMode; oauthError?: string }) {
+export function AuthForm({
+  mode,
+  oauthError,
+  facebookLoginEnabled = false,
+}: {
+  mode: AuthMode;
+  oauthError?: string;
+  facebookLoginEnabled?: boolean;
+}) {
   const isSignUp = mode === "registrar";
   const [state, formAction, pending] = useActionState(
     isSignUp ? signUpAction : signInAction,
@@ -26,6 +35,10 @@ export function AuthForm({ mode, oauthError }: { mode: AuthMode; oauthError?: st
   );
   const [googleState, googleAction, googlePending] = useActionState(
     signInWithGoogleAction,
+    initialState,
+  );
+  const [facebookState, facebookAction, facebookPending] = useActionState(
+    signInWithFacebookAction,
     initialState,
   );
   const [showPassword, setShowPassword] = useState(false);
@@ -104,6 +117,46 @@ export function AuthForm({ mode, oauthError }: { mode: AuthMode; oauthError?: st
           </p>
         ) : null}
       </form>
+
+      {facebookLoginEnabled ? (
+        <form action={facebookAction} className="mt-3">
+          {isSignUp ? <input type="hidden" name="intent" value="signup" /> : null}
+          {termsHidden}
+          <button
+            type="submit"
+            data-testid="facebook-oauth"
+            disabled={facebookPending || termsBlocked}
+            className="flex h-14 w-full items-center justify-center gap-3 rounded-full border border-line-subtle bg-off-white text-base font-semibold text-vinho transition hover:bg-areia-secundaria/60 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <FacebookIcon />
+            {facebookPending
+              ? "Abrindo o Facebook…"
+              : isSignUp
+                ? "Criar conta com Facebook"
+                : "Entrar com Facebook"}
+          </button>
+          {facebookState.error !== undefined ? (
+            <p
+              role="alert"
+              className="mt-3 rounded-xl bg-semantic-error/10 px-4 py-3 text-sm text-semantic-error"
+            >
+              {facebookState.error}
+            </p>
+          ) : null}
+        </form>
+      ) : null}
+
+      <p className="mt-3">
+        <button
+          type="button"
+          data-testid="instagram-coming-soon"
+          disabled
+          aria-disabled="true"
+          className="flex h-14 w-full items-center justify-center gap-3 rounded-full border border-line-subtle bg-off-white text-base font-semibold text-vinho/60 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          Instagram — Em breve
+        </button>
+      </p>
 
       <div className="my-6 flex items-center gap-3 text-caption uppercase tracking-[0.14em] text-vinho/60">
         <span className="h-px flex-1 bg-line-subtle" />
@@ -309,6 +362,17 @@ function GoogleIcon() {
       <path
         fill="#34A853"
         d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.7-6c-2.2 1.5-5 2.3-8.2 2.3-6.2 0-11.5-4.2-13.4-9.8l-8 6.1C6.6 42.6 14.6 48 24 48Z"
+      />
+    </svg>
+  );
+}
+
+function FacebookIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
+      <path
+        fill="#1877F2"
+        d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953h-1.513c-1.492 0-1.956.928-1.956 1.887v2.26h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073Z"
       />
     </svg>
   );

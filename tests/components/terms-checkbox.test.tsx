@@ -9,6 +9,7 @@ vi.mock("@/app/(auth)/actions", () => ({
   signInAction: vi.fn(),
   signUpAction: vi.fn(),
   signInWithGoogleAction: vi.fn(),
+  signInWithFacebookAction: vi.fn(),
 }));
 vi.mock("@/app/(dashboard)/creditos/actions", () => ({
   subscribeToPlanAction: vi.fn(),
