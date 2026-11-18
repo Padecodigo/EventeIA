@@ -11,7 +11,6 @@ const initialState: ProfileState = {};
 export interface ProfileFormProps {
   defaultName: string;
   defaultPhone: string;
-  defaultCpf: string;
   defaultWhatsapp: string;
   defaultInstagram: string;
 }
@@ -19,7 +18,6 @@ export interface ProfileFormProps {
 export function ProfileForm({
   defaultName,
   defaultPhone,
-  defaultCpf,
   defaultWhatsapp,
   defaultInstagram,
 }: ProfileFormProps) {
@@ -40,14 +38,6 @@ export function ProfileForm({
         hint="Usado para contato."
       />
       <Field
-        label="CPF"
-        name="cpf"
-        inputMode="numeric"
-        defaultValue={defaultCpf}
-        placeholder="00000000000"
-        hint="Necessário para emitir a cobrança. Fica restrito ao servidor."
-      />
-      <Field
         label="WhatsApp"
         name="whatsapp"
         type="tel"
@@ -65,7 +55,10 @@ export function ProfileForm({
       />
 
       {state.error !== undefined ? (
-        <p role="alert" className="md:col-span-2 rounded-xl bg-semantic-error/10 px-4 py-3 text-sm text-semantic-error">
+        <p
+          role="alert"
+          className="md:col-span-2 rounded-xl bg-semantic-error/10 px-4 py-3 text-sm text-semantic-error"
+        >
           {state.error}
         </p>
       ) : null}
