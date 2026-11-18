@@ -168,6 +168,7 @@ describe("checkout", () => {
     f.set("credits", "5");
     f.set("method", "pix");
     f.set("acceptTerms", "on");
+    f.set("cpf", "52998224725");
     await buyCreditsAction({}, f);
     expect(db.tables.terms_acceptances?.[0]).toMatchObject({
       profile_id: "user-1",

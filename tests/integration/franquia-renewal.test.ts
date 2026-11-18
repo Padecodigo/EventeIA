@@ -90,6 +90,7 @@ const { PLANS } = await import("@/lib/plans");
 function form(entries: Record<string, string>) {
   const fd = new FormData();
   fd.set("acceptTerms", "on"); // aceite dos termos (obrigatório no checkout)
+  if (!("cpf" in entries)) fd.set("cpf", "52998224725");
   for (const [k, v] of Object.entries(entries)) fd.set(k, v);
   return fd;
 }
@@ -156,5 +157,18 @@ describe("franquia — renovação automática", () => {
     const res = await cancelSubscriptionAction({}, new FormData());
     expect(res.error).toBeDefined();
     expect(cancelCalls).toHaveLength(0);
+  });
+});
+
+describe("franquia — CPF no checkout", () => {
+  it("recusa CPF ausente ou inválido sem criar assinatura", async () => {
+    expect(
+      await subscribeToPlanAction({}, form({ planCode: "atelier", renew: "yes", cpf: "" })),
+    ).toEqual({ error: "Informe um CPF válido (11 dígitos)." });
+    expect(
+      await subscribeToPlanAction({}, form({ planCode: "atelier", renew: "yes", cpf: "abc" })),
+    ).toEqual({ error: "Informe um CPF válido (11 dígitos)." });
+    expect(subCalls).toHaveLength(0);
+    expect(pixCalls).toHaveLength(0);
   });
 });

@@ -20,7 +20,6 @@ export interface ProfileState {
 const profileSchema = z.object({
   displayName: z.string().trim().min(2).max(80),
   phone: z.string().trim().optional(),
-  cpf: z.string().trim().optional(),
   whatsapp: z.string().trim().optional(),
   instagram: z.string().trim().optional(),
 });
@@ -34,7 +33,6 @@ export async function updateProfileAction(
   const parsed = profileSchema.safeParse({
     displayName: formData.get("displayName"),
     phone: formData.get("phone") ?? "",
-    cpf: formData.get("cpf") ?? "",
     whatsapp: formData.get("whatsapp") ?? "",
     instagram: formData.get("instagram") ?? "",
   });
@@ -57,17 +55,12 @@ export async function updateProfileAction(
   }
 
   const instagramRaw = parsed.data.instagram ?? "";
-  const instagram =
-    instagramRaw.length === 0 ? null : normalizeInstagramHandle(instagramRaw);
+  const instagram = instagramRaw.length === 0 ? null : normalizeInstagramHandle(instagramRaw);
   if (instagramRaw.length > 0 && instagram === null) {
     return {
-      error: "Instagram inválido. Use apenas letras, números, ponto e underscore (ex.: @seu.perfil).",
+      error:
+        "Instagram inválido. Use apenas letras, números, ponto e underscore (ex.: @seu.perfil).",
     };
-  }
-
-  const cpfRaw = (parsed.data.cpf ?? "").replace(/\D/g, "");
-  if (cpfRaw.length > 0 && cpfRaw.length !== 11) {
-    return { error: "CPF deve ter 11 dígitos." };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -88,13 +81,6 @@ export async function updateProfileAction(
 
   try {
     const admin = getSupabaseAdmin();
-
-    if (cpfRaw.length === 11) {
-      await admin
-        .from("profiles")
-        .update({ document_number: cpfRaw, document_type: "cpf" })
-        .eq("id", user.id);
-    }
 
     await emitFeed(admin, {
       type: "profile.updated",

@@ -253,6 +253,7 @@ describe("pacotes, slider e franquia", () => {
     const { buyCreditsAction } = await import("@/app/(dashboard)/creditos/actions");
     const f = new FormData();
     f.set("acceptTerms", "on"); // aceite dos termos (obrigatório no checkout)
+    f.set("cpf", "52998224725");
     f.set("credits", "7");
     const state = await buyCreditsAction({}, f);
     expect(state.applied).toEqual({
@@ -270,6 +271,7 @@ describe("pacotes, slider e franquia", () => {
     const { buyCreditsAction } = await import("@/app/(dashboard)/creditos/actions");
     const f = new FormData();
     f.set("acceptTerms", "on"); // aceite dos termos (obrigatório no checkout)
+    f.set("cpf", "52998224725");
     f.set("packageCode", "pacote-3");
     f.set("coupon", "DEZ");
     const state = await buyCreditsAction({}, f);
@@ -281,6 +283,7 @@ describe("pacotes, slider e franquia", () => {
     const { buyCreditsAction } = await import("@/app/(dashboard)/creditos/actions");
     const f = new FormData();
     f.set("acceptTerms", "on"); // aceite dos termos (obrigatório no checkout)
+    f.set("cpf", "52998224725");
     f.set("credits", "3");
     f.set("coupon", "CORTESIA");
     const state = await buyCreditsAction({}, f);
@@ -293,6 +296,7 @@ describe("pacotes, slider e franquia", () => {
     const { buyCreditsAction } = await import("@/app/(dashboard)/creditos/actions");
     const f = new FormData();
     f.set("acceptTerms", "on"); // aceite dos termos (obrigatório no checkout)
+    f.set("cpf", "52998224725");
     f.set("credits", "3");
     const state = await buyCreditsAction({}, f);
     expect(state.applied).toBeUndefined();
@@ -303,6 +307,7 @@ describe("pacotes, slider e franquia", () => {
     const { subscribeToPlanAction } = await import("@/app/(dashboard)/creditos/actions");
     const f = new FormData();
     f.set("acceptTerms", "on"); // aceite dos termos (obrigatório no checkout)
+    f.set("cpf", "52998224725");
     f.set("planCode", "atelier");
     f.set("renew", "yes");
     const state = await subscribeToPlanAction({}, f);

@@ -2,10 +2,7 @@
 
 import { useActionState, useId, useState } from "react";
 
-import {
-  buyCreditsAction,
-  type CreditsCheckoutState,
-} from "@/app/(dashboard)/creditos/actions";
+import { buyCreditsAction, type CreditsCheckoutState } from "@/app/(dashboard)/creditos/actions";
 import { OfferBanner } from "@/components/domain/offer-banner";
 import { TermsCheckbox } from "@/components/legal/terms-checkbox";
 import { Button } from "@/components/ui/button";
@@ -29,9 +26,12 @@ const initialState: CreditsCheckoutState = {};
 export function CreditSliderForm({
   defaultCredits = 7,
   offer = null,
+  defaultCpf,
 }: {
   defaultCredits?: number;
   offer?: PackOfferProps | null;
+  /** CPF já gravado no perfil, se houver — só pré-preenche o checkout. */
+  defaultCpf: string;
 }) {
   const [credits, setCredits] = useState(defaultCredits);
   const [state, formAction, pending] = useActionState(buyCreditsAction, initialState);
@@ -159,6 +159,24 @@ export function CreditSliderForm({
         <p className="mt-5 text-caption text-vinho/70">
           {`Comprar ${String(credits)} por ${formatBRL(previewCents)}`} — Pix ou cartão de crédito.
         </p>
+        <div className="mt-3 flex flex-col gap-1.5">
+          <label htmlFor="cpf-creditos" className="text-sm font-medium text-vinho">
+            CPF do titular
+          </label>
+          <input
+            id="cpf-creditos"
+            name="cpf"
+            required
+            inputMode="numeric"
+            autoComplete="off"
+            defaultValue={defaultCpf}
+            placeholder="00000000000"
+            className="h-12 rounded-xl border border-line-subtle bg-off-white px-4 text-sm text-vinho"
+          />
+          <p className="text-caption text-vinho/70">
+            Usado apenas para emissão da cobrança. Não aparece em orçamentos.
+          </p>
+        </div>
         <TermsCheckbox
           id="terms-slider"
           checked={acceptedTerms}
