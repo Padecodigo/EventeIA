@@ -8,6 +8,7 @@ vi.mock("@/app/(auth)/actions", () => ({
   signInAction: vi.fn(),
   signUpAction: vi.fn(),
   signInWithGoogleAction: vi.fn(),
+  signInWithFacebookAction: vi.fn(),
   signInWithGoogleIdTokenAction: vi.fn(),
 }));
 
@@ -37,7 +38,7 @@ describe("AuthForm — botão oficial do Google (GIS)", () => {
     expect(screen.getByTestId("google-oauth-fallback")).toBeDisabled();
 
     fireEvent.click(screen.getByLabelText(/Li e aceito os Termos/));
-    
+
     expect(screen.getByTestId("google-gis-button")).toBeInTheDocument();
     expect(gisProps.last?.intent).toBe("signup");
     expect(gisProps.last?.acceptedTerms).toBe(true);

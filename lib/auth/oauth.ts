@@ -24,8 +24,8 @@ export function buildCallbackUrl(origin: string, next?: string | null): string {
 
 export function oauthErrorMessage(code: string | null | undefined): string | undefined {
   if (code === null || code === undefined || code.length === 0) return undefined;
-  if (code === "access_denied") return "Login com Google cancelado.";
-  return "Não foi possível entrar com o Google. Tente novamente ou use e-mail e senha.";
+  if (code === "access_denied") return "Login cancelado.";
+  return "Não foi possível entrar com a conta social. Tente novamente ou use e-mail e senha.";
 }
 
 const ORIGIN_ENV_KEYS = [

@@ -10,6 +10,7 @@ vi.mock("@/app/(auth)/actions", () => ({
   signInAction: vi.fn(),
   signUpAction: vi.fn(),
   signInWithGoogleAction: vi.fn(),
+  signInWithFacebookAction: vi.fn(),
 }));
 
 // Nestes testes o script do Google "não carrega": o formulário cai no fluxo
@@ -135,4 +136,3 @@ describe("AuthForm — esqueci minha senha", () => {
     expect(screen.queryByRole("link", { name: "Esqueci minha senha" })).toBeNull();
   });
 });
-

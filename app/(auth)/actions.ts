@@ -8,6 +8,7 @@ import { z } from "zod";
 import { recordAnalytics } from "@/lib/analytics/server";
 import { RESET_NEXT_COOKIE, buildCallbackUrl, publicOrigin } from "@/lib/auth/oauth";
 import { SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/auth/session-ttl";
+import { isFacebookLoginEnabled } from "@/lib/auth/social-flags";
 import { normalizeInstagramHandle } from "@/lib/instagram-handle";
 import { recordTermsAcceptance } from "@/lib/legal/acceptance-server";
 import { TERMS_COOKIE, TERMS_ERROR, TERMS_VERSION, hasAcceptedTerms } from "@/lib/legal/terms";
@@ -117,11 +118,11 @@ export async function signUpAction(
   }
 
   const instagramRaw = parsed.data.instagram ?? "";
-  const instagramHandle =
-    instagramRaw.length === 0 ? null : normalizeInstagramHandle(instagramRaw);
+  const instagramHandle = instagramRaw.length === 0 ? null : normalizeInstagramHandle(instagramRaw);
   if (instagramRaw.length > 0 && instagramHandle === null) {
     return {
-      error: "Instagram inválido. Use apenas letras, números, ponto e underscore (ex.: @seu.perfil).",
+      error:
+        "Instagram inválido. Use apenas letras, números, ponto e underscore (ex.: @seu.perfil).",
     };
   }
 
@@ -202,6 +203,53 @@ export async function signInWithGoogleAction(
 
   if (error !== null || data.url === null) {
     return { error: "Não foi possível iniciar o login com Google. Tente novamente." };
+  }
+
+  if (isSignUp) {
+    (await cookies()).set(TERMS_COOKIE, TERMS_VERSION, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: origin.startsWith("https://"),
+      path: "/auth/callback",
+      maxAge: 60 * 60,
+    });
+  }
+
+  redirect(data.url);
+}
+
+/**
+ * Login/cadastro com Facebook (Supabase Auth OAuth, provider "facebook").
+ * Só inicia o fluxo se NEXT_PUBLIC_FACEBOOK_LOGIN_ENABLED estiver ligado.
+ * No cadastro o aceite dos termos segue o mesmo cookie do Google.
+ */
+export async function signInWithFacebookAction(
+  _previous?: AuthActionState,
+  formData?: FormData,
+): Promise<AuthActionState> {
+  if (!isFacebookLoginEnabled()) {
+    return { error: "O login com Facebook não está disponível no momento." };
+  }
+
+  const isSignUp = formData?.get("intent") === "signup";
+  if (isSignUp && !hasAcceptedTerms(formData)) {
+    return { error: TERMS_ERROR };
+  }
+
+  const h = await headers();
+  const origin = publicOrigin(h, "http://localhost:3000");
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "facebook",
+    options: {
+      redirectTo: buildCallbackUrl(origin),
+      scopes: "public_profile,email",
+    },
+  });
+
+  if (error !== null || data.url === null) {
+    return { error: "Não foi possível iniciar o login com Facebook. Tente novamente." };
   }
 
   if (isSignUp) {

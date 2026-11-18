@@ -1,9 +1,12 @@
+import { ConnectedAccounts } from "@/components/domain/connected-accounts";
 import { EventHistoryDeletion } from "@/components/domain/event-history-deletion";
 import { PasswordForm } from "@/components/domain/password-form";
 import { ProfileForm } from "@/components/domain/profile-form";
 import { EmailText } from "@/components/ui/email-text";
 import { requireUser } from "@/lib/auth";
+import { canUnlinkIdentity, hasIdentityProvider } from "@/lib/auth/identities";
 import { accountHasPassword } from "@/lib/auth/password-server";
+import { isFacebookLoginEnabled } from "@/lib/auth/social-flags";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Perfil" };
@@ -20,7 +23,11 @@ export default async function ProfilePage() {
   const phone = profile?.phone_e164 ?? "";
   const { data: authData } = await supabase.auth.getUser();
   const hasPassword = await accountHasPassword(authData.user);
-  const hasGoogle = (authData.user?.identities ?? []).some((i) => i.provider === "google");
+  const identities = authData.user?.identities ?? [];
+  const hasGoogle = hasIdentityProvider(identities, "google");
+  const hasFacebook = hasIdentityProvider(identities, "facebook");
+  const facebookLoginEnabled = isFacebookLoginEnabled();
+  const canUnlinkFacebook = canUnlinkIdentity(identities, "facebook", hasPassword);
 
   // Histórico (0075): só eventos encerrados do próprio usuário; apagados somem pela RLS.
   const { data: closedRows } = await supabase
@@ -32,7 +39,9 @@ export default async function ProfilePage() {
     .limit(100);
   const { data: deletedRows } = await supabase.rpc("list_my_deleted_events");
   const dateLabel = (iso: string) =>
-    new Date(`${iso.slice(0, 10)}T12:00:00Z`).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+    new Date(`${iso.slice(0, 10)}T12:00:00Z`).toLocaleDateString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+    });
   const closedEvents = (closedRows ?? []).map((e) => ({
     id: e.id,
     title: e.title,
@@ -42,7 +51,9 @@ export default async function ProfilePage() {
   const deletedEvents = (deletedRows ?? []).map((e) => ({
     id: e.id,
     title: e.title,
-    purgeAfterLabel: new Date(e.purge_after).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }),
+    purgeAfterLabel: new Date(e.purge_after).toLocaleDateString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+    }),
   }));
 
   return (
@@ -67,6 +78,25 @@ export default async function ProfilePage() {
       </section>
 
       <section
+        id="contas-conectadas"
+        className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft sm:p-8"
+      >
+        <h2 className="font-serif text-title-2">Contas conectadas</h2>
+        <p className="mt-2 text-sm leading-6 text-vinho/75">
+          Conecte o Facebook para entrar com essa conta também. O Instagram de login ainda não está
+          disponível; o @ de contato acima continua valendo.
+        </p>
+        <div className="mt-4">
+          <ConnectedAccounts
+            facebookLoginEnabled={facebookLoginEnabled}
+            hasFacebook={hasFacebook}
+            hasGoogle={hasGoogle}
+            canUnlinkFacebook={canUnlinkFacebook}
+          />
+        </div>
+      </section>
+
+      <section
         id="senha"
         className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft sm:p-8"
       >
@@ -79,7 +109,8 @@ export default async function ProfilePage() {
               : "Crie uma senha para entrar com e-mail e senha."}
           {user.email ? (
             <>
-              {" "}E-mail de acesso: <EmailText email={user.email} />.
+              {" "}
+              E-mail de acesso: <EmailText email={user.email} />.
             </>
           ) : null}
         </p>
