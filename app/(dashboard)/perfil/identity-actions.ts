@@ -4,13 +4,13 @@ import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { RESET_NEXT_COOKIE, buildCallbackUrl, publicOrigin } from "@/lib/auth/oauth";
-import { accountHasPassword } from "@/lib/auth/password-server";
 import {
+  UNLINK_LAST_IDENTITY_ERROR,
   canUnlinkIdentity,
   hasIdentityProvider,
-  UNLINK_LAST_IDENTITY_ERROR,
 } from "@/lib/auth/identities";
+import { RESET_NEXT_COOKIE, buildCallbackUrl, publicOrigin } from "@/lib/auth/oauth";
+import { accountHasPassword } from "@/lib/auth/password-server";
 import { isFacebookLoginEnabled } from "@/lib/auth/social-flags";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 

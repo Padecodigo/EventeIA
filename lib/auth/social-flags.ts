@@ -3,7 +3,7 @@
  * Valores aceitos como ligado: 1, true, yes, on (qualquer capitalização).
  */
 export function isEnvFlagEnabled(value: string | undefined | null): boolean {
-  if (value == null) return false;
+  if (value === undefined || value === null) return false;
   const v = value.trim().toLowerCase();
   return v === "1" || v === "true" || v === "yes" || v === "on";
 }

@@ -7,8 +7,8 @@ import { z } from "zod";
 
 import { recordAnalytics } from "@/lib/analytics/server";
 import { RESET_NEXT_COOKIE, buildCallbackUrl, publicOrigin } from "@/lib/auth/oauth";
-import { isFacebookLoginEnabled } from "@/lib/auth/social-flags";
 import { SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/auth/session-ttl";
+import { isFacebookLoginEnabled } from "@/lib/auth/social-flags";
 import { normalizeInstagramHandle } from "@/lib/instagram-handle";
 import { recordTermsAcceptance } from "@/lib/legal/acceptance-server";
 import { TERMS_COOKIE, TERMS_ERROR, TERMS_VERSION, hasAcceptedTerms } from "@/lib/legal/terms";
