@@ -15,3 +15,11 @@ onlyBuiltDependencies:
   - esbuild
   - msgpackr-extract
   - unrs-resolver
+
+# GHSA-fc5q-39xc-vjpf: ReDoS no picomatch (<=4.0.7). Ainda não há versão corrigida
+# (npm registry: latest 4.0.7; patched versions: none em 18/11/2026). Só atinge
+# ferramentas de dev/build (Tailwind, knip, eslint-config-next). Revisitar quando
+# houver patch. Não ignora outros avisos (ex.: minimatch).
+audit:
+  ignore:
+    - GHSA-fc5q-39xc-vjpf
