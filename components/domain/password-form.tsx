@@ -25,6 +25,21 @@ export function PasswordForm({
 
   return (
     <form action={formAction} className="mt-4 flex flex-col gap-4" aria-label={label}>
+      {hasPassword ? (
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="current-password" className="text-sm font-medium text-vinho">
+            Senha atual
+          </label>
+          <input
+            id="current-password"
+            name="currentPassword"
+            type={visible ? "text" : "password"}
+            required
+            autoComplete="current-password"
+            className={inputClass}
+          />
+        </div>
+      ) : null}
       <div className="flex flex-col gap-1.5">
         <label htmlFor="new-password" className="text-sm font-medium text-vinho">
           Nova senha
