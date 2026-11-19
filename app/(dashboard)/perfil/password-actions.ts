@@ -8,6 +8,7 @@ import {
   passwordSavedMessage,
   validateNewPassword,
 } from "@/lib/auth/password";
+import { accountHasPassword } from "@/lib/auth/password-server";
 import { logger } from "@/lib/logger";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -42,6 +43,25 @@ export async function setPasswordAction(
   const supabase = await createSupabaseServerClient();
   const { data: current } = await supabase.auth.getUser();
   if (!current?.user) return { error: "Sua sessão expirou. Entre novamente." };
+
+  const hasPassword = await accountHasPassword(current.user);
+  if (hasPassword) {
+    const currentPassword = field(formData, "currentPassword");
+    if (currentPassword.length === 0) {
+      return { error: "Informe a senha atual.", needsNonce: nonce.length > 0 || undefined };
+    }
+    const email = current.user.email;
+    if (email === undefined || email.length === 0) {
+      return { error: "Sua sessão expirou. Entre novamente." };
+    }
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password: currentPassword,
+    });
+    if (signInError !== null) {
+      return { error: "Senha atual incorreta.", needsNonce: nonce.length > 0 || undefined };
+    }
+  }
 
   const { error } = await supabase.auth.updateUser(
     nonce.length > 0 ? { password, nonce } : { password },

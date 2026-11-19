@@ -140,3 +140,55 @@ describe("Esqueci minha senha", () => {
     expect(m.resetPasswordForEmail).not.toHaveBeenCalled();
   });
 });
+
+describe("alterar senha (conta com senha)", () => {
+  const emailUser = {
+    id: "u-mail",
+    email: "ana@eventeia.com",
+    identities: [{ provider: "email" }],
+    app_metadata: { has_password: true },
+  };
+
+  beforeEach(() => {
+    m.getUser.mockResolvedValue({ data: { user: emailUser }, error: null });
+  });
+
+  it("exige a senha atual e não chama o Supabase sem ela", async () => {
+    const r = await setPasswordAction({}, fd({ password: "NovaSenha1!", confirm: "NovaSenha1!" }));
+    expect(r.error).toBe("Informe a senha atual.");
+    expect(m.signInWithPassword).not.toHaveBeenCalled();
+    expect(m.updateUser).not.toHaveBeenCalled();
+  });
+
+  it("senha atual errada não altera a senha", async () => {
+    m.signInWithPassword.mockResolvedValue({
+      data: { user: null, session: null },
+      error: { message: "Invalid login credentials" },
+    });
+    const r = await setPasswordAction(
+      {},
+      fd({ currentPassword: "errada123", password: "NovaSenha1!", confirm: "NovaSenha1!" }),
+    );
+    expect(m.signInWithPassword).toHaveBeenCalledWith({
+      email: "ana@eventeia.com",
+      password: "errada123",
+    });
+    expect(r.error).toBe("Senha atual incorreta.");
+    expect(m.updateUser).not.toHaveBeenCalled();
+  });
+
+  it("senha atual correta chama signInWithPassword e updateUser", async () => {
+    m.signInWithPassword.mockResolvedValue({ data: { user: emailUser }, error: null });
+    m.updateUser.mockResolvedValue({ data: { user: emailUser }, error: null });
+    const r = await setPasswordAction(
+      {},
+      fd({ currentPassword: "Atual123!", password: "NovaSenha1!", confirm: "NovaSenha1!" }),
+    );
+    expect(m.signInWithPassword).toHaveBeenCalledWith({
+      email: "ana@eventeia.com",
+      password: "Atual123!",
+    });
+    expect(m.updateUser).toHaveBeenCalledWith({ password: "NovaSenha1!" });
+    expect(r.success).toBe("Senha salva! Agora você pode entrar com e-mail e senha.");
+  });
+});

@@ -1,3 +1,4 @@
+import { EmailChangeForm } from "@/components/domain/email-change-form";
 import { EventHistoryDeletion } from "@/components/domain/event-history-deletion";
 import { PasswordForm } from "@/components/domain/password-form";
 import { ProfileForm } from "@/components/domain/profile-form";
@@ -70,22 +71,36 @@ export default async function ProfilePage() {
       </section>
 
       <section
+        id="email"
+        className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft sm:p-8"
+      >
+        <h2 className="font-serif text-title-2">E-mail de acesso</h2>
+        <p className="mt-2 text-sm leading-6 text-vinho/75 [overflow-wrap:anywhere]">
+          {user.email ? (
+            <>
+              E-mail atual: <EmailText email={user.email} />.
+            </>
+          ) : (
+            "Não há e-mail de acesso nesta conta."
+          )}
+          {hasGoogle
+            ? " Você entra com o Google: pode trocar este e-mail, mas o login com Google continua no Gmail original."
+            : null}
+        </p>
+        <EmailChangeForm />
+      </section>
+
+      <section
         id="senha"
         className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft sm:p-8"
       >
         <h2 className="font-serif text-title-2">{hasPassword ? "Alterar senha" : "Criar senha"}</h2>
         <p className="mt-2 text-sm leading-6 text-vinho/75 [overflow-wrap:anywhere]">
           {hasPassword
-            ? "Troque a senha usada para entrar com e-mail."
+            ? "Troque a senha usada para entrar com e-mail. Pedimos a senha atual para confirmar."
             : hasGoogle
               ? "Você entra com o Google. Se quiser, crie uma senha para também entrar com e-mail e senha — o Google continua funcionando."
               : "Crie uma senha para entrar com e-mail e senha."}
-          {user.email ? (
-            <>
-              {" "}
-              E-mail de acesso: <EmailText email={user.email} />.
-            </>
-          ) : null}
         </p>
         <PasswordForm hasPassword={hasPassword} />
       </section>
