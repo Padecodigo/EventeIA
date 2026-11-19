@@ -14,7 +14,7 @@ export default async function ProfilePage() {
   const supabase = await createSupabaseServerClient();
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name,phone_e164,document_number,contact_whatsapp_e164,instagram_handle")
+    .select("display_name,phone_e164,contact_whatsapp_e164,instagram_handle")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -56,8 +56,8 @@ export default async function ProfilePage() {
         <p className="eyebrow">Conta</p>
         <h1 className="mt-3 font-serif text-display-2 font-display">Seu perfil.</h1>
         <p className="mt-3 text-sm leading-6 text-vinho/75">
-          Mantenha o telefone, o WhatsApp e o CPF atualizados. O CPF é usado só para emitir a
-          cobrança; o telefone e o WhatsApp são usados para contato sobre os seus eventos.
+          Mantenha o telefone e o WhatsApp atualizados. Eles são usados para contato sobre os seus
+          eventos.
         </p>
       </header>
 
@@ -65,7 +65,6 @@ export default async function ProfilePage() {
         <ProfileForm
           defaultName={profile?.display_name ?? ""}
           defaultPhone={phone}
-          defaultCpf={profile?.document_number ?? ""}
           defaultWhatsapp={profile?.contact_whatsapp_e164 ?? ""}
           defaultInstagram={profile?.instagram_handle ?? ""}
         />

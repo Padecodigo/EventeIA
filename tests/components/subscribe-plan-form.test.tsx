@@ -20,6 +20,7 @@ describe("SubscribePlanForm", () => {
         planName="Atelier"
         credits={10}
         priceFormatted="R$ 1"
+        defaultCpf=""
       />,
     );
     expect(screen.getByText("Renovar automaticamente todo mês?")).toBeInTheDocument();
@@ -31,5 +32,20 @@ describe("SubscribePlanForm", () => {
       "card",
     );
     expect(screen.queryByText(/débito/i)).not.toBeInTheDocument();
+  });
+
+  it("CPF do titular é obrigatório e pode vir pré-preenchido", () => {
+    render(
+      <SubscribePlanForm
+        planCode="atelier"
+        planName="Atelier"
+        credits={10}
+        priceFormatted="R$ 1"
+        defaultCpf="52998224725"
+      />,
+    );
+    const cpf = screen.getByLabelText("CPF do titular");
+    expect(cpf).toBeRequired();
+    expect(cpf).toHaveValue("52998224725");
   });
 });
