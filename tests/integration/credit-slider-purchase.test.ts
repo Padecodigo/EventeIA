@@ -8,6 +8,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const pixCalls: { amountCents: number; externalReference: string }[] = [];
 const payments: Record<string, unknown>[] = [];
 const cardCalls: { amountCents: number; externalReference: string }[] = [];
+const customerCreates: { name: string; cpfCnpj: string; email?: string }[] = [];
+let profileData: {
+  display_name: string;
+  document_number: string | null;
+  asaas_customer_id: string | null;
+} = {
+  display_name: "Ana",
+  document_number: "12345678901",
+  asaas_customer_id: "cus_1",
+};
 
 vi.mock("@/lib/auth", () => ({ requireUser: async () => ({ id: "user-1", email: "a@b.com" }) }));
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined }));
@@ -15,7 +25,10 @@ vi.mock("next/navigation", () => ({ redirect: () => undefined }));
 vi.mock("@/lib/feeds", () => ({ emitFeed: async () => undefined }));
 vi.mock("@/lib/asaas/client", () => ({
   AsaasNotConfiguredError: class extends Error {},
-  createAsaasCustomer: async () => "cus_1",
+  createAsaasCustomer: async (input: { name: string; cpfCnpj: string; email?: string }) => {
+    customerCreates.push(input);
+    return "cus_new";
+  },
   createAsaasSubscription: async () => ({ subscriptionId: "sub_1" }),
   createAsaasCardPayment: async (input: { amountCents: number; externalReference: string }) => {
     cardCalls.push(input);
@@ -39,10 +52,7 @@ vi.mock("@/lib/supabase/admin", () => ({
 function chain(table: string) {
   const single = async () => {
     if (table === "workspaces") return { data: { id: "ws-1" } };
-    if (table === "profiles")
-      return {
-        data: { display_name: "Ana", document_number: "12345678901", asaas_customer_id: "cus_1" },
-      };
+    if (table === "profiles") return { data: profileData };
     return { data: null };
   };
   const q: Record<string, unknown> = {};
@@ -74,6 +84,7 @@ function applyPaidWebhook(ledger: Map<string, number>, payment: Record<string, u
 function form(entries: Record<string, string>) {
   const fd = new FormData();
   fd.set("acceptTerms", "on"); // aceite dos termos (obrigatório no checkout)
+  if (!("cpf" in entries)) fd.set("cpf", "52998224725");
   for (const [k, v] of Object.entries(entries)) fd.set(k, v);
   return fd;
 }
@@ -81,6 +92,12 @@ function form(entries: Record<string, string>) {
 beforeEach(() => {
   pixCalls.length = 0;
   payments.length = 0;
+  customerCreates.length = 0;
+  profileData = {
+    display_name: "Ana",
+    document_number: "12345678901",
+    asaas_customer_id: "cus_1",
+  };
 });
 
 describe("compra pelo slider", () => {
@@ -130,6 +147,7 @@ describe("créditos — Pix ou cartão de crédito", () => {
   function fd(entries: Record<string, string>): FormData {
     const f = new FormData();
     f.set("acceptTerms", "on"); // aceite dos termos (obrigatório no checkout)
+    if (!("cpf" in entries)) f.set("cpf", "52998224725");
     for (const [k, v] of Object.entries(entries)) f.set(k, v);
     return f;
   }
@@ -161,5 +179,31 @@ describe("créditos — Pix ou cartão de crédito", () => {
     expect(bad.error).toBeDefined();
     expect(pixCalls.length).toBe(before);
     expect(cardCalls).toHaveLength(0);
+  });
+});
+
+describe("créditos — CPF no checkout", () => {
+  it("recusa CPF ausente ou inválido sem cobrar", async () => {
+    const before = pixCalls.length + cardCalls.length;
+    expect(await buyCreditsAction({}, form({ credits: "7", cpf: "" }))).toEqual({
+      error: "Informe um CPF válido (11 dígitos).",
+    });
+    expect(await buyCreditsAction({}, form({ credits: "7", cpf: "123" }))).toEqual({
+      error: "Informe um CPF válido (11 dígitos).",
+    });
+    expect(pixCalls.length + cardCalls.length).toBe(before);
+  });
+
+  it("sem customer Asaas e sem CPF no perfil: grava o CPF do form e cria o customer", async () => {
+    profileData = { display_name: "Ana", document_number: null, asaas_customer_id: null };
+    const res = await buyCreditsAction({}, form({ credits: "7" }));
+    expect(res.pix?.payload).toBe("PIX");
+    expect(customerCreates).toEqual([{ name: "Ana", cpfCnpj: "52998224725", email: "a@b.com" }]);
+  });
+
+  it("com asaas_customer_id existente não recria o customer", async () => {
+    const res = await buyCreditsAction({}, form({ credits: "7" }));
+    expect(res.pix?.payload).toBe("PIX");
+    expect(customerCreates).toHaveLength(0);
   });
 });

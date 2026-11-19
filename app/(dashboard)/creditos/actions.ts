@@ -68,6 +68,13 @@ export interface AppliedDiscount {
 
 const paymentMethodSchema = z.enum(["pix", "card"]).default("pix");
 
+/** CPF do checkout (11 dígitos; aceita máscara). */
+function parseCheckoutCpf(formData: FormData): string | null {
+  const entry = formData.get("cpf");
+  const raw = typeof entry === "string" ? entry.replace(/\D/g, "") : "";
+  return /^\d{11}$/.test(raw) ? raw : null;
+}
+
 export interface SubscribeState extends CreditsCheckoutState {
   success?: boolean;
   /** Assinatura recorrente: fatura hospedada do 1º ciclo (Pix ou cartão de crédito). */
@@ -113,6 +120,12 @@ export async function subscribeToPlanAction(
   if (parsed.data.renew === "no") {
     return buyCreditsAction({}, formData);
   }
+
+  const cpf = parseCheckoutCpf(formData);
+  if (cpf === null) {
+    return { error: "Informe um CPF válido (11 dígitos)." };
+  }
+
   await recordTermsAcceptance(user.id, "checkout");
 
   const plan = PLANS.find((item) => item.code === parsed.data.planCode);
@@ -154,13 +167,14 @@ export async function subscribeToPlanAction(
     return { error: "Perfil não encontrado." };
   }
 
-  if (profile.document_number === null || profile.document_number.length < 11) {
-    return { error: "Cadastre o CPF no Perfil antes de assinar." };
-  }
-
   let claimedOfferId: string | null = null;
   try {
     const admin = getSupabaseAdmin();
+
+    await admin
+      .from("profiles")
+      .update({ document_number: cpf, document_type: "cpf" })
+      .eq("id", user.id);
 
     const couponEntry = formData.get("coupon");
     const resolved = await resolveCheckoutDiscount({
@@ -180,7 +194,7 @@ export async function subscribeToPlanAction(
     if (customerId === null) {
       customerId = await createAsaasCustomer({
         name: profile.display_name,
-        cpfCnpj: profile.document_number,
+        cpfCnpj: cpf,
         email: user.email,
       });
       await admin.from("profiles").update({ asaas_customer_id: customerId }).eq("id", user.id);
@@ -381,6 +395,12 @@ export async function buyCreditsAction(
   if (!hasAcceptedTerms(formData)) {
     return { error: TERMS_ERROR };
   }
+
+  const cpf = parseCheckoutCpf(formData);
+  if (cpf === null) {
+    return { error: "Informe um CPF válido (11 dígitos)." };
+  }
+
   await recordTermsAcceptance(user.id, "checkout");
   const billingType = method.data === "card" ? "CREDIT_CARD" : "PIX";
 
@@ -406,13 +426,14 @@ export async function buyCreditsAction(
     return { error: "Perfil não encontrado." };
   }
 
-  if (profile.document_number === null || profile.document_number.length < 11) {
-    return { error: "Cadastre o CPF no Perfil antes de comprar créditos." };
-  }
-
   let claimedOfferId: string | null = null;
   try {
     const admin = getSupabaseAdmin();
+
+    await admin
+      .from("profiles")
+      .update({ document_number: cpf, document_type: "cpf" })
+      .eq("id", user.id);
 
     // Oferta pessoal (0036) aplicada no servidor; redenção de cupom digitado permanece dormente.
     const couponEntry = formData.get("coupon");
@@ -436,7 +457,7 @@ export async function buyCreditsAction(
     if (customerId === null) {
       customerId = await createAsaasCustomer({
         name: profile.display_name,
-        cpfCnpj: profile.document_number,
+        cpfCnpj: cpf,
         email: user.email,
       });
       await admin.from("profiles").update({ asaas_customer_id: customerId }).eq("id", user.id);

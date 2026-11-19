@@ -16,6 +16,8 @@ export interface SubscribePlanFormProps {
   priceFormatted: string;
   /** Prévia do 1º mês com a oferta pessoal ativa (o servidor recalcula). */
   firstMonthCents?: number | null;
+  /** CPF já gravado no perfil, se houver — só pré-preenche o checkout. */
+  defaultCpf: string;
 }
 
 export function SubscribePlanForm({
@@ -24,6 +26,7 @@ export function SubscribePlanForm({
   credits,
   priceFormatted,
   firstMonthCents = null,
+  defaultCpf,
 }: SubscribePlanFormProps) {
   const [state, formAction, pending] = useActionState(subscribeToPlanAction, initialState);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -34,8 +37,8 @@ export function SubscribePlanForm({
         <input type="hidden" name="planCode" value={planCode} />
         {firstMonthCents !== null && state.success !== true ? (
           <p className="mb-2 text-caption text-vinho/80">
-            1º pagamento por <strong>{formatBRL(firstMonthCents)}</strong>; depois{" "}
-            {priceFormatted}/mês.
+            1º pagamento por <strong>{formatBRL(firstMonthCents)}</strong>; depois {priceFormatted}
+            /mês.
           </p>
         ) : null}
         <fieldset className="mb-3">
@@ -49,6 +52,24 @@ export function SubscribePlanForm({
             <input type="radio" name="renew" value="no" required /> Não, compra única
           </label>
         </fieldset>
+        <div className="mb-3 flex flex-col gap-1.5">
+          <label htmlFor={`cpf-plan-${planCode}`} className="text-sm font-medium text-vinho">
+            CPF do titular
+          </label>
+          <input
+            id={`cpf-plan-${planCode}`}
+            name="cpf"
+            required
+            inputMode="numeric"
+            autoComplete="off"
+            defaultValue={defaultCpf}
+            placeholder="00000000000"
+            className="h-12 rounded-xl border border-line-subtle bg-off-white px-4 text-sm text-vinho"
+          />
+          <p className="text-caption text-vinho/70">
+            Usado apenas para emissão da cobrança. Não aparece em orçamentos.
+          </p>
+        </div>
         <TermsCheckbox
           id={`terms-plan-${planCode}`}
           checked={acceptedTerms}

@@ -71,6 +71,7 @@ describe("checkbox de aceite no checkout", () => {
         planName="Essencial"
         credits={3}
         priceFormatted="R$ 1"
+        defaultCpf=""
       />,
     );
     const pix = screen.getByRole("button", { name: /com Pix/ });

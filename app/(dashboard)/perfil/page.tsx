@@ -1,3 +1,4 @@
+import { EmailChangeForm } from "@/components/domain/email-change-form";
 import { EventHistoryDeletion } from "@/components/domain/event-history-deletion";
 import { PasswordForm } from "@/components/domain/password-form";
 import { ProfileForm } from "@/components/domain/profile-form";
@@ -13,7 +14,7 @@ export default async function ProfilePage() {
   const supabase = await createSupabaseServerClient();
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name,phone_e164,document_number,contact_whatsapp_e164,instagram_handle")
+    .select("display_name,phone_e164,contact_whatsapp_e164,instagram_handle")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -32,7 +33,9 @@ export default async function ProfilePage() {
     .limit(100);
   const { data: deletedRows } = await supabase.rpc("list_my_deleted_events");
   const dateLabel = (iso: string) =>
-    new Date(`${iso.slice(0, 10)}T12:00:00Z`).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+    new Date(`${iso.slice(0, 10)}T12:00:00Z`).toLocaleDateString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+    });
   const closedEvents = (closedRows ?? []).map((e) => ({
     id: e.id,
     title: e.title,
@@ -42,7 +45,9 @@ export default async function ProfilePage() {
   const deletedEvents = (deletedRows ?? []).map((e) => ({
     id: e.id,
     title: e.title,
-    purgeAfterLabel: new Date(e.purge_after).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }),
+    purgeAfterLabel: new Date(e.purge_after).toLocaleDateString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+    }),
   }));
 
   return (
@@ -51,8 +56,8 @@ export default async function ProfilePage() {
         <p className="eyebrow">Conta</p>
         <h1 className="mt-3 font-serif text-display-2 font-display">Seu perfil.</h1>
         <p className="mt-3 text-sm leading-6 text-vinho/75">
-          Mantenha o telefone, o WhatsApp e o CPF atualizados. O CPF é usado só para emitir a
-          cobrança; o telefone e o WhatsApp são usados para contato sobre os seus eventos.
+          Mantenha o telefone e o WhatsApp atualizados. Eles são usados para contato sobre os seus
+          eventos.
         </p>
       </header>
 
@@ -60,10 +65,29 @@ export default async function ProfilePage() {
         <ProfileForm
           defaultName={profile?.display_name ?? ""}
           defaultPhone={phone}
-          defaultCpf={profile?.document_number ?? ""}
           defaultWhatsapp={profile?.contact_whatsapp_e164 ?? ""}
           defaultInstagram={profile?.instagram_handle ?? ""}
         />
+      </section>
+
+      <section
+        id="email"
+        className="rounded-card border border-line-subtle bg-off-white p-6 shadow-soft sm:p-8"
+      >
+        <h2 className="font-serif text-title-2">E-mail de acesso</h2>
+        <p className="mt-2 text-sm leading-6 text-vinho/75 [overflow-wrap:anywhere]">
+          {user.email ? (
+            <>
+              E-mail atual: <EmailText email={user.email} />.
+            </>
+          ) : (
+            "Não há e-mail de acesso nesta conta."
+          )}
+          {hasGoogle
+            ? " Você entra com o Google: pode trocar este e-mail, mas o login com Google continua no Gmail original."
+            : null}
+        </p>
+        <EmailChangeForm />
       </section>
 
       <section
@@ -73,15 +97,10 @@ export default async function ProfilePage() {
         <h2 className="font-serif text-title-2">{hasPassword ? "Alterar senha" : "Criar senha"}</h2>
         <p className="mt-2 text-sm leading-6 text-vinho/75 [overflow-wrap:anywhere]">
           {hasPassword
-            ? "Troque a senha usada para entrar com e-mail."
+            ? "Troque a senha usada para entrar com e-mail. Pedimos a senha atual para confirmar."
             : hasGoogle
               ? "Você entra com o Google. Se quiser, crie uma senha para também entrar com e-mail e senha — o Google continua funcionando."
               : "Crie uma senha para entrar com e-mail e senha."}
-          {user.email ? (
-            <>
-              {" "}E-mail de acesso: <EmailText email={user.email} />.
-            </>
-          ) : null}
         </p>
         <PasswordForm hasPassword={hasPassword} />
       </section>
