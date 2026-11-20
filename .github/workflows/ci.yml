@@ -190,6 +190,6 @@ jobs:
             echo "::error::COOLIFY_API_TOKEN (secret) ou COOLIFY_APP_UUID (variável) não configurado."
             exit 1
           fi
-          curl --fail-with-body -sS \
+          curl --fail-with-body -sS -X POST \
             -H "Authorization: Bearer $COOLIFY_API_TOKEN" \
             "https://painel.eventeia.com.br/api/v1/deploy?uuid=${COOLIFY_APP_UUID}&force=false"
