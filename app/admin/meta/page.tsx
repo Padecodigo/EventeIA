@@ -24,6 +24,11 @@ const META_TOOLS = [
     label: "Webhooks da Página",
     hint: "Page webhooks — pages_manage_metadata",
   },
+  {
+    href: "/admin/meta/pagina",
+    label: "Conteúdo da Página",
+    hint: "Page content — pages_read_engagement",
+  },
 ] as const;
 export const metadata = { title: "Conexão Meta" };
 
