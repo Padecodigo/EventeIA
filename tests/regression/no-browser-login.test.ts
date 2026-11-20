@@ -23,6 +23,6 @@ describe("sem login automatizado por navegador (Termos do Instagram)", () => {
   });
 
   it("não expõe item /admin/instagram na navegação", () => {
-    expect(ADMIN_NAV.some((item) => item.href === "/admin/instagram")).toBe(false);
+    expect(ADMIN_NAV.map((item): string => item.href)).not.toContain("/admin/instagram");
   });
 });
