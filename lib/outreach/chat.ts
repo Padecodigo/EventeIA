@@ -1,3 +1,4 @@
+import { withAutomationNotice } from "./automation-notice";
 import { moderateContactInfo } from "./moderation";
 import { canSend, type SendBlockReason, type SupplierConversationStatus } from "./send-guard";
 
@@ -132,10 +133,11 @@ export async function sendChatMessage(
     return { ok: false, ...blocked };
   }
 
+  const outgoing = input.author === "user" ? withAutomationNotice(moderation.text) : moderation.text;
   const sent = await deps.send({
     channel: conversation.channel,
     recipientId: conversation.external_user_id,
-    text: moderation.text,
+    text: outgoing,
   });
   if (!sent.ok) {
     return { ok: false, error: "Não foi possível enviar a mensagem agora. Tente novamente.", closed: false };
@@ -144,7 +146,7 @@ export async function sendChatMessage(
   const { error } = await db.from("supplier_conversation_messages").insert({
     conversation_id: conversation.id,
     direction: "out",
-    body: moderation.text,
+    body: outgoing,
     moderated: moderation.masked,
     external_id: sent.messageId,
     author: input.author,

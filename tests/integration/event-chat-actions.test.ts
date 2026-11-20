@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { FORWARDED_MESSAGE_NOTICE } from "@/lib/outreach/automation-notice";
+
 import { createFakeDb, fakeClient, type FakeDb } from "./helpers/fake-supabase";
 
 const { sendMock } = vi.hoisted(() => ({ sendMock: vi.fn() }));
@@ -97,7 +99,8 @@ describe("chat mediado do evento — server actions", () => {
     expect(sendMock).toHaveBeenCalledWith({
       channel: "instagram",
       recipientId: "igsid-1",
-      text: "Podemos fechar o buffet?",
+      // A mensagem do cliente sai com o aviso de automação (política da Meta).
+      text: `${FORWARDED_MESSAGE_NOTICE}\nPodemos fechar o buffet?`,
     });
     const messages = db.tables.supplier_conversation_messages ?? [];
     expect(messages).toHaveLength(1);
@@ -105,7 +108,7 @@ describe("chat mediado do evento — server actions", () => {
       conversation_id: CONVERSATION,
       direction: "out",
       author: "user",
-      body: "Podemos fechar o buffet?",
+      body: `${FORWARDED_MESSAGE_NOTICE}\nPodemos fechar o buffet?`,
       moderated: false,
       external_id: "mid-out-1",
     });
