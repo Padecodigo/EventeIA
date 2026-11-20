@@ -10,6 +10,7 @@ import {
 } from "@/app/(dashboard)/eventos/[id]/chat-actions";
 import { adminSendEventChatMessageAction } from "@/app/admin/eventos/[id]/chat-actions";
 import { Button } from "@/components/ui/button";
+import { FORWARDED_MESSAGE_NOTICE } from "@/lib/outreach/automation-notice";
 import type {
   ChatConversationView,
   ChatMessageView,
@@ -132,6 +133,11 @@ function Composer({
         placeholder="Escreva sua mensagem…"
         className="w-full rounded-xl border border-vinho/15 bg-white px-3 py-2 text-sm text-vinho focus:border-primaria focus:outline-none"
       />
+      {mode === "user" ? (
+        <p className="text-caption text-vinho/60" data-testid="chat-automation-notice">
+          Sua mensagem será enviada ao fornecedor com o aviso: “{FORWARDED_MESSAGE_NOTICE}”
+        </p>
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-caption text-vinho/60">
           Telefones, e-mails e links são removidos pela moderação.
