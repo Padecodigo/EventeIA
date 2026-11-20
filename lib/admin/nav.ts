@@ -15,6 +15,7 @@ export const ADMIN_NAV = [
   { href: "/admin/fornecedores", label: "Fornecedores", description: "Fornecedores encontrados (somente leitura)." },
   { href: "/admin/prospeccao", label: "Prospecção", description: "Posts de isca: aprovar e publicar no Instagram." },
   { href: "/admin/instagram", label: "Instagram", description: "Sessão do navegador: logar, deslogar e trocar conta." },
+  { href: "/admin/meta", label: "Meta", description: "Conexão com a Página do Facebook e o Instagram (Facebook Login)." },
   { href: "/admin/tiktok", label: "TikTok", description: "Contas conectadas via Login Kit (rascunho/inbox)." },
   { href: "/admin/metricas", label: "Métricas", description: "Acessos, logins e cadastros do site." },
   { href: "/admin/lixeira", label: "Lixeira", description: "Itens excluídos: ver e restaurar." },

@@ -768,6 +768,24 @@ export interface Database {
         url: string;
         created_at: string;
       }>;
+      meta_connections: Table<{
+        slot: string;
+        connected_by: string | null;
+        fb_user_id: string;
+        fb_user_name: string | null;
+        user_access_token: string;
+        user_token_expires_at: string | null;
+        scopes: string[];
+        page_id: string | null;
+        page_name: string | null;
+        page_picture_url: string | null;
+        page_access_token: string | null;
+        ig_user_id: string | null;
+        ig_username: string | null;
+        encrypted: boolean;
+        created_at: string;
+        updated_at: string;
+      }>;
     };
     Views: { [_ in never]: never };
     Functions: {

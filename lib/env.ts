@@ -47,6 +47,17 @@ const serverSchema = z.object({
   META_API_HOST: z
     .enum(["graph.facebook.com", "graph.instagram.com"])
     .default("graph.facebook.com"),
+  // Feature flag da conexão Meta (Facebook Login for Business). Desligada por padrão.
+  META_LOGIN_ENABLED: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((v) => v === "true"),
+  // Id da configuração do Facebook Login for Business; quando definido enviamos config_id em vez de scope.
+  META_LOGIN_CONFIG_ID: z.string().optional(),
+  // Redirect URI do login Meta (só aceito no mesmo origin canônico do app).
+  META_REDIRECT_URI: z.string().optional(),
+  // Chave AES-256-GCM para cifrar os tokens da Meta; sem ela a gravação falha fechada.
+  META_TOKEN_ENCRYPTION_KEY: z.string().optional(),
   // Palavra-chave que o fornecedor comenta para receber a cotação na DM.
   META_PROSPECT_KEYWORD: z.string().min(1).default("cotação"),
   // Publicação Instagram: graph (API oficial) | browser (sessão logada, grokbot-style).
