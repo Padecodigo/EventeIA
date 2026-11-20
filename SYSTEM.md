@@ -11,7 +11,7 @@
 A EventeIA é um SaaS B2C de **inteligência de custos e cotações para eventos**. O cliente
 descreve o evento, paga **um tíquete único de R$ 97** (pagamento único, Pix ou cartão via Asaas),
 faz uma entrevista, recebe um **orçamento determinístico no menor preço válido** e, ao confirmar,
-o sistema dispara **prospecção automática de fornecedores** (as "iscas") no Facebook/Instagram.
+o sistema dispara **prospecção automática de fornecedores** (os "posts do evento") no Facebook/Instagram.
 O motor de orçamento é **determinístico e versionado** (`lib/engine/`); o dinheiro é sempre
 **inteiro em centavos**.
 
@@ -64,8 +64,8 @@ app/            → Server Components / Route Handlers / Server Actions (só I/O
        ├─ supabase/       clientes tipados (Admin/RLS)
        ├─ asaas/          pagamentos + webhooks idempotentes
        ├─ meta/           Graph API (IG/FB), limites, token-health
-       ├─ marketing/      arte editorial (FLUX + sharp) usada pelas iscas
-       ├─ prospecting/    iscas, descoberta de fornecedores, publicações
+       ├─ marketing/      arte editorial (FLUX + sharp) usada pelos posts do evento
+       ├─ prospecting/    posts do evento, descoberta de fornecedores, publicações
        ├─ discovery/      buscadores de fornecedores (Overpass, DeepSeek, Grok, NIM, places)
        ├─ events/         ciclo de vida do evento + confirmação por DM
        └─ jobs/           handlers das filas BullMQ
@@ -104,7 +104,7 @@ Ver [`.context/COMMERCIAL_MODEL.md`](.context/COMMERCIAL_MODEL.md) e [`.context/
    **kickoff** da descoberta → responde confirmando.
 4. Anti força-bruta: 5 tentativas falhas/remetente/hora.
 
-### 5.3 Descoberta de fornecedores (as "iscas")
+### 5.3 Descoberta de fornecedores (os "posts do evento")
 
 1. Evento confirmado + entrevista concluída → `lib/discovery/kickoff.ts` dispara a busca.
 2. `lib/discovery/providers/*` (Overpass, DeepSeek, Grok, NIM, places pagos) retornam
@@ -118,7 +118,7 @@ Ver [`.context/COMMERCIAL_MODEL.md`](.context/COMMERCIAL_MODEL.md) e [`.context/
 
 O antigo autopilot de publicidade foi removido do código e a flag
 `marketing_autopilot` foi desativada pela migração `0088`. A única publicação
-automática é o **post de isca** da prospecção (§5.3). Nenhuma tabela foi
+automática é o **post do evento** da prospecção (§5.3). Nenhuma tabela foi
 removida: `app_settings` e `autopilot_media` seguem existindo por
 compatibilidade, sem uso pelo produto.
 
@@ -147,8 +147,8 @@ compatibilidade, sem uso pelo produto.
 | Clientes Supabase            | `lib/supabase/`                                   |
 | Pagamento Asaas              | `lib/asaas/`                                      |
 | Meta Graph API               | `lib/meta/`                                       |
-| Publicidade + arte           | `lib/marketing/` (arte) + `lib/prospecting/` (iscas) |
-| Iscas/fornecedores           | `lib/prospecting/` + `lib/discovery/`             |
+| Publicidade + arte           | `lib/marketing/` (arte) + `lib/prospecting/` (posts do evento) |
+| Posts do evento/fornecedores           | `lib/prospecting/` + `lib/discovery/`             |
 | Confirmação por DM           | `lib/events/`                                     |
 | Workers + cron               | `workers/index.ts`                                |
 | Migrações                    | `supabase/migrations/`                            |
@@ -182,7 +182,7 @@ Destaques recentes:
 
 - **#009** — só tíquete por evento (R$ 97); planos/assinatura/franquia saíram da superfície.
 - **#013** — TikTok = só publicidade; busca de fornecedores só FB + IG.
-- **#014** — publicidade automática removida; a única publicação é a isca da prospecção.
+- **#014** — publicidade automática removida; a única publicação é o post do evento da prospecção.
 - **#015** — arte híbrida: FLUX gera a cena, sharp sobrepõe o texto.
 
 ---

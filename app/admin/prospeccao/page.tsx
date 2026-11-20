@@ -152,7 +152,7 @@ export default async function ProspeccaoPage({
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="font-serif text-title-2 text-vinho">Prospecção — posts de isca</h1>
+        <h1 className="font-serif text-title-2 text-vinho">Prospecção — posts do evento</h1>
         <p className="mt-1 text-caption text-vinho/70">
           {suppliers.length} fornecedor(es) no plano · {plan.length} post(s) sugerido(s) · até{" "}
           {env.MAX_POSTS_PER_DAY} por dia, no máximo {env.MAX_TAGS_PER_POST} marcações por post.

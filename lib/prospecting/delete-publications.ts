@@ -25,7 +25,7 @@ import {
  *
  * Cobre as duas tabelas do fluxo:
  * - `prospecting_posts` — post de prospecção do evento;
- * - `prospect_posts` — posts de isca/prospecção geral.
+ * - `prospect_posts` — posts do evento/posts de prospecção geral.
  * E os dois canais: Instagram (`ig_media_id`) e Página do Facebook (`fb_post_id`).
  *
  * Regra de ouro: se QUALQUER canal falhar de verdade (ex.: IG 2207085), a linha
@@ -240,7 +240,7 @@ async function deleteRowLocal(
   if (result.error !== null) {
     logger.warn(
       { table, rowId: row.id, code: result.error.code },
-      "falha ao marcar deleted_at do post de isca",
+      "falha ao marcar deleted_at do post do evento",
     );
     return false;
   }

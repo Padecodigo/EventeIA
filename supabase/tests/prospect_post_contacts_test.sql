@@ -1,4 +1,4 @@
--- pgTAP: 0077 — contatos dos @ marcados nos posts de isca.
+-- pgTAP: 0077 — contatos dos @ marcados nos posts do evento.
 begin;
 create extension if not exists pgtap;
 select plan(7);

@@ -72,7 +72,7 @@ export default async function UsagePage({ searchParams }: { searchParams: Promis
         <div>
           <p className="text-overline uppercase tracking-[0.14em] text-vinho/70">Administração</p>
           <h1 className="font-serif text-display-2">Consumo de tokens</h1>
-          <p className="text-sm text-vinho/70">Quanto a inteligência artificial (DeepSeek e outros) foi usada e quanto custou, por operação, usuário e etapa do processo. Dados gravados automaticamente a cada chamada: tokens reais informados pela API × preço da tabela.</p>
+          <p className="text-sm text-vinho/70">Quanto os modelos de linguagem da automação (DeepSeek e outros) foram usados e quanto custou, por operação, usuário e etapa do processo. Dados gravados automaticamente a cada chamada: tokens reais informados pela API × preço da tabela.</p>
         </div>
         <form className="flex flex-wrap items-end gap-2" method="get">
           <label className="text-caption">De<input type="date" name="from" defaultValue={filters.from} className={`ml-1 ${input}`} /></label>
@@ -114,7 +114,7 @@ export default async function UsagePage({ searchParams }: { searchParams: Promis
 
       <section>
         <h2 className="font-serif text-title-1">Por operação, usuário e estágio</h2>
-        <p className="text-caption text-vinho/60">Cada linha soma as chamadas de IA com a mesma operação, usuário e etapa. “Tokens in” = texto enviado; “Tokens out” = texto gerado. Valor em US$ e convertido para R$ pelo câmbio do dia.</p>
+        <p className="text-caption text-vinho/60">Cada linha soma as chamadas aos modelos de linguagem com a mesma operação, usuário e etapa. “Tokens in” = texto enviado; “Tokens out” = texto gerado. Valor em US$ e convertido para R$ pelo câmbio do dia.</p>
         <div className="mt-3 overflow-x-auto rounded-card border border-line-subtle bg-off-white">
           <table className="w-full min-w-[36rem] text-sm [&_td]:px-2 [&_td]:py-2 [&_th]:px-2 [&_th]:py-2 [&_th]:font-medium">
             <thead>

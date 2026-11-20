@@ -34,7 +34,7 @@ import { IMAGE_NEGATIVE } from "@/lib/prospecting/scene-rules";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 /**
- * Publica um post de isca aprovado por um humano (o clique é a aprovação).
+ * Publica um post do evento aprovado por um humano (o clique é a aprovação).
  * Sem token do Instagram ou chave do ModelsLab, devolve erro sem chamar a API.
  */
 export async function publishPostAction(_prev: OpResult | null, form: FormData): Promise<OpResult> {
@@ -99,7 +99,7 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
     return {
       ok: false,
       error:
-        "Publicação de evento/isca exige Graph API (Facebook + Instagram). O provedor de navegador não publica o Facebook.",
+        "Publicação de evento exige Graph API (Facebook + Instagram). O provedor de navegador não publica o Facebook.",
     };
   }
 
@@ -155,7 +155,7 @@ export async function publishPostAction(_prev: OpResult | null, form: FormData):
   });
 
   if (!outcome.ok) {
-    logger.warn({ reason: outcome.reason, error: outcome.error }, "falha ao publicar post de isca");
+    logger.warn({ reason: outcome.reason, error: outcome.error }, "falha ao publicar post do evento");
     return { ok: false, error: `Falha ao publicar (${outcome.reason}).` };
   }
 

@@ -294,7 +294,7 @@ function fakeCleanupDb(rows: {
 }
 
 describe("limpeza idempotente de publicações do evento", () => {
-  it("apaga post do evento e post de isca nos dois canais", async () => {
+  it("apaga post do evento e post de prospecção nos dois canais", async () => {
     const { db, state } = fakeCleanupDb({
       prospecting_posts: [{ id: "ep1", event_id: "ev1", ig_media_id: "1001", fb_post_id: "fb-ep" }],
       prospect_posts: [{ id: "bp1", event_id: "ev1", ig_media_id: "1002", fb_post_id: "fb-bp" }],
@@ -810,7 +810,7 @@ describe("sweep de encerramento inclui canceled, completed e user_deleted", () =
   });
 });
 
-describe("limpeza dos posts de isca", () => {
+describe("limpeza dos posts do evento", () => {
   it("usa os dois canais e só marca deleted_at quando ambos foram removidos", async () => {
     let deletedAt: unknown = null;
     const db = {

@@ -6,7 +6,7 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 const WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 
 /**
- * Quantas iscas saíram na janela recente.
+ * Quantos posts do evento saíram na janela recente.
  * Sem credencial de servidor (testes), devolve 0 e a rotação fica a cargo da semente.
  */
 export async function recentPublicationCount(): Promise<number> {

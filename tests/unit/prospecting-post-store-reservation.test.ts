@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { createSupabasePostStore } from "@/lib/prospecting/posts-store";
 
-describe("reserva durável do post de isca", () => {
+describe("reserva durável do post do evento", () => {
   it("trata 23505 re-selecionando a linha vencedora (sem segunda inserção)", async () => {
     let selects = 0;
     let inserts = 0;

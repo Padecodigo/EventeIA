@@ -92,7 +92,7 @@ export async function applyAgentReply(
   // LLM é só uma dica: NÃO desinscreve o fornecedor (falsos positivos do modelo
   // causavam cancelamento silencioso) — apenas escala para revisão humana.
   if (reply.optOut) {
-    await ports.escalate(conversationId, "possível opt-out sinalizado pela IA — revisar");
+    await ports.escalate(conversationId, "possível opt-out sinalizado pela automação — revisar");
     return { action: "escalated", sent: false };
   }
 
@@ -158,9 +158,9 @@ export async function respondToInbound(input: RespondInput): Promise<ApplyResult
   if (guarded === null) {
     logger.warn(
       { conversationId: input.conversationId },
-      "prospecção: saída inválida da IA — escalando",
+      "prospecção: saída inválida da automação — escalando",
     );
-    await input.ports.escalate(input.conversationId, "saída inválida da IA");
+    await input.ports.escalate(input.conversationId, "saída inválida da automação");
     return { action: "escalated", sent: false };
   }
   return applyAgentReply(input.ports, {

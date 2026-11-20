@@ -42,7 +42,7 @@ describe("política de canal (somente Instagram e Messenger)", () => {
     expect(CHANNEL_POLICY_PROMPT).toMatch(/NUNCA ofereça/);
   });
 
-  it("todas as regras estão nos dois prompts de resposta (DM isca e triagem)", () => {
+  it("todas as regras estão nos dois prompts de resposta (DM do post do evento e triagem)", () => {
     for (const prompt of prompts()) {
       for (const rule of [
         CHANNEL_POLICY_PROMPT,

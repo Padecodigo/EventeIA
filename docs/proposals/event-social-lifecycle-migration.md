@@ -218,10 +218,10 @@ insert into public.prospect_posts
   (id, event_id, caption, categories, day_index, status, ig_media_id, fb_post_id, publication)
 values
   ('a0902222-0000-4000-8000-000000000001', 'a0901111-0000-4000-8000-000000000001',
-   'isca uncertain', '{buffet}', 0, 'failed', null, null,
+   'post do evento uncertain', '{buffet}', 0, 'failed', null, null,
    '{"instagram":{"kind":"uncertain","reason":"timeout"},"facebook":{"kind":"pending"}}'::jsonb),
   ('a0902222-0000-4000-8000-000000000002', 'a0901111-0000-4000-8000-000000000002',
-   'isca sem ref', '{buffet}', 1, 'failed', null, null,
+   'post do evento sem ref', '{buffet}', 1, 'failed', null, null,
    '{"instagram":{"kind":"removed"},"facebook":{"kind":"removed"}}'::jsonb);
 
 -- Dispara o trigger real de encerramento.
@@ -236,8 +236,8 @@ update public.events
 select is((select count(*)::int from public.prospecting_posts where event_code = 'EVT-SOCIAL1'), 1, 'IG no JSON preservado');
 select is((select count(*)::int from public.prospecting_posts where event_code = 'EVT-SOCIAL2'), 1, 'FB na coluna preservado');
 select is((select count(*)::int from public.prospecting_posts where event_code = 'EVT-SOCIAL3'), 1, 'marcador manual legado preservado');
-select is((select count(*)::int from public.prospect_posts where id = 'a0902222-0000-4000-8000-000000000001'), 1, 'isca uncertain preservada');
-select is((select count(*)::int from public.prospect_posts where id = 'a0902222-0000-4000-8000-000000000002'), 0, 'isca sem refs sai');
+select is((select count(*)::int from public.prospect_posts where id = 'a0902222-0000-4000-8000-000000000001'), 1, 'post do evento uncertain preservada');
+select is((select count(*)::int from public.prospect_posts where id = 'a0902222-0000-4000-8000-000000000002'), 0, 'post do evento sem refs sai');
 select is((
   select count(*)::int from public.events
    where id in (

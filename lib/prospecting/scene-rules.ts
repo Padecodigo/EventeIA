@@ -1,5 +1,5 @@
 /**
- * Regras da cena gerada para os posts de isca.
+ * Regras da cena gerada para os posts do evento.
  *
  * A cena nasce do TIPO DO EVENTO (mesa de casamento decorada, buffet
  * corporativo, bolo de festa infantil etc.), num ambiente bonito e genérico.

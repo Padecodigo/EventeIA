@@ -34,7 +34,7 @@ insert into public.suppliers (id, name, category, source_url, source_provider)
 values ('eeeeeeee-0000-4000-8000-000000000001', 'Fornecedor Prospec', 'buffet', 'https://exemplo.com.br', 'mock');
 
 insert into public.prospect_posts (id, caption, status)
-values ('eeeeeeee-0000-4000-8000-000000000002', 'Isca de prospecção de teste', 'approved');
+values ('eeeeeeee-0000-4000-8000-000000000002', 'Post de prospecção de teste', 'approved');
 
 insert into public.prospect_conversations (id, supplier_id, channel, external_user_id, status)
 values ('eeeeeeee-0000-4000-8000-000000000003', 'eeeeeeee-0000-4000-8000-000000000001', 'instagram', 'ext-user-1', 'open');
@@ -81,7 +81,7 @@ set local role anon;
 
 select is((select count(*) from public.prospect_posts), 0::bigint, 'anon não vê prospect_posts');
 select throws_ok($$
-  insert into public.prospect_posts (caption) values ('Isca')
+  insert into public.prospect_posts (caption) values ('Post do evento')
 $$, '42501', null, 'anon não insere prospect_posts');
 
 select is((select count(*) from public.prospect_conversations), 0::bigint, 'anon não vê prospect_conversations');
@@ -114,7 +114,7 @@ set local role authenticated;
 
 select is((select count(*) from public.prospect_posts), 0::bigint, 'não-admin não vê prospect_posts');
 select throws_ok($$
-  insert into public.prospect_posts (caption) values ('Isca')
+  insert into public.prospect_posts (caption) values ('Post do evento')
 $$, '42501', null, 'não-admin não insere prospect_posts');
 select results_eq(
   $$ with x as (update public.prospect_posts set status = 'failed'
@@ -195,7 +195,7 @@ set local role authenticated;
 
 select is((select count(*) from public.prospect_posts), 1::bigint, 'admin lê prospect_posts');
 select throws_ok($$
-  insert into public.prospect_posts (caption) values ('Isca')
+  insert into public.prospect_posts (caption) values ('Post do evento')
 $$, '42501', null, 'nem admin insere prospect_posts');
 
 select is((select count(*) from public.prospect_conversations), 1::bigint, 'admin lê prospect_conversations');
