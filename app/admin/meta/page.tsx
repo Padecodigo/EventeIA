@@ -19,6 +19,11 @@ const META_TOOLS = [
     label: "Comentários do post do evento",
     hint: "Event post comments — instagram_manage_comments",
   },
+  {
+    href: "/admin/meta/webhooks",
+    label: "Webhooks da Página",
+    hint: "Page webhooks — pages_manage_metadata",
+  },
 ] as const;
 export const metadata = { title: "Conexão Meta" };
 
