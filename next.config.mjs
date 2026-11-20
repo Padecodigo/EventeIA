@@ -20,7 +20,8 @@ const cspProduction = [
   // Cloudflare Web Analytics (beacon injetado pelo proxy da Cloudflare).
   "script-src 'self' 'unsafe-inline' https://*.supabase.co https://static.cloudflareinsights.com https://accounts.google.com/gsi/client",
   "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style",
-  "img-src 'self' data: https://*.supabase.co",
+  // Foto da Página/Instagram conectados (admin /admin/meta): CDNs oficiais da Meta.
+  "img-src 'self' data: https://*.supabase.co https://*.fbcdn.net https://*.cdninstagram.com",
   "font-src 'self' data:",
   "connect-src 'self' https://*.supabase.co https://*.asaas.com https://cloudflareinsights.com https://accounts.google.com/gsi/",
   "frame-src https://accounts.google.com/gsi/",

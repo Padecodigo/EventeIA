@@ -33,8 +33,8 @@ export const REQUIRED_META_SCOPES = [
   // Envio de mensagens via Messenger: lib/meta/client.ts sendMessengerText (POST /{pageId}/messages)
   // e o fluxo de resposta do job prospect-reply.
   "pages_messaging",
-  // Token de system user atuando sobre ativos do negócio (Instagram Business + Página).
-  "business_management",
+  // business_management saiu da lista: foi retirada do pedido de App Review e nenhum
+  // código chama a API do Business Manager (se vier concedida como dependência, tudo bem).
 ] as const;
 
 /**

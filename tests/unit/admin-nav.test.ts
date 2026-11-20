@@ -18,6 +18,7 @@ describe("menu admin (superusuário)", () => {
       "/admin/fornecedores",
       "/admin/prospeccao",
       "/admin/instagram",
+      "/admin/meta",
       "/admin/tiktok",
       "/admin/metricas",
       "/admin/lixeira",

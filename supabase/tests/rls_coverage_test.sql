@@ -13,6 +13,7 @@
 --   welcome_rate_limits  — 0022: "Sem políticas: só funções SECURITY DEFINER tocam esta tabela".
 --   tiktok_oauth_tokens  — 0084: "RLS: somente service_role lê/escreve" (deny-all intencional).
 --   autopilot_media      — 0086: "escrita/leitura apenas por service_role" (deny-all intencional).
+--   meta_connections     — 0089: "escrita/leitura apenas por service_role" (deny-all intencional).
 --
 -- Partições (ex.: system_events_default) herdam as políticas da tabela-mãe particionada
 -- (system_events), então são consideradas cobertas via pg_inherits.
@@ -82,7 +83,8 @@ select is(
           'testimonial_invites',  -- 0004
           'welcome_rate_limits',  -- 0022
           'tiktok_oauth_tokens',  -- 0084: deny-all (só service_role)
-          'autopilot_media'       -- 0086: deny-all (só service_role)
+          'autopilot_media',      -- 0086: deny-all (só service_role)
+          'meta_connections'      -- 0089: deny-all (só service_role)
         ])
       )
     order by c.relname
