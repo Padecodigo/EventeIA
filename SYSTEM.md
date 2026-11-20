@@ -29,7 +29,6 @@ Slogan: _"Você imagina. A EventeIA faz acontecer."_ · Tom editorial, sofistica
 | Pagamento              | Asaas (Pix dinâmico e cartão)                                     |
 | Filas/worker           | BullMQ + Redis                                                    |
 | Redes sociais          | Meta Graph API (IG/FB) · TikTok (só publicidade)                  |
-| Automação de navegador | Playwright (publicação de iscas quando a Graph API não cobre)     |
 | Testes                 | Vitest (unit) · pgTAP (RLS)                                       |
 | Deploy                 | Coolify (stack `eventeia-prod`: app + worker + Redis num compose) |
 
@@ -110,8 +109,8 @@ Ver [`.context/COMMERCIAL_MODEL.md`](.context/COMMERCIAL_MODEL.md) e [`.context/
 1. Evento confirmado + entrevista concluída → `lib/discovery/kickoff.ts` dispara a busca.
 2. `lib/discovery/providers/*` (Overpass, DeepSeek, Grok, NIM, places pagos) retornam
    **candidatos a fornecedor** (nome, telefone, URL).
-3. `lib/prospecting/*` cria os **posts de isca** (por evento, tema do alvo + tipo do evento),
-   publica via Graph API ou Playwright, e o agente negocia por DM (cotações → `quotes`).
+3. `lib/prospecting/*` cria os **posts do evento** (por evento, tema do alvo + tipo do evento),
+   publica via Graph API (oficial), e a automação negocia por DM (cotações → `quotes`).
 4. **Escopo social**: fornecedores só **Facebook + Instagram** (decisão #013). TikTok é só
    publicidade (não busca fornecedores).
 

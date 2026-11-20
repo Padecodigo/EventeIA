@@ -223,7 +223,7 @@ const prospectPostDeleteWorker = new Worker(
   { connection, concurrency: 1 },
 );
 
-// Publicação de isca via navegador logado (Playwright no container do worker).
+// Jobs legados de publicação pelo navegador: sempre recusados (só Graph API oficial).
 interface InstagramPublishJob {
   kind?: "event" | "bait";
   postId?: string | null;
