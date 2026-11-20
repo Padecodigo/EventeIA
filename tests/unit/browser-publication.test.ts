@@ -104,7 +104,7 @@ describe("publicação pelo navegador", () => {
   });
 });
 
-describe("limpeza de post de isca do navegador", () => {
+describe("limpeza de post do evento do navegador", () => {
   it("não chama Graph DELETE e mantém a linha", async () => {
     vi.resetModules();
     const { deleteFinishedProspectPosts } = await import("@/lib/prospecting/delete-posts");

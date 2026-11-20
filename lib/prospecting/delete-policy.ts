@@ -1,5 +1,5 @@
 /**
- * Política de exclusão dos posts de isca (pura, sem I/O).
+ * Política de exclusão dos posts do evento (pura, sem I/O).
  *
  * Um post é excluído quando:
  * - todos os @ marcados já contataram (comentário/DM), ou

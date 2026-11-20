@@ -10,7 +10,7 @@ import {
   withNvidiaAvoidance,
 } from "@/lib/prospecting/scene-rules";
 
-describe("regras da cena da isca", () => {
+describe("regras da cena do post do evento", () => {
   it("usa o tipo do evento como tema (casamento, corporativo, festa infantil)", () => {
     expect(eventSceneKey("casamento")).toBe("casamento");
     expect(eventSceneKey("Corporativo (confraternização)")).toBe("corporativo");

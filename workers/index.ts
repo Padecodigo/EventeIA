@@ -194,7 +194,7 @@ const artCleanupWorker = new Worker(
   { connection, concurrency: 1 },
 );
 
-// Exclusão dos posts de isca quando a prospecção do evento termina.
+// Exclusão dos posts do evento quando a prospecção do evento termina.
 const prospectPostDeleteWorker = new Worker(
   QUEUE_NAMES.prospectPostDelete,
   async () => {
@@ -217,7 +217,7 @@ const prospectPostDeleteWorker = new Worker(
     }
     const deleted = await deleteFinishedProspectPosts({ meta });
     if (deleted > 0) {
-      logger.info({ deleted }, "posts de isca excluídos após prospecção");
+      logger.info({ deleted }, "posts do evento excluídos após prospecção");
     }
   },
   { connection, concurrency: 1 },

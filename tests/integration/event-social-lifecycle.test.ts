@@ -62,7 +62,7 @@ function productionStore(initial: PublicationState = initialPublicationState()) 
   return { store, saves, reserveCalls: () => reserveCalls, state: () => state };
 }
 
-describe("integração publicação de isca + retry", () => {
+describe("integração publicação de post do evento + retry", () => {
   it("reserva UMA linha antes de publicar e retry reusa a mesma linha sem republicar o IG", async () => {
     let fbShouldFail = true;
     const { fetchImpl, calls } = fakeFetch((url) => {

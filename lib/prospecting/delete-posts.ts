@@ -20,7 +20,7 @@ import {
 } from "./delete-publications";
 
 /**
- * Varre os posts de isca publicados e apaga no Instagram e na Página do
+ * Varre os posts do evento publicados e apaga no Instagram e na Página do
  * Facebook aqueles cuja prospecção terminou (evento completed/canceled), cujos
  * @ marcados já contataram todos, ou, sem evento, após o TTL.
  *
@@ -187,7 +187,7 @@ export async function deleteFinishedProspectPosts(
       }
       logger.warn(
         { postId: post.id, link: manual.permalink },
-        "post de isca publicado pelo navegador: remoção manual necessária; linha mantida",
+        "post do evento publicado pelo navegador: remoção manual necessária; linha mantida",
       );
       continue;
     }
@@ -211,7 +211,7 @@ export async function deleteFinishedProspectPosts(
         updated_at: nextVersionTimestamp(post.updated_at ?? null, now),
       });
       if (!persisted) {
-        logger.warn({ postId: post.id }, "conflito ao persistir remoção do post de isca");
+        logger.warn({ postId: post.id }, "conflito ao persistir remoção do post do evento");
         continue;
       }
     }
@@ -226,7 +226,7 @@ export async function deleteFinishedProspectPosts(
     ) {
       logger.warn(
         { postId: post.id, state: nextState },
-        "post de isca ainda tem ref remota; linha mantida",
+        "post do evento ainda tem ref remota; linha mantida",
       );
       continue;
     }

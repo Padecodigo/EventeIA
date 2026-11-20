@@ -311,7 +311,7 @@ Metodologia: **Trunk-Based Development** — `main` sempre implantável, PRs peq
 
 ## Fluxo de prospecção de fornecedores (Instagram/Messenger)
 
-> Objetivo: atrair fornecedores com **posts de isca**, receber o contato por **comentário ou DM** e fechar a cotação na própria conversa — sempre pelas **APIs oficiais** da Meta.
+> Objetivo: atrair fornecedores com **posts do evento**, receber o contato por **comentário ou DM** e fechar a cotação na própria conversa — sempre pelas **APIs oficiais** da Meta.
 
 ### Princípios de conformidade
 

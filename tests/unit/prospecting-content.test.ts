@@ -15,7 +15,7 @@ const base = {
   variant: 0,
 };
 
-describe("conteúdo do post de isca", () => {
+describe("conteúdo do post do evento", () => {
   it("legenda tem CTA com a palavra-chave, menções e aviso de ilustrativa", () => {
     const caption = buildCaption(base);
     expect(caption).toContain("COTAÇÃO");

@@ -9,7 +9,7 @@ import {
 /**
  * P2 (0080) — encerramento automático e limpeza após o encerramento.
  * - auto_close_ready_events: encerra eventos ativos prontos;
- * - eventos completed/canceled: apaga posts do evento e posts de isca nos DOIS
+ * - eventos completed/canceled: apaga posts do evento e posts de prospecção nos DOIS
  *   canais (Instagram + Página), mantendo ids em falha parcial;
  * - purge_closed_event_reports: relatório/handoff saem 72h após a data do evento.
  * Nada aqui envia mensagem a ninguém.

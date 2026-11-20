@@ -184,7 +184,7 @@ export function parseMetaWebhook(raw: unknown): MetaInboundMessage[] | null {
 }
 
 /**
- * Comentários do Instagram (post de isca) — evento separado das DMs.
+ * Comentários do Instagram (post do evento) — evento separado das DMs.
  * Payload: `changes[].field === "comments"` com `{ id, text, from, media }`.
  */
 export interface MetaCommentEvent {

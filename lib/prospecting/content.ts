@@ -3,7 +3,7 @@ import { CAPTION } from "@/lib/meta/limits";
 import { sceneDirective } from "./scene-rules";
 
 /**
- * Conteúdo do post de isca: prompt visual (SDXL) e legenda com CTA, menções e
+ * Conteúdo do post do evento: prompt visual (SDXL) e legenda com CTA, menções e
  * o aviso de imagem ilustrativa. Puro e determinístico: a mesma entrada gera o
  * mesmo texto, e `variant` escolhe uma das aberturas para variar entre posts.
  */

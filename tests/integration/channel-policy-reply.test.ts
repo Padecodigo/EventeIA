@@ -13,7 +13,7 @@ function mockClient(raw: string, seen: { system?: string }): DeepSeekClient {
   } as unknown as DeepSeekClient;
 }
 
-describe("integração: contato pede WhatsApp na DM da postagem isca", () => {
+describe("integração: contato pede WhatsApp na DM do post do evento", () => {
   it("modelo (mock) oferece WhatsApp → resposta reescrita para Instagram/Messenger", async () => {
     const seen: { system?: string } = {};
     const reply = await runAgent({

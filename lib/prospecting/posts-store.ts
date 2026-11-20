@@ -57,7 +57,7 @@ export type SavePostStateResult =
 
 export interface ReservePostInput {
   planned: PlannedPost;
-  /** Nulo no acervo geral (isca sem evento). */
+  /** Nulo no acervo geral (post de prospecção sem evento). */
   eventId: string | null;
   imageUrl: string;
   imageExpiresAt?: Date;

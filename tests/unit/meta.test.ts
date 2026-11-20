@@ -149,7 +149,7 @@ describe("meta — cliente de envio", () => {
 });
 
 
-describe("meta — parse de comentários (post de isca)", () => {
+describe("meta — parse de comentários (post do evento)", () => {
   it("normaliza comentário com @username e mídia", () => {
     const comments = parseMetaComments({
       object: "instagram",

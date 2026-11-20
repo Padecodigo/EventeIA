@@ -65,7 +65,7 @@ describe("aplicação da resposta do agente", () => {
     const result = await applyAgentReply(ports, { ...ids, reply: { ...base, optOut: true } });
     expect(result).toEqual({ action: "escalated", sent: false });
     expect(ports.optOuts).toBe(0);
-    expect(ports.escalations).toEqual(["possível opt-out sinalizado pela IA — revisar"]);
+    expect(ports.escalations).toEqual(["possível opt-out sinalizado pela automação — revisar"]);
     expect(ports.replies).toHaveLength(0);
   });
 
@@ -208,6 +208,6 @@ describe("respondToInbound", () => {
       ...ids,
     });
     expect(result).toEqual({ action: "escalated", sent: false });
-    expect(ports.escalations).toEqual(["saída inválida da IA"]);
+    expect(ports.escalations).toEqual(["saída inválida da automação"]);
   });
 });

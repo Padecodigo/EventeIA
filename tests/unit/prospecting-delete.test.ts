@@ -40,7 +40,7 @@ describe("deleteMedia (Meta Graph API)", () => {
   });
 });
 
-describe("política de exclusão de posts de isca", () => {
+describe("política de exclusão de posts do evento", () => {
   it("evento concluído/cancelado encerra a prospecção", () => {
     expect(isEventProspectingDone("completed")).toBe(true);
     expect(isEventProspectingDone("canceled")).toBe(true);

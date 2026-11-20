@@ -12,7 +12,7 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 /**
  * Limpeza das publicações sociais de eventos apagados pelo usuário
  * (`user_deleted_at`, 0075). É a mesma rotina idempotente do encerramento:
- * posts do evento + posts de isca, Instagram + Página, mantendo ids em falha.
+ * posts do evento + posts de prospecção, Instagram + Página, mantendo ids em falha.
  */
 
 interface DeletedEventsDb {

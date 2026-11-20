@@ -5,7 +5,7 @@
  */
 export const TRASH_KINDS = {
   custos: { table: "cost_entries", label: "Custos (variáveis e fixos)" },
-  ia: { table: "llm_usage_events", label: "Custos de IA (LLM)" },
+  ia: { table: "llm_usage_events", label: "Custos da automação (LLM)" },
   alertas: { table: "finance_alerts", label: "Alertas de saldo" },
   chamados: { table: "support_tickets", label: "Chamados" },
   fornecedores: { table: "suppliers", label: "Fornecedores" },
