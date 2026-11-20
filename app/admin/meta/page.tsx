@@ -11,6 +11,15 @@ import { Card } from "../ui";
 import { disconnectMetaAction, selectMetaPageAction } from "./actions";
 
 export const dynamic = "force-dynamic";
+
+/** Telas que usam a Página conectada (uma por permissão da App Review). */
+const META_TOOLS = [
+  {
+    href: "/admin/meta/comentarios",
+    label: "Comentários do post do evento",
+    hint: "Event post comments — instagram_manage_comments",
+  },
+] as const;
 export const metadata = { title: "Conexão Meta" };
 
 const STATUS_MESSAGES: Record<string, { label: string; tone: string }> = {
@@ -111,6 +120,20 @@ export default async function MetaAdminPage({
           {status.label}
         </p>
       ) : null}
+
+      <Card testId="meta-tools">
+        <p className="text-caption uppercase tracking-wide text-vinho/60">Ferramentas (Tools)</p>
+        <ul className="mt-2 space-y-1 text-sm">
+          {META_TOOLS.map((tool) => (
+            <li key={tool.href}>
+              <Link href={tool.href} className="font-semibold text-vinho underline-offset-2 hover:underline">
+                {tool.label}
+              </Link>
+              <span className="ml-2 text-caption text-vinho/60">{tool.hint}</span>
+            </li>
+          ))}
+        </ul>
+      </Card>
 
       {!enabled ? (
         <Card testId="meta-login-disabled">
